@@ -1,0 +1,153 @@
+CREATE OR REPLACE PACKAGE awlrs_util
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.0   26 Sep 2016 18:17:32   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_util.pkh  $
+  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:32  $
+  --       Date fetched Out : $Modtime:   26 Sep 2016 17:09:56  $
+  --       Version          : $Revision:   1.0  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  --
+  TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE product_codes_tab IS TABLE OF hig_products.hpr_product%TYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE ne_id_tab IS TABLE OF nm_elements_all.ne_id%TYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE admin_unit_rec IS RECORD(admin_unit  nm_admin_units_all.nau_admin_unit%TYPE
+                               ,unit_code   nm_admin_units_all.nau_unit_code%TYPE
+                               ,name        nm_admin_units_all.nau_name%TYPE);
+  TYPE admin_unit_tab IS TABLE OF admin_unit_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE message_rec IS RECORD(category VARCHAR2(20)
+                            ,message  VARCHAR2(4000));
+  TYPE message_tab IS TABLE OF message_rec INDEX BY BINARY_INTEGER;
+  --
+  c_msg_cat_success  CONSTANT hig_codes.hco_code%TYPE := 'SUCCESS';
+  c_msg_cat_info     CONSTANT hig_codes.hco_code%TYPE := 'INFORMATION';
+  c_msg_cat_warning  CONSTANT hig_codes.hco_code%TYPE := 'WARNING';
+  c_msg_cat_error    CONSTANT hig_codes.hco_code%TYPE := 'ERROR';
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION escape_single_quotes(pi_string IN VARCHAR2)
+    RETURN nm3type.max_varchar2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION user_has_normal_access(pi_admin_unit IN nm_admin_units_all.nau_admin_unit%TYPE)
+    RETURN BOOLEAN;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION tokenise_string(pi_string      IN VARCHAR2
+                          ,pi_token       IN VARCHAR2 DEFAULT ','
+                          ,pi_trim_values IN BOOLEAN DEFAULT TRUE)
+    RETURN nm3type.tab_varchar32767;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_product_versions(pi_product_codes    IN  product_codes_tab
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_hig_option_values(pi_option_names     IN  option_names_tab
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_length_units(po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION gen_row_restriction(pi_index_column   IN VARCHAR2
+                              ,pi_where_clause   IN BOOLEAN DEFAULT TRUE
+                              ,pi_start_index    IN PLS_INTEGER
+                              ,pi_number_of_rows IN PLS_INTEGER)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_message(pi_category    IN     hig_codes.hco_code%TYPE
+                       ,pi_message     IN     VARCHAR2
+                       ,po_message_tab IN OUT NOCOPY awlrs_message_tab);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_message_cursor(pi_message_tab IN  awlrs_message_tab
+                              ,po_cursor      OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_default_success_tab(po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_tab      OUT NOCOPY awlrs_message_tab);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_default_success_cursor(po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_ner_to_message_tab(pi_ner_appl           IN     nm_errors.ner_appl%TYPE
+                                  ,pi_ner_id             IN     nm_errors.ner_id%TYPE
+                                  ,pi_supplementary_info IN     VARCHAR2 DEFAULT NULL
+                                  ,pi_category           IN     hig_codes.hco_code%TYPE
+                                  ,po_message_severity   IN OUT hig_codes.hco_code%TYPE
+                                  ,po_message_tab        IN OUT NOCOPY awlrs_message_tab);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE handle_exception(po_message_severity IN OUT hig_codes.hco_code%TYPE
+                            ,po_message_tab      IN OUT NOCOPY awlrs_message_tab);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE handle_exception(po_message_severity IN OUT hig_codes.hco_code%TYPE
+                            ,po_cursor              OUT sys_refcursor);
+
+--
+-----------------------------------------------------------------------------
+--
+END awlrs_util;
+/

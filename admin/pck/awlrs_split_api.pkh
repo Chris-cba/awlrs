@@ -1,0 +1,86 @@
+CREATE OR REPLACE PACKAGE awlrs_split_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkh-arc   1.0   26 Sep 2016 18:17:32   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_split_api.pkh  $
+  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:32  $
+  --       Date fetched Out : $Modtime:   26 Sep 2016 12:54:24  $
+  --       Version          : $Revision:   1.0  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  --
+  g_new_element_1  nm_elements_all%ROWTYPE;
+  g_new_element_2  nm_elements_all%ROWTYPE;
+  --
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_flex_attribs(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                               ,pi_nt_type          IN  nm_types.nt_type%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_nt_flex_attribs(pi_ne_id          IN nm_elements_all.ne_id%TYPE
+                              ,pi_nt_type        IN nm_types.nt_type%TYPE)
+    RETURN awlrs_element_api.flex_attr_tab;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE do_split(pi_ne_id                IN  nm_elements_all.ne_id%TYPE
+                    ,pi_split_offset         IN  NUMBER
+                    ,pi_split_at_node_id     IN  nm_nodes.no_node_id%TYPE
+                    ,pi_reason               IN  nm_element_history.neh_descr%TYPE DEFAULT NULL
+                    ,pi_new_element1_attribs IN  awlrs_element_api.flex_attr_tab
+                    ,pi_new_element2_attribs IN  awlrs_element_api.flex_attr_tab
+                    ,pi_effective_date       IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                    ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor       OUT sys_refcursor
+                    ,po_cursor               OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE do_split(pi_ne_id                     IN  nm_elements_all.ne_id%TYPE
+                    ,pi_split_offset              IN  NUMBER
+                    ,pi_split_at_node_id          IN  nm_nodes.no_node_id%TYPE
+                    ,pi_reason                    IN  nm_element_history.neh_descr%TYPE DEFAULT NULL
+                    ,pi_new_element1_column_names IN  awlrs_element_api.attrib_column_name_tab
+                    ,pi_new_element1_prompts      IN  awlrs_element_api.attrib_prompt_tab
+                    ,pi_new_element1_char_values  IN  awlrs_element_api.attrib_char_value_tab
+                    ,pi_new_element2_column_names IN  awlrs_element_api.attrib_column_name_tab
+                    ,pi_new_element2_prompts      IN  awlrs_element_api.attrib_prompt_tab
+                    ,pi_new_element2_char_values  IN  awlrs_element_api.attrib_char_value_tab
+                    ,pi_effective_date            IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                    ,po_message_severity          OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor            OUT sys_refcursor
+                    ,po_cursor                    OUT sys_refcursor);
+
+--
+-----------------------------------------------------------------------------
+--
+END awlrs_split_api;
+/

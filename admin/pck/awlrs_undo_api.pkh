@@ -1,0 +1,50 @@
+CREATE OR REPLACE PACKAGE awlrs_undo_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkh-arc   1.0   26 Sep 2016 18:17:32   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_undo_api.pkh  $
+  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:32  $
+  --       Date fetched Out : $Modtime:   26 Sep 2016 12:53:52  $
+  --       Version          : $Revision:   1.0  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_undo_operation(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE undo_operation(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                          ,pi_operation        IN  hig_codes.hco_meaning%TYPE
+                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor   OUT sys_refcursor);
+
+--
+-----------------------------------------------------------------------------
+--
+END awlrs_undo_api;
+/
