@@ -1,0 +1,306 @@
+CREATE OR REPLACE PACKAGE awlrs_element_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.0   26 Sep 2016 18:17:30   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
+  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:30  $
+  --       Date fetched Out : $Modtime:   26 Sep 2016 12:55:12  $
+  --       Version          : $Revision:   1.0  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  --
+  g_new_element  nm_elements_all%ROWTYPE;
+  --
+  TYPE element_rec IS RECORD(element_id                  nm_elements_all.ne_id%TYPE
+                            ,element_network_type        nm_elements_all.ne_nt_type%TYPE
+                            ,element_network_type_unique nm_types.nt_unique%TYPE
+                            ,element_network_type_descr  nm_types.nt_descr%TYPE
+                            ,element_unique              nm_elements_all.ne_unique%TYPE
+                            ,element_group_type          nm_elements_all.ne_gty_group_type%TYPE
+                            ,element_group_type_descr    nm_group_types_all.ngt_descr%TYPE
+                            ,element_admin_unit_id       nm_elements_all.ne_admin_unit%TYPE
+                            ,element_admin_unit_code     nm_admin_units_all.nau_unit_code%TYPE
+                            ,element_admin_unit_name     nm_admin_units_all.nau_name%TYPE
+                            ,element_description         nm_elements_all.ne_descr%TYPE
+                            ,element_start_date          nm_elements_all.ne_start_date%TYPE
+                            ,element_end_date            nm_elements_all.ne_end_date%TYPE
+                            ,element_length              nm_elements_all.ne_length%TYPE
+                            ,element_length_unit         nm_units.un_unit_id%TYPE
+                            ,element_length_unit_name    nm_units.un_unit_name%TYPE
+                            ,start_node_id               nm_nodes_all.no_node_id%TYPE
+                            ,start_node_name             nm_nodes_all.no_node_name%TYPE
+                            ,start_node_descr            nm_nodes_all.no_descr%TYPE
+                            ,start_node_x                nm_points.np_grid_east%TYPE
+                            ,start_node_y                nm_points.np_grid_north%TYPE
+                            ,end_node_id                 nm_nodes_all.no_node_id%TYPE
+                            ,end_node_name               nm_nodes_all.no_node_name%TYPE
+                            ,end_node_descr              nm_nodes_all.no_descr%TYPE
+                            ,end_node_x                  nm_points.np_grid_east%TYPE
+                            ,end_node_y                  nm_points.np_grid_north%TYPE);
+  --
+  TYPE element_tab IS TABLE OF element_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE flex_attr_rec IS RECORD(column_name        nm_type_columns.ntc_column_name%TYPE
+                              ,prompt             nm_type_columns.ntc_prompt%TYPE
+                              ,view_column_name   nm_type_columns.ntc_column_name%TYPE
+                              ,datatype           nm_type_columns.ntc_column_type%TYPE
+                              ,format_mask        nm_type_columns.ntc_format%TYPE
+                              ,field_length       nm_type_columns.ntc_str_length%TYPE
+                              ,decimal_places     NUMBER(1)
+                              ,min_value          NUMBER(11,3)
+                              ,max_value          NUMBER(11,3)
+                              ,field_case         VARCHAR2(5)
+                              ,domain_id          VARCHAR2(40)
+                              ,domain_bind_column nm_type_columns.ntc_column_name%TYPE
+                              ,char_value         VARCHAR2(240)
+                              ,required           nm_type_columns.ntc_mandatory%TYPE
+                              ,updateable         nm_type_columns.ntc_updatable%TYPE);
+  TYPE flex_attr_tab IS TABLE OF flex_attr_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE attrib_column_name_tab IS TABLE OF nm_type_columns.ntc_column_name%TYPE INDEX BY BINARY_INTEGER;
+  TYPE attrib_prompt_tab IS TABLE OF nm_type_columns.ntc_prompt%TYPE INDEX BY BINARY_INTEGER;
+  TYPE attrib_char_value_tab IS TABLE OF VARCHAR2(240) INDEX BY BINARY_INTEGER;
+  --
+  TYPE domain_values_rec IS RECORD(code      VARCHAR2(240)
+                                  ,meaning   VARCHAR2(240));
+  TYPE domain_values_tab IS TABLE OF domain_values_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE domain_name_and_values_rec IS RECORD(domain_id VARCHAR2(40)
+                                           ,code      VARCHAR2(240)
+                                           ,meaning   VARCHAR2(240));
+  TYPE domain_name_and_values_tab IS TABLE OF domain_name_and_values_rec INDEX BY BINARY_INTEGER;
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_node(pi_type             IN     nm_nodes.no_node_type%TYPE
+                       ,pi_name             IN     nm_nodes.no_node_name%TYPE
+                       ,pi_descr            IN     nm_nodes.no_descr%TYPE
+                       ,pi_purpose          IN     nm_nodes_all.no_purpose%TYPE
+                       ,pi_point_id         IN     nm_nodes.no_np_id%TYPE
+                       ,pi_point_x          IN     nm_points.np_grid_east%TYPE  DEFAULT NULL
+                       ,pi_point_y          IN     nm_points.np_grid_north%TYPE DEFAULT NULL
+                       ,pi_start_date       IN     nm_nodes.no_start_date%TYPE
+                       ,po_node_id          IN OUT nm_nodes.no_node_id%TYPE
+                       ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor      OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION gen_domain_name(pi_nt_type     IN nm_types.nt_type%TYPE
+                          ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_ne_id(pi_element_name IN VARCHAR2)
+    RETURN nm_elements_all.ne_id%TYPE;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_domain_sql_with_bind(pi_nt_type     IN nm_types.nt_type%TYPE
+                                   ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_nt_flx_col_value(pi_ne_id                  IN nm_elements.ne_id%TYPE
+                               ,pi_column_name            IN nm_type_columns.ntc_column_name%TYPE
+                               ,pi_prompt_text            IN nm_type_columns.ntc_prompt%TYPE
+                               ,pi_disp_validation_errors IN BOOLEAN DEFAULT FALSE
+                               ,pi_continue_after_val_err IN BOOLEAN DEFAULT FALSE)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_flex_domain(pi_nt_type          IN  nm_types.nt_type%TYPE
+                              ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
+                              ,pi_bind_value       IN  VARCHAR2 DEFAULT NULL
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_nt_flex_domain(pi_nt_type     IN  nm_types.nt_type%TYPE
+                             ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
+                             ,pi_bind_value  IN  VARCHAR2 DEFAULT NULL)
+    RETURN domain_values_tab;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_flex_domains(pi_nt_type          IN  nm_types.nt_type%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_nt_flex_domains(pi_nt_type IN  nm_types.nt_type%TYPE)
+    RETURN domain_name_and_values_tab;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_flex_attribs(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                               ,pi_nt_type          IN  nm_types.nt_type%TYPE
+                               ,pi_disp_derived     IN  BOOLEAN DEFAULT TRUE
+                               ,pi_disp_inherited   IN  BOOLEAN DEFAULT TRUE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_nt_flex_attribs(pi_ne_id          IN nm_elements_all.ne_id%TYPE
+                              ,pi_disp_derived   IN  BOOLEAN DEFAULT TRUE
+                              ,pi_disp_inherited IN  BOOLEAN DEFAULT TRUE
+                              ,pi_nt_type        IN nm_types.nt_type%TYPE)
+    RETURN flex_attr_tab;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE build_element_rec(pi_nt_type    IN nm_types.nt_type%TYPE
+                             ,pi_global     IN VARCHAR2
+                             ,pi_attributes IN flex_attr_tab);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_elements(pi_ne_ids IN  awlrs_util.ne_id_tab
+                        ,po_cursor OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_elements(pi_ne_ids           IN  awlrs_util.ne_id_tab
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor
+                        ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_element(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor
+                       ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_element(pi_theme_name  IN nm_themes_all.nth_theme_name%TYPE
+                          ,pi_element_rec IN nm_elements_all%ROWTYPE
+                          ,pi_shape_wkt   IN CLOB
+                          ,po_ne_id       IN OUT nm_elements_all.ne_id%TYPE);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_element(pi_theme_name    IN     nm_themes_all.nth_theme_name%TYPE
+                          ,pi_network_type  IN     nm_elements_all.ne_nt_type%TYPE
+                          ,pi_element_type  IN     nm_elements_all.ne_type%TYPE
+                          ,pi_description   IN     nm_elements_all.ne_descr%TYPE
+                          ,pi_length        IN     nm_elements_all.ne_length%TYPE
+                          ,pi_admin_unit_id IN     nm_elements_all.ne_admin_unit%TYPE
+                          ,pi_start_date    IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                          ,pi_end_date      IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
+                          ,pi_group_type    IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
+                          ,pi_start_node_id IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
+                          ,pi_end_node_id   IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
+                          ,pi_unique        IN     nm_elements_all.ne_unique%TYPE         DEFAULT NULL
+                          ,pi_owner         IN     nm_elements_all.ne_owner%TYPE          DEFAULT NULL
+                          ,pi_name_1        IN     nm_elements_all.ne_name_1%TYPE         DEFAULT NULL
+                          ,pi_name_2        IN     nm_elements_all.ne_name_2%TYPE         DEFAULT NULL
+                          ,pi_prefix        IN     nm_elements_all.ne_prefix%TYPE         DEFAULT NULL
+                          ,pi_number        IN     nm_elements_all.ne_number%TYPE         DEFAULT NULL
+                          ,pi_sub_type      IN     nm_elements_all.ne_sub_type%TYPE       DEFAULT NULL
+                          ,pi_group         IN     nm_elements_all.ne_group%TYPE          DEFAULT NULL
+                          ,pi_sub_class     IN     nm_elements_all.ne_sub_class%TYPE      DEFAULT NULL
+                          ,pi_nsg_ref       IN     nm_elements_all.ne_nsg_ref%TYPE        DEFAULT NULL
+                          ,pi_version_no    IN     nm_elements_all.ne_version_no%TYPE     DEFAULT NULL
+                          ,pi_shape_wkt     IN     CLOB
+                          ,po_ne_id         IN OUT nm_elements_all.ne_id%TYPE);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_element(pi_theme_name      IN     nm_themes_all.nth_theme_name%TYPE
+                          ,pi_network_type    IN     nm_elements_all.ne_nt_type%TYPE
+                          ,pi_element_type    IN     nm_elements_all.ne_type%TYPE
+                          ,pi_description     IN     nm_elements_all.ne_descr%TYPE
+                          ,pi_length          IN     nm_elements_all.ne_length%TYPE
+                          ,pi_admin_unit_id   IN     nm_elements_all.ne_admin_unit%TYPE
+                          ,pi_start_date      IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                          ,pi_end_date        IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
+                          ,pi_group_type      IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
+                          ,pi_start_node_id   IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
+                          ,pi_end_node_id     IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
+                          ,pi_element_attribs IN     awlrs_element_api.flex_attr_tab
+                          ,pi_shape_wkt       IN     CLOB
+                          ,po_ne_id           IN OUT nm_elements_all.ne_id%TYPE);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_element(pi_theme_name          IN     nm_themes_all.nth_theme_name%TYPE
+                          ,pi_network_type        IN     nm_elements_all.ne_nt_type%TYPE
+                          ,pi_element_type        IN     nm_elements_all.ne_type%TYPE
+                          ,pi_description         IN     nm_elements_all.ne_descr%TYPE
+                          ,pi_length              IN     nm_elements_all.ne_length%TYPE
+                          ,pi_admin_unit_id       IN     nm_elements_all.ne_admin_unit%TYPE
+                          ,pi_start_date          IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                          ,pi_end_date            IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
+                          ,pi_group_type          IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
+                          ,pi_start_node_id       IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
+                          ,pi_end_node_id         IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
+                          ,pi_attrib_column_names IN     attrib_column_name_tab
+                          ,pi_attrib_prompts      IN     attrib_prompt_tab
+                          ,pi_attrib_char_values  IN     attrib_char_value_tab
+                          ,pi_shape_wkt           IN     CLOB
+                          ,po_ne_id               IN OUT nm_elements_all.ne_id%TYPE
+                          ,po_message_severity       OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor         OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE reshape_element(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                           ,pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                           ,pi_shape_wkt        IN  CLOB
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor);
+
+--
+-----------------------------------------------------------------------------
+--
+END awlrs_element_api;
+/

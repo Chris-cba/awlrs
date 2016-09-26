@@ -1,0 +1,59 @@
+CREATE OR REPLACE PACKAGE awlrs_persistence_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_persistence_api.pkh-arc   1.0   26 Sep 2016 18:17:30   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_persistence_api.pkh  $
+  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:30  $
+  --       Date fetched Out : $Modtime:   26 Sep 2016 12:54:42  $
+  --       Version          : $Revision:   1.0  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE persist_data(pi_product          IN  awlrs_persistence.ap_product%TYPE
+                        ,pi_key              IN  awlrs_persistence.ap_key%TYPE
+                        ,pi_data             IN  awlrs_persistence.ap_data%TYPE
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_data(pi_product          IN  awlrs_persistence.ap_product%TYPE
+                       ,pi_key              IN  awlrs_persistence.ap_key%TYPE
+                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_data(pi_product          IN  awlrs_persistence.ap_product%TYPE
+                    ,pi_key              IN  awlrs_persistence.ap_key%TYPE
+                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor   OUT sys_refcursor
+                    ,po_cursor           OUT sys_refcursor);
+
+END awlrs_persistence_api;
+/
