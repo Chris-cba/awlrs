@@ -1,0 +1,16 @@
+CREATE OR REPLACE TYPE awlrs_message
+-------------------------------------------------------------------------
+--   PVCS Identifiers :-
+--
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/typ/awlrs_message.tyh-arc   1.0   26 Sep 2016 18:18:44   Mike.Huitson  $
+--       Module Name      : $Workfile:   awlrs_message.tyh  $
+--       Date into PVCS   : $Date:   26 Sep 2016 18:18:44  $
+--       Date fetched Out : $Modtime:   26 Sep 2016 10:31:02  $
+--       Version          : $Revision:   1.0  $
+-------------------------------------------------------------------------
+--   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+-------------------------------------------------------------------------
+--
+AS OBJECT(category VARCHAR2(20)
+         ,message  VARCHAR2(4000))
+/
