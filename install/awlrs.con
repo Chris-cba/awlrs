@@ -1,0 +1,33 @@
+-------------------------------------------------------------------------
+--   PVCS Identifiers :-
+--
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.0   26 Sep 2016 18:20:42   Mike.Huitson  $
+--       Module Name      : $Workfile:   awlrs.con  $
+--       Date into PVCS   : $Date:   26 Sep 2016 18:20:42  $
+--       Date fetched Out : $Modtime:   26 Sep 2016 15:25:14  $
+--       Version          : $Revision:   1.0  $
+-------------------------------------------------------------------------
+--   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+-------------------------------------------------------------------------
+-- Generated for Oracle 10g on Mon Sep 26  15:21:21 2016 by Server Generator 10.1.2.9.28
+
+PROMPT Creating Primary Key on 'AWLRS_PERSISTENCE'
+ALTER TABLE AWLRS_PERSISTENCE
+ ADD (CONSTRAINT AP_PK PRIMARY KEY 
+  (AP_ID))
+/
+
+PROMPT Creating Unique Key on 'AWLRS_PERSISTENCE'
+ALTER TABLE AWLRS_PERSISTENCE
+ ADD (CONSTRAINT AP_UK UNIQUE 
+  (AP_USER_ID
+  ,AP_PRODUCT
+  ,AP_KEY))
+/
+
+PROMPT Creating Foreign Key on 'AWLRS_PERSISTENCE'
+ALTER TABLE AWLRS_PERSISTENCE ADD (CONSTRAINT
+ AP_FK_HUS FOREIGN KEY 
+  (AP_USER_ID) REFERENCES HIG_USERS
+  (HUS_USER_ID))
+/

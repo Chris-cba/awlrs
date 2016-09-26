@@ -1,0 +1,21 @@
+-------------------------------------------------------------------------
+--   PVCS Identifiers :-
+--
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.sqs-arc   1.0   26 Sep 2016 18:20:42   Mike.Huitson  $
+--       Module Name      : $Workfile:   awlrs.sqs  $
+--       Date into PVCS   : $Date:   26 Sep 2016 18:20:42  $
+--       Date fetched Out : $Modtime:   26 Sep 2016 15:30:38  $
+--       Version          : $Revision:   1.0  $
+-------------------------------------------------------------------------
+--   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+-------------------------------------------------------------------------
+-- Generated for Oracle 10g on Mon Sep 26  15:21:21 2016 by Server Generator 10.1.2.9.28
+
+PROMPT Creating Sequence 'AP_ID_SEQ'
+CREATE SEQUENCE AP_ID_SEQ
+ INCREMENT BY 1
+ NOMAXVALUE
+ MINVALUE 1
+ NOCYCLE
+ NOCACHE
+/
