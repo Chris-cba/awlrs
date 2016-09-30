@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.0   26 Sep 2016 18:17:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.1   30 Sep 2016 10:48:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:30  $
-  --       Date fetched Out : $Modtime:   26 Sep 2016 17:09:26  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   30 Sep 2016 10:48:28  $
+  --       Date fetched Out : $Modtime:   29 Sep 2016 19:44:22  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -191,13 +191,13 @@ AS
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END get_map_theme_types;
 
   --
@@ -303,10 +303,9 @@ AS
                 ;
             END IF;
         ELSE
-            /*
-            ||TODO - Make this a NER.
-            */
-            raise_application_error(-20001,'Layer does not represent an Asset Type or a Network Type.');
+            --Layer does not represent an Asset Type or a Network Type
+            hig.raise_ner(pi_appl => 'AWLRS'
+                         ,pi_id   => 6);
             --
         END IF;
     END IF;
@@ -323,13 +322,13 @@ AS
     END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END get_feature_details;
 
   --
@@ -353,7 +352,10 @@ AS
   EXCEPTION
    WHEN no_data_found
     THEN
-       raise_application_error(-20001,'Invalid Map name supplied: '||pi_map_name);
+       --Invalid Map name supplied
+       hig.raise_ner(pi_appl               => 'AWLRS'
+                    ,pi_id                 => 7
+                    ,pi_supplementary_info => pi_map_name);
    WHEN others
     THEN
        RAISE;
@@ -383,7 +385,10 @@ AS
        THEN
           lv_retval := 'POINT';
       ELSE
-          raise_application_error(-20001,'Unsuported geometry type: '||pi_gtype);
+          --Unsuported geometry type
+          hig.raise_ner(pi_appl               => 'AWLRS'
+                       ,pi_id                 => 8
+                       ,pi_supplementary_info => pi_gtype);
     END CASE;
     --
     RETURN lv_retval;
@@ -411,7 +416,11 @@ AS
        THEN
           lv_retval := 'IN(''2001'',''3001'',''3301'',''2005'',''3005'',''3305'')';
       ELSE
-          raise_application_error(-20001,'Unsuported Layer Type: '||pi_layer_type);
+          --Unsuported Layer Type
+          hig.raise_ner(pi_appl               => 'AWLRS'
+                       ,pi_id                 => 9
+                       ,pi_supplementary_info => pi_layer_type);
+
     END CASE;
     --
     RETURN lv_retval;
@@ -451,7 +460,10 @@ AS
        THEN
           lv_retval := 'multipoint';
       ELSE
-          raise_application_error(-20001,'Unsuported geometry type: '||pi_gtype);
+          --Unsuported geometry type
+          hig.raise_ner(pi_appl               => 'AWLRS'
+                       ,pi_id                 => 8
+                       ,pi_supplementary_info => pi_gtype);
     END CASE;
     --
     RETURN lv_retval;
@@ -538,7 +550,10 @@ AS
     IF lv_epsg IS NULL
      AND pi_raise_not_found
      THEN
-        raise_application_error(-20001,'Unable to derive EPSG from SRID['||lv_srid||'].');
+        --Unable to derive EPSG from SRID
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 12
+                     ,pi_supplementary_info => lv_srid);
     END IF;
     --
     po_epsg := lv_epsg;
@@ -1344,13 +1359,13 @@ AS
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END get_map_file;
 
   --
@@ -1579,7 +1594,10 @@ AS
             ||CHR(10)||'          </se:TextSymbolizer>'
           ;
       ELSE
-          raise_application_error(-20001, pi_style_name||' is not a Text Style ['||lr_uss.type||'].');
+          --Invalid Style Type supplied as Text Style
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 11
+                       ,pi_supplementary_info => pi_style_name);
     END CASE;
     --
     RETURN lv_retval;
@@ -1729,7 +1747,10 @@ AS
               ||CHR(10)||'          </se:LineSymbolizer>'
             ;
         ELSE
-            raise_application_error(-20001, 'Invalid layer type ['||pi_layer_type||']provided to function get_default_symboliser.');
+            --Unsuported Layer Type
+            hig.raise_ner(pi_appl               => 'AWLRS'
+                         ,pi_id                 => 9
+                         ,pi_supplementary_info => pi_layer_type||' provided to function get_default_symboliser');
       END CASE;
       --
       RETURN lv_retval;
@@ -2163,7 +2184,10 @@ AS
             --
         END LOOP;
       ELSE
-          raise_application_error(-20001, pi_style_name||' is of an unsupported type ['||lr_uss.type||'].');
+          --Unsuported Style Type
+          hig.raise_ner(pi_appl               => 'AWLRS'
+                       ,pi_id                 => 10
+                       ,pi_supplementary_info => pi_style_name);
     END CASE;
     --
     RETURN lv_retval;
@@ -2372,13 +2396,13 @@ AS
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END get_sld_file;
 
   --
@@ -2442,13 +2466,13 @@ AS
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END get_marker_files;
 
   --
@@ -2473,13 +2497,13 @@ AS
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END get_tooltip_template;
 
   --
@@ -2511,13 +2535,13 @@ AS
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END get_tooltip_templates;
 --
 -----------------------------------------------------------------------------
