@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.0   26 Sep 2016 18:17:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.1   30 Sep 2016 10:49:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:32  $
-  --       Date fetched Out : $Modtime:   26 Sep 2016 17:09:26  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   30 Sep 2016 10:49:04  $
+  --       Date fetched Out : $Modtime:   30 Sep 2016 10:45:42  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -312,7 +312,10 @@ AS
         po_message_tab.extend;
         po_message_tab(po_message_tab.count) := awlrs_message(pi_category,pi_message);
     ELSE
-        raise_application_error(-20001,'Invalid Message Category ['||pi_category||'].');
+        --Invalid Message Category
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 20
+                     ,pi_supplementary_info => pi_category);
     END IF;
     --
   END add_message;
