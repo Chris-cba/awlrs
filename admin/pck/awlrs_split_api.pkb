@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.0   26 Sep 2016 18:17:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.1   30 Sep 2016 10:49:02   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:30  $
-  --       Date fetched Out : $Modtime:   26 Sep 2016 12:56:10  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   30 Sep 2016 10:49:02  $
+  --       Date fetched Out : $Modtime:   30 Sep 2016 10:43:18  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   --
@@ -140,7 +140,10 @@ AS
     */
     IF pi_new_element1_attribs.COUNT != pi_new_element2_attribs.COUNT
      THEN
-        raise_application_error(-20001,'awlrs_split_api.do_split: The attribute tables passed in must have matching row counts.');
+        --The attribute tables passed in must have matching row counts
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_split_api.do_split');
     END IF;
     --
     awlrs_element_api.build_element_rec(pi_nt_type    => lr_ne.ne_nt_type
@@ -257,8 +260,10 @@ AS
      OR pi_new_element1_column_names.COUNT != pi_new_element2_prompts.COUNT
      OR pi_new_element1_column_names.COUNT != pi_new_element2_char_values.COUNT
      THEN
-        raise_application_error(-20001,'awlrs_split_api.do_split: The attribute tables passed in must have matching row counts.');
-    END IF;
+        --The attribute tables passed in must have matching row counts
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_split_api.do_split');    END IF;
     --
     FOR i IN 1..pi_new_element1_column_names.COUNT LOOP
       --
