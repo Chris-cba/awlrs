@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.0   26 Sep 2016 18:17:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.1   30 Sep 2016 10:48:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_merge_api.pkb  $
-  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:30  $
-  --       Date fetched Out : $Modtime:   26 Sep 2016 12:56:34  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   30 Sep 2016 10:48:50  $
+  --       Date fetched Out : $Modtime:   29 Sep 2016 18:22:36  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_merge_api';
   --
   --
@@ -261,7 +261,10 @@ AS
     IF pi_new_element_column_names.COUNT != pi_new_element_prompts.COUNT
      OR pi_new_element_column_names.COUNT != pi_new_element_char_values.COUNT
      THEN
-        raise_application_error(-20001,'awlrs_merge_api.do_merge: The attribute tables passed in must have matching row counts.');
+        --The attribute tables passed in must have matching row counts
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_merge_api.do_merge');
     END IF;
     --
     FOR i IN 1..pi_new_element_column_names.COUNT LOOP

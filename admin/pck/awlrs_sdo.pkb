@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.0   26 Sep 2016 18:17:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.1   30 Sep 2016 10:48:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:30  $
-  --       Date fetched Out : $Modtime:   26 Sep 2016 12:56:18  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   30 Sep 2016 10:48:50  $
+  --       Date fetched Out : $Modtime:   30 Sep 2016 10:35:52  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -62,7 +62,9 @@ AS
   EXCEPTION
     WHEN no_data_found
      THEN
-        raise_application_error(-20001,'Cannot find start x,y of the geometry.');
+        --Cannot find start x,y of the geometry
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 13);
     WHEN others
      THEN
         RAISE;
@@ -95,7 +97,9 @@ AS
   EXCEPTION
     WHEN no_data_found
      THEN
-        raise_application_error(-20001,'Cannot find end x,y of the geometry.');
+        --Cannot find end x,y of the geometry
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 14);
     WHEN others
      THEN
         RAISE;
@@ -234,7 +238,9 @@ AS
         END IF;
         --
     ELSE
-       raise_application_error(-20001,'Invalid geometry supplied');
+       --Invalid geometry supplied
+       hig.raise_ner(pi_appl => 'AWLRS'
+                    ,pi_id   => 15);
     END IF;
     --
     RETURN lv_shape;
@@ -268,7 +274,10 @@ AS
     IF lt_coords.COUNT < 2
      OR lt_coords.COUNT > 2
      THEN
-        raise_application_error(-20001, 'Invalid number of coordinates returned by nm3sdo.get_theme_mbr');
+        --Invalid number of coordinates returned by nm3sdo.get_theme_mbr
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 16
+                     ,pi_supplementary_info => 'by nm3sdo.get_theme_mbr');
     END IF;
     --
     FOR i IN 1..lt_coords.COUNT LOOP
@@ -312,7 +321,10 @@ AS
   EXCEPTION
     WHEN no_data_found
      THEN
-        raise_application_error(-20001,'Unable to derive a linear network type for theme id: '||pi_theme_id);
+        --Unable to derive a linear network type for theme id
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 17
+                     ,pi_supplementary_info => pi_theme_id);
     WHEN others
      THEN
         RAISE;
@@ -566,7 +578,9 @@ AS
   EXCEPTION
     WHEN no_data_found
      THEN
-        raise_application_error(-20001,'Cannot find a coordinate from the network element and measure provided.');
+        --Cannot find a coordinate from the network element and measure provided
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 18);
     WHEN others
      THEN
         RAISE;
