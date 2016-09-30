@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.0   26 Sep 2016 18:17:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.1   30 Sep 2016 10:48:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:28  $
-  --       Date fetched Out : $Modtime:   26 Sep 2016 12:56:50  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   30 Sep 2016 10:48:16  $
+  --       Date fetched Out : $Modtime:   29 Sep 2016 18:46:24  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -65,7 +65,9 @@ AS
     --
     IF lv_node_name IS NULL
      THEN
-        raise_application_error(-20001,'Unable to generate node name and no name supplied.');
+        -- Unable to generate node name and no name supplied
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 1);
     END IF;
     --
     IF pi_point_id IS NOT NULL
@@ -115,13 +117,13 @@ AS
                ,po_node_id    => po_node_id);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END create_node;
 
   --
@@ -206,7 +208,10 @@ AS
     --
     IF lv_ne_id IS NULL
      THEN
-        raise_application_error(-20001,'Unable to derive an Id for given Element: '||pi_element_name);
+        --Unable to derive an Id for given Element
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 2
+                     ,pi_supplementary_info => pi_element_name);
     END IF;
     --
     RETURN lv_ne_id;
@@ -214,7 +219,10 @@ AS
   EXCEPTION
     WHEN others
      THEN
-        raise_application_error(-20001,'Unable to derive an Id for given Element: '||pi_element_name);
+        --Unable to derive an Id for given Element
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 2
+                     ,pi_supplementary_info => pi_element_name);
   END get_ne_id;
 
   --
@@ -437,13 +445,13 @@ AS
                       ,po_cursor      => po_cursor);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END get_nt_flex_domain;
 
   --
@@ -552,13 +560,13 @@ AS
                        ,po_cursor  => po_cursor);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END get_nt_flex_domains;
 
   --
@@ -716,13 +724,13 @@ AS
                        ,po_cursor         => po_cursor);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END get_nt_flex_attribs;
 
   --
@@ -776,7 +784,9 @@ AS
   EXCEPTION
     WHEN no_data_found
      THEN
-        raise_application_error(-20001,'Invalid Attribute Supplied');
+        --Invalid Attribute Supplied
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 3);
     WHEN others
      THEN
         RAISE;
@@ -841,14 +851,20 @@ AS
                     EXCEPTION
                      WHEN value_error
                       THEN
-                         raise_application_error(-20001,'Invalid numeric attribute value supplied ['||lv_value||'] format mask ['||pi_format_mask||'].');
+                         --Invalid numeric attribute value supplied
+                         hig.raise_ner(pi_appl               => 'AWLRS'
+                                      ,pi_id                 => 21
+                                      ,pi_supplementary_info => 'Value ['||lv_value||'] Format Mask ['||pi_format_mask||']');
                     END;
                 END IF;
             END IF;
             --
             IF lv_retval IS NULL
              THEN
-                raise_application_error(-20001,'Invalid numeric attribute value supplied ['||lv_value||'].');
+                --Invalid numeric attribute value supplied
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 21
+                             ,pi_supplementary_info => 'Value ['||lv_value||']');
             END IF;
             --
         ELSIF pi_datatype = 'DATE'
@@ -921,7 +937,10 @@ AS
   EXCEPTION
     WHEN others
      THEN
-        raise_application_error(-20045,'Invalid Attribute Value Specified. ['||pi_prompt||']: '||SQLERRM);
+        --Invalid attribute value supplied
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 22
+                     ,pi_supplementary_info => '['||pi_prompt||']: '||SQLERRM);
   END set_attribute;
 
   --
@@ -1032,13 +1051,13 @@ AS
                 ,po_cursor => po_cursor);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END get_elements;
 
   --
@@ -1063,13 +1082,13 @@ AS
     po_cursor := lv_cursor;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END get_element;
 
   --
@@ -1101,7 +1120,9 @@ AS
     IF (lr_ne.ne_no_start IS NULL OR lr_ne.ne_no_end IS NULL)
      AND pi_shape_wkt IS NULL
      THEN
-        raise_application_error(-20001,'Please specify both start and end nodes or a shape for the new Element.');
+        --Please specify both start and end nodes or a shape for the new Element
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 4);
     END IF;
     /*
     ||Convert the shape to geom so we can use it for nodes if needed.
@@ -1318,7 +1339,10 @@ AS
     IF pi_attrib_column_names.COUNT != pi_attrib_prompts.COUNT
      OR pi_attrib_column_names.COUNT != pi_attrib_char_values.COUNT
      THEN
-        raise_application_error(-20001,'awlrs_split_api.do_split: The attribute tables passed in must have matching row counts.');
+        --The attribute tables passed in must have matching row counts
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_element_api.create_element');
     END IF;
     --
     FOR i IN 1..pi_attrib_column_names.COUNT LOOP
@@ -1345,13 +1369,13 @@ AS
                   ,po_ne_id           => po_ne_id);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END create_element;
 
   --
@@ -1382,13 +1406,13 @@ AS
                           ,p_geom  => lv_shape);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+                                   ,po_cursor           => po_message_cursor);
   END reshape_element;
 
 --
