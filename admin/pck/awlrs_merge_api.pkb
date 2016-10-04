@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.1   30 Sep 2016 10:48:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.2   04 Oct 2016 14:09:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_merge_api.pkb  $
-  --       Date into PVCS   : $Date:   30 Sep 2016 10:48:50  $
-  --       Date fetched Out : $Modtime:   29 Sep 2016 18:22:36  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   04 Oct 2016 14:09:22  $
+  --       Date fetched Out : $Modtime:   04 Oct 2016 13:56:52  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_merge_api';
   --
   --
@@ -155,15 +155,15 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE do_merge(pi_ne_id1              IN  nm_elements_all.ne_id%TYPE
-                    ,pi_ne_id2              IN  nm_elements_all.ne_id%TYPE
-                    ,pi_reason              IN  nm_element_history.neh_descr%TYPE DEFAULT NULL
-                    ,pi_new_element_attribs IN  awlrs_element_api.flex_attr_tab
-                    ,pi_test_poe_at_node    IN  VARCHAR2
-                    ,pi_effective_date      IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                    ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                    ,po_message_cursor      OUT sys_refcursor
-                    ,po_cursor              OUT sys_refcursor)
+  PROCEDURE do_merge(pi_ne_id1              IN     nm_elements_all.ne_id%TYPE
+                    ,pi_ne_id2              IN     nm_elements_all.ne_id%TYPE
+                    ,pi_reason              IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
+                    ,pi_new_element_attribs IN     awlrs_element_api.flex_attr_tab
+                    ,pi_test_poe_at_node    IN     VARCHAR2
+                    ,pi_effective_date      IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                    ,po_new_ne_id           IN OUT nm_elements_all.ne_id%TYPE
+                    ,po_message_severity       OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor         OUT sys_refcursor)
     IS
     --
     lr_ne  nm_elements_all%ROWTYPE;
@@ -171,8 +171,6 @@ AS
     lv_new_node_id  nm_elements.ne_no_start%TYPE;
     lv_new_np_id    nm_nodes.no_np_id%TYPE;
     lv_create_node  BOOLEAN := TRUE;
-    --
-    lt_new_ids  awlrs_util.ne_id_tab;
     --
     lv_new_elements_cursor  sys_refcursor;
     --
@@ -185,8 +183,6 @@ AS
     awlrs_element_api.build_element_rec(pi_nt_type    => lr_ne.ne_nt_type
                                        ,pi_global     => 'awlrs_merge_api.g_new_element'
                                        ,pi_attributes => pi_new_element_attribs);
-    --
-    lt_new_ids(1) := NULL;
     --
     nm3merge.do_merge_datum_or_group(pi_ne_id_1           => pi_ne_id1
                                     ,pi_ne_id_2           => pi_ne_id2
@@ -212,14 +208,8 @@ AS
                                     ,pi_ne_nsg_ref        => g_new_element.ne_nsg_ref
                                     ,pi_ne_version_no     => g_new_element.ne_version_no
                                     ,pi_test_poe_at_node  => pi_test_poe_at_node
-                                    ,po_ne_id_new         => lt_new_ids(1)
+                                    ,po_ne_id_new         => po_new_ne_id
                                     ,pi_neh_descr         => pi_reason);
-    /*
-    ||Return a cursor containing the details of the new element.
-    */
-    awlrs_element_api.get_elements(pi_ne_ids => lt_new_ids
-                                  ,po_cursor => lv_new_elements_cursor);
-    po_cursor := lv_new_elements_cursor;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -235,17 +225,17 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE do_merge(pi_ne_id1                   IN  nm_elements_all.ne_id%TYPE
-                    ,pi_ne_id2                   IN  nm_elements_all.ne_id%TYPE
-                    ,pi_reason                   IN  nm_element_history.neh_descr%TYPE DEFAULT NULL
-                    ,pi_new_element_column_names IN  awlrs_element_api.attrib_column_name_tab
-                    ,pi_new_element_prompts      IN  awlrs_element_api.attrib_prompt_tab
-                    ,pi_new_element_char_values  IN  awlrs_element_api.attrib_char_value_tab
-                    ,pi_test_poe_at_node         IN  VARCHAR2
-                    ,pi_effective_date           IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                    ,po_message_severity         OUT hig_codes.hco_code%TYPE
-                    ,po_message_cursor           OUT sys_refcursor
-                    ,po_cursor                   OUT sys_refcursor)
+  PROCEDURE do_merge(pi_ne_id1                   IN     nm_elements_all.ne_id%TYPE
+                    ,pi_ne_id2                   IN     nm_elements_all.ne_id%TYPE
+                    ,pi_reason                   IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
+                    ,pi_new_element_column_names IN     awlrs_element_api.attrib_column_name_tab
+                    ,pi_new_element_prompts      IN     awlrs_element_api.attrib_prompt_tab
+                    ,pi_new_element_char_values  IN     awlrs_element_api.attrib_char_value_tab
+                    ,pi_test_poe_at_node         IN     VARCHAR2
+                    ,pi_effective_date           IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                    ,po_new_ne_id                IN OUT nm_elements_all.ne_id%TYPE
+                    ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor              OUT sys_refcursor)
     IS
     --
     lt_new_element_attribs  awlrs_element_api.flex_attr_tab;
@@ -281,13 +271,12 @@ AS
             ,pi_new_element_attribs => lt_new_element_attribs
             ,pi_test_poe_at_node    => pi_test_poe_at_node
             ,pi_effective_date      => pi_effective_date
+            ,po_new_ne_id           => po_new_ne_id
             ,po_message_severity    => lv_message_severity
-            ,po_message_cursor      => lv_message_cursor
-            ,po_cursor              => lv_cursor);
+            ,po_message_cursor      => lv_message_cursor);
     --
     po_message_severity := lv_message_severity;
     po_message_cursor := lv_message_cursor;
-    po_cursor := lv_cursor;
     --
   EXCEPTION
     WHEN others
