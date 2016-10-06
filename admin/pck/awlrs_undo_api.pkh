@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkh-arc   1.0   26 Sep 2016 18:17:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkh-arc   1.1   06 Oct 2016 13:04:06   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_undo_api.pkh  $
-  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:32  $
-  --       Date fetched Out : $Modtime:   26 Sep 2016 12:53:52  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   06 Oct 2016 13:04:06  $
+  --       Date fetched Out : $Modtime:   05 Oct 2016 15:21:34  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -40,6 +40,7 @@ AS
   --
   PROCEDURE undo_operation(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                           ,pi_operation        IN  hig_codes.hco_meaning%TYPE
+                          ,pi_include_datums   IN  BOOLEAN DEFAULT TRUE
                           ,po_message_severity OUT hig_codes.hco_code%TYPE
                           ,po_message_cursor   OUT sys_refcursor);
 
