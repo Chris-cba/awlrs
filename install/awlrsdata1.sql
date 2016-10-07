@@ -1,16 +1,16 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.0   26 Sep 2016 18:20:42   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.1   07 Oct 2016 18:57:02   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   26 Sep 2016 18:20:42  $
---       Date fetched Out : $Modtime:   26 Sep 2016 12:37:26  $
---       Version          : $Revision:   1.0  $
+--       Date into PVCS   : $Date:   07 Oct 2016 18:57:02  $
+--       Date fetched Out : $Modtime:   07 Oct 2016 18:54:32  $
+--       Version          : $Revision:   1.1  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 26-SEP-2016 12:37
+--       Generation Date  : 07-OCT-2016 18:54
 --
 --   Product metadata script
---   As at Release 4.7.0.0
+--   As at Release 4.7.1.0
 --
 -------------------------------------------------------------------------
 --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
@@ -22,6 +22,8 @@
 --   HIG_OPTION_LIST
 --   HIG_OPTION_VALUES
 --   HIG_SEQUENCE_ASSOCIATIONS
+--   HIG_MODULES
+--   NM_INV_CATEGORY_MODULES
 --
 -----------------------------------------------------------------------------
 --
@@ -290,6 +292,68 @@ SELECT 'AWLRS_PERSISTENCE'
                     FROM HIG_SEQUENCE_ASSOCIATIONS
                    WHERE HSA_TABLE_NAME = 'AWLRS_PERSISTENCE'
                      AND HSA_COLUMN_NAME = 'AP_ID');
+--
+----------------------------------------------------------------------------------------
+-- HIG_MODULES
+--
+-- select * from awlrs_metadata.hig_modules
+-- order by hmo_module
+--
+----------------------------------------------------------------------------------------
+SET TERM ON
+PROMPT hig_modules
+SET TERM OFF
+--
+INSERT
+  INTO HIG_MODULES
+      (HMO_MODULE
+      ,HMO_TITLE
+      ,HMO_FILENAME
+      ,HMO_MODULE_TYPE
+      ,HMO_FASTPATH_OPTS
+      ,HMO_FASTPATH_INVALID
+      ,HMO_USE_GRI
+      ,HMO_APPLICATION
+      ,HMO_MENU)
+SELECT 'AWLRS0001'
+      ,'Assetwise Linear Referencing Services'
+      ,'awlrs0001'
+      ,'WEB'
+      ,''
+      ,'Y'
+      ,'N'
+      ,'AWLRS'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_MODULES
+                   WHERE HMO_MODULE = 'AWLRS0001');
+--
+----------------------------------------------------------------------------------------
+-- NM_INV_CATEGORY_MODULES
+--
+-- select * from awlrs_metadata.nm_inv_category_modules
+-- order by icm_nic_category
+--         ,icm_hmo_module
+--
+----------------------------------------------------------------------------------------
+SET TERM ON
+PROMPT nm_inv_category_modules
+SET TERM OFF
+--
+INSERT
+  INTO NM_INV_CATEGORY_MODULES
+      (ICM_NIC_CATEGORY
+      ,ICM_HMO_MODULE
+      ,ICM_UPDATABLE)
+SELECT 'I'
+      ,'AWLRS0001'
+      ,'Y'
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_INV_CATEGORY_MODULES
+                   WHERE ICM_NIC_CATEGORY = 'I'
+                     AND ICM_HMO_MODULE = 'AWLRS0001');
 --
 ----------------------------------------------------------------------------------------
 --
