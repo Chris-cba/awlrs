@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.0   26 Sep 2016 18:17:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.1   10 Oct 2016 17:38:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:32  $
-  --       Date fetched Out : $Modtime:   26 Sep 2016 17:09:56  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   10 Oct 2016 17:38:20  $
+  --       Date fetched Out : $Modtime:   07 Oct 2016 18:31:24  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -146,6 +146,11 @@ AS
   PROCEDURE handle_exception(po_message_severity IN OUT hig_codes.hco_code%TYPE
                             ,po_cursor              OUT sys_refcursor);
 
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION inv_category_is_updatable(pi_category IN nm_inv_categories.nic_category%TYPE)
+    RETURN VARCHAR2;
 --
 -----------------------------------------------------------------------------
 --

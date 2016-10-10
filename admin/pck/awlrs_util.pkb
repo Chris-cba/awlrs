@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.1   30 Sep 2016 10:49:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.2   10 Oct 2016 17:38:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   30 Sep 2016 10:49:04  $
-  --       Date fetched Out : $Modtime:   30 Sep 2016 10:45:42  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   10 Oct 2016 17:38:20  $
+  --       Date fetched Out : $Modtime:   07 Oct 2016 18:31:24  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -439,6 +439,24 @@ AS
                       ,po_cursor      => po_cursor);
     --
   END handle_exception;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION inv_category_is_updatable(pi_category IN nm_inv_categories.nic_category%TYPE)
+    RETURN VARCHAR2 IS
+    --
+    lv_retval BOOLEAN;
+    --
+  BEGIN
+    --
+    lv_retval := invsec.nic_is_updatable_from_module(pi_category => pi_category
+                                                    ,pi_module   => 'AWLRS0001');
+    --
+    RETURN nm3flx.boolean_to_char(p_boolean => lv_retval);
+    --
+  END inv_category_is_updatable;
+  
 --
 -----------------------------------------------------------------------------
 --
