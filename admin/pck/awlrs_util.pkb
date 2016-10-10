@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.2   10 Oct 2016 17:38:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.3   10 Oct 2016 18:11:44   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   10 Oct 2016 17:38:20  $
-  --       Date fetched Out : $Modtime:   07 Oct 2016 18:31:24  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   10 Oct 2016 18:11:44  $
+  --       Date fetched Out : $Modtime:   10 Oct 2016 18:10:50  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -41,18 +41,12 @@ AS
     RETURN BOOLEAN IS
     --
     lv_retval      BOOLEAN := FALSE;
-    --lv_admin_type  nm_au_types.nat_admin_type%TYPE;
     --
     lt_user_normal_nau  admin_unit_tab;
     --
   BEGIN
-    /*
-    ||TODO - make sure excluding Admin Type is ok.
-    */
     --
-    --lv_admin_type := ???;
-    --
-    SELECT DISTINCT nag.nag_child_admin_unit
+    SELECT DISTINCT nau.nau_admin_unit
           ,nau_unit_code
           ,nau_name
       BULK COLLECT
@@ -64,7 +58,6 @@ AS
        AND nua.nua_mode = 'NORMAL'
        AND nua.nua_admin_unit = nag.nag_parent_admin_unit
        AND nag.nag_child_admin_unit = nau.nau_admin_unit
-       --AND nau.nau_admin_type = lv_admin_type
          ;
     --
     FOR i IN 1..lt_user_normal_nau.COUNT LOOP
@@ -81,6 +74,43 @@ AS
     --
   END user_has_normal_access;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user_normal_admin_units(po_message_severity OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor   OUT sys_refcursor
+                                       ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT distinct nau.nau_admin_type 
+          ,nau.nau_admin_unit
+          ,nau.nau_unit_code
+          ,nau.nau_name
+      FROM nm_admin_units nau
+          ,nm_admin_groups nag
+          ,nm_user_aus nua
+     WHERE nua.nua_user_id = TO_NUMBER(SYS_CONTEXT('NM3CORE','USER_ID'))
+       AND nua.nua_mode = 'NORMAL'
+       AND nua.nua_admin_unit = nag.nag_parent_admin_unit
+       AND nag.nag_child_admin_unit = nau.nau_admin_unit
+     ORDER
+        BY nau_admin_type
+          ,nau.nau_name
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_user_normal_admin_units;
+  
   --
   -----------------------------------------------------------------------------
   --

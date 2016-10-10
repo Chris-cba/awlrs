@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.1   10 Oct 2016 17:38:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.2   10 Oct 2016 18:11:44   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   10 Oct 2016 17:38:20  $
-  --       Date fetched Out : $Modtime:   07 Oct 2016 18:31:24  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   10 Oct 2016 18:11:44  $
+  --       Date fetched Out : $Modtime:   10 Oct 2016 18:10:50  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -58,6 +58,13 @@ AS
   --
   FUNCTION user_has_normal_access(pi_admin_unit IN nm_admin_units_all.nau_admin_unit%TYPE)
     RETURN BOOLEAN;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user_normal_admin_units(po_message_severity OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor   OUT sys_refcursor
+                                       ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
