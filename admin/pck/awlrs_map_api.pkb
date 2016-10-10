@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.1   30 Sep 2016 10:48:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.2   10 Oct 2016 17:40:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   30 Sep 2016 10:48:28  $
-  --       Date fetched Out : $Modtime:   29 Sep 2016 19:44:22  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   10 Oct 2016 17:40:28  $
+  --       Date fetched Out : $Modtime:   10 Oct 2016 17:26:22  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -100,23 +100,89 @@ AS
     SELECT nw_themes.network_type
           ,nw_themes.group_type network_group_type
           ,nw_themes.is_linear  network_is_linear
+          ,nw_themes.node_type
+          ,nw_themes.unit_name
           ,nith_nit_id asset_type
+          ,CASE
+             WHEN nw_themes.network_type IS NOT NULL
+              THEN
+                 (SELECT 'Y' editable
+                    FROM nm_types
+                   WHERE nt_type = nw_themes.network_type
+                     AND EXISTS(SELECT 1
+                                  FROM hig_user_roles
+                                      ,nm_theme_roles
+                                 WHERE nthr_theme_id = nth_theme_id
+                                   AND nthr_mode = 'NORMAL'
+                                   AND nthr_role = hur_role
+                                   AND hur_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME'))
+                     AND EXISTS(SELECT 1
+                                  FROM nm_user_aus
+                                      ,nm_admin_units
+                                 WHERE nua_user_id = SYS_CONTEXT('NM3CORE','USER_ID')
+                                   AND nua_mode = 'NORMAL'
+                                   AND nua_admin_unit = nau_admin_unit
+                                   AND nau_admin_type = nt_admin_type))
+             WHEN nith_nit_id IS NOT NULL
+              THEN
+                 (SELECT 'Y' editable
+                    FROM nm_inv_types_all
+                   WHERE nit_inv_type = nith_nit_id
+                     AND nit_update_allowed = 'Y'
+                     AND nit_table_name IS NULL
+                     AND awlrs_util.inv_category_is_updatable(nit_category) = 'TRUE'
+                     AND EXISTS(SELECT 1
+                                  FROM hig_user_roles
+                                      ,nm_inv_type_roles
+                                 WHERE itr_inv_type = nit_inv_type
+                                   AND itr_mode = 'NORMAL'
+                                   AND itr_hro_role = hur_role
+                                   AND hur_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME'))
+                     AND EXISTS(SELECT 1
+                                  FROM hig_user_roles
+                                      ,nm_theme_roles
+                                 WHERE nthr_theme_id = nth_theme_id
+                                   AND nthr_mode = 'NORMAL'
+                                   AND nthr_role = hur_role
+                                   AND hur_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME'))
+                     AND EXISTS(SELECT 1
+                                  FROM nm_user_aus
+                                      ,nm_admin_units
+                                 WHERE nua_user_id = SYS_CONTEXT('NM3CORE','USER_ID')
+                                   AND nua_mode = 'NORMAL'
+                                   AND nua_admin_unit = nau_admin_unit
+                                   AND nau_admin_type = nit_admin_type))
+             ELSE
+                 NULL
+           END is_editable
       FROM nm_inv_themes
           ,(SELECT nlt_nt_type network_type
                   ,nlt_gty_type group_type
                   ,'Y' is_linear
+                  ,nt_node_type node_type
                   ,nnth_nth_theme_id theme_id
+                  ,un_unit_name unit_name
               FROM nm_nw_themes
                   ,nm_linear_types
-             WHERE nlt_id = nnth_nlt_id
+                  ,nm_types
+                  ,nm_units
+             WHERE nnth_nlt_id = nlt_id
+               AND nlt_nt_type = nt_type
+               AND nt_length_unit = un_unit_id(+)
             UNION ALL
             SELECT nat_nt_type network_type
                   ,nat_gty_group_type group_type
                   ,'N' is_linear
+                  ,nt_node_type node_type
                   ,nath_nth_theme_id theme_id
-              FROM nm_area_types
-                  ,nm_area_themes
-             WHERE nat_id = nath_nat_id) nw_themes
+                  ,un_unit_name unit_name
+              FROM nm_area_themes
+                  ,nm_area_types
+                  ,nm_types
+                  ,nm_units
+             WHERE nath_nat_id = nat_id
+               AND nat_nt_type = nt_type
+               AND nt_length_unit = un_unit_id(+)) nw_themes
           ,nm_themes_all
      WHERE nth_theme_name = pi_theme_name
        AND nth_theme_id = nw_themes.theme_id(+)
@@ -148,57 +214,6 @@ AS
     RETURN lt_retval;
     --
   END get_theme_types;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_map_theme_types(pi_map_name         IN  VARCHAR2
-                               ,po_message_severity OUT hig_codes.hco_code%TYPE
-                               ,po_message_cursor   OUT sys_refcursor
-                               ,po_cursor           OUT sys_refcursor)
-    IS
-  BEGIN
-    --
-    OPEN po_cursor FOR
-    SELECT nth_theme_name theme_name
-          ,REPLACE(UPPER(nth_theme_name), ' ','') mapfile_layer_name
-          ,nw_themes.network_type
-          ,nw_themes.group_type
-          ,nith_nit_id asset_type
-      FROM nm_inv_themes
-          ,(SELECT nlt_nt_type network_type
-                  ,nlt_gty_type group_type
-                  ,nnth_nth_theme_id theme_id
-              FROM nm_nw_themes
-                  ,nm_linear_types
-             WHERE nlt_id = nnth_nlt_id
-            UNION ALL
-            SELECT nat_nt_type network_type
-                  ,nat_gty_group_type group_type
-                  ,nath_nth_theme_id theme_id
-              FROM nm_area_types
-                  ,nm_area_themes
-             WHERE nat_id = nath_nat_id) nw_themes
-          ,nm_themes_all
-     WHERE nth_theme_name IN(SELECT map_themes.name
-                               FROM user_sdo_maps maps
-                                   ,XMLTABLE('/map_definition/theme'
-                                             PASSING XMLTYPE(maps.definition)
-                                             COLUMNS name  VARCHAR2(32) path '@name') map_themes
-                              WHERE maps.name = pi_map_name)
-       AND nth_theme_id = nw_themes.theme_id(+)
-       AND nth_theme_id = nith_nth_theme_id(+)
-         ;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-     THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END get_map_theme_types;
 
   --
   -----------------------------------------------------------------------------
@@ -769,14 +784,20 @@ AS
                   ,a.scale_mode
               FROM XMLTABLE('/map_definition/theme'
                             PASSING XMLTYPE(pi_definition)
-                            COLUMNS name      VARCHAR2(32)  path '@name'
-                                   ,min_scale VARCHAR2(100) path '@min_scale'
-                                   ,max_scale VARCHAR2(100) path '@max_scale'
+                            COLUMNS name       VARCHAR2(32)  path '@name'
+                                   ,min_scale  VARCHAR2(100) path '@min_scale'
+                                   ,max_scale  VARCHAR2(100) path '@max_scale'
                                    ,scale_mode VARCHAR2(100) path '@scale_mode') a) map_themes
           ,user_sdo_themes ust
           ,nm_themes_all nth
      WHERE map_themes.name = ust.name
        AND ust.name = nth.nth_theme_name
+       AND EXISTS(SELECT 1
+                    FROM hig_user_roles
+                        ,nm_theme_roles
+                   WHERE nthr_theme_id = nth.nth_theme_id
+                     AND nthr_role = hur_role
+                     AND hur_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME'))
      ORDER
         BY display_seq
          ;
@@ -792,6 +813,31 @@ AS
        RAISE;
   END get_themes;
 
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_node_layer(pi_node_type IN nm_node_types.nnt_type%TYPE
+                         ,pi_themes    IN themes_tab)
+    RETURN nm_themes_all.nth_theme_name%TYPE IS
+    --
+    lv_retval nm_themes_all.nth_theme_name%TYPE;
+    --
+  BEGIN
+    --
+    FOR i IN 1..pi_themes.COUNT LOOP
+      --
+      IF pi_themes(i).nth_feature_table = 'V_NM_NO_'||pi_node_type||'_SDO'
+       THEN
+          lv_retval := pi_themes(i).trimmed_name;
+          EXIT;
+      END IF;
+      --
+    END LOOP;
+    --
+    RETURN lv_retval;
+    --
+  END get_node_layer;
+  
   --
   -----------------------------------------------------------------------------
   --
@@ -819,6 +865,10 @@ AS
     lv_layer_network_type        nm_types.nt_type%TYPE;
     lv_layer_group_type          nm_group_types_all.ngt_group_type%TYPE;
     lv_layer_is_linear           VARCHAR2(1);
+    lv_layer_editable            VARCHAR2(1);
+    lv_layer_units               nm_units.un_unit_name%TYPE;
+    lv_layer_node_type           nm_types.nt_node_type%TYPE;
+    lv_layer_node_layer          nm_themes_all.nth_theme_name%TYPE;
     lv_layer_asset_type          nm_inv_types_all.nit_inv_type%TYPE;
     lv_layer_show_in_map         VARCHAR2(10);
     lv_displayed_on_startup      VARCHAR2(10);
@@ -954,12 +1004,26 @@ AS
           lv_layer_network_type := lt_theme_types(1).network_type;
           lv_layer_group_type := lt_theme_types(1).network_group_type;
           lv_layer_is_linear := lt_theme_types(1).network_is_linear;
+          lv_layer_node_type := lt_theme_types(1).node_type;
+          IF lv_layer_node_type IS NOT NULL
+           THEN
+              lv_layer_node_layer := get_node_layer(pi_node_type => lv_layer_node_type
+                                                   ,pi_themes    => lt_themes);
+          ELSE
+              lv_layer_node_layer := NULL;
+          END IF;
+          lv_layer_units := lt_theme_types(1).unit_name;
           lv_layer_asset_type := lt_theme_types(1).asset_type;
+          lv_layer_editable := NVL(lt_theme_types(1).editable,'N');
       ELSE
           lv_layer_network_type := NULL;
           lv_layer_group_type := NULL;
           lv_layer_is_linear := NULL;
+          lv_layer_node_type := NULL;
+          lv_layer_node_layer := NULL;
+          lv_layer_units := NULL;
           lv_layer_asset_type := NULL;
+          lv_layer_editable := 'N';
       END IF;
       /*
       ||Update the Map Extent global variables.
@@ -1072,24 +1136,29 @@ AS
         --
         lv_layer_text := lv_layer_text
               ||CHR(10)||'    METADATA'
-              ||CHR(10)||'      "wms_title"            "'||lv_title||'"'
-              ||CHR(10)||'      "wfs_title"            "'||lv_title||'"'
-              ||CHR(10)||'      "wfs_featureid"        "'||lv_wfs_featureid||'"'
-              ||CHR(10)||'      "gml_featureid"        "'||lt_themes(i).nth_feature_pk_column||'"'
-              ||CHR(10)||'      "wfs_enable_request"   "*"'
-              ||CHR(10)||'      "wms_enable_request"   "*"'
-              ||CHR(10)||'      "gml_include_items"    "all"'
-              ||CHR(10)||'      "gml_geometries"       "msGeometry"'
-              ||CHR(10)||'      "gml_msGeometry_type"  "'||lv_gml_msGeometry_type||'"'
-              ||CHR(10)||'      "layer_group_name"     "'||lv_group_name||'"'
-              ||CHR(10)||'      "network_type"         "'||lv_layer_network_type||'"'
-              ||CHR(10)||'      "network_group_type"   "'||lv_layer_group_type||'"'
-              ||CHR(10)||'      "network_is_linear"    "'||lv_layer_is_linear||'"'
-              ||CHR(10)||'      "asset_type"           "'||lv_layer_asset_type||'"'
-              ||CHR(10)||'      "show_in_map"          "'||lv_layer_show_in_map||'"'
-              ||CHR(10)||'      "displayed_at_startup" "'||lv_displayed_on_startup||'"'
-              ||CHR(10)||'      "displayed_in_legend"  "'||lv_displayed_in_legend||'"'
-              ||CHR(10)||'      "legend_group"         "'||lv_legend_group||'"'
+              ||CHR(10)||'      "wms_title"                 "'||lv_title||'"'
+              ||CHR(10)||'      "wms_enable_request"        "*"'
+              ||CHR(10)||'      "wfs_title"                 "'||lv_title||'"'
+              ||CHR(10)||'      "wfs_featureid"             "'||lv_wfs_featureid||'"'
+              ||CHR(10)||'      "wfs_enable_request"        "*"'
+              ||CHR(10)||'      "wfs_getfeature_formatlist"	"SHAPEZIP,CSV,JSON"'
+              ||CHR(10)||'      "gml_featureid"             "'||lt_themes(i).nth_feature_pk_column||'"'
+              ||CHR(10)||'      "gml_include_items"         "all"'
+              ||CHR(10)||'      "gml_geometries"            "msGeometry"'
+              ||CHR(10)||'      "gml_msGeometry_type"       "'||lv_gml_msGeometry_type||'"'
+              ||CHR(10)||'      "layer_group_name"          "'||lv_group_name||'"'
+              ||CHR(10)||'      "network_type"              "'||lv_layer_network_type||'"'
+              ||CHR(10)||'      "network_group_type"        "'||lv_layer_group_type||'"'
+              ||CHR(10)||'      "network_is_linear"         "'||lv_layer_is_linear||'"'
+              ||CHR(10)||'      "network_units"             "'||lv_layer_units||'"'
+              ||CHR(10)||'      "network_node_type"         "'||lv_layer_node_type||'"'
+              ||CHR(10)||'      "node_layer_name"           "'||lv_layer_node_layer||'"'
+              ||CHR(10)||'      "asset_type"                "'||lv_layer_asset_type||'"'
+              ||CHR(10)||'      "is_editable"               "'||lv_layer_editable||'"'
+              ||CHR(10)||'      "show_in_map"               "'||lv_layer_show_in_map||'"'
+              ||CHR(10)||'      "displayed_at_startup"      "'||lv_displayed_on_startup||'"'
+              ||CHR(10)||'      "displayed_in_legend"       "'||lv_displayed_in_legend||'"'
+              ||CHR(10)||'      "legend_group"              "'||lv_legend_group||'"'
               ||CHR(10)||'    END'
               ||CHR(10)||'    DEBUG 5'
               ||CHR(10)||'    TYPE '||lv_layer_type
@@ -1153,22 +1222,27 @@ AS
         --
         lv_layer_text := lv_layer_text
               ||CHR(10)||'    METADATA'
-              ||CHR(10)||'      "wms_title"            "'||lv_title||'"'
-              ||CHR(10)||'      "wfs_title"            "'||lv_title||'"'
-              ||CHR(10)||'      "wfs_featureid"        "'||lv_wfs_featureid||'"'
-              ||CHR(10)||'      "gml_featureid"        "'||lt_themes(i).nth_feature_pk_column||'"'
-              ||CHR(10)||'      "wfs_enable_request"   "*"'
-              ||CHR(10)||'      "wms_enable_request"   "*"'
-              ||CHR(10)||'      "gml_include_items"    "all"'
-              ||CHR(10)||'      "layer_group_name"     "'||lv_group_name||'"'
-              ||CHR(10)||'      "network_type"         "'||lv_layer_network_type||'"'
-              ||CHR(10)||'      "network_group_type"   "'||lv_layer_group_type||'"'
-              ||CHR(10)||'      "network_is_linear"    "'||lv_layer_is_linear||'"'
-              ||CHR(10)||'      "asset_type"           "'||lv_layer_asset_type||'"'
-              ||CHR(10)||'      "show_in_map"          "'||lv_layer_show_in_map||'"'
-              ||CHR(10)||'      "displayed_at_startup" "'||lv_displayed_on_startup||'"'
-              ||CHR(10)||'      "displayed_in_legend"  "'||lv_displayed_in_legend||'"'
-              ||CHR(10)||'      "legend_group"         "'||lv_legend_group||'"'
+              ||CHR(10)||'      "wms_title"                 "'||lv_title||'"'
+              ||CHR(10)||'      "wms_enable_request"        "*"'
+              ||CHR(10)||'      "wfs_title"                 "'||lv_title||'"'
+              ||CHR(10)||'      "wfs_featureid"             "'||lv_wfs_featureid||'"'
+              ||CHR(10)||'      "wfs_enable_request"        "*"'
+              ||CHR(10)||'      "wfs_getfeature_formatlist"	"SHAPEZIP,CSV,JSON"'
+              ||CHR(10)||'      "gml_featureid"             "'||lt_themes(i).nth_feature_pk_column||'"'
+              ||CHR(10)||'      "gml_include_items"         "all"'
+              ||CHR(10)||'      "layer_group_name"          "'||lv_group_name||'"'
+              ||CHR(10)||'      "network_type"              "'||lv_layer_network_type||'"'
+              ||CHR(10)||'      "network_group_type"        "'||lv_layer_group_type||'"'
+              ||CHR(10)||'      "network_is_linear"         "'||lv_layer_is_linear||'"'
+              ||CHR(10)||'      "network_units"             "'||lv_layer_units||'"'
+              ||CHR(10)||'      "network_node_type"         "'||lv_layer_node_type||'"'
+              ||CHR(10)||'      "node_layer_name"           "'||lv_layer_node_layer||'"'
+              ||CHR(10)||'      "asset_type"                "'||lv_layer_asset_type||'"'
+              ||CHR(10)||'      "is_editable"               "'||lv_layer_editable||'"'
+              ||CHR(10)||'      "show_in_map"               "'||lv_layer_show_in_map||'"'
+              ||CHR(10)||'      "displayed_at_startup"      "'||lv_displayed_on_startup||'"'
+              ||CHR(10)||'      "displayed_in_legend"       "'||lv_displayed_in_legend||'"'
+              ||CHR(10)||'      "legend_group"              "'||lv_legend_group||'"'
               ||CHR(10)||'    END'
               ||CHR(10)||'    DEBUG 5'
               ||CHR(10)||'    TYPE '||lv_layer_type
@@ -1299,6 +1373,41 @@ AS
       ||CHR(10)||'    FORMATOPTION "GAMMA=0.75"'
       ||CHR(10)||'    TRANSPARENT ON'
       ||CHR(10)||'  END'
+      ||CHR(10)||''
+      ||CHR(10)||'  OUTPUTFORMAT'
+      ||CHR(10)||'    NAME "JSON"'
+      ||CHR(10)||'    MIMETYPE "application/x-javascript"'
+      ||CHR(10)||'    DRIVER "OGR/GeoJSON"'
+      ||CHR(10)||'    IMAGEMODE FEATURE'
+      ||CHR(10)||'    TRANSPARENT FALSE'
+      ||CHR(10)||'    FORMATOPTION "STORAGE=memory"'
+      ||CHR(10)||'    FORMATOPTION "FORM=simple"'
+      ||CHR(10)||'    FORMATOPTION "LCO:COORDINATE_PRECISION=4"'
+      ||CHR(10)||'  END # OUTPUTFORMAT'
+      ||CHR(10)||''
+      ||CHR(10)||'  OUTPUTFORMAT'
+      ||CHR(10)||'    NAME "CSV"'
+      ||CHR(10)||'    MIMETYPE "text/csv"'
+      ||CHR(10)||'    DRIVER "OGR/CSV"'
+      ||CHR(10)||'    IMAGEMODE FEATURE'
+      ||CHR(10)||'    TRANSPARENT FALSE'
+      ||CHR(10)||'    FORMATOPTION "LCO:GEOMETRY=AS_WKT"'
+      ||CHR(10)||'    FORMATOPTION "STORAGE=memory"'
+      ||CHR(10)||'    FORMATOPTION "FORM=simple"'
+      ||CHR(10)||'    FORMATOPTION "LCO:COORDINATE_PRECISION=4"'
+      ||CHR(10)||'    FORMATOPTION "FILENAME=result.csv"'
+      ||CHR(10)||'  END # OUTPUTFORMAT'
+      ||CHR(10)||''
+      ||CHR(10)||'  OUTPUTFORMAT'
+      ||CHR(10)||'    NAME "SHAPEZIP"'
+      ||CHR(10)||'    DRIVER "OGR/ESRI Shapefile"'
+      ||CHR(10)||'    IMAGEMODE FEATURE'
+      ||CHR(10)||'    TRANSPARENT FALSE'
+      ||CHR(10)||'    FORMATOPTION "STORAGE=memory"'
+      ||CHR(10)||'    FORMATOPTION "FORM=zip"'
+      ||CHR(10)||'    FORMATOPTION "LCO:COORDINATE_PRECISION=4"'
+      ||CHR(10)||'    FORMATOPTION "FILENAME=result.zip"'
+      ||CHR(10)||'  END # OUTPUTFORMAT '
       ||CHR(10)||''
       ||CHR(10)||'  LEGEND'
       ||CHR(10)||'    KEYSIZE 20 12'
