@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.2   10 Oct 2016 17:40:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.3   11 Oct 2016 15:12:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   10 Oct 2016 17:40:28  $
-  --       Date fetched Out : $Modtime:   10 Oct 2016 17:26:22  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   11 Oct 2016 15:12:20  $
+  --       Date fetched Out : $Modtime:   11 Oct 2016 15:09:42  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -101,7 +101,7 @@ AS
           ,nw_themes.group_type network_group_type
           ,nw_themes.is_linear  network_is_linear
           ,nw_themes.node_type
-          ,nw_themes.unit_name
+          ,nw_themes.unit_id
           ,nith_nit_id asset_type
           ,CASE
              WHEN nw_themes.network_type IS NOT NULL
@@ -161,7 +161,7 @@ AS
                   ,'Y' is_linear
                   ,nt_node_type node_type
                   ,nnth_nth_theme_id theme_id
-                  ,un_unit_name unit_name
+                  ,un_unit_id unit_id
               FROM nm_nw_themes
                   ,nm_linear_types
                   ,nm_types
@@ -175,7 +175,7 @@ AS
                   ,'N' is_linear
                   ,nt_node_type node_type
                   ,nath_nth_theme_id theme_id
-                  ,un_unit_name unit_name
+                  ,un_unit_id unit_id
               FROM nm_area_themes
                   ,nm_area_types
                   ,nm_types
@@ -866,7 +866,7 @@ AS
     lv_layer_group_type          nm_group_types_all.ngt_group_type%TYPE;
     lv_layer_is_linear           VARCHAR2(1);
     lv_layer_editable            VARCHAR2(1);
-    lv_layer_units               nm_units.un_unit_name%TYPE;
+    lv_layer_units               nm_units.un_unit_id%TYPE;
     lv_layer_node_type           nm_types.nt_node_type%TYPE;
     lv_layer_node_layer          nm_themes_all.nth_theme_name%TYPE;
     lv_layer_asset_type          nm_inv_types_all.nit_inv_type%TYPE;
@@ -1012,7 +1012,7 @@ AS
           ELSE
               lv_layer_node_layer := NULL;
           END IF;
-          lv_layer_units := lt_theme_types(1).unit_name;
+          lv_layer_units := lt_theme_types(1).unit_id;
           lv_layer_asset_type := lt_theme_types(1).asset_type;
           lv_layer_editable := NVL(lt_theme_types(1).editable,'N');
       ELSE
