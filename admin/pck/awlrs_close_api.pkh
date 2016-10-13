@@ -1,0 +1,41 @@
+CREATE OR REPLACE PACKAGE awlrs_close_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_close_api.pkh-arc   1.0   13 Oct 2016 09:31:26   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_close_api.pkh  $
+  --       Date into PVCS   : $Date:   13 Oct 2016 09:31:26  $
+  --       Date fetched Out : $Modtime:   03 Oct 2016 18:45:50  $
+  --       Version          : $Revision:   1.0  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE do_close(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                    ,pi_reason           IN  nm_element_history.neh_descr%TYPE DEFAULT NULL
+                    ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor   OUT sys_refcursor);
+
+END awlrs_close_api;
+/
