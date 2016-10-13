@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_node_api.pkb-arc   1.0   13 Oct 2016 09:32:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_node_api.pkb-arc   1.1   13 Oct 2016 12:49:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_node_api.pkb  $
-  --       Date into PVCS   : $Date:   13 Oct 2016 09:32:14  $
-  --       Date fetched Out : $Modtime:   12 Oct 2016 18:43:00  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   13 Oct 2016 12:49:38  $
+  --       Date fetched Out : $Modtime:   13 Oct 2016 12:48:32  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_node_api';
   --
@@ -35,6 +35,177 @@ AS
   BEGIN
     RETURN g_body_sccsid;
   END get_body_version;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_node_types(po_message_severity OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor   OUT sys_refcursor
+                          ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT nnt_type
+          ,nnt_name
+          ,nnt_descr
+          ,nnt_no_name_format
+      FROM nm_node_types
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_node_types;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION node_in_use(pi_node_id IN nm_nodes.no_node_id%TYPE)
+    RETURN VARCHAR2 IS
+    --
+    lv_retval VARCHAR2(1) := 'N';
+    --
+  BEGIN
+    --
+    IF nm3net.node_in_use(pi_node => pi_node_id)
+     THEN
+        lv_retval := 'Y';
+    END IF;
+    --
+    RETURN lv_retval;
+    --
+  END node_in_use;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE node_in_use(pi_node_id          IN  nm_nodes.no_node_id%TYPE
+                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor
+                       ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_retval  VARCHAR2(1);
+    --
+  BEGIN
+    --
+    lv_retval := node_in_use(pi_node_id => pi_node_id);
+    --
+    OPEN po_cursor FOR
+    SELECT lv_retval node_in_use
+      FROM dual
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END node_in_use;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nodes(pi_node_ids IN  awlrs_util.ne_id_tab
+                     ,po_cursor   OUT sys_refcursor)
+    IS
+    --
+    lt_ids  nm_ne_id_array := nm_ne_id_array();
+    --
+  BEGIN
+    --
+    FOR i IN 1..pi_node_ids.COUNT LOOP
+      --
+      lt_ids.extend;
+      lt_ids(i) := nm_ne_id_type(pi_node_ids(i));
+      --
+    END LOOP;
+    --
+    OPEN po_cursor FOR
+    SELECT no_node_id    node_id
+          ,no_node_type  node_type
+          ,nnt_name      node_type_name
+          ,nnt_descr     node_type_descr
+          ,no_node_name  node_name
+          ,no_descr      node_descr
+          ,no_purpose    node_purpose
+          ,no_start_date node_start_date
+          ,no_end_date   node_end_date
+          ,np_grid_east  node_x
+          ,np_grid_north node_y
+      FROM nm_nodes
+          ,nm_node_types
+          ,nm_points
+     WHERE no_node_id IN(SELECT ne_id FROM TABLE(CAST(lt_ids AS nm_ne_id_array)))
+       AND no_node_type = nnt_type
+       AND no_np_id = np_id
+         ;
+    --
+  END get_nodes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nodes(pi_node_ids         IN  awlrs_util.ne_id_tab
+                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                     ,po_message_cursor   OUT sys_refcursor
+                     ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    get_nodes(pi_node_ids => pi_node_ids
+             ,po_cursor   => po_cursor);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_nodes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_node(pi_node_id          IN  nm_nodes_all.no_node_id%TYPE
+                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor   OUT sys_refcursor
+                    ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lt_ids     awlrs_util.ne_id_tab;
+    lv_cursor  sys_refcursor;
+    --
+  BEGIN
+    --
+    lt_ids(1) := pi_node_id;
+    --
+    get_nodes(pi_node_ids => lt_ids
+             ,po_cursor   => lv_cursor);
+    --
+    po_cursor := lv_cursor;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_node;
 
   --
   -----------------------------------------------------------------------------
@@ -136,7 +307,7 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_node;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -235,8 +406,8 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE move_node(pi_node_id          IN  nm_nodes.no_node_id%TYPE
-                     ,pi_point_x          IN  nm_points.np_grid_east%TYPE  DEFAULT NULL
-                     ,pi_point_y          IN  nm_points.np_grid_north%TYPE DEFAULT NULL
+                     ,pi_point_x          IN  nm_points.np_grid_east%TYPE
+                     ,pi_point_y          IN  nm_points.np_grid_north%TYPE
                      ,po_message_severity OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor   OUT sys_refcursor)
     IS
@@ -294,6 +465,6 @@ AS
                                    ,po_cursor           => po_message_cursor);
         ROLLBACK TO close_node_sp;
   END close_node;
-  
+
 END awlrs_node_api;
 /
