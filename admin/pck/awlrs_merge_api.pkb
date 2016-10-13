@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.2   04 Oct 2016 14:09:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.3   13 Oct 2016 09:28:08   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_merge_api.pkb  $
-  --       Date into PVCS   : $Date:   04 Oct 2016 14:09:22  $
-  --       Date fetched Out : $Modtime:   04 Oct 2016 13:56:52  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   13 Oct 2016 09:28:08  $
+  --       Date fetched Out : $Modtime:   13 Oct 2016 09:21:34  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_merge_api';
   --
   --
@@ -175,6 +175,10 @@ AS
     lv_new_elements_cursor  sys_refcursor;
     --
   BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT do_merge_sp;
     --
     init_element_globals;
     --
@@ -219,6 +223,7 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
+        ROLLBACK TO do_merge_sp;
     --
   END do_merge;
 
