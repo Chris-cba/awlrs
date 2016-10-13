@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkb-arc   1.2   06 Oct 2016 13:05:26   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkb-arc   1.3   13 Oct 2016 09:28:18   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_undo_api.pkb  $
-  --       Date into PVCS   : $Date:   06 Oct 2016 13:05:26  $
-  --       Date fetched Out : $Modtime:   06 Oct 2016 12:44:04  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   13 Oct 2016 09:28:18  $
+  --       Date fetched Out : $Modtime:   13 Oct 2016 09:18:34  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_undo_api';
   --
   --
@@ -190,6 +190,10 @@ AS
     lv_old_ne_id2      nm_elements_all.ne_id%TYPE;
     --
   BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT undo_operation_sp;
     --
     get_undo_data(pi_ne_id      => pi_ne_id
                  ,po_operation  => lv_operation
@@ -248,6 +252,7 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
+        ROLLBACK TO undo_operation_sp;
     --
   END undo_operation;
 
