@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_persistence_api.pkb-arc   1.0   26 Sep 2016 18:17:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_persistence_api.pkb-arc   1.1   13 Oct 2016 09:28:12   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_persistence_api.pkb  $
-  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:30  $
-  --       Date fetched Out : $Modtime:   26 Sep 2016 12:56:26  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   13 Oct 2016 09:28:12  $
+  --       Date fetched Out : $Modtime:   13 Oct 2016 09:23:24  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_persistence_api';
   --
@@ -49,6 +49,10 @@ AS
     PRAGMA AUTONOMOUS_TRANSACTION;
     --
   BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT persist_data_sp;
     --
     MERGE INTO awlrs_persistence per
       USING (SELECT sys_context('NM3CORE', 'USER_ID') user_id
@@ -86,6 +90,7 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
+        ROLLBACK TO persist_data_sp;
   END persist_data;
 
   --
@@ -100,6 +105,10 @@ AS
     PRAGMA AUTONOMOUS_TRANSACTION;
     --
   BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT delete_data_sp;
     --
     DELETE awlrs_persistence
      WHERE ap_product = pi_product
@@ -117,6 +126,7 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
+        ROLLBACK TO delete_data_sp;
   END delete_data;
 
   --
