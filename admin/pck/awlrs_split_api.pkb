@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.2   04 Oct 2016 14:09:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.3   13 Oct 2016 09:28:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   04 Oct 2016 14:09:22  $
-  --       Date fetched Out : $Modtime:   04 Oct 2016 14:05:14  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   13 Oct 2016 09:28:16  $
+  --       Date fetched Out : $Modtime:   13 Oct 2016 09:25:34  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   --
@@ -129,6 +129,10 @@ AS
     lv_new_elements_cursor  sys_refcursor;
     --
   BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT do_split_sp;
     --
     init_element_globals;
     --
@@ -212,6 +216,7 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
+        ROLLBACK TO do_split_sp;
     --
   END do_split;
 
