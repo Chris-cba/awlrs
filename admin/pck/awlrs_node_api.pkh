@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_node_api.pkh-arc   1.0   13 Oct 2016 09:32:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_node_api.pkh-arc   1.1   13 Oct 2016 12:49:40   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_node_api.pkh  $
-  --       Date into PVCS   : $Date:   13 Oct 2016 09:32:20  $
-  --       Date fetched Out : $Modtime:   12 Oct 2016 17:55:02  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   13 Oct 2016 12:49:40  $
+  --       Date fetched Out : $Modtime:   13 Oct 2016 12:48:20  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
-  
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+
   --
   -----------------------------------------------------------------------------
   --
@@ -28,6 +28,37 @@ AS
   -- This function returns the current SCCS version of the package body
   FUNCTION get_body_version
     RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_node_types(po_message_severity OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor   OUT sys_refcursor
+                          ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE node_in_use(pi_node_id          IN  nm_nodes.no_node_id%TYPE
+                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor
+                       ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nodes(pi_node_ids         IN  awlrs_util.ne_id_tab
+                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                     ,po_message_cursor   OUT sys_refcursor
+                     ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_node(pi_node_id          IN  nm_nodes_all.no_node_id%TYPE
+                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor   OUT sys_refcursor
+                    ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
@@ -74,8 +105,8 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE move_node(pi_node_id          IN  nm_nodes.no_node_id%TYPE
-                     ,pi_point_x          IN  nm_points.np_grid_east%TYPE  DEFAULT NULL
-                     ,pi_point_y          IN  nm_points.np_grid_north%TYPE DEFAULT NULL
+                     ,pi_point_x          IN  nm_points.np_grid_east%TYPE
+                     ,pi_point_y          IN  nm_points.np_grid_north%TYPE
                      ,po_message_severity OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor   OUT sys_refcursor);
 
