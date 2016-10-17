@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.2   17 Oct 2016 18:26:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.3   17 Oct 2016 20:37:52   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   17 Oct 2016 18:26:12  $
-  --       Date fetched Out : $Modtime:   17 Oct 2016 18:22:20  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   17 Oct 2016 20:37:52  $
+  --       Date fetched Out : $Modtime:   17 Oct 2016 20:36:02  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -922,12 +922,17 @@ AS
   BEGIN
     --
     FOR i IN 1..pi_attributes.count LOOP
-      --
-      set_attribute(pi_nt_type     => pi_nt_type
-                   ,pi_global      => pi_global
-                   ,pi_column_name => pi_attributes(i).column_name
-                   ,pi_prompt      => pi_attributes(i).prompt
-                   ,pi_value       => pi_attributes(i).char_value);
+      /*
+      ||Filter out any primary AD asset attributes.
+      */
+      IF SUBSTR(pi_attributes(i).column_name,1,3) = 'NE_'
+       THEN
+          set_attribute(pi_nt_type     => pi_nt_type
+                       ,pi_global      => pi_global
+                       ,pi_column_name => pi_attributes(i).column_name
+                       ,pi_prompt      => pi_attributes(i).prompt
+                       ,pi_value       => pi_attributes(i).char_value);
+      END IF;
       --
     END LOOP;
     --
