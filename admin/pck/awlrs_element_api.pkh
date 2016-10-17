@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.0   26 Sep 2016 18:17:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.1   17 Oct 2016 18:23:46   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:30  $
-  --       Date fetched Out : $Modtime:   26 Sep 2016 12:55:12  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   17 Oct 2016 18:23:46  $
+  --       Date fetched Out : $Modtime:   17 Oct 2016 15:54:16  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
   --
   g_new_element  nm_elements_all%ROWTYPE;
   --
@@ -87,21 +87,6 @@ AS
   --
   FUNCTION get_body_version
     RETURN VARCHAR2;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE create_node(pi_type             IN     nm_nodes.no_node_type%TYPE
-                       ,pi_name             IN     nm_nodes.no_node_name%TYPE
-                       ,pi_descr            IN     nm_nodes.no_descr%TYPE
-                       ,pi_purpose          IN     nm_nodes_all.no_purpose%TYPE
-                       ,pi_point_id         IN     nm_nodes.no_np_id%TYPE
-                       ,pi_point_x          IN     nm_points.np_grid_east%TYPE  DEFAULT NULL
-                       ,pi_point_y          IN     nm_points.np_grid_north%TYPE DEFAULT NULL
-                       ,pi_start_date       IN     nm_nodes.no_start_date%TYPE
-                       ,po_node_id          IN OUT nm_nodes.no_node_id%TYPE
-                       ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                       ,po_message_cursor      OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
