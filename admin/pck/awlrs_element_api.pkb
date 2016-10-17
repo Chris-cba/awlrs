@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.1   30 Sep 2016 10:48:16   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.2   17 Oct 2016 18:26:12   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   30 Sep 2016 10:48:16  $
-  --       Date fetched Out : $Modtime:   29 Sep 2016 18:46:24  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   17 Oct 2016 18:26:12  $
+  --       Date fetched Out : $Modtime:   17 Oct 2016 18:22:20  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -33,98 +33,6 @@ AS
   BEGIN
     RETURN g_body_sccsid;
   END get_body_version;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE create_node(pi_type       IN     nm_nodes.no_node_type%TYPE
-                       ,pi_name       IN     nm_nodes.no_node_name%TYPE
-                       ,pi_descr      IN     nm_nodes.no_descr%TYPE
-                       ,pi_purpose    IN     nm_nodes_all.no_purpose%TYPE
-                       ,pi_point_id   IN     nm_nodes.no_np_id%TYPE
-                       ,pi_point_x    IN     NM_POINTS.np_grid_east%TYPE  DEFAULT NULL
-                       ,pi_point_y    IN     NM_POINTS.np_grid_north%TYPE DEFAULT NULL
-                       ,pi_start_date IN     nm_nodes.no_start_date%TYPE
-                       ,po_node_id    IN OUT nm_nodes.no_node_id%TYPE)
-    IS
-    --
-    lv_node_id    nm_nodes.no_node_id%TYPE;
-    lv_node_name  nm_nodes.no_node_name%TYPE;
-    lv_point_id   nm_nodes.no_np_id%TYPE;
-    --
-  BEGIN
-    --
-    lv_node_id := nm3net.get_next_node_id;
-    --
-    lv_node_name := nm3net.make_node_name(pi_no_type => pi_type
-                                         ,pi_no_id   => lv_node_id);
-    IF lv_node_name IS NULL
-     THEN
-        lv_node_name := pi_name;
-    END IF;
-    --
-    IF lv_node_name IS NULL
-     THEN
-        -- Unable to generate node name and no name supplied
-        hig.raise_ner(pi_appl => 'AWLRS'
-                     ,pi_id   => 1);
-    END IF;
-    --
-    IF pi_point_id IS NOT NULL
-     THEN
-        lv_point_id := pi_point_id;
-    ELSE
-        lv_point_id := nm3net.create_point(pi_point_x, pi_point_y);
-    END IF;
-    --
-    nm3net.create_node(pi_no_node_id   => lv_node_id
-                      ,pi_np_id        => lv_point_id
-                      ,pi_start_date   => TRUNC(pi_start_date)
-                      ,pi_no_descr     => pi_descr
-                      ,pi_no_node_type => pi_type
-                      ,pi_no_node_name => lv_node_name
-                      ,pi_no_purpose   => pi_purpose);
-    --
-    po_node_id := lv_node_id;
-    --
-  END create_node;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE create_node(pi_type             IN     nm_nodes.no_node_type%TYPE
-                       ,pi_name             IN     nm_nodes.no_node_name%TYPE
-                       ,pi_descr            IN     nm_nodes.no_descr%TYPE
-                       ,pi_purpose          IN     nm_nodes_all.no_purpose%TYPE
-                       ,pi_point_id         IN     nm_nodes.no_np_id%TYPE
-                       ,pi_point_x          IN     nm_points.np_grid_east%TYPE  DEFAULT NULL
-                       ,pi_point_y          IN     nm_points.np_grid_north%TYPE DEFAULT NULL
-                       ,pi_start_date       IN     nm_nodes.no_start_date%TYPE
-                       ,po_node_id          IN OUT nm_nodes.no_node_id%TYPE
-                       ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                       ,po_message_cursor      OUT sys_refcursor)
-    IS
-  BEGIN
-    --
-    create_node(pi_type       => pi_type
-               ,pi_name       => pi_name
-               ,pi_descr      => pi_descr
-               ,pi_purpose    => pi_purpose
-               ,pi_point_id   => pi_point_id
-               ,pi_point_x    => pi_point_x
-               ,pi_point_y    => pi_point_y
-               ,pi_start_date => pi_start_date
-               ,po_node_id    => po_node_id);
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-     THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END create_node;
 
   --
   -----------------------------------------------------------------------------
@@ -541,8 +449,30 @@ AS
     END LOOP;
     --
     lv_cursor_sql := lv_cursor_sql||')';
+    /*
+    ||Add the primary AD Asset Type Domains
+    */
+    lv_cursor_sql := lv_cursor_sql||'UNION ALL'
+                         ||CHR(10)||'SELECT domain'
+                         ||CHR(10)||'      ,code'
+                         ||CHR(10)||'      ,meaning'
+                         ||CHR(10)||'  FROM(SELECT ial_domain domain'
+                         ||CHR(10)||'             ,ial_value  code'
+                         ||CHR(10)||'             ,ial_meaning meaning'
+                         ||CHR(10)||'         FROM nm_inv_attri_lookup'
+                         ||CHR(10)||'        WHERE TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY'') >= NVL(ial_start_date,TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY''))'
+                         ||CHR(10)||'          AND TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY'') <= NVL(ial_end_date,TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY''))'
+                         ||CHR(10)||'          AND ial_domain IN(SELECT ita_id_domain'
+                         ||CHR(10)||'                              FROM nm_inv_type_attribs'
+                         ||CHR(10)||'                                  ,nm_nw_ad_types'
+                         ||CHR(10)||'                             WHERE nad_nt_type = :nt_type'
+                         ||CHR(10)||'                               AND nad_primary_ad = ''Y'''
+                         ||CHR(10)||'                               AND nad_inv_type = ita_inv_type'
+                         ||CHR(10)||'                               AND ita_id_domain IS NOT NULL)'
+                         ||CHR(10)||'        ORDER BY ial_domain,ial_seq)'
+    ;
     --
-    OPEN po_cursor FOR lv_cursor_sql;
+    OPEN po_cursor FOR lv_cursor_sql USING pi_nt_type;
     --
   END get_nt_flex_domains;
 
@@ -696,7 +626,45 @@ AS
                             OR NOT EXISTS (SELECT 1
                                              FROM nm_type_inclusion
                                             WHERE nti_nw_child_type = ntc_nt_type
-                                              AND ntc_column_name = nti_code_control_column))))
+                                              AND ntc_column_name = nti_code_control_column)))
+            UNION ALL
+            SELECT ita_attrib_name   column_name
+                  ,ita_scrn_text     prompt
+                  ,ita_view_col_name view_column_name
+                  ,ita_format        datatype
+                  ,CASE
+                     WHEN ita_format = 'DATE'
+                      THEN
+                         NVL(ita_format_mask,'DD-MON-YYYY')
+                     ELSE
+                         ita_format_mask
+                   END format_mask
+                  ,CASE
+                     WHEN ita_format = 'DATE'
+                      THEN
+                         LENGTH(REPLACE(ita_format_mask,'24',''))
+                     ELSE
+                         ita_fld_length
+                   END field_length                  
+                  ,ita_dec_places    decimal_places
+                  ,ita_min           min_value
+                  ,ita_max           max_value
+                  ,ita_case          field_case
+                  ,ita_id_domain     domain_id
+                  ,NULL              domain_bind_column
+                  ,nm3inv.get_attrib_value(p_ne_id       => adlink.nad_iit_ne_id
+                                          ,p_attrib_name => ita_attrib_name) char_value
+                  ,ita_mandatory_yn  required
+                  ,'Y'               updateable
+                  ,ita_disp_seq_no+100 seq_no
+              FROM nm_nw_ad_link adlink
+                  ,nm_inv_type_attribs
+                  ,nm_nw_ad_types adt
+             WHERE adt.nad_nt_type = pi_nt_type
+               AND adt.nad_primary_ad = 'Y'
+               AND adt.nad_inv_type = ita_inv_type
+               AND adt.nad_id = adlink.nad_id(+)
+               AND adlink.nad_ne_id(+) = pi_ne_id)
      ORDER
         BY seq_no
           ,column_name
@@ -1000,7 +968,7 @@ AS
           ,CASE
              WHEN nt_length_unit IS NOT NULL
               THEN
-                 nm3unit.convert_unit(nt_length_unit,un_unit_id,ne_length)
+                 nm3unit.convert_unit(nt_length_unit,un_unit_id,nm3net.get_ne_length(ne_id))
              ELSE
                  NULL
            END               element_length
@@ -1117,7 +1085,8 @@ AS
     /*
     ||Make sure that either start\end nodes have been passed in or a shape has been passed in.
     */
-    IF (lr_ne.ne_no_start IS NULL OR lr_ne.ne_no_end IS NULL)
+    IF lr_nt.nt_node_type IS NOT NULL
+     AND (lr_ne.ne_no_start IS NULL OR lr_ne.ne_no_end IS NULL)
      AND pi_shape_wkt IS NULL
      THEN
         --Please specify both start and end nodes or a shape for the new Element
@@ -1137,38 +1106,40 @@ AS
     /*
     ||Create Nodes if needed.
     */
-    IF lr_ne.ne_no_start IS NULL
+    IF lr_nt.nt_node_type IS NOT NULL
+     AND lr_ne.ne_no_start IS NULL
      THEN
         awlrs_sdo.get_start_x_y(pi_shape => lv_shape
+                               ,po_x     => lv_x
+                               ,po_y     => lv_y);
+        --
+        awlrs_node_api.create_node(pi_type       => lr_nt.nt_node_type
+                                  ,pi_name       => NULL
+                                  ,pi_descr      => 'Entered by exor'
+                                  ,pi_purpose    => NULL
+                                  ,pi_point_id   => NULL
+                                  ,pi_point_x    => lv_x
+                                  ,pi_point_y    => lv_y
+                                  ,pi_start_date => lr_ne.ne_start_date
+                                  ,po_node_id    => lr_ne.ne_no_start);
+    END IF;
+    --
+    IF lr_nt.nt_node_type IS NOT NULL
+     AND lr_ne.ne_no_end IS NULL
+     THEN
+        awlrs_sdo.get_end_x_y(pi_shape => lv_shape
                              ,po_x     => lv_x
                              ,po_y     => lv_y);
         --
-        create_node(pi_type       => lr_nt.nt_node_type
-                   ,pi_name       => NULL
-                   ,pi_descr      => 'Entered by exor'
-                   ,pi_purpose    => NULL
-                   ,pi_point_id   => NULL
-                   ,pi_point_x    => lv_x
-                   ,pi_point_y    => lv_y
-                   ,pi_start_date => lr_ne.ne_start_date
-                   ,po_node_id    => lr_ne.ne_no_start);
-    END IF;
-    --
-    IF lr_ne.ne_no_end IS NULL
-     THEN
-        awlrs_sdo.get_end_x_y(pi_shape => lv_shape
-                           ,po_x     => lv_x
-                           ,po_y     => lv_y);
-        --
-        create_node(pi_type       => lr_nt.nt_node_type
-                   ,pi_name       => NULL
-                   ,pi_descr      => 'Entered by exor'
-                   ,pi_purpose    => NULL
-                   ,pi_point_id   => NULL
-                   ,pi_point_x    => lv_x
-                   ,pi_point_y    => lv_y
-                   ,pi_start_date => lr_ne.ne_start_date
-                   ,po_node_id    => lr_ne.ne_no_end);
+        awlrs_node_api.create_node(pi_type       => lr_nt.nt_node_type
+                                  ,pi_name       => NULL
+                                  ,pi_descr      => 'Entered by exor'
+                                  ,pi_purpose    => NULL
+                                  ,pi_point_id   => NULL
+                                  ,pi_point_x    => lv_x
+                                  ,pi_point_y    => lv_y
+                                  ,pi_start_date => lr_ne.ne_start_date
+                                  ,po_node_id    => lr_ne.ne_no_end);
     END IF;
     /*
     ||TODO - SM uses nm3net.gis_insert_element which calls the code below first, need to work out whether this is needed.
