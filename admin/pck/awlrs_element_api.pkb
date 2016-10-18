@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.3   17 Oct 2016 20:37:52   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.4   18 Oct 2016 13:21:26   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   17 Oct 2016 20:37:52  $
-  --       Date fetched Out : $Modtime:   17 Oct 2016 20:36:02  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   18 Oct 2016 13:21:26  $
+  --       Date fetched Out : $Modtime:   18 Oct 2016 13:20:52  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -159,61 +159,61 @@ AS
     lv_meaning  VARCHAR2(240);
     --
     e_col_mandatory EXCEPTION;
-	  PRAGMA EXCEPTION_INIT(e_col_mandatory, -20602);
+    PRAGMA EXCEPTION_INIT(e_col_mandatory, -20602);
     --
-	  e_val_too_long EXCEPTION;
-	  PRAGMA EXCEPTION_INIT(e_val_too_long, -20603);
+    e_val_too_long EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_val_too_long, -20603);
     --
-	  e_val_invalid_for_domain EXCEPTION;
-	  PRAGMA EXCEPTION_INIT(e_val_invalid_for_domain, -20604);
+    e_val_invalid_for_domain EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_val_invalid_for_domain, -20604);
     --
-	  e_too_many_records EXCEPTION;
-	  PRAGMA EXCEPTION_INIT(e_too_many_records, -20605);
+    e_too_many_records EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_too_many_records, -20605);
     --
-	  e_val_invalid_for_format_mask EXCEPTION;
-	  PRAGMA EXCEPTION_INIT(e_val_invalid_for_format_mask, -20606);
+    e_val_invalid_for_format_mask EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_val_invalid_for_format_mask, -20606);
     --
-	  e_too_many_bind_variables EXCEPTION;
-	  PRAGMA EXCEPTION_INIT(e_too_many_bind_variables, -20609);
+    e_too_many_bind_variables EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_too_many_bind_variables, -20609);
     --
-	  e_no_bind_variable EXCEPTION;
-	  PRAGMA EXCEPTION_INIT(e_no_bind_variable, -20610);
+    e_no_bind_variable EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_no_bind_variable, -20610);
     --
-	  e_error_in_sql EXCEPTION;
-	  PRAGMA EXCEPTION_INIT(e_error_in_sql, -20611);
+    e_error_in_sql EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_error_in_sql, -20611);
     --
     FUNCTION handle_error(pi_err_app     IN varchar2
                          ,pi_err_no      IN varchar2
                          ,pi_err_type    IN varchar2 DEFAULT 'E'
                          ,pi_prompt_text IN nm_type_columns.ntc_prompt%TYPE)
       RETURN BOOLEAN IS
-	    --
-	    lv_retval BOOLEAN := TRUE;
-	    --
-	  BEGIN
       --
-	  	IF pi_disp_validation_errors
-	     THEN
+      lv_retval BOOLEAN := TRUE;
+      --
+    BEGIN
+      --
+      IF pi_disp_validation_errors
+       THEN
           hig.raise_ner(pi_appl               => pi_err_app
                        ,pi_id                 => pi_err_no
                        ,pi_supplementary_info => CHR(10)||CHR(10)||pi_prompt_text);
-	    END IF;
+      END IF;
       /*
       ||TODO - Forms app can continue after an error is displayed to the user
       ||obviously this API can't raise an exception and continue.
       */
-	    --IF NOT(pi_continue_after_val_err)
-	    -- THEN
-	    --    lv_retval := FALSE;
-	    --END IF;
-	    --
-	    RETURN FALSE; --lv_retval;
+      --IF NOT(pi_continue_after_val_err)
+      -- THEN
+      --    lv_retval := FALSE;
+      --END IF;
       --
-	  END;
+      RETURN FALSE; --lv_retval;
+      --
+    END;
     --
-	BEGIN
+  BEGIN
     --
-  	nm3flx.get_flx_col_data(pi_ne_id       => pi_ne_id
+    nm3flx.get_flx_col_data(pi_ne_id       => pi_ne_id
                            ,pi_column_name => pi_column_name
                            ,po_value       => lv_value
                            ,po_meaning     => lv_meaning);
@@ -221,75 +221,75 @@ AS
     RETURN lv_value;
     --
   EXCEPTION
-	  WHEN e_col_mandatory
-	   THEN
-	      IF NOT(handle_error(pi_err_app     => 'HIG'
-			                     ,pi_err_no      => 107
-			                     ,pi_err_type    => 'W'
-			                     ,pi_prompt_text => pi_prompt_text))
+    WHEN e_col_mandatory
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'HIG'
+                           ,pi_err_no      => 107
+                           ,pi_err_type    => 'W'
+                           ,pi_prompt_text => pi_prompt_text))
          THEN
             RAISE;
         END IF;
-	  WHEN e_val_too_long
-	   THEN
-	      IF NOT(handle_error(pi_err_app     => 'HIG'
-			                     ,pi_err_no      => 108
-			                     ,pi_err_type    => 'W'
-			                     ,pi_prompt_text => pi_prompt_text))
+    WHEN e_val_too_long
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'HIG'
+                           ,pi_err_no      => 108
+                           ,pi_err_type    => 'W'
+                           ,pi_prompt_text => pi_prompt_text))
          THEN
             RAISE;
         END IF;
-	  WHEN e_val_invalid_for_domain
-	   THEN
-	      IF NOT(handle_error(pi_err_app     => 'HIG'
-			                     ,pi_err_no      => 109
-			                     ,pi_err_type    => 'W'
-			                     ,pi_prompt_text => pi_prompt_text))
+    WHEN e_val_invalid_for_domain
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'HIG'
+                           ,pi_err_no      => 109
+                           ,pi_err_type    => 'W'
+                           ,pi_prompt_text => pi_prompt_text))
          THEN
             RAISE;
         END IF;
-	  WHEN e_too_many_records
-	   THEN
-	      IF NOT(handle_error(pi_err_app     => 'NET'
-			                     ,pi_err_no      => 47
-			                     ,pi_err_type    => 'E'
-			                     ,pi_prompt_text => pi_prompt_text))
+    WHEN e_too_many_records
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'NET'
+                           ,pi_err_no      => 47
+                           ,pi_err_type    => 'E'
+                           ,pi_prompt_text => pi_prompt_text))
          THEN
             RAISE;
         END IF;
-	  WHEN e_val_invalid_for_format_mask
-	   THEN
-	      IF NOT(handle_error(pi_err_app     => 'HIG'
-			                     ,pi_err_no      => 70
-			                     ,pi_err_type    => 'W'
-			                     ,pi_prompt_text => pi_prompt_text))
+    WHEN e_val_invalid_for_format_mask
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'HIG'
+                           ,pi_err_no      => 70
+                           ,pi_err_type    => 'W'
+                           ,pi_prompt_text => pi_prompt_text))
          THEN
             RAISE;
         END IF;
-	  WHEN e_too_many_bind_variables
-	   THEN
-	      IF NOT(handle_error(pi_err_app     => 'NET'
-			                     ,pi_err_no      => 48
-			                     ,pi_err_type    => 'E'
-			                     ,pi_prompt_text => pi_prompt_text))
+    WHEN e_too_many_bind_variables
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'NET'
+                           ,pi_err_no      => 48
+                           ,pi_err_type    => 'E'
+                           ,pi_prompt_text => pi_prompt_text))
          THEN
             RAISE;
         END IF;
-	  WHEN e_no_bind_variable
-	   THEN
-	      IF NOT(handle_error(pi_err_app     => 'NET'
-			                     ,pi_err_no      => 48
-			                     ,pi_err_type    => 'E'
-			                     ,pi_prompt_text => pi_prompt_text))
+    WHEN e_no_bind_variable
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'NET'
+                           ,pi_err_no      => 48
+                           ,pi_err_type    => 'E'
+                           ,pi_prompt_text => pi_prompt_text))
          THEN
             RAISE;
         END IF;
-	  WHEN e_error_in_sql
-	   THEN
-	      IF NOT(handle_error(pi_err_app     => 'HIG'
-			                     ,pi_err_no      => 83
-			                     ,pi_err_type    => 'E'
-			                     ,pi_prompt_text => pi_prompt_text))
+    WHEN e_error_in_sql
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'HIG'
+                           ,pi_err_no      => 83
+                           ,pi_err_type    => 'E'
+                           ,pi_prompt_text => pi_prompt_text))
          THEN
             RAISE;
         END IF;
@@ -334,7 +334,7 @@ AS
     --
   END get_nt_flex_domain;
 
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -645,7 +645,7 @@ AS
                          LENGTH(REPLACE(ita_format_mask,'24',''))
                      ELSE
                          ita_fld_length
-                   END field_length                  
+                   END field_length
                   ,ita_dec_places    decimal_places
                   ,ita_min           min_value
                   ,ita_max           max_value
@@ -957,19 +957,19 @@ AS
     END LOOP;
     --
     OPEN po_cursor FOR
-    SELECT ne_id             element_id                 
-          ,ne_nt_type        element_network_type       
+    SELECT ne_id             element_id
+          ,ne_nt_type        element_network_type
           ,nt_unique         element_network_type_unique
-          ,nt_descr          element_network_type_descr 
-          ,ne_unique         element_unique             
-          ,ne_gty_group_type element_group_type         
-          ,ngt_descr         element_group_type_descr   
-          ,ne_admin_unit     element_admin_unit_id      
-          ,nau_unit_code     element_admin_unit_code    
-          ,nau_name          element_admin_unit_name    
-          ,ne_descr          element_dercription        
-          ,ne_start_date     element_start_date         
-          ,ne_end_date       element_end_date           
+          ,nt_descr          element_network_type_descr
+          ,ne_unique         element_unique
+          ,ne_gty_group_type element_group_type
+          ,ngt_descr         element_group_type_descr
+          ,ne_admin_unit     element_admin_unit_id
+          ,nau_unit_code     element_admin_unit_code
+          ,nau_name          element_admin_unit_name
+          ,ne_descr          element_dercription
+          ,ne_start_date     element_start_date
+          ,ne_end_date       element_end_date
           ,CASE
              WHEN nt_length_unit IS NOT NULL
               THEN
@@ -979,16 +979,16 @@ AS
            END               element_length
           ,un_unit_id        element_length_unit
           ,un_unit_name      element_length_unit_name
-          ,ne_no_start       start_node_id           
-          ,nos.no_node_name  start_node_name         
-          ,nos.no_descr      start_node_descr        
-          ,nps.np_grid_east  start_node_x            
-          ,nps.np_grid_north start_node_y            
-          ,ne_no_end         end_node_id             
-          ,noe.no_node_name  end_node_name           
-          ,noe.no_descr      end_node_descr          
-          ,npe.np_grid_east  end_node_x              
-          ,npe.np_grid_north end_node_y              
+          ,ne_no_start       start_node_id
+          ,nos.no_node_name  start_node_name
+          ,nos.no_descr      start_node_descr
+          ,nps.np_grid_east  start_node_x
+          ,nps.np_grid_north start_node_y
+          ,ne_no_end         end_node_id
+          ,noe.no_node_name  end_node_name
+          ,noe.no_descr      end_node_descr
+          ,npe.np_grid_east  end_node_x
+          ,npe.np_grid_north end_node_y
      FROM nm_elements_all
          ,nm_types
          ,nm_admin_units_all
@@ -1082,6 +1082,10 @@ AS
     lr_nt  nm_types%ROWTYPE;
     --
   BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT cre_element_sp;
     --
     init_element_global;
     --
@@ -1161,7 +1165,7 @@ AS
     ||TODO - passing in defaults for p_nm_cardinality and p_auto_include need to work out if this is okay.
     */
     nm3net.insert_any_element(p_rec_ne         => lr_ne
-                             ,p_nm_cardinality => NULL 
+                             ,p_nm_cardinality => NULL
                              ,p_auto_include   => TRUE);
     --
     IF lv_shape IS NOT NULL
@@ -1174,7 +1178,12 @@ AS
     END IF;
     po_ne_id := lr_ne.ne_id;
     --
-  END create_element;  
+  EXCEPTION
+    WHEN others
+     THEN
+        ROLLBACK TO cre_element_sp;
+        RAISE;
+  END create_element;
 
   --
   -----------------------------------------------------------------------------
@@ -1368,6 +1377,10 @@ AS
     --
   BEGIN
     /*
+    ||Set a save point.
+    */
+    SAVEPOINT reshape_element;
+    /*
     ||Convert the shape to geom so we can use it for nodes if needed.
     */
     IF pi_shape_wkt IS NOT NULL
@@ -1389,6 +1402,7 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
+        ROLLBACK TO reshape_element_sp;
   END reshape_element;
 
 --
