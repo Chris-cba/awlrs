@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.5   19 Oct 2016 15:52:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.6   19 Oct 2016 18:27:12   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   19 Oct 2016 15:52:14  $
-  --       Date fetched Out : $Modtime:   18 Oct 2016 20:44:36  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   19 Oct 2016 18:27:12  $
+  --       Date fetched Out : $Modtime:   19 Oct 2016 18:10:22  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -561,15 +561,17 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_nt_flex_attribs(pi_ne_id          IN  nm_elements_all.ne_id%TYPE
-                               ,pi_nt_type        IN  nm_types.nt_type%TYPE
-                               ,pi_disp_derived   IN  BOOLEAN DEFAULT TRUE
-                               ,pi_disp_inherited IN  BOOLEAN DEFAULT TRUE
-                               ,po_cursor         OUT sys_refcursor)
+  PROCEDURE get_nt_flex_attribs(pi_ne_id           IN  nm_elements_all.ne_id%TYPE
+                               ,pi_nt_type         IN  nm_types.nt_type%TYPE
+                               ,pi_disp_derived    IN  BOOLEAN DEFAULT TRUE
+                               ,pi_disp_inherited  IN  BOOLEAN DEFAULT TRUE
+                               ,pi_disp_primary_ad IN  BOOLEAN DEFAULT TRUE
+                               ,po_cursor          OUT sys_refcursor)
     IS
     --
     lv_disp_derived VARCHAR2(1) := CASE WHEN pi_disp_derived THEN 'Y' ELSE 'N' END;
     lv_disp_inherited VARCHAR2(1) := CASE WHEN pi_disp_inherited THEN 'Y' ELSE 'N' END;
+    lv_disp_primary_ad VARCHAR2(1) := CASE WHEN pi_disp_primary_ad THEN 'Y' ELSE 'N' END;
     lt_columns  nm3flx.tab_type_columns;
     --
   BEGIN
@@ -697,7 +699,8 @@ AS
               FROM nm_nw_ad_link adlink
                   ,nm_inv_type_attribs
                   ,nm_nw_ad_types adt
-             WHERE adt.nad_nt_type = pi_nt_type
+             WHERE lv_disp_primary_ad = 'Y'
+               AND adt.nad_nt_type = pi_nt_type
                AND adt.nad_primary_ad = 'Y'
                AND adt.nad_inv_type = ita_inv_type
                AND adt.nad_id = adlink.nad_id(+)
@@ -716,17 +719,19 @@ AS
                                ,pi_nt_type          IN  nm_types.nt_type%TYPE
                                ,pi_disp_derived     IN  BOOLEAN DEFAULT TRUE
                                ,pi_disp_inherited   IN  BOOLEAN DEFAULT TRUE
+                               ,pi_disp_primary_ad  IN  BOOLEAN DEFAULT TRUE
                                ,po_message_severity OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor   OUT sys_refcursor
                                ,po_cursor           OUT sys_refcursor)
     IS
   BEGIN
     --
-    get_nt_flex_attribs(pi_ne_id          => pi_ne_id
-                       ,pi_nt_type        => pi_nt_type
-                       ,pi_disp_derived   => pi_disp_derived
-                       ,pi_disp_inherited => pi_disp_inherited
-                       ,po_cursor         => po_cursor);
+    get_nt_flex_attribs(pi_ne_id           => pi_ne_id
+                       ,pi_nt_type         => pi_nt_type
+                       ,pi_disp_derived    => pi_disp_derived
+                       ,pi_disp_inherited  => pi_disp_inherited
+                       ,pi_disp_primary_ad => pi_disp_primary_ad
+                       ,po_cursor          => po_cursor);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -741,10 +746,11 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_nt_flex_attribs(pi_ne_id          IN nm_elements_all.ne_id%TYPE
-                              ,pi_disp_derived   IN BOOLEAN DEFAULT TRUE
-                              ,pi_disp_inherited IN BOOLEAN DEFAULT TRUE
-                              ,pi_nt_type        IN nm_types.nt_type%TYPE)
+  FUNCTION get_nt_flex_attribs(pi_ne_id           IN nm_elements_all.ne_id%TYPE
+                              ,pi_nt_type         IN nm_types.nt_type%TYPE
+                              ,pi_disp_derived    IN BOOLEAN DEFAULT TRUE
+                              ,pi_disp_inherited  IN BOOLEAN DEFAULT TRUE
+                              ,pi_disp_primary_ad IN BOOLEAN DEFAULT TRUE)
     RETURN flex_attr_tab IS
     --
     lv_cursor         sys_refcursor;
@@ -752,11 +758,12 @@ AS
     --
   BEGIN
     --
-    get_nt_flex_attribs(pi_ne_id          => pi_ne_id
-                       ,pi_nt_type        => pi_nt_type
-                       ,pi_disp_derived   => pi_disp_derived
-                       ,pi_disp_inherited => pi_disp_inherited
-                       ,po_cursor         => lv_cursor);
+    get_nt_flex_attribs(pi_ne_id           => pi_ne_id
+                       ,pi_nt_type         => pi_nt_type
+                       ,pi_disp_derived    => pi_disp_derived
+                       ,pi_disp_inherited  => pi_disp_inherited
+                       ,pi_disp_primary_ad => pi_disp_primary_ad
+                       ,po_cursor          => lv_cursor);
     --
     FETCH lv_cursor
      BULK COLLECT
