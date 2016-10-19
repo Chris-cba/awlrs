@@ -3,19 +3,20 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.1   17 Oct 2016 18:23:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.2   19 Oct 2016 15:52:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   17 Oct 2016 18:23:46  $
-  --       Date fetched Out : $Modtime:   17 Oct 2016 15:54:16  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   19 Oct 2016 15:52:14  $
+  --       Date fetched Out : $Modtime:   18 Oct 2016 20:31:34  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
   --
-  g_new_element  nm_elements_all%ROWTYPE;
+  g_new_element    nm_elements_all%ROWTYPE;
+  g_prim_ad_asset  nm_inv_items_all%ROWTYPE;
   --
   TYPE element_rec IS RECORD(element_id                  nm_elements_all.ne_id%TYPE
                             ,element_network_type        nm_elements_all.ne_nt_type%TYPE
@@ -202,38 +203,40 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE create_element(pi_theme_name  IN nm_themes_all.nth_theme_name%TYPE
-                          ,pi_element_rec IN nm_elements_all%ROWTYPE
-                          ,pi_shape_wkt   IN CLOB
-                          ,po_ne_id       IN OUT nm_elements_all.ne_id%TYPE);
+  PROCEDURE create_element(pi_theme_name     IN     nm_themes_all.nth_theme_name%TYPE
+                          ,pi_element_rec    IN     nm_elements_all%ROWTYPE
+                          ,pi_primary_ad_rec IN     nm_inv_items_all%ROWTYPE
+                          ,pi_shape_wkt      IN     CLOB
+                          ,po_ne_id          IN OUT nm_elements_all.ne_id%TYPE);
 
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE create_element(pi_theme_name    IN     nm_themes_all.nth_theme_name%TYPE
-                          ,pi_network_type  IN     nm_elements_all.ne_nt_type%TYPE
-                          ,pi_element_type  IN     nm_elements_all.ne_type%TYPE
-                          ,pi_description   IN     nm_elements_all.ne_descr%TYPE
-                          ,pi_length        IN     nm_elements_all.ne_length%TYPE
-                          ,pi_admin_unit_id IN     nm_elements_all.ne_admin_unit%TYPE
-                          ,pi_start_date    IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                          ,pi_end_date      IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
-                          ,pi_group_type    IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
-                          ,pi_start_node_id IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
-                          ,pi_end_node_id   IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
-                          ,pi_unique        IN     nm_elements_all.ne_unique%TYPE         DEFAULT NULL
-                          ,pi_owner         IN     nm_elements_all.ne_owner%TYPE          DEFAULT NULL
-                          ,pi_name_1        IN     nm_elements_all.ne_name_1%TYPE         DEFAULT NULL
-                          ,pi_name_2        IN     nm_elements_all.ne_name_2%TYPE         DEFAULT NULL
-                          ,pi_prefix        IN     nm_elements_all.ne_prefix%TYPE         DEFAULT NULL
-                          ,pi_number        IN     nm_elements_all.ne_number%TYPE         DEFAULT NULL
-                          ,pi_sub_type      IN     nm_elements_all.ne_sub_type%TYPE       DEFAULT NULL
-                          ,pi_group         IN     nm_elements_all.ne_group%TYPE          DEFAULT NULL
-                          ,pi_sub_class     IN     nm_elements_all.ne_sub_class%TYPE      DEFAULT NULL
-                          ,pi_nsg_ref       IN     nm_elements_all.ne_nsg_ref%TYPE        DEFAULT NULL
-                          ,pi_version_no    IN     nm_elements_all.ne_version_no%TYPE     DEFAULT NULL
-                          ,pi_shape_wkt     IN     CLOB
-                          ,po_ne_id         IN OUT nm_elements_all.ne_id%TYPE);
+  PROCEDURE create_element(pi_theme_name     IN     nm_themes_all.nth_theme_name%TYPE
+                          ,pi_network_type   IN     nm_elements_all.ne_nt_type%TYPE
+                          ,pi_element_type   IN     nm_elements_all.ne_type%TYPE
+                          ,pi_description    IN     nm_elements_all.ne_descr%TYPE
+                          ,pi_length         IN     nm_elements_all.ne_length%TYPE
+                          ,pi_admin_unit_id  IN     nm_elements_all.ne_admin_unit%TYPE
+                          ,pi_start_date     IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                          ,pi_end_date       IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
+                          ,pi_group_type     IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
+                          ,pi_start_node_id  IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
+                          ,pi_end_node_id    IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
+                          ,pi_unique         IN     nm_elements_all.ne_unique%TYPE         DEFAULT NULL
+                          ,pi_owner          IN     nm_elements_all.ne_owner%TYPE          DEFAULT NULL
+                          ,pi_name_1         IN     nm_elements_all.ne_name_1%TYPE         DEFAULT NULL
+                          ,pi_name_2         IN     nm_elements_all.ne_name_2%TYPE         DEFAULT NULL
+                          ,pi_prefix         IN     nm_elements_all.ne_prefix%TYPE         DEFAULT NULL
+                          ,pi_number         IN     nm_elements_all.ne_number%TYPE         DEFAULT NULL
+                          ,pi_sub_type       IN     nm_elements_all.ne_sub_type%TYPE       DEFAULT NULL
+                          ,pi_group          IN     nm_elements_all.ne_group%TYPE          DEFAULT NULL
+                          ,pi_sub_class      IN     nm_elements_all.ne_sub_class%TYPE      DEFAULT NULL
+                          ,pi_nsg_ref        IN     nm_elements_all.ne_nsg_ref%TYPE        DEFAULT NULL
+                          ,pi_version_no     IN     nm_elements_all.ne_version_no%TYPE     DEFAULT NULL
+                          ,pi_primary_ad_rec IN     nm_inv_items_all%ROWTYPE
+                          ,pi_shape_wkt      IN     CLOB
+                          ,po_ne_id          IN OUT nm_elements_all.ne_id%TYPE);
 
   --
   -----------------------------------------------------------------------------

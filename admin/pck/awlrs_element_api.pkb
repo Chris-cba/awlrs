@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.4   18 Oct 2016 13:21:26   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.5   19 Oct 2016 15:52:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   18 Oct 2016 13:21:26  $
-  --       Date fetched Out : $Modtime:   18 Oct 2016 13:20:52  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   19 Oct 2016 15:52:14  $
+  --       Date fetched Out : $Modtime:   18 Oct 2016 20:44:36  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -48,6 +48,43 @@ AS
     --
   END init_element_global;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE init_ad_global
+    IS
+    --
+    lv_empty_rec  nm_inv_items_all%ROWTYPE;
+    --
+  BEGIN
+    --
+    g_prim_ad_asset := lv_empty_rec;
+    --
+  END init_ad_global;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_primary_ad_inv_type(pi_nt_type    IN nm_types.nt_type%TYPE
+                                  ,pi_group_type IN nm_group_types_all.ngt_group_type%TYPE)
+    RETURN nm_inv_types_all.nit_inv_type%TYPE IS
+    --
+    lv_retval nm_inv_types_all.nit_inv_type%TYPE;
+    --
+  BEGIN
+    --
+    IF pi_group_type IS NOT NULL
+     THEN
+        lv_retval := nm3nwad.get_prim_nadt(pi_nt_type  => pi_nt_type
+                                          ,pi_gty_type => pi_group_type).nad_inv_type;
+    ELSE
+        lv_retval := nm3nwad.get_prim_nadt(pi_nt_type => pi_nt_type).nad_inv_type;
+    END IF;
+    --
+    RETURN lv_retval;
+    --
+  END get_primary_ad_inv_type;
+  
   --
   -----------------------------------------------------------------------------
   --
@@ -733,187 +770,6 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_format(pi_nt_type     IN  nm_types.nt_type%TYPE
-                      ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
-                      ,po_column_type OUT nm_type_columns.ntc_column_type%TYPE
-                      ,po_format      OUT nm_type_columns.ntc_format%TYPE)
-    IS
-  BEGIN
-    --
-    SELECT ntc_column_type
-          ,ntc_format
-      INTO po_column_type
-          ,po_format
-      FROM nm_type_columns
-     WHERE ntc_nt_type = pi_nt_type
-       AND ntc_column_name = pi_column_name
-         ;
-    --
-  EXCEPTION
-    WHEN no_data_found
-     THEN
-        --Invalid Attribute Supplied
-        hig.raise_ner(pi_appl => 'AWLRS'
-                     ,pi_id   => 3);
-    WHEN others
-     THEN
-        RAISE;
-  END get_format;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  FUNCTION get_assignment(pi_value       IN VARCHAR2
-                         ,pi_datatype    IN VARCHAR2
-                         ,pi_format_mask IN VARCHAR2)
-    RETURN VARCHAR2 IS
-    --
-    lv_value   nm3type.max_varchar2;
-    lv_retval  nm3type.max_varchar2;
-    --
-    lv_test_number  NUMBER;
-    --
-  BEGIN
-    --
-    IF pi_value IS NULL
-     THEN
-        --
-        lv_retval := 'NULL';
-        --
-    ELSE
-        /*
-        ||Escape any single in the value quotes.
-        */
-        lv_value := awlrs_util.escape_single_quotes(pi_string => pi_value);
-        --
-        IF pi_datatype = 'NUMBER'
-         THEN
-            /*
-            ||Try to convert to number directly.
-            */
-            BEGIN
-              --
-              lv_test_number := TO_NUMBER(lv_value);
-              --
-              lv_retval := 'TO_NUMBER('||nm3flx.string(lv_value)||')';
-              --
-            EXCEPTION
-              WHEN value_error
-               THEN
-                  lv_retval := NULL;
-            END;
-            --
-            IF lv_retval IS NULL
-             THEN
-                /*
-                ||Try to convert to number with the format mask.
-                */
-                IF pi_format_mask IS NOT NULL
-                 THEN
-                    BEGIN
-                      --
-                      lv_test_number := TO_NUMBER(lv_value,pi_format_mask);
-                      --
-                      lv_retval := 'TO_NUMBER('||nm3flx.string(lv_value)||','||nm3flx.string(pi_format_mask)||')';
-                      --
-                    EXCEPTION
-                     WHEN value_error
-                      THEN
-                         --Invalid numeric attribute value supplied
-                         hig.raise_ner(pi_appl               => 'AWLRS'
-                                      ,pi_id                 => 21
-                                      ,pi_supplementary_info => 'Value ['||lv_value||'] Format Mask ['||pi_format_mask||']');
-                    END;
-                END IF;
-            END IF;
-            --
-            IF lv_retval IS NULL
-             THEN
-                --Invalid numeric attribute value supplied
-                hig.raise_ner(pi_appl               => 'AWLRS'
-                             ,pi_id                 => 21
-                             ,pi_supplementary_info => 'Value ['||lv_value||']');
-            END IF;
-            --
-        ELSIF pi_datatype = 'DATE'
-         THEN
-            --
-            lv_retval := 'TO_DATE('||nm3flx.string(lv_value)||','||nm3flx.string(NVL(pi_format_mask,'DD-MON-YYYY'))||')';
-            --
-        ELSE
-            --
-            lv_retval := nm3flx.string(lv_value);
-            --
-        END IF;
-    END IF;
-    --
-    RETURN lv_retval;
-    --
-  END get_assignment;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  FUNCTION get_attr_assignment(pi_nt_type     IN nm_types.nt_type%TYPE
-                              ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE
-                              ,pi_value       IN VARCHAR2)
-    RETURN VARCHAR2 IS
-    --
-    lv_datatype    nm_type_columns.ntc_column_type%TYPE;
-    lv_format_mask nm_type_columns.ntc_format%TYPE;
-    --
-    lv_retval  nm3type.max_varchar2;
-    --
-  BEGIN
-    --
-    get_format(pi_nt_type     => pi_nt_type
-              ,pi_column_name => pi_column_name
-              ,po_column_type => lv_datatype
-              ,po_format      => lv_format_mask);
-    --
-    RETURN get_assignment(pi_value       => pi_value
-                         ,pi_datatype    => lv_datatype
-                         ,pi_format_mask => lv_format_mask);
-    --
-  END get_attr_assignment;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE set_attribute(pi_nt_type     IN nm_types.nt_type%TYPE
-                         ,pi_global      IN VARCHAR2
-                         ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE
-                         ,pi_prompt      IN nm_type_columns.ntc_prompt%TYPE
-                         ,pi_value       IN VARCHAR2)
-    IS
-    --
-    lv_sql  nm3type.max_varchar2;
-    --
-  BEGIN
-    /*
-    ||Set The Value.
-    */
-    lv_sql := 'BEGIN '||pi_global||'.'||pi_column_name||' := '
-              ||get_attr_assignment(pi_nt_type     => pi_nt_type
-                                   ,pi_column_name => pi_column_name
-                                   ,pi_value       => pi_value)
-              ||'; END;'
-    ;
-    --
-    EXECUTE IMMEDIATE lv_sql;
-    --
-  EXCEPTION
-    WHEN others
-     THEN
-        --Invalid attribute value supplied
-        hig.raise_ner(pi_appl               => 'AWLRS'
-                     ,pi_id                 => 22
-                     ,pi_supplementary_info => '['||pi_prompt||']: '||SQLERRM);
-  END set_attribute;
-
-  --
-  -----------------------------------------------------------------------------
-  --
   PROCEDURE build_element_rec(pi_nt_type    IN nm_types.nt_type%TYPE
                              ,pi_global     IN VARCHAR2
                              ,pi_attributes IN flex_attr_tab)
@@ -927,16 +783,45 @@ AS
       */
       IF SUBSTR(pi_attributes(i).column_name,1,3) = 'NE_'
        THEN
-          set_attribute(pi_nt_type     => pi_nt_type
-                       ,pi_global      => pi_global
-                       ,pi_column_name => pi_attributes(i).column_name
-                       ,pi_prompt      => pi_attributes(i).prompt
-                       ,pi_value       => pi_attributes(i).char_value);
+          awlrs_util.set_attribute(pi_obj_type    => pi_nt_type
+                                  ,pi_inv_or_ne   => 'NE'
+                                  ,pi_global      => pi_global
+                                  ,pi_column_name => pi_attributes(i).column_name
+                                  ,pi_prompt      => pi_attributes(i).prompt
+                                  ,pi_value       => pi_attributes(i).char_value);
       END IF;
       --
     END LOOP;
     --
   END build_element_rec;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE build_ad_rec(pi_inv_type   IN nm_inv_types_all.nit_inv_type%TYPE
+                        ,pi_global     IN VARCHAR2
+                        ,pi_attributes IN flex_attr_tab)
+    IS
+    --
+  BEGIN
+    --
+    FOR i IN 1..pi_attributes.count LOOP
+      /*
+      ||Filter out any network element attributes.
+      */
+      IF SUBSTR(pi_attributes(i).column_name,1,4) = 'IIT_'
+       THEN
+          awlrs_util.set_attribute(pi_obj_type    => pi_inv_type
+                                  ,pi_inv_or_ne   => 'INV'
+                                  ,pi_global      => pi_global
+                                  ,pi_column_name => pi_attributes(i).column_name
+                                  ,pi_prompt      => pi_attributes(i).prompt
+                                  ,pi_value       => pi_attributes(i).char_value);
+      END IF;
+      --
+    END LOOP;
+    --
+  END build_ad_rec;
 
   --
   -----------------------------------------------------------------------------
@@ -1067,16 +952,18 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE create_element(pi_theme_name  IN nm_themes_all.nth_theme_name%TYPE
-                          ,pi_element_rec IN nm_elements_all%ROWTYPE
-                          ,pi_shape_wkt   IN CLOB
-                          ,po_ne_id       IN OUT nm_elements_all.ne_id%TYPE)
+  PROCEDURE create_element(pi_theme_name     IN     nm_themes_all.nth_theme_name%TYPE
+                          ,pi_element_rec    IN     nm_elements_all%ROWTYPE
+                          ,pi_primary_ad_rec IN     nm_inv_items_all%ROWTYPE
+                          ,pi_shape_wkt      IN     CLOB
+                          ,po_ne_id          IN OUT nm_elements_all.ne_id%TYPE)
     IS
     --
-    lv_shape  mdsys.sdo_geometry;
-    lv_srid   NUMBER;
-    lv_x      NUMBER;
-    lv_y      NUMBER;
+    lv_shape         mdsys.sdo_geometry;
+    lv_srid          NUMBER;
+    lv_x             NUMBER;
+    lv_y             NUMBER;
+    lv_prim_ad_type  nm_inv_types_all.nit_inv_type%TYPE;
     --
     lr_ne  nm_elements_all%ROWTYPE;
     lr_nt  nm_types%ROWTYPE;
@@ -1086,8 +973,6 @@ AS
     ||Set a save point.
     */
     SAVEPOINT cre_element_sp;
-    --
-    init_element_global;
     --
     lr_ne := pi_element_rec;
     lr_nt := nm3net.get_nt(pi_nt_type => lr_ne.ne_nt_type);
@@ -1167,6 +1052,24 @@ AS
     nm3net.insert_any_element(p_rec_ne         => lr_ne
                              ,p_nm_cardinality => NULL
                              ,p_auto_include   => TRUE);
+    /*
+    ||Create primary AD asset if required.
+    */
+    lv_prim_ad_type := get_primary_ad_inv_type(pi_nt_type    => lr_ne.ne_nt_type
+                                              ,pi_group_type => lr_ne.ne_gty_group_type);
+    IF lv_prim_ad_type IS NOT NULL
+     THEN
+        nm3nwad.iit_rec_init(pi_inv_type   => lv_prim_ad_type
+                            ,pi_admin_unit => lr_ne.ne_admin_unit);
+        --
+        g_prim_ad_asset.iit_inv_type := lv_prim_ad_type;
+        g_prim_ad_asset.iit_admin_unit := lr_ne.ne_admin_unit;
+        g_prim_ad_asset.iit_start_date := lr_ne.ne_start_date;
+        --
+        nm3nwad.add_inv_ad_to_ne(pi_ne_id   => lr_ne.ne_id
+                                ,pi_rec_iit => g_prim_ad_asset);
+        --
+    END IF;
     --
     IF lv_shape IS NOT NULL
      THEN
@@ -1188,30 +1091,31 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE create_element(pi_theme_name    IN     nm_themes_all.nth_theme_name%TYPE
-                          ,pi_network_type  IN     nm_elements_all.ne_nt_type%TYPE
-                          ,pi_element_type  IN     nm_elements_all.ne_type%TYPE
-                          ,pi_description   IN     nm_elements_all.ne_descr%TYPE
-                          ,pi_length        IN     nm_elements_all.ne_length%TYPE
-                          ,pi_admin_unit_id IN     nm_elements_all.ne_admin_unit%TYPE
-                          ,pi_start_date    IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                          ,pi_end_date      IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
-                          ,pi_group_type    IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
-                          ,pi_start_node_id IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
-                          ,pi_end_node_id   IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
-                          ,pi_unique        IN     nm_elements_all.ne_unique%TYPE         DEFAULT NULL
-                          ,pi_owner         IN     nm_elements_all.ne_owner%TYPE          DEFAULT NULL
-                          ,pi_name_1        IN     nm_elements_all.ne_name_1%TYPE         DEFAULT NULL
-                          ,pi_name_2        IN     nm_elements_all.ne_name_2%TYPE         DEFAULT NULL
-                          ,pi_prefix        IN     nm_elements_all.ne_prefix%TYPE         DEFAULT NULL
-                          ,pi_number        IN     nm_elements_all.ne_number%TYPE         DEFAULT NULL
-                          ,pi_sub_type      IN     nm_elements_all.ne_sub_type%TYPE       DEFAULT NULL
-                          ,pi_group         IN     nm_elements_all.ne_group%TYPE          DEFAULT NULL
-                          ,pi_sub_class     IN     nm_elements_all.ne_sub_class%TYPE      DEFAULT NULL
-                          ,pi_nsg_ref       IN     nm_elements_all.ne_nsg_ref%TYPE        DEFAULT NULL
-                          ,pi_version_no    IN     nm_elements_all.ne_version_no%TYPE     DEFAULT NULL
-                          ,pi_shape_wkt     IN     CLOB
-                          ,po_ne_id         IN OUT nm_elements_all.ne_id%TYPE)
+  PROCEDURE create_element(pi_theme_name     IN     nm_themes_all.nth_theme_name%TYPE
+                          ,pi_network_type   IN     nm_elements_all.ne_nt_type%TYPE
+                          ,pi_element_type   IN     nm_elements_all.ne_type%TYPE
+                          ,pi_description    IN     nm_elements_all.ne_descr%TYPE
+                          ,pi_length         IN     nm_elements_all.ne_length%TYPE
+                          ,pi_admin_unit_id  IN     nm_elements_all.ne_admin_unit%TYPE
+                          ,pi_start_date     IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                          ,pi_end_date       IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
+                          ,pi_group_type     IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
+                          ,pi_start_node_id  IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
+                          ,pi_end_node_id    IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
+                          ,pi_unique         IN     nm_elements_all.ne_unique%TYPE         DEFAULT NULL
+                          ,pi_owner          IN     nm_elements_all.ne_owner%TYPE          DEFAULT NULL
+                          ,pi_name_1         IN     nm_elements_all.ne_name_1%TYPE         DEFAULT NULL
+                          ,pi_name_2         IN     nm_elements_all.ne_name_2%TYPE         DEFAULT NULL
+                          ,pi_prefix         IN     nm_elements_all.ne_prefix%TYPE         DEFAULT NULL
+                          ,pi_number         IN     nm_elements_all.ne_number%TYPE         DEFAULT NULL
+                          ,pi_sub_type       IN     nm_elements_all.ne_sub_type%TYPE       DEFAULT NULL
+                          ,pi_group          IN     nm_elements_all.ne_group%TYPE          DEFAULT NULL
+                          ,pi_sub_class      IN     nm_elements_all.ne_sub_class%TYPE      DEFAULT NULL
+                          ,pi_nsg_ref        IN     nm_elements_all.ne_nsg_ref%TYPE        DEFAULT NULL
+                          ,pi_version_no     IN     nm_elements_all.ne_version_no%TYPE     DEFAULT NULL
+                          ,pi_primary_ad_rec IN     nm_inv_items_all%ROWTYPE
+                          ,pi_shape_wkt      IN     CLOB
+                          ,po_ne_id          IN OUT nm_elements_all.ne_id%TYPE)
     IS
     --
     lr_ne  nm_elements_all%ROWTYPE;
@@ -1240,10 +1144,11 @@ AS
     lr_ne.ne_nsg_ref        := pi_nsg_ref;
     lr_ne.ne_version_no     := pi_version_no;
     --
-    create_element(pi_theme_name  => pi_theme_name
-                  ,pi_element_rec => lr_ne
-                  ,pi_shape_wkt   => pi_shape_wkt
-                  ,po_ne_id       => po_ne_id);
+    create_element(pi_theme_name     => pi_theme_name
+                  ,pi_element_rec    => lr_ne
+                  ,pi_primary_ad_rec => pi_primary_ad_rec
+                  ,pi_shape_wkt      => pi_shape_wkt
+                  ,po_ne_id          => po_ne_id);
     --
   END create_element;
 
@@ -1266,9 +1171,16 @@ AS
                           ,po_ne_id           IN OUT nm_elements_all.ne_id%TYPE)
     IS
     --
+    lv_prim_ad_type  nm_inv_types_all.nit_inv_type%TYPE;
+    --
     lr_ne  nm_elements_all%ROWTYPE;
+    lr_ad  nm_inv_items_all%ROWTYPE;
     --
   BEGIN
+    /*
+    ||Process the Element details.
+    */
+    init_element_global;
     --
     g_new_element.ne_nt_type        := pi_network_type;
     g_new_element.ne_type           := pi_element_type;
@@ -1286,11 +1198,26 @@ AS
                      ,pi_attributes => pi_element_attribs);
     --
     lr_ne := g_new_element;
+    /*
+    ||Process any primary AD asset details.
+    */
+    init_ad_global;
     --
-    create_element(pi_theme_name  => pi_theme_name
-                  ,pi_element_rec => lr_ne
-                  ,pi_shape_wkt   => pi_shape_wkt
-                  ,po_ne_id       => po_ne_id);
+    lv_prim_ad_type := get_primary_ad_inv_type(pi_nt_type    => lr_ne.ne_nt_type
+                                              ,pi_group_type => lr_ne.ne_gty_group_type);
+    IF lv_prim_ad_type IS NOT NULL
+     THEN
+        build_ad_rec(pi_inv_type   => lv_prim_ad_type
+                    ,pi_global     => 'awlrs_element_api.g_prim_ad_asset'
+                    ,pi_attributes => pi_element_attribs);
+        lr_ad := g_prim_ad_asset;
+    END IF;
+    --
+    create_element(pi_theme_name     => pi_theme_name
+                  ,pi_element_rec    => lr_ne
+                  ,pi_primary_ad_rec => lr_ad
+                  ,pi_shape_wkt      => pi_shape_wkt
+                  ,po_ne_id          => po_ne_id);
     --
   END create_element;
 
