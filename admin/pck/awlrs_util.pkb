@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.3   10 Oct 2016 18:11:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.4   19 Oct 2016 15:51:42   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   10 Oct 2016 18:11:44  $
-  --       Date fetched Out : $Modtime:   10 Oct 2016 18:10:50  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   19 Oct 2016 15:51:42  $
+  --       Date fetched Out : $Modtime:   18 Oct 2016 20:05:12  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -34,83 +34,6 @@ AS
     RETURN g_body_sccsid;
   END get_body_version;
 
-  --
-  -----------------------------------------------------------------------------
-  --
-  FUNCTION user_has_normal_access(pi_admin_unit IN nm_admin_units_all.nau_admin_unit%TYPE)
-    RETURN BOOLEAN IS
-    --
-    lv_retval      BOOLEAN := FALSE;
-    --
-    lt_user_normal_nau  admin_unit_tab;
-    --
-  BEGIN
-    --
-    SELECT DISTINCT nau.nau_admin_unit
-          ,nau_unit_code
-          ,nau_name
-      BULK COLLECT
-      INTO lt_user_normal_nau
-      FROM nm_admin_units nau
-          ,nm_admin_groups nag
-          ,nm_user_aus nua
-     WHERE nua.nua_user_id = TO_NUMBER(SYS_CONTEXT('NM3CORE','USER_ID'))
-       AND nua.nua_mode = 'NORMAL'
-       AND nua.nua_admin_unit = nag.nag_parent_admin_unit
-       AND nag.nag_child_admin_unit = nau.nau_admin_unit
-         ;
-    --
-    FOR i IN 1..lt_user_normal_nau.COUNT LOOP
-      --
-      IF lt_user_normal_nau(i).admin_unit = pi_admin_unit
-       THEN
-          lv_retval := TRUE;
-          EXIT;
-      END IF;
-      --
-    END LOOP;
-    --
-    RETURN lv_retval;
-    --
-  END user_has_normal_access;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_user_normal_admin_units(po_message_severity OUT hig_codes.hco_code%TYPE
-                                       ,po_message_cursor   OUT sys_refcursor
-                                       ,po_cursor           OUT sys_refcursor)
-    IS
-    --
-  BEGIN
-    --
-    OPEN po_cursor FOR
-    SELECT distinct nau.nau_admin_type 
-          ,nau.nau_admin_unit
-          ,nau.nau_unit_code
-          ,nau.nau_name
-      FROM nm_admin_units nau
-          ,nm_admin_groups nag
-          ,nm_user_aus nua
-     WHERE nua.nua_user_id = TO_NUMBER(SYS_CONTEXT('NM3CORE','USER_ID'))
-       AND nua.nua_mode = 'NORMAL'
-       AND nua.nua_admin_unit = nag.nag_parent_admin_unit
-       AND nag.nag_child_admin_unit = nau.nau_admin_unit
-     ORDER
-        BY nau_admin_type
-          ,nau.nau_name
-         ;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-     THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END get_user_normal_admin_units;
-  
   --
   -----------------------------------------------------------------------------
   --
@@ -173,6 +96,288 @@ AS
     RETURN lt_retval;
     --
   END tokenise_string;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_format(pi_obj_type    IN  VARCHAR2
+                      ,pi_inv_or_ne   IN  VARCHAR2
+                      ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
+                      ,po_datatype    OUT nm_type_columns.ntc_column_type%TYPE
+                      ,po_format      OUT nm_type_columns.ntc_format%TYPE)
+    IS
+  BEGIN
+    --
+    IF pi_inv_or_ne = 'INV'
+     THEN
+        --
+        SELECT ita_format
+              ,ita_format_mask
+          INTO po_datatype
+              ,po_format
+          FROM nm_inv_type_attribs
+         WHERE ita_inv_type = pi_obj_type
+           AND ita_attrib_name = pi_column_name
+             ;
+        --
+    ELSIF pi_inv_or_ne = 'NE'
+     THEN
+        --
+        SELECT ntc_column_type
+              ,ntc_format
+          INTO po_datatype
+              ,po_format
+          FROM nm_type_columns
+         WHERE ntc_nt_type = pi_obj_type
+           AND ntc_column_name = pi_column_name
+             ;
+        --
+    ELSE
+        RAISE no_data_found;
+    END IF;
+    --
+  EXCEPTION
+    WHEN no_data_found
+     THEN
+        --Invalid Attribute Supplied
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 3);
+    WHEN others
+     THEN
+        RAISE;
+  END get_format;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_assignment(pi_value       IN VARCHAR2
+                         ,pi_datatype    IN VARCHAR2
+                         ,pi_format_mask IN VARCHAR2)
+    RETURN VARCHAR2 IS
+    --
+    lv_value   nm3type.max_varchar2;
+    lv_retval  nm3type.max_varchar2;
+    --
+    lv_test_number  NUMBER;
+    --
+  BEGIN
+    --
+    IF pi_value IS NULL
+     THEN
+        --
+        lv_retval := 'NULL';
+        --
+    ELSE
+        /*
+        ||Escape any single in the value quotes.
+        */
+        lv_value := awlrs_util.escape_single_quotes(pi_string => pi_value);
+        --
+        IF pi_datatype = 'NUMBER'
+         THEN
+            /*
+            ||Try to convert to number directly.
+            */
+            BEGIN
+              --
+              lv_test_number := TO_NUMBER(lv_value);
+              --
+              lv_retval := 'TO_NUMBER('||nm3flx.string(lv_value)||')';
+              --
+            EXCEPTION
+              WHEN value_error
+               THEN
+                  lv_retval := NULL;
+            END;
+            --
+            IF lv_retval IS NULL
+             THEN
+                /*
+                ||Try to convert to number with the format mask.
+                */
+                IF pi_format_mask IS NOT NULL
+                 THEN
+                    BEGIN
+                      --
+                      lv_test_number := TO_NUMBER(lv_value,pi_format_mask);
+                      --
+                      lv_retval := 'TO_NUMBER('||nm3flx.string(lv_value)||','||nm3flx.string(pi_format_mask)||')';
+                      --
+                    EXCEPTION
+                     WHEN value_error
+                      THEN
+                         --Invalid numeric attribute value supplied
+                         hig.raise_ner(pi_appl               => 'AWLRS'
+                                      ,pi_id                 => 21
+                                      ,pi_supplementary_info => 'Value ['||lv_value||'] Format Mask ['||pi_format_mask||']');
+                    END;
+                END IF;
+            END IF;
+            --
+            IF lv_retval IS NULL
+             THEN
+                --Invalid numeric attribute value supplied
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 21
+                             ,pi_supplementary_info => 'Value ['||lv_value||']');
+            END IF;
+            --
+        ELSIF pi_datatype = 'DATE'
+         THEN
+            --
+            lv_retval := 'TO_DATE('||nm3flx.string(lv_value)||','||nm3flx.string(NVL(pi_format_mask,'DD-MON-YYYY'))||')';
+            --
+        ELSE
+            --
+            lv_retval := nm3flx.string(lv_value);
+            --
+        END IF;
+    END IF;
+    --
+    RETURN lv_retval;
+    --
+  END get_assignment;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_attr_assignment(pi_obj_type    IN VARCHAR2
+                              ,pi_inv_or_ne   IN VARCHAR2
+                              ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE
+                              ,pi_value       IN VARCHAR2)
+    RETURN VARCHAR2 IS
+    --
+    lv_datatype    nm_type_columns.ntc_column_type%TYPE;
+    lv_format_mask nm_type_columns.ntc_format%TYPE;
+    --
+    lv_retval  nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    get_format(pi_obj_type    => pi_obj_type
+              ,pi_inv_or_ne   => pi_inv_or_ne
+              ,pi_column_name => pi_column_name
+              ,po_datatype    => lv_datatype
+              ,po_format      => lv_format_mask);
+    --
+    RETURN get_assignment(pi_value       => pi_value
+                         ,pi_datatype    => lv_datatype
+                         ,pi_format_mask => lv_format_mask);
+    --
+  END get_attr_assignment;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE set_attribute(pi_obj_type    IN VARCHAR2
+                         ,pi_inv_or_ne   IN VARCHAR2
+                         ,pi_global      IN VARCHAR2
+                         ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE
+                         ,pi_prompt      IN nm_type_columns.ntc_prompt%TYPE
+                         ,pi_value       IN VARCHAR2)
+    IS
+    --
+    lv_sql  nm3type.max_varchar2;
+    --
+  BEGIN
+    /*
+    ||Set The Value.
+    */
+    lv_sql := 'BEGIN '||pi_global||'.'||pi_column_name||' := '
+              ||get_attr_assignment(pi_obj_type    => pi_obj_type
+                                   ,pi_inv_or_ne   => pi_inv_or_ne
+                                   ,pi_column_name => pi_column_name
+                                   ,pi_value       => pi_value)
+              ||'; END;'
+    ;
+    --
+    EXECUTE IMMEDIATE lv_sql;
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        --Invalid attribute value supplied
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 22
+                     ,pi_supplementary_info => '['||pi_prompt||']: '||SQLERRM);
+  END set_attribute;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION user_has_normal_access(pi_admin_unit IN nm_admin_units_all.nau_admin_unit%TYPE)
+    RETURN BOOLEAN IS
+    --
+    lv_retval      BOOLEAN := FALSE;
+    --
+    lt_user_normal_nau  admin_unit_tab;
+    --
+  BEGIN
+    --
+    SELECT DISTINCT nau.nau_admin_unit
+          ,nau_unit_code
+          ,nau_name
+      BULK COLLECT
+      INTO lt_user_normal_nau
+      FROM nm_admin_units nau
+          ,nm_admin_groups nag
+          ,nm_user_aus nua
+     WHERE nua.nua_user_id = TO_NUMBER(SYS_CONTEXT('NM3CORE','USER_ID'))
+       AND nua.nua_mode = 'NORMAL'
+       AND nua.nua_admin_unit = nag.nag_parent_admin_unit
+       AND nag.nag_child_admin_unit = nau.nau_admin_unit
+         ;
+    --
+    FOR i IN 1..lt_user_normal_nau.COUNT LOOP
+      --
+      IF lt_user_normal_nau(i).admin_unit = pi_admin_unit
+       THEN
+          lv_retval := TRUE;
+          EXIT;
+      END IF;
+      --
+    END LOOP;
+    --
+    RETURN lv_retval;
+    --
+  END user_has_normal_access;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user_normal_admin_units(po_message_severity OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor   OUT sys_refcursor
+                                       ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT distinct nau.nau_admin_type
+          ,nau.nau_admin_unit
+          ,nau.nau_unit_code
+          ,nau.nau_name
+      FROM nm_admin_units nau
+          ,nm_admin_groups nag
+          ,nm_user_aus nua
+     WHERE nua.nua_user_id = TO_NUMBER(SYS_CONTEXT('NM3CORE','USER_ID'))
+       AND nua.nua_mode = 'NORMAL'
+       AND nua.nua_admin_unit = nag.nag_parent_admin_unit
+       AND nag.nag_child_admin_unit = nau.nau_admin_unit
+     ORDER
+        BY nau_admin_type
+          ,nau.nau_name
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_user_normal_admin_units;
 
   --
   -----------------------------------------------------------------------------
@@ -418,7 +623,7 @@ AS
                                                          ,pi_supplementary_info => pi_supplementary_info)
                ,po_message_tab => po_message_tab);
     --
-  END add_ner_to_message_tab;    
+  END add_ner_to_message_tab;
   --
   -----------------------------------------------------------------------------
   --
@@ -486,7 +691,7 @@ AS
     RETURN nm3flx.boolean_to_char(p_boolean => lv_retval);
     --
   END inv_category_is_updatable;
-  
+
 --
 -----------------------------------------------------------------------------
 --

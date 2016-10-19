@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.2   10 Oct 2016 18:11:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.3   19 Oct 2016 15:51:42   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   10 Oct 2016 18:11:44  $
-  --       Date fetched Out : $Modtime:   10 Oct 2016 18:10:50  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   19 Oct 2016 15:51:42  $
+  --       Date fetched Out : $Modtime:   18 Oct 2016 20:05:10  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -56,6 +56,24 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION tokenise_string(pi_string      IN VARCHAR2
+                          ,pi_token       IN VARCHAR2 DEFAULT ','
+                          ,pi_trim_values IN BOOLEAN DEFAULT TRUE)
+    RETURN nm3type.tab_varchar32767;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE set_attribute(pi_obj_type    IN VARCHAR2
+                         ,pi_inv_or_ne   IN VARCHAR2
+                         ,pi_global      IN VARCHAR2
+                         ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE
+                         ,pi_prompt      IN nm_type_columns.ntc_prompt%TYPE
+                         ,pi_value       IN VARCHAR2);
+
+  --
+  -----------------------------------------------------------------------------
+  --
   FUNCTION user_has_normal_access(pi_admin_unit IN nm_admin_units_all.nau_admin_unit%TYPE)
     RETURN BOOLEAN;
 
@@ -65,14 +83,6 @@ AS
   PROCEDURE get_user_normal_admin_units(po_message_severity OUT hig_codes.hco_code%TYPE
                                        ,po_message_cursor   OUT sys_refcursor
                                        ,po_cursor           OUT sys_refcursor);
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  FUNCTION tokenise_string(pi_string      IN VARCHAR2
-                          ,pi_token       IN VARCHAR2 DEFAULT ','
-                          ,pi_trim_values IN BOOLEAN DEFAULT TRUE)
-    RETURN nm3type.tab_varchar32767;
 
   --
   -----------------------------------------------------------------------------
