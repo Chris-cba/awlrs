@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkb-arc   1.3   13 Oct 2016 09:28:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkb-arc   1.4   21 Oct 2016 14:56:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_undo_api.pkb  $
-  --       Date into PVCS   : $Date:   13 Oct 2016 09:28:18  $
-  --       Date fetched Out : $Modtime:   13 Oct 2016 09:18:34  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   21 Oct 2016 14:56:04  $
+  --       Date fetched Out : $Modtime:   21 Oct 2016 14:54:14  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_undo_api';
   --
   --
@@ -250,10 +250,9 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO undo_operation_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-        ROLLBACK TO undo_operation_sp;
-    --
   END undo_operation;
 
 --
