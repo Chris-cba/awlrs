@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_persistence_api.pkb-arc   1.1   13 Oct 2016 09:28:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_persistence_api.pkb-arc   1.2   21 Oct 2016 14:56:06   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_persistence_api.pkb  $
-  --       Date into PVCS   : $Date:   13 Oct 2016 09:28:12  $
-  --       Date fetched Out : $Modtime:   13 Oct 2016 09:23:24  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   21 Oct 2016 14:56:06  $
+  --       Date fetched Out : $Modtime:   21 Oct 2016 14:54:14  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_persistence_api';
   --
@@ -88,9 +88,9 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO persist_data_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-        ROLLBACK TO persist_data_sp;
   END persist_data;
 
   --
@@ -124,9 +124,9 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_data_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-        ROLLBACK TO delete_data_sp;
   END delete_data;
 
   --
