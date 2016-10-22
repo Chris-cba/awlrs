@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.6   19 Oct 2016 18:27:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.7   22 Oct 2016 12:47:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   19 Oct 2016 18:27:12  $
-  --       Date fetched Out : $Modtime:   19 Oct 2016 18:10:22  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   22 Oct 2016 12:47:30  $
+  --       Date fetched Out : $Modtime:   21 Oct 2016 14:52:08  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -589,7 +589,7 @@ AS
           ,field_case
           ,CAST(domain_id AS VARCHAR2(40)) domain_id
           ,CAST(domain_bind_column AS VARCHAR2(30)) domain_bind_column
-          ,CAST(char_value AS VARCHAR2(240)) char_value
+          ,CAST(char_value AS VARCHAR2(500)) char_value
           ,required
           ,updateable
       FROM (SELECT 'NE_UNIQUE' column_name
@@ -643,19 +643,19 @@ AS
                                ntc_domain
                            ELSE
                                awlrs_element_api.gen_domain_name(pi_nt_type     => ntc_nt_type
-                                                              ,pi_column_name => ntc_column_name)
+                                                                ,pi_column_name => ntc_column_name)
                          END
                    END domain_id
                   ,REPLACE(nm3flx.extract_bind_variable(domain_sql),':',NULL) domain_bind_column
                   ,awlrs_element_api.get_nt_flx_col_value(pi_ne_id       => pi_ne_id
-                                                       ,pi_column_name => ntc_column_name
-                                                       ,pi_prompt_text => ntc_prompt) char_value
+                                                         ,pi_column_name => ntc_column_name
+                                                         ,pi_prompt_text => ntc_prompt) char_value
                   ,ntc_mandatory      required
                   ,ntc_updatable      updateable
                   ,ntc_seq_no + 1     seq_no
               FROM (SELECT ntc.*
                           ,awlrs_element_api.get_domain_sql_with_bind(pi_nt_type     => ntc_nt_type
-                                                                   ,pi_column_name => ntc_column_name) domain_sql
+                                                                     ,pi_column_name => ntc_column_name) domain_sql
                       FROM nm_type_columns ntc
                      WHERE ntc_nt_type = pi_nt_type
                        AND ntc_displayed = 'Y'
@@ -1334,9 +1334,9 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO reshape_element_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-        ROLLBACK TO reshape_element_sp;
   END reshape_element;
 
 --
