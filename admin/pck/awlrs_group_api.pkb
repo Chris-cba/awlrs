@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.0   Oct 24 2016 10:31:42   Vikas.Mhetre  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.1   Oct 25 2016 09:09:50   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 24 2016 10:31:42  $
-  --       Date fetched Out : $Modtime:   Oct 24 2016 10:21:24  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Oct 25 2016 09:09:50  $
+  --       Date fetched Out : $Modtime:   Oct 25 2016 08:40:50  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -1191,6 +1191,56 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END route_details;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE resize_route(pi_ne_id                    IN nm_elements.ne_id%TYPE
+                        ,pi_new_length               IN nm_elements.ne_length%TYPE
+                        ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor          OUT sys_refcursor) IS
+  BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT resize_route_sp;
+    --
+    DECLARE
+      e_circular_route exception;
+      PRAGMA EXCEPTION_INIT(e_circular_route, -20207);
+     
+      l_circle_start nm_elements.ne_id%TYPE;
+    
+    BEGIN  
+      nm3rsc.resize_route(pi_ne_id    => pi_ne_id
+                         ,pi_new_size => pi_new_length);
+
+    EXCEPTION
+      WHEN e_circular_route
+        THEN
+          -- get circular start point
+          l_circle_start := get_circular_start_point(pi_group_ne_id => pi_ne_id);
+
+          IF l_circle_start IS NOT NULL
+          THEN
+            -- try again with user chosen start point
+            nm3rsc.resize_route(pi_ne_id    => pi_ne_id
+                               ,pi_new_size => pi_new_length
+                               ,pi_ne_start => l_circle_start);
+          END IF;
+    END;
+    --
+    warn_if_route_ill_formed;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+      THEN
+        ROLLBACK TO resize_route_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END resize_route;
   --
   -----------------------------------------------------------------------------
   --
