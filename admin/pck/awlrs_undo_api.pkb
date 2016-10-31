@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkb-arc   1.4   21 Oct 2016 14:56:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkb-arc   1.5   31 Oct 2016 17:22:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_undo_api.pkb  $
-  --       Date into PVCS   : $Date:   21 Oct 2016 14:56:04  $
-  --       Date fetched Out : $Modtime:   21 Oct 2016 14:54:14  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   31 Oct 2016 17:22:28  $
+  --       Date fetched Out : $Modtime:   31 Oct 2016 17:16:40  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_undo_api';
   --
   --
@@ -224,11 +224,35 @@ AS
     CASE pi_operation
       WHEN 'Split'
        THEN
-          nm3undo.unsplit(p_ne_id => lv_old_ne_id1);
+          BEGIN
+            nm3undo.unsplit(p_ne_id => lv_old_ne_id1);
+          EXCEPTION
+            WHEN others
+             THEN
+                /*
+                ||nm3undo.unsplit performs a rollback on exception
+                ||invalidating the savepoint set in this procedure
+                ||so reestablish it for the exception handler to use.
+                */
+                SAVEPOINT undo_operation_sp;
+                RAISE;
+          END;
       WHEN 'Merge'
        THEN
-          nm3undo.unmerge(p_ne_id_1 => lv_old_ne_id1
-                         ,p_ne_id_2 => lv_old_ne_id2);
+          BEGIN
+            nm3undo.unmerge(p_ne_id_1 => lv_old_ne_id1
+                           ,p_ne_id_2 => lv_old_ne_id2);
+          EXCEPTION
+            WHEN others
+             THEN
+                /*
+                ||nm3undo.unmerge performs a rollback on exception
+                ||invalidating the savepoint set in this procedure
+                ||so reestablish it for the exception handler to use.
+                */
+                SAVEPOINT undo_operation_sp;
+                RAISE;
+          END;
       WHEN 'Replace'
        THEN
           nm3undo.unreplace(p_ne_id => lv_old_ne_id1);
