@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.6   21 Oct 2016 14:56:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.7   02 Nov 2016 17:49:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   21 Oct 2016 14:56:04  $
-  --       Date fetched Out : $Modtime:   21 Oct 2016 13:54:56  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   02 Nov 2016 17:49:50  $
+  --       Date fetched Out : $Modtime:   02 Nov 2016 17:44:38  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -164,6 +164,7 @@ AS
     IF pi_split_at_node_id IS NOT NULL
      THEN
         lv_create_node := FALSE;
+        lv_new_node_id := pi_split_at_node_id;
     END IF;
     --
     nm3split.set_ne_globals(pi_ne_id => pi_ne_id);
