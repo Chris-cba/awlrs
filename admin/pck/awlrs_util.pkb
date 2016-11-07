@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.4   19 Oct 2016 15:51:42   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.5   07 Nov 2016 10:11:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   19 Oct 2016 15:51:42  $
-  --       Date fetched Out : $Modtime:   18 Oct 2016 20:05:12  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   07 Nov 2016 10:11:36  $
+  --       Date fetched Out : $Modtime:   01 Nov 2016 18:35:04  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -542,6 +542,7 @@ AS
     IF pi_category IN(c_msg_cat_success
                      ,c_msg_cat_info
                      ,c_msg_cat_warning
+                     ,c_msg_cat_ask_continue
                      ,c_msg_cat_error)
      THEN
         po_message_tab.extend;
@@ -571,6 +572,53 @@ AS
     --
   END get_message_cursor;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_highest_severity(pi_message_tab      IN  awlrs_message_tab
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE)
+    IS
+    --
+    lv_severity  hig_codes.hco_code%TYPE;
+    --
+  BEGIN
+    --
+    FOR i IN 1..pi_message_tab.COUNT LOOP
+      --
+      CASE pi_message_tab(i).category
+        WHEN c_msg_cat_error
+         THEN
+            lv_severity := c_msg_cat_error;
+            EXIT;
+        WHEN c_msg_cat_ask_continue
+         THEN
+            lv_severity := c_msg_cat_ask_continue;
+        WHEN c_msg_cat_warning
+         THEN
+            IF lv_severity != c_msg_cat_ask_continue
+             THEN
+                lv_severity := c_msg_cat_warning;
+            END IF;
+        WHEN c_msg_cat_info
+         THEN
+            IF lv_severity NOT IN (c_msg_cat_ask_continue,c_msg_cat_warning)
+             THEN
+                lv_severity := c_msg_cat_info;
+            END IF;
+        WHEN c_msg_cat_success
+         THEN
+            IF lv_severity NOT IN (c_msg_cat_ask_continue,c_msg_cat_warning,c_msg_cat_info)
+             THEN
+                lv_severity := c_msg_cat_success;
+            END IF;
+      END CASE;
+      --
+    END LOOP;
+    --
+    po_message_severity := lv_severity;
+    --
+  END get_highest_severity;
+  
   --
   -----------------------------------------------------------------------------
   --
@@ -612,7 +660,6 @@ AS
                                   ,pi_ner_id             IN     nm_errors.ner_id%TYPE
                                   ,pi_supplementary_info IN     VARCHAR2 DEFAULT NULL
                                   ,pi_category           IN     hig_codes.hco_code%TYPE
-                                  ,po_message_severity   IN OUT hig_codes.hco_code%TYPE
                                   ,po_message_tab        IN OUT NOCOPY awlrs_message_tab)
     IS
   BEGIN
@@ -624,6 +671,7 @@ AS
                ,po_message_tab => po_message_tab);
     --
   END add_ner_to_message_tab;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -637,11 +685,15 @@ AS
         --
         po_message_severity := c_msg_cat_error;
         add_message(pi_category    => c_msg_cat_error
-                   ,pi_message     => SQLERRM
+                   ,pi_message     => nm3flx.parse_error_message(SQLERRM)
                    ,po_message_tab => po_message_tab);
         --
         IF hig.get_sysopt('AWLUIDBUG') = 'Y'
          THEN
+            --
+            add_message(pi_category    => c_msg_cat_error
+                       ,pi_message     => 'Unparsed Error:'||CHR(10)||SQLERRM
+                       ,po_message_tab => po_message_tab);
             --
             add_message(pi_category    => c_msg_cat_error
                        ,pi_message     => 'Backtrace:'||CHR(10)||dbms_utility.format_error_backtrace
