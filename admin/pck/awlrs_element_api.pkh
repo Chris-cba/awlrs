@@ -3,20 +3,28 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.3   19 Oct 2016 18:27:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.4   10 Nov 2016 15:41:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   19 Oct 2016 18:27:12  $
-  --       Date fetched Out : $Modtime:   19 Oct 2016 18:10:22  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   10 Nov 2016 15:41:22  $
+  --       Date fetched Out : $Modtime:   10 Nov 2016 14:08:16  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
   --
-  g_new_element    nm_elements_all%ROWTYPE;
-  g_prim_ad_asset  nm_inv_items_all%ROWTYPE;
+  g_db_element   nm_elements_all%ROWTYPE;
+  g_old_element  nm_elements_all%ROWTYPE;
+  g_new_element  nm_elements_all%ROWTYPE;
+  --
+  g_db_prim_ad_asset  nm_inv_items_all%ROWTYPE;
+  g_old_prim_ad_asset  nm_inv_items_all%ROWTYPE;
+  g_new_prim_ad_asset  nm_inv_items_all%ROWTYPE;
+  --
+  g_update_ad_sql       nm3type.max_varchar2;
+  g_update_element_sql  nm3type.max_varchar2;
   --
   TYPE element_rec IS RECORD(element_id                  nm_elements_all.ne_id%TYPE
                             ,element_network_type        nm_elements_all.ne_nt_type%TYPE
@@ -59,7 +67,7 @@ AS
                               ,field_case         VARCHAR2(5)
                               ,domain_id          VARCHAR2(40)
                               ,domain_bind_column nm_type_columns.ntc_column_name%TYPE
-                              ,char_value         VARCHAR2(240)
+                              ,char_value         VARCHAR2(500)
                               ,required           nm_type_columns.ntc_mandatory%TYPE
                               ,updateable         nm_type_columns.ntc_updatable%TYPE);
   TYPE flex_attr_tab IS TABLE OF flex_attr_rec INDEX BY BINARY_INTEGER;
@@ -254,7 +262,7 @@ AS
                           ,pi_group_type      IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
                           ,pi_start_node_id   IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
                           ,pi_end_node_id     IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
-                          ,pi_element_attribs IN     awlrs_element_api.flex_attr_tab
+                          ,pi_element_attribs IN     flex_attr_tab
                           ,pi_shape_wkt       IN     CLOB
                           ,po_ne_id           IN OUT nm_elements_all.ne_id%TYPE);
 
@@ -279,6 +287,30 @@ AS
                           ,po_ne_id               IN OUT nm_elements_all.ne_id%TYPE
                           ,po_message_severity       OUT hig_codes.hco_code%TYPE
                           ,po_message_cursor         OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_element(pi_ne_id           IN nm_elements_all.ne_id%TYPE
+                          ,pi_old_description IN nm_elements_all.ne_descr%TYPE
+                          ,pi_new_description IN nm_elements_all.ne_descr%TYPE
+                          ,pi_old_attributes  IN flex_attr_tab
+                          ,pi_new_attributes  IN flex_attr_tab);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_element(pi_ne_id                   IN  nm_elements_all.ne_id%TYPE
+                          ,pi_old_description         IN  nm_elements_all.ne_descr%TYPE
+                          ,pi_new_description         IN  nm_elements_all.ne_descr%TYPE
+                          ,pi_old_attrib_column_names IN  attrib_column_name_tab
+                          ,pi_old_attrib_prompts      IN  attrib_prompt_tab
+                          ,pi_old_attrib_char_values  IN  attrib_char_value_tab
+                          ,pi_new_attrib_column_names IN  attrib_column_name_tab
+                          ,pi_new_attrib_prompts      IN  attrib_prompt_tab
+                          ,pi_new_attrib_char_values  IN  attrib_char_value_tab
+                          ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor          OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
