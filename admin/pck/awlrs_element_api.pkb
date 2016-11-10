@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.8   10 Nov 2016 15:46:54   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.9   10 Nov 2016 21:47:54   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   10 Nov 2016 15:46:54  $
-  --       Date fetched Out : $Modtime:   10 Nov 2016 15:43:26  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   10 Nov 2016 21:47:54  $
+  --       Date fetched Out : $Modtime:   10 Nov 2016 21:33:56  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1021,6 +1021,42 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE create_primary_ad_asset(pi_ne_id          IN nm_elements_all.ne_id%TYPE
+                                   ,pi_nt_type        IN nm_types.nt_type%TYPE
+                                   ,pi_group_type     IN nm_group_types_all.ngt_group_type%TYPE
+                                   ,pi_admin_unit     IN nm_admin_units_all.nau_admin_unit%TYPE
+                                   ,pi_start_date     IN nm_elements_all.ne_start_date%TYPE
+                                   ,pi_primary_ad_rec IN nm_inv_items_all%ROWTYPE)
+    IS
+    --
+    lv_prim_ad_type  nm_inv_types_all.nit_inv_type%TYPE;
+    --
+    lr_ad  nm_inv_items_all%ROWTYPE;
+    --
+  BEGIN
+    --
+    lv_prim_ad_type := get_primary_ad_inv_type(pi_nt_type    => pi_nt_type
+                                              ,pi_group_type => pi_group_type);
+    IF lv_prim_ad_type IS NOT NULL
+     THEN
+        lr_ad := pi_primary_ad_rec;
+        nm3nwad.iit_rec_init(pi_inv_type   => lv_prim_ad_type
+                            ,pi_admin_unit => pi_admin_unit);
+        --
+        lr_ad.iit_inv_type := lv_prim_ad_type;
+        lr_ad.iit_admin_unit := pi_admin_unit;
+        lr_ad.iit_start_date := pi_start_date;
+        --
+        nm3nwad.add_inv_ad_to_ne(pi_ne_id   => pi_ne_id
+                                ,pi_rec_iit => lr_ad);
+        --
+    END IF;
+    --
+  END create_primary_ad_asset;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE create_element(pi_theme_name     IN     nm_themes_all.nth_theme_name%TYPE
                           ,pi_element_rec    IN     nm_elements_all%ROWTYPE
                           ,pi_primary_ad_rec IN     nm_inv_items_all%ROWTYPE
@@ -1032,11 +1068,9 @@ AS
     lv_srid          NUMBER;
     lv_x             NUMBER;
     lv_y             NUMBER;
-    lv_prim_ad_type  nm_inv_types_all.nit_inv_type%TYPE;
     --
     lr_ne  nm_elements_all%ROWTYPE;
     lr_nt  nm_types%ROWTYPE;
-    lr_ad  nm_inv_items_all%ROWTYPE;
     --
   BEGIN
     /*
@@ -1125,22 +1159,12 @@ AS
     /*
     ||Create primary AD asset if required.
     */
-    lv_prim_ad_type := get_primary_ad_inv_type(pi_nt_type    => lr_ne.ne_nt_type
-                                              ,pi_group_type => lr_ne.ne_gty_group_type);
-    IF lv_prim_ad_type IS NOT NULL
-     THEN
-        lr_ad := pi_primary_ad_rec;
-        nm3nwad.iit_rec_init(pi_inv_type   => lv_prim_ad_type
-                            ,pi_admin_unit => lr_ne.ne_admin_unit);
-        --
-        lr_ad.iit_inv_type := lv_prim_ad_type;
-        lr_ad.iit_admin_unit := lr_ne.ne_admin_unit;
-        lr_ad.iit_start_date := lr_ne.ne_start_date;
-        --
-        nm3nwad.add_inv_ad_to_ne(pi_ne_id   => lr_ne.ne_id
-                                ,pi_rec_iit => lr_ad);
-        --
-    END IF;
+    create_primary_ad_asset(pi_ne_id          => lr_ne.ne_id
+                           ,pi_nt_type        => lr_ne.ne_nt_type
+                           ,pi_group_type     => lr_ne.ne_gty_group_type
+                           ,pi_admin_unit     => lr_ne.ne_admin_unit
+                           ,pi_start_date     => lr_ne.ne_start_date
+                           ,pi_primary_ad_rec => pi_primary_ad_rec);
     --
     IF lv_shape IS NOT NULL
      THEN
@@ -1534,11 +1558,23 @@ AS
       IF lv_upd_ad = 'Y'
        THEN
           /*
-          ||Complete and execute the primary ad asset update statement.
+          ||If the ad asset does not exists create it, otherwise update it.
           */
-          lv_upd_ad_sql := lv_upd_ad_sql||' WHERE iit_ne_id = :iit_ne_id; END;';
-          EXECUTE IMMEDIATE lv_upd_ad_sql USING g_db_prim_ad_asset.iit_ne_id;
-          --
+          IF g_db_prim_ad_asset.iit_ne_id IS NULL
+           THEN
+              create_primary_ad_asset(pi_ne_id          => g_db_element.ne_id
+                                     ,pi_nt_type        => g_db_element.ne_nt_type
+                                     ,pi_group_type     => g_db_element.ne_gty_group_type
+                                     ,pi_admin_unit     => g_db_element.ne_admin_unit
+                                     ,pi_start_date     => g_db_element.ne_start_date
+                                     ,pi_primary_ad_rec => g_new_prim_ad_asset);
+          ELSE
+              /*
+              ||Complete and execute the primary ad asset update statement.
+              */
+              lv_upd_ad_sql := lv_upd_ad_sql||' WHERE iit_ne_id = :iit_ne_id; END;';
+              EXECUTE IMMEDIATE lv_upd_ad_sql USING g_db_prim_ad_asset.iit_ne_id;
+          END IF;
       END IF;
       --
     END compare_old_with_new;
@@ -1559,7 +1595,10 @@ AS
     get_db_rec(pi_ne_id => pi_ne_id);
     g_old_element := g_db_element;
     g_new_element := g_db_element;
-    --
+    /*
+    ||Build and validate the element records
+    ||based on the attributes passed in.
+    */
     g_old_element.ne_descr := pi_old_description;
     g_new_element.ne_descr := pi_new_description;
     --
@@ -1570,7 +1609,6 @@ AS
     build_element_rec(pi_nt_type    => g_db_element.ne_nt_type
                      ,pi_global     => 'awlrs_element_api.g_new_element'
                      ,pi_attributes => pi_new_attributes);
-    --
     /*
     ||Process any primary AD asset details.
     */
@@ -1597,11 +1635,11 @@ AS
     */
     compare_old_with_new;
     --
-    UPDATE nm_elements_all
-       SET ne_descr = pi_new_description
-     WHERE ne_id = pi_ne_id
-         ;
-    --
+  EXCEPTION
+    WHEN others
+     THEN
+        ROLLBACK TO upd_element_sp;
+        RAISE;
   END update_element;
 
   --
