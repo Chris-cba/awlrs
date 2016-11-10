@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.7   22 Oct 2016 12:47:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.8   10 Nov 2016 15:46:54   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   22 Oct 2016 12:47:30  $
-  --       Date fetched Out : $Modtime:   21 Oct 2016 14:52:08  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   10 Nov 2016 15:46:54  $
+  --       Date fetched Out : $Modtime:   10 Nov 2016 15:43:26  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -37,30 +37,34 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE init_element_global
+  PROCEDURE init_element_globals
     IS
     --
     lv_empty_rec  nm_elements_all%ROWTYPE;
     --
   BEGIN
     --
+    g_db_element := lv_empty_rec;
+    g_old_element := lv_empty_rec;
     g_new_element := lv_empty_rec;
     --
-  END init_element_global;
+  END init_element_globals;
 
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE init_ad_global
+  PROCEDURE init_ad_globals
     IS
     --
     lv_empty_rec  nm_inv_items_all%ROWTYPE;
     --
   BEGIN
     --
-    g_prim_ad_asset := lv_empty_rec;
+    g_db_prim_ad_asset := lv_empty_rec;
+    g_old_prim_ad_asset := lv_empty_rec;
+    g_new_prim_ad_asset := lv_empty_rec;
     --
-  END init_ad_global;
+  END init_ad_globals;
 
   --
   ------------------------------------------------------------------------------
@@ -348,25 +352,63 @@ AS
     --
   BEGIN
     --
-    lv_lov_sql := get_domain_sql_with_bind(pi_nt_type     => pi_nt_type
-                                          ,pi_column_name => pi_column_name);
-    --
-    IF lv_lov_sql IS NOT NULL
+    IF SUBSTR(pi_column_name,1,3) = 'NE_'
+     THEN
+        lv_lov_sql := get_domain_sql_with_bind(pi_nt_type     => pi_nt_type
+                                              ,pi_column_name => pi_column_name);
+        --
+        IF lv_lov_sql IS NOT NULL
+         THEN
+            --
+            lv_cursor_sql := lv_cursor_sql
+                  ||CHR(10)||'UNION ALL'
+                  ||CHR(10)||'SELECT sql.* FROM ('||lv_lov_sql||') sql'
+            ;
+        END IF;
+        --
+        lv_cursor_sql := lv_cursor_sql||')';
+        --
+        IF nm3flx.extract_bind_variable(lv_lov_sql) IS NULL
+         THEN
+            OPEN po_cursor FOR lv_cursor_sql;
+        ELSE
+            OPEN po_cursor FOR lv_cursor_sql USING pi_bind_value;
+        END IF;
+        --
+    ELSIF SUBSTR(pi_column_name,1,4) = 'IIT_'
      THEN
         --
         lv_cursor_sql := lv_cursor_sql
               ||CHR(10)||'UNION ALL'
-              ||CHR(10)||'SELECT sql.* FROM ('||lv_lov_sql||') sql'
+              ||CHR(10)||'SELECT code lov_code'
+              ||CHR(10)||'      ,meaning lov_meaning'
+              ||CHR(10)||'      ,code lov_value'
+              ||CHR(10)||'  FROM(SELECT ial_value  code'
+              ||CHR(10)||'             ,ial_meaning meaning'
+              ||CHR(10)||'         FROM nm_inv_attri_lookup'
+              ||CHR(10)||'        WHERE TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY'') >= NVL(ial_start_date,TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY''))'
+              ||CHR(10)||'          AND TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY'') <= NVL(ial_end_date,TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY''))'
+              ||CHR(10)||'          AND ial_domain IN(SELECT ita_id_domain'
+              ||CHR(10)||'                              FROM nm_inv_type_attribs'
+              ||CHR(10)||'                                  ,nm_nw_ad_types'
+              ||CHR(10)||'                             WHERE nad_nt_type = :nt_type'
+              ||CHR(10)||'                               AND nad_primary_ad = ''Y'''
+              ||CHR(10)||'                               AND nad_inv_type = ita_inv_type'
+              ||CHR(10)||'                               AND ita_attrib_name = :pi_column_name'
+              ||CHR(10)||'                               AND ita_id_domain IS NOT NULL)'
+              ||CHR(10)||'        ORDER BY ial_domain,ial_seq))'
         ;
-    END IF;
-    --
-    lv_cursor_sql := lv_cursor_sql||')';
-    --
-    IF nm3flx.extract_bind_variable(lv_lov_sql) IS NULL
-     THEN
-        OPEN po_cursor FOR lv_cursor_sql;
+        --
+        OPEN po_cursor FOR lv_cursor_sql USING pi_nt_type, pi_column_name;
+        --
     ELSE
-        OPEN po_cursor FOR lv_cursor_sql USING pi_bind_value;
+        /*
+        ||Column name does not belong to the Element Attributes or
+        ||the Primary AD Asset Attributes so return an empty cursor.
+        */
+        --
+        OPEN po_cursor FOR lv_cursor_sql||')';
+        --
     END IF;
     --
   END get_nt_flex_domain;
@@ -800,6 +842,26 @@ AS
       --
     END LOOP;
     --
+    EXECUTE IMMEDIATE 'BEGIN'
+           ||CHR(10)||'  nm3nwval.validate_nw_element_cols(p_ne_nt_type        => '||pi_global||'.ne_nt_type'
+           ||CHR(10)||'                                   ,p_ne_owner          => '||pi_global||'.ne_owner'
+           ||CHR(10)||'                                   ,p_ne_name_1         => '||pi_global||'.ne_name_1'
+           ||CHR(10)||'                                   ,p_ne_name_2         => '||pi_global||'.ne_name_2'
+           ||CHR(10)||'                                   ,p_ne_prefix         => '||pi_global||'.ne_prefix'
+           ||CHR(10)||'                                   ,p_ne_number         => '||pi_global||'.ne_number'
+           ||CHR(10)||'                                   ,p_ne_sub_type       => '||pi_global||'.ne_sub_type'
+           ||CHR(10)||'                                   ,p_ne_no_start       => '||pi_global||'.ne_no_start'
+           ||CHR(10)||'                                   ,p_ne_no_end         => '||pi_global||'.ne_no_end'
+           ||CHR(10)||'                                   ,p_ne_sub_class      => '||pi_global||'.ne_sub_class'
+           ||CHR(10)||'                                   ,p_ne_nsg_ref        => '||pi_global||'.ne_nsg_ref'
+           ||CHR(10)||'                                   ,p_ne_version_no     => '||pi_global||'.ne_version_no'
+           ||CHR(10)||'                                   ,p_ne_group          => '||pi_global||'.ne_group'
+           ||CHR(10)||'                                   ,p_ne_start_date     => '||pi_global||'.ne_start_date'
+           ||CHR(10)||'                                   ,p_ne_gty_group_type => '||pi_global||'.ne_gty_group_type'
+           ||CHR(10)||'                                   ,p_ne_admin_unit     => '||pi_global||'.ne_admin_unit);'
+           ||CHR(10)||'END;'
+    ;
+    --
   END build_element_rec;
 
   --
@@ -974,6 +1036,7 @@ AS
     --
     lr_ne  nm_elements_all%ROWTYPE;
     lr_nt  nm_types%ROWTYPE;
+    lr_ad  nm_inv_items_all%ROWTYPE;
     --
   BEGIN
     /*
@@ -1001,7 +1064,7 @@ AS
      THEN
         --
         lv_shape := awlrs_sdo.wkt_to_sdo_geom(pi_theme_name => pi_theme_name
-                                           ,pi_shape      => pi_shape_wkt);
+                                             ,pi_shape      => pi_shape_wkt);
         --
     END IF;
     /*
@@ -1066,15 +1129,16 @@ AS
                                               ,pi_group_type => lr_ne.ne_gty_group_type);
     IF lv_prim_ad_type IS NOT NULL
      THEN
+        lr_ad := pi_primary_ad_rec;
         nm3nwad.iit_rec_init(pi_inv_type   => lv_prim_ad_type
                             ,pi_admin_unit => lr_ne.ne_admin_unit);
         --
-        g_prim_ad_asset.iit_inv_type := lv_prim_ad_type;
-        g_prim_ad_asset.iit_admin_unit := lr_ne.ne_admin_unit;
-        g_prim_ad_asset.iit_start_date := lr_ne.ne_start_date;
+        lr_ad.iit_inv_type := lv_prim_ad_type;
+        lr_ad.iit_admin_unit := lr_ne.ne_admin_unit;
+        lr_ad.iit_start_date := lr_ne.ne_start_date;
         --
         nm3nwad.add_inv_ad_to_ne(pi_ne_id   => lr_ne.ne_id
-                                ,pi_rec_iit => g_prim_ad_asset);
+                                ,pi_rec_iit => lr_ad);
         --
     END IF;
     --
@@ -1173,7 +1237,7 @@ AS
                           ,pi_group_type      IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
                           ,pi_start_node_id   IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
                           ,pi_end_node_id     IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
-                          ,pi_element_attribs IN     awlrs_element_api.flex_attr_tab
+                          ,pi_element_attribs IN     flex_attr_tab
                           ,pi_shape_wkt       IN     CLOB
                           ,po_ne_id           IN OUT nm_elements_all.ne_id%TYPE)
     IS
@@ -1187,7 +1251,7 @@ AS
     /*
     ||Process the Element details.
     */
-    init_element_global;
+    init_element_globals;
     --
     g_new_element.ne_nt_type        := pi_network_type;
     g_new_element.ne_type           := pi_element_type;
@@ -1208,16 +1272,16 @@ AS
     /*
     ||Process any primary AD asset details.
     */
-    init_ad_global;
+    init_ad_globals;
     --
     lv_prim_ad_type := get_primary_ad_inv_type(pi_nt_type    => lr_ne.ne_nt_type
                                               ,pi_group_type => lr_ne.ne_gty_group_type);
     IF lv_prim_ad_type IS NOT NULL
      THEN
         build_ad_rec(pi_inv_type   => lv_prim_ad_type
-                    ,pi_global     => 'awlrs_element_api.g_prim_ad_asset'
+                    ,pi_global     => 'awlrs_element_api.g_new_prim_ad_asset'
                     ,pi_attributes => pi_element_attribs);
-        lr_ad := g_prim_ad_asset;
+        lr_ad := g_new_prim_ad_asset;
     END IF;
     --
     create_element(pi_theme_name     => pi_theme_name
@@ -1300,6 +1364,310 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE update_element(pi_ne_id           IN nm_elements_all.ne_id%TYPE
+                          ,pi_old_description IN nm_elements_all.ne_descr%TYPE
+                          ,pi_new_description IN nm_elements_all.ne_descr%TYPE
+                          ,pi_old_attributes  IN flex_attr_tab
+                          ,pi_new_attributes  IN flex_attr_tab)
+    IS
+    --
+    lv_prim_ad_type  nm_inv_types_all.nit_inv_type%TYPE;
+    --
+    PROCEDURE get_db_rec(pi_ne_id IN nm_elements_all.ne_id%TYPE)
+      IS
+    BEGIN
+      BEGIN
+        --
+        SELECT *
+          INTO g_db_element
+          FROM nm_elements
+         WHERE ne_id = pi_ne_id
+           FOR UPDATE NOWAIT
+             ;
+        --
+      EXCEPTION
+       WHEN no_data_found
+        THEN
+           --Invalid Element Id supplied
+           hig.raise_ner(pi_appl => 'AWLRS'
+                        ,pi_id   => 29);
+      END;
+      --
+      BEGIN
+        SELECT *
+          INTO g_db_prim_ad_asset
+          FROM nm_inv_items_all
+         WHERE iit_ne_id = (SELECT nad_iit_ne_id
+                              FROM nm_nw_ad_link
+                             WHERE nad_ne_id = pi_ne_id
+                               AND nad_primary_ad = 'Y')
+           FOR UPDATE NOWAIT
+             ;
+      EXCEPTION
+       WHEN no_data_found
+        THEN
+           NULL;
+      END;           
+    END get_db_rec;
+    --
+    PROCEDURE compare_old_with_db
+      IS
+      --
+      lv_sql nm3type.max_varchar2;
+      --
+    BEGIN
+      /*
+      ||Check the Description (this is the only updatable fixed attribute).
+      */
+      IF g_db_element.ne_descr != pi_old_description
+       OR (g_db_element.ne_descr IS NULL AND pi_old_description IS NOT NULL)
+       OR (g_db_element.ne_descr IS NOT NULL AND pi_old_description IS NULL)
+       THEN
+          --Updated by another user
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 24);
+      END IF;
+      /*
+      ||Check the flexible attributes (Element and AD Asset).
+      */
+      FOR i IN 1..pi_old_attributes.count LOOP
+        --
+        lv_sql := NULL;
+        --
+        IF SUBSTR(pi_old_attributes(i).column_name,1,3) = 'NE_'
+         THEN
+            lv_sql := 'BEGIN'
+           ||CHR(10)||'  IF awlrs_element_api.g_db_element.'||pi_old_attributes(i).column_name||' != awlrs_element_api.g_old_element.'||pi_old_attributes(i).column_name
+           ||CHR(10)||'   OR (awlrs_element_api.g_db_element.'||pi_old_attributes(i).column_name||' IS NULL AND awlrs_element_api.g_old_element.'||pi_old_attributes(i).column_name||' IS NOT NULL)'
+           ||CHR(10)||'   OR (awlrs_element_api.g_db_element.'||pi_old_attributes(i).column_name||' IS NOT NULL AND awlrs_element_api.g_old_element.'||pi_old_attributes(i).column_name||' IS NULL)'
+           ||CHR(10)||'   THEN '
+           ||CHR(10)||'      hig.raise_ner(pi_appl => ''AWLRS'''
+           ||CHR(10)||'                   ,pi_id   => 24);'
+           ||CHR(10)||'  END IF;'
+           ||CHR(10)||'END;'
+            ;
+        ELSIF SUBSTR(pi_old_attributes(i).column_name,1,4) = 'IIT_'
+         THEN
+            lv_sql := 'BEGIN'
+           ||CHR(10)||'  IF awlrs_element_api.g_db_prim_ad_asset.'||pi_old_attributes(i).column_name||' != awlrs_element_api.g_old_prim_ad_asset.'||pi_old_attributes(i).column_name
+           ||CHR(10)||'   OR (awlrs_element_api.g_db_prim_ad_asset.'||pi_old_attributes(i).column_name||' IS NULL AND awlrs_element_api.g_old_prim_ad_asset.'||pi_old_attributes(i).column_name||' IS NOT NULL)'
+           ||CHR(10)||'   OR (awlrs_element_api.g_db_prim_ad_asset.'||pi_old_attributes(i).column_name||' IS NOT NULL AND awlrs_element_api.g_old_prim_ad_asset.'||pi_old_attributes(i).column_name||' IS NULL)'
+           ||CHR(10)||'   THEN '
+           ||CHR(10)||'      hig.raise_ner(pi_appl => ''AWLRS'''
+           ||CHR(10)||'                   ,pi_id   => 24);'
+           ||CHR(10)||'  END IF;'
+           ||CHR(10)||'END;'
+            ;
+        END IF;
+        --
+        IF lv_sql IS NOT NULL
+         THEN
+            EXECUTE IMMEDIATE lv_sql;
+        END IF;
+        --
+      END LOOP;
+    END compare_old_with_db;
+    --
+    PROCEDURE compare_old_with_new
+      IS
+      --
+      lv_sql              nm3type.max_varchar2;
+      lv_upd_element_sql  nm3type.max_varchar2 := 'DECLARE lr_ne nm_elements_all%ROWTYPE := awlrs_element_api.g_new_element; BEGIN UPDATE nm_elements_all SET ';
+      lv_upd_element      VARCHAR2(1) := 'N';
+      lv_upd_ad_sql       nm3type.max_varchar2 := 'DECLARE lr_iit nm_inv_items_all%ROWTYPE := awlrs_element_api.g_new_prim_ad_asset; BEGIN UPDATE nm_inv_items_all SET ';
+      lv_upd_ad           VARCHAR2(1) := 'N';
+      --
+    BEGIN
+      --
+      IF g_old_element.ne_descr != g_new_element.ne_descr
+       THEN
+          lv_upd_element_sql := lv_upd_element_sql||'ne_descr = lr_ne.ne_descr';
+          lv_upd_element := 'Y';
+      END IF;
+      --
+      FOR i IN 1..pi_new_attributes.count LOOP
+        --
+        lv_sql := NULL;
+        --
+        IF SUBSTR(pi_new_attributes(i).column_name,1,3) = 'NE_'
+         THEN
+            lv_sql := 'BEGIN IF awlrs_element_api.g_old_element.'||pi_new_attributes(i).column_name||' != awlrs_element_api.g_new_element.'||pi_new_attributes(i).column_name
+                    ||' OR (awlrs_element_api.g_old_element.'||pi_new_attributes(i).column_name||' IS NULL AND awlrs_element_api.g_new_element.'||pi_new_attributes(i).column_name||' IS NOT NULL)'
+                    ||' OR (awlrs_element_api.g_old_element.'||pi_new_attributes(i).column_name||' IS NOT NULL AND awlrs_element_api.g_new_element.'||pi_new_attributes(i).column_name||' IS NULL)'
+                    ||' THEN :sql_out := :sql_in||'''||CASE WHEN lv_upd_element = 'Y' THEN ', ' ELSE NULL END||LOWER(pi_new_attributes(i).column_name)||' = lr_ne.'||LOWER(pi_new_attributes(i).column_name)||''';'
+                    ||' :do_update := ''Y''; END IF; END;'
+            ;
+            EXECUTE IMMEDIATE lv_sql USING OUT lv_upd_element_sql, IN lv_upd_element_sql, OUT lv_upd_element;
+            --
+        ELSIF SUBSTR(pi_new_attributes(i).column_name,1,4) = 'IIT_'
+         THEN
+            lv_sql := 'BEGIN IF awlrs_element_api.g_old_prim_ad_asset.'||pi_new_attributes(i).column_name||' != awlrs_element_api.g_new_prim_ad_asset.'||pi_new_attributes(i).column_name
+                    ||' OR (awlrs_element_api.g_old_prim_ad_asset.'||pi_new_attributes(i).column_name||' IS NULL AND awlrs_element_api.g_new_prim_ad_asset.'||pi_new_attributes(i).column_name||' IS NOT NULL)'
+                    ||' OR (awlrs_element_api.g_old_prim_ad_asset.'||pi_new_attributes(i).column_name||' IS NOT NULL AND awlrs_element_api.g_new_prim_ad_asset.'||pi_new_attributes(i).column_name||' IS NULL)'
+                    ||' THEN :sql_out := :sql_in||'''||CASE WHEN lv_upd_ad = 'Y' THEN ', ' ELSE NULL END||LOWER(pi_new_attributes(i).column_name)||' = lr_iit.'||LOWER(pi_new_attributes(i).column_name)||''';'
+                    ||' :do_update := ''Y''; END IF; END;'
+            ;
+            EXECUTE IMMEDIATE lv_sql USING OUT lv_upd_ad_sql, IN lv_upd_ad_sql, OUT lv_upd_ad;
+            --
+        END IF;
+        --
+      END LOOP;
+      --
+      IF lv_upd_element = 'N'
+       AND lv_upd_ad = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      END IF;
+      --
+      IF lv_upd_element = 'Y'
+       THEN
+          /*
+          ||Complete and execute the element update statement.
+          */
+          lv_upd_element_sql := lv_upd_element_sql||' WHERE ne_id = :ne_id; END;';
+          EXECUTE IMMEDIATE lv_upd_element_sql USING g_db_element.ne_id;
+          --
+      END IF;
+      --
+      IF lv_upd_ad = 'Y'
+       THEN
+          /*
+          ||Complete and execute the primary ad asset update statement.
+          */
+          lv_upd_ad_sql := lv_upd_ad_sql||' WHERE iit_ne_id = :iit_ne_id; END;';
+          EXECUTE IMMEDIATE lv_upd_ad_sql USING g_db_prim_ad_asset.iit_ne_id;
+          --
+      END IF;
+      --
+    END compare_old_with_new;
+    --
+  BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT upd_element_sp;
+    /*
+    ||Init globals.
+    */
+    init_element_globals;
+    init_ad_globals;
+    /*
+    ||Get and Lock the record.
+    */
+    get_db_rec(pi_ne_id => pi_ne_id);
+    g_old_element := g_db_element;
+    g_new_element := g_db_element;
+    --
+    g_old_element.ne_descr := pi_old_description;
+    g_new_element.ne_descr := pi_new_description;
+    --
+    build_element_rec(pi_nt_type    => g_db_element.ne_nt_type
+                     ,pi_global     => 'awlrs_element_api.g_old_element'
+                     ,pi_attributes => pi_old_attributes);
+    --
+    build_element_rec(pi_nt_type    => g_db_element.ne_nt_type
+                     ,pi_global     => 'awlrs_element_api.g_new_element'
+                     ,pi_attributes => pi_new_attributes);
+    --
+    /*
+    ||Process any primary AD asset details.
+    */
+    lv_prim_ad_type := get_primary_ad_inv_type(pi_nt_type    => g_db_element.ne_nt_type
+                                              ,pi_group_type => g_db_element.ne_gty_group_type);
+    IF lv_prim_ad_type IS NOT NULL
+     THEN
+        --
+        build_ad_rec(pi_inv_type   => lv_prim_ad_type
+                    ,pi_global     => 'awlrs_element_api.g_old_prim_ad_asset'
+                    ,pi_attributes => pi_old_attributes);
+        --
+        build_ad_rec(pi_inv_type   => lv_prim_ad_type
+                    ,pi_global     => 'awlrs_element_api.g_new_prim_ad_asset'
+                    ,pi_attributes => pi_new_attributes);
+        --
+    END IF;
+    /*
+    ||Compare old with DB.
+    */
+    compare_old_with_db;
+    /*
+    ||Compare new with old.
+    */
+    compare_old_with_new;
+    --
+    UPDATE nm_elements_all
+       SET ne_descr = pi_new_description
+     WHERE ne_id = pi_ne_id
+         ;
+    --
+  END update_element;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_element(pi_ne_id                   IN  nm_elements_all.ne_id%TYPE
+                          ,pi_old_description         IN  nm_elements_all.ne_descr%TYPE
+                          ,pi_new_description         IN  nm_elements_all.ne_descr%TYPE
+                          ,pi_old_attrib_column_names IN  attrib_column_name_tab
+                          ,pi_old_attrib_prompts      IN  attrib_prompt_tab
+                          ,pi_old_attrib_char_values  IN  attrib_char_value_tab
+                          ,pi_new_attrib_column_names IN  attrib_column_name_tab
+                          ,pi_new_attrib_prompts      IN  attrib_prompt_tab
+                          ,pi_new_attrib_char_values  IN  attrib_char_value_tab
+                          ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor          OUT sys_refcursor)
+    IS
+    --
+    lt_old_element_attribs  flex_attr_tab;
+    lt_new_element_attribs  flex_attr_tab;
+    --
+  BEGIN
+    --
+    IF pi_old_attrib_column_names.COUNT != pi_old_attrib_prompts.COUNT
+     OR pi_old_attrib_column_names.COUNT != pi_old_attrib_char_values.COUNT
+     OR pi_old_attrib_column_names.COUNT != pi_new_attrib_column_names.COUNT
+     OR pi_old_attrib_column_names.COUNT != pi_new_attrib_prompts.COUNT
+     OR pi_old_attrib_column_names.COUNT != pi_new_attrib_char_values.COUNT
+     THEN
+        --The attribute tables passed in must have matching row counts
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_element_api.create_element');
+    END IF;
+    --
+    FOR i IN 1..pi_old_attrib_column_names.COUNT LOOP
+      --
+      lt_old_element_attribs(i).column_name := pi_old_attrib_column_names(i);
+      lt_old_element_attribs(i).prompt      := pi_old_attrib_prompts(i);
+      lt_old_element_attribs(i).char_value  := pi_old_attrib_char_values(i);
+      --
+      lt_new_element_attribs(i).column_name := pi_new_attrib_column_names(i);
+      lt_new_element_attribs(i).prompt      := pi_new_attrib_prompts(i);
+      lt_new_element_attribs(i).char_value  := pi_new_attrib_char_values(i);
+      --
+    END LOOP;
+    --
+    update_element(pi_ne_id           => pi_ne_id
+                  ,pi_old_description => pi_old_description
+                  ,pi_new_description => pi_new_description
+                  ,pi_old_attributes  => lt_old_element_attribs
+                  ,pi_new_attributes  => lt_new_element_attribs);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_element;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE reshape_element(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
                            ,pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                            ,pi_shape_wkt        IN  CLOB
@@ -1321,7 +1689,7 @@ AS
      THEN
         --
         lv_shape := awlrs_sdo.wkt_to_sdo_geom(pi_theme_name => pi_theme_name
-                                           ,pi_shape      => pi_shape_wkt);
+                                             ,pi_shape      => pi_shape_wkt);
         --
     END IF;
     --
