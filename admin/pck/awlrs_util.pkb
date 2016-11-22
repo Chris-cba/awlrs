@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.5   07 Nov 2016 10:11:36   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.6   22 Nov 2016 17:35:24   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   07 Nov 2016 10:11:36  $
-  --       Date fetched Out : $Modtime:   01 Nov 2016 18:35:04  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   22 Nov 2016 17:35:24  $
+  --       Date fetched Out : $Modtime:   18 Nov 2016 13:54:38  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -33,6 +33,18 @@ AS
   BEGIN
     RETURN g_body_sccsid;
   END get_body_version;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION historic_mode
+    RETURN BOOLEAN IS
+    --
+  BEGIN
+    --
+    RETURN NOT(TRUNC(SYSDATE) = TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY'));
+    --
+  END;
 
   --
   -----------------------------------------------------------------------------
@@ -743,6 +755,48 @@ AS
     RETURN nm3flx.boolean_to_char(p_boolean => lv_retval);
     --
   END inv_category_is_updatable;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION gen_row_restriction(pi_index_column IN VARCHAR2
+                              ,pi_where_clause IN BOOLEAN DEFAULT TRUE
+                              ,pi_skip_n_rows  IN PLS_INTEGER
+                              ,pi_pagesize     IN PLS_INTEGER)
+
+    RETURN VARCHAR2 IS
+    --
+    lv_predicate    VARCHAR2(7) := ' WHERE ';
+    lv_start_index  PLS_INTEGER;
+    lv_retval       nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    IF NOT pi_where_clause
+     THEN
+        lv_predicate := ' AND ';
+    END IF;
+    --
+    lv_start_index := NVL(pi_skip_n_rows,0) + 1;
+    --
+    IF pi_skip_n_rows IS NOT NULL
+     THEN
+        lv_retval := lv_predicate||pi_index_column||' >= '||lv_start_index;
+    END IF;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        IF lv_retval IS NOT NULL
+         THEN
+            lv_retval := lv_retval||' AND '||pi_index_column||' < '||TO_CHAR(lv_start_index + pi_pagesize);
+        ELSE
+            lv_retval := lv_predicate||pi_index_column||' < '||TO_CHAR(lv_start_index + pi_pagesize);
+        END IF;
+    END IF;
+    --
+    RETURN lv_retval;
+    --
+  END gen_row_restriction;
 
 --
 -----------------------------------------------------------------------------

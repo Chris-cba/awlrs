@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.4   07 Nov 2016 10:10:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.5   22 Nov 2016 17:35:24   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   07 Nov 2016 10:10:38  $
-  --       Date fetched Out : $Modtime:   01 Nov 2016 18:35:04  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   22 Nov 2016 17:35:24  $
+  --       Date fetched Out : $Modtime:   18 Nov 2016 13:53:56  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -47,6 +47,12 @@ AS
   --
   FUNCTION get_body_version
     RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION historic_mode
+    RETURN BOOLEAN;
 
   --
   -----------------------------------------------------------------------------
@@ -174,6 +180,17 @@ AS
   --
   FUNCTION inv_category_is_updatable(pi_category IN nm_inv_categories.nic_category%TYPE)
     RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION gen_row_restriction(pi_index_column IN VARCHAR2
+                              ,pi_where_clause IN BOOLEAN DEFAULT TRUE
+                              ,pi_skip_n_rows  IN PLS_INTEGER
+                              ,pi_pagesize     IN PLS_INTEGER)
+
+    RETURN VARCHAR2;
+
 --
 -----------------------------------------------------------------------------
 --
