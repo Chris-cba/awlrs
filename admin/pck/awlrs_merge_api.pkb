@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.6   07 Nov 2016 10:12:52   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.7   22 Nov 2016 17:32:24   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_merge_api.pkb  $
-  --       Date into PVCS   : $Date:   07 Nov 2016 10:12:52  $
-  --       Date fetched Out : $Modtime:   03 Nov 2016 09:49:38  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   22 Nov 2016 17:32:24  $
+  --       Date fetched Out : $Modtime:   17 Nov 2016 19:26:18  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_merge_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -51,6 +51,7 @@ AS
     g_new_element := lv_empty_rec;
     --
   END init_element_globals;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -281,7 +282,6 @@ AS
                                    ,po_cursor           => po_message_cursor);
   END get_nt_flex_attribs;
 
-
   --
   -----------------------------------------------------------------------------
   --
@@ -311,6 +311,7 @@ AS
                     ,pi_reason              IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                     ,pi_new_element_attribs IN     awlrs_element_api.flex_attr_tab
                     ,pi_effective_date      IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                    ,pi_run_checks          IN     VARCHAR2 DEFAULT 'Y'
                     ,po_new_ne_id           IN OUT nm_elements_all.ne_id%TYPE
                     ,po_message_severity       OUT hig_codes.hco_code%TYPE
                     ,po_message_cursor         OUT sys_refcursor)
@@ -322,7 +323,8 @@ AS
     lv_new_np_id    nm_nodes.no_np_id%TYPE;
     lv_create_node  BOOLEAN := TRUE;
     --
-    lv_new_elements_cursor  sys_refcursor;
+    lv_severity        hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    lv_message_cursor  sys_refcursor;
     --
     record_locked EXCEPTION;
     PRAGMA exception_init(record_locked, -54);
@@ -336,59 +338,83 @@ AS
     ||Set a save point.
     */
     SAVEPOINT do_merge_sp;
-    --
-    init_element_globals;
-    --
-    lr_ne := nm3get.get_ne(pi_ne_id1);
-    --
-    awlrs_element_api.build_element_rec(pi_nt_type    => lr_ne.ne_nt_type
-                                       ,pi_global     => 'awlrs_merge_api.g_new_element'
-                                       ,pi_attributes => pi_new_element_attribs);
-    --
-    BEGIN
-      nm3merge.do_merge_datum_or_group(pi_ne_id_1           => pi_ne_id1
-                                      ,pi_ne_id_2           => pi_ne_id2
-                                      ,pi_effective_date    => pi_effective_date
-                                      ,pi_merge_at_node     => NULL /* TODO - Do we need to support this? */
-                                      ,pi_ne_type           => NULL
-                                      ,pi_ne_nt_type        => NULL
-                                      ,pi_ne_descr          => NULL
-                                      ,pi_ne_length         => NULL
-                                      ,pi_ne_admin_unit     => NULL
-                                      ,pi_ne_gty_group_type => NULL
-                                      ,pi_ne_no_start       => NULL
-                                      ,pi_ne_no_end         => NULL
-                                      ,pi_ne_unique         => g_new_element.ne_unique
-                                      ,pi_ne_owner          => g_new_element.ne_owner
-                                      ,pi_ne_name_1         => g_new_element.ne_name_1
-                                      ,pi_ne_name_2         => g_new_element.ne_name_2
-                                      ,pi_ne_prefix         => g_new_element.ne_prefix
-                                      ,pi_ne_number         => g_new_element.ne_number
-                                      ,pi_ne_sub_type       => g_new_element.ne_sub_type
-                                      ,pi_ne_group          => g_new_element.ne_group
-                                      ,pi_ne_sub_class      => g_new_element.ne_sub_class
-                                      ,pi_ne_nsg_ref        => g_new_element.ne_nsg_ref
-                                      ,pi_ne_version_no     => g_new_element.ne_version_no
-                                      ,pi_test_poe_at_node  => 'N'
-                                      ,po_ne_id_new         => po_new_ne_id
-                                      ,pi_neh_descr         => pi_reason);
-    EXCEPTION
-      WHEN not_connected
-       THEN
-          hig.raise_ner(pi_appl => 'NET'
-                       ,pi_id   => 168);
-      WHEN xsp_violation
-       THEN
-          hig.raise_ner(pi_appl => 'NET'
-                       ,pi_id   => 173);
-      WHEN record_locked
-       THEN
-          hig.raise_ner(pi_appl => 'HIG'
-                       ,pi_id   => 33);
-    END;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
+    /*
+    ||Run checks to make sure the element can be reclassified unless
+    ||the calling code explicitly says otherwise.
+    */
+    IF pi_run_checks = 'Y'
+     THEN
+        check_elements_can_be_merged(pi_ne_id1           => pi_ne_id1
+                                    ,pi_ne_id2           => pi_ne_id2
+                                    ,pi_effective_date   => pi_effective_date
+                                    ,po_message_severity => lv_severity
+                                    ,po_message_cursor   => lv_message_cursor);
+    END IF;
+    /*
+    ||If the checks are ok do the merge.
+    */
+    IF lv_severity = awlrs_util.c_msg_cat_success
+     THEN
+        --
+        init_element_globals;
+        --
+        lr_ne := nm3get.get_ne(pi_ne_id1);
+        --
+        awlrs_element_api.build_element_rec(pi_nt_type    => lr_ne.ne_nt_type
+                                           ,pi_global     => 'awlrs_merge_api.g_new_element'
+                                           ,pi_attributes => pi_new_element_attribs);
+        --
+        BEGIN
+          nm3merge.do_merge_datum_or_group(pi_ne_id_1           => pi_ne_id1
+                                          ,pi_ne_id_2           => pi_ne_id2
+                                          ,pi_effective_date    => pi_effective_date
+                                          ,pi_merge_at_node     => NULL /* TODO - Do we need to support this? */
+                                          ,pi_ne_type           => NULL
+                                          ,pi_ne_nt_type        => NULL
+                                          ,pi_ne_descr          => NULL
+                                          ,pi_ne_length         => NULL
+                                          ,pi_ne_admin_unit     => NULL
+                                          ,pi_ne_gty_group_type => NULL
+                                          ,pi_ne_no_start       => NULL
+                                          ,pi_ne_no_end         => NULL
+                                          ,pi_ne_unique         => g_new_element.ne_unique
+                                          ,pi_ne_owner          => g_new_element.ne_owner
+                                          ,pi_ne_name_1         => g_new_element.ne_name_1
+                                          ,pi_ne_name_2         => g_new_element.ne_name_2
+                                          ,pi_ne_prefix         => g_new_element.ne_prefix
+                                          ,pi_ne_number         => g_new_element.ne_number
+                                          ,pi_ne_sub_type       => g_new_element.ne_sub_type
+                                          ,pi_ne_group          => g_new_element.ne_group
+                                          ,pi_ne_sub_class      => g_new_element.ne_sub_class
+                                          ,pi_ne_nsg_ref        => g_new_element.ne_nsg_ref
+                                          ,pi_ne_version_no     => g_new_element.ne_version_no
+                                          ,pi_test_poe_at_node  => 'N'
+                                          ,po_ne_id_new         => po_new_ne_id
+                                          ,pi_neh_descr         => pi_reason);
+        EXCEPTION
+          WHEN not_connected
+           THEN
+              hig.raise_ner(pi_appl => 'NET'
+                           ,pi_id   => 168);
+          WHEN xsp_violation
+           THEN
+              hig.raise_ner(pi_appl => 'NET'
+                           ,pi_id   => 173);
+          WHEN record_locked
+           THEN
+              hig.raise_ner(pi_appl => 'HIG'
+                           ,pi_id   => 33);
+        END;
+        --
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --
+    ELSE
+        --
+        po_message_severity := lv_severity;
+        po_message_cursor := lv_message_cursor;
+        --
+    END IF;
     --
   EXCEPTION
     WHEN others
@@ -409,6 +435,7 @@ AS
                     ,pi_new_element_prompts      IN     awlrs_element_api.attrib_prompt_tab
                     ,pi_new_element_char_values  IN     awlrs_element_api.attrib_char_value_tab
                     ,pi_effective_date           IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                    ,pi_run_checks               IN     VARCHAR2 DEFAULT 'Y'
                     ,po_new_ne_id                IN OUT nm_elements_all.ne_id%TYPE
                     ,po_message_severity            OUT hig_codes.hco_code%TYPE
                     ,po_message_cursor              OUT sys_refcursor)
@@ -446,6 +473,7 @@ AS
             ,pi_reason              => pi_reason
             ,pi_new_element_attribs => lt_new_element_attribs
             ,pi_effective_date      => pi_effective_date
+            ,pi_run_checks          => pi_run_checks
             ,po_new_ne_id           => po_new_ne_id
             ,po_message_severity    => lv_message_severity
             ,po_message_cursor      => lv_message_cursor);
