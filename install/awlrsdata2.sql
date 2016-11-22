@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.2   14 Nov 2016 17:33:32   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.3   22 Nov 2016 18:21:48   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   14 Nov 2016 17:33:32  $
---       Date fetched Out : $Modtime:   14 Nov 2016 16:20:08  $
---       Version          : $Revision:   1.2  $
+--       Date into PVCS   : $Date:   22 Nov 2016 18:21:48  $
+--       Date fetched Out : $Modtime:   22 Nov 2016 18:01:44  $
+--       Version          : $Revision:   1.3  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 14-NOV-2016 16:20
+--       Generation Date  : 22-NOV-2016 18:01
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -284,7 +284,7 @@ INSERT
 SELECT 'AWLRS'
       ,14
       ,null
-      ,'Cannot find end x,y of the geometry.'
+      ,'Cannot find end x,y of the geometry'
       ,''
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
@@ -669,6 +669,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 35);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,36
+      ,null
+      ,'Start and End Nodes cannot be updated for a Group'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 36);
 --
 ----------------------------------------------------------------------------------------
 --
