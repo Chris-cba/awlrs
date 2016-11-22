@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.9   10 Nov 2016 21:47:54   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.10   22 Nov 2016 17:36:34   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   10 Nov 2016 21:47:54  $
-  --       Date fetched Out : $Modtime:   10 Nov 2016 21:33:56  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   22 Nov 2016 17:36:34  $
+  --       Date fetched Out : $Modtime:   18 Nov 2016 18:38:00  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -339,16 +339,18 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_nt_flex_domain(pi_nt_type     IN  nm_types.nt_type%TYPE
-                              ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
-                              ,pi_bind_value  IN  VARCHAR2 DEFAULT NULL
-                              ,po_cursor      OUT sys_refcursor)
+  PROCEDURE gen_domain_sql(pi_nt_type     IN  nm_types.nt_type%TYPE
+                          ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
+                          ,po_use_bind    OUT BOOLEAN
+                          ,po_sql         OUT VARCHAR2)
     IS
     --
-    lv_cursor_sql  nm3type.max_varchar2 := 'SELECT NVL(lov_value,lov_code) code'
-                                ||CHR(10)||'      ,lov_meaning meaning'
-                                ||CHR(10)||'  FROM (SELECT NULL lov_code, NULL lov_meaning, NULL lov_value FROM DUAL WHERE 1=2';
-    lv_lov_sql  nm3type.max_varchar2;
+    lv_use_bind  BOOLEAN := FALSE;
+    lv_retval    nm3type.max_varchar2 := 'SELECT NVL(lov_value,lov_code) code'
+                                 ||CHR(10)||'      ,lov_meaning meaning'
+                                 ||CHR(10)||'      ,lov_seq seq'
+                                 ||CHR(10)||'  FROM (SELECT NULL lov_code, NULL lov_meaning, NULL lov_value, 1 lov_seq FROM DUAL WHERE 1=2';
+    lv_lov_sql   nm3type.max_varchar2;
     --
   BEGIN
     --
@@ -360,31 +362,31 @@ AS
         IF lv_lov_sql IS NOT NULL
          THEN
             --
-            lv_cursor_sql := lv_cursor_sql
+            lv_retval := lv_retval
                   ||CHR(10)||'UNION ALL'
-                  ||CHR(10)||'SELECT sql.* FROM ('||lv_lov_sql||') sql'
+                  ||CHR(10)||'SELECT sql.*,rownum lov_seq FROM ('||lv_lov_sql||') sql'
             ;
         END IF;
         --
-        lv_cursor_sql := lv_cursor_sql||')';
+        lv_retval := lv_retval||')';
         --
-        IF nm3flx.extract_bind_variable(lv_lov_sql) IS NULL
+        IF nm3flx.extract_bind_variable(lv_lov_sql) IS NOT NULL
          THEN
-            OPEN po_cursor FOR lv_cursor_sql;
-        ELSE
-            OPEN po_cursor FOR lv_cursor_sql USING pi_bind_value;
+            lv_use_bind := TRUE;
         END IF;
         --
     ELSIF SUBSTR(pi_column_name,1,4) = 'IIT_'
      THEN
         --
-        lv_cursor_sql := lv_cursor_sql
+        lv_retval := lv_retval
               ||CHR(10)||'UNION ALL'
               ||CHR(10)||'SELECT code lov_code'
               ||CHR(10)||'      ,meaning lov_meaning'
               ||CHR(10)||'      ,code lov_value'
+              ||CHR(10)||'      ,seq lov_seq'
               ||CHR(10)||'  FROM(SELECT ial_value  code'
               ||CHR(10)||'             ,ial_meaning meaning'
+              ||CHR(10)||'             ,ial_seq seq'
               ||CHR(10)||'         FROM nm_inv_attri_lookup'
               ||CHR(10)||'        WHERE TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY'') >= NVL(ial_start_date,TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY''))'
               ||CHR(10)||'          AND TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY'') <= NVL(ial_end_date,TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY''))'
@@ -396,8 +398,59 @@ AS
               ||CHR(10)||'                               AND nad_inv_type = ita_inv_type'
               ||CHR(10)||'                               AND ita_attrib_name = :pi_column_name'
               ||CHR(10)||'                               AND ita_id_domain IS NOT NULL)'
-              ||CHR(10)||'        ORDER BY ial_domain,ial_seq))'
+              ||CHR(10)||'        ORDER BY ial_seq))'
         ;
+        --
+    ELSE
+        /*
+        ||Column name does not belong to the Element Attributes or
+        ||the Primary AD Asset Attributes so return an empty cursor.
+        */
+        --
+        lv_retval := lv_retval||')';
+        --
+    END IF;
+    --
+    po_use_bind := lv_use_bind;
+    po_sql := lv_retval;
+    --
+  END gen_domain_sql;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_flex_domain(pi_nt_type     IN  nm_types.nt_type%TYPE
+                              ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
+                              ,pi_bind_value  IN  VARCHAR2 DEFAULT NULL
+                              ,po_cursor      OUT sys_refcursor)
+    IS
+    --
+    lv_use_bind    BOOLEAN;
+    lv_cursor_sql  nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    gen_domain_sql(pi_nt_type     => pi_nt_type
+                  ,pi_column_name => pi_column_name
+                  ,po_use_bind    => lv_use_bind
+                  ,po_sql         => lv_cursor_sql);
+    --
+    lv_cursor_sql := 'SELECT code'
+          ||CHR(10)||'      ,meaning'
+          ||CHR(10)||'  FROM ('||lv_cursor_sql||')';
+    --
+    IF SUBSTR(pi_column_name,1,3) = 'NE_'
+     THEN
+        --
+        IF lv_use_bind
+         THEN
+            OPEN po_cursor FOR lv_cursor_sql USING pi_bind_value;
+        ELSE
+            OPEN po_cursor FOR lv_cursor_sql;
+        END IF;
+        --
+    ELSIF SUBSTR(pi_column_name,1,4) = 'IIT_'
+     THEN
         --
         OPEN po_cursor FOR lv_cursor_sql USING pi_nt_type, pi_column_name;
         --
@@ -407,12 +460,11 @@ AS
         ||the Primary AD Asset Attributes so return an empty cursor.
         */
         --
-        OPEN po_cursor FOR lv_cursor_sql||')';
+        OPEN po_cursor FOR lv_cursor_sql;
         --
     END IF;
     --
   END get_nt_flex_domain;
-
 
   --
   -----------------------------------------------------------------------------
@@ -444,10 +496,11 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_nt_flex_domain(pi_nt_type     IN  nm_types.nt_type%TYPE
-                             ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
-                             ,pi_bind_value  IN  VARCHAR2 DEFAULT NULL)
+  FUNCTION get_nt_flex_domain(pi_nt_type     IN nm_types.nt_type%TYPE
+                             ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE
+                             ,pi_bind_value  IN VARCHAR2 DEFAULT NULL)
     RETURN domain_values_tab IS
+    --
     lv_cursor         sys_refcursor;
     lt_domain_values  domain_values_tab;
     --
@@ -466,6 +519,168 @@ AS
     RETURN lt_domain_values;
     --
   END get_nt_flex_domain;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_nt_flex_domain(pi_nt_type     IN  nm_types.nt_type%TYPE
+                                    ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
+                                    ,pi_bind_value  IN  VARCHAR2 DEFAULT NULL
+                                    ,pi_filter      IN  VARCHAR2
+                                    ,pi_skip_n_rows IN  PLS_INTEGER
+                                    ,pi_pagesize    IN  PLS_INTEGER
+                                    ,po_cursor      OUT sys_refcursor)
+    IS
+    --
+    lv_use_bind    BOOLEAN;
+    lv_driving_sql  nm3type.max_varchar2;
+    lv_cursor_sql  nm3type.max_varchar2 := 'SELECT code'
+                                ||CHR(10)||'      ,meaning'
+                                ||CHR(10)||'      ,row_count'
+                                ||CHR(10)||'  FROM (SELECT rownum ind'
+                                ||CHR(10)||'              ,code'
+                                ||CHR(10)||'              ,meaning'
+                                ||CHR(10)||'              ,CASE'
+                                ||CHR(10)||'                 WHEN UPPER(meaning) = UPPER(:filter) THEN 1'
+                                ||CHR(10)||'                 WHEN UPPER(meaning) LIKE UPPER(:filter)||''%'' THEN 2'
+                                ||CHR(10)||'                 ELSE 3'
+                                ||CHR(10)||'               END match_quality'
+                                ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                ||CHR(10)||'          FROM ('
+    ;
+    lv_filter      nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    IF pi_filter IS NOT NULL
+     THEN
+        lv_filter := ' WHERE UPPER(lov_meaning) LIKE UPPER(''%''||:filter||''%'')';
+    END IF;
+    --
+    gen_domain_sql(pi_nt_type     => pi_nt_type
+                  ,pi_column_name => pi_column_name
+                  ,po_use_bind    => lv_use_bind
+                  ,po_sql         => lv_driving_sql);
+    --
+    lv_cursor_sql := lv_cursor_sql||lv_driving_sql||lv_filter||') ORDER BY match_quality,';
+    --
+    IF SUBSTR(pi_column_name,1,3) = 'NE_'
+     THEN
+        lv_cursor_sql := lv_cursor_sql||' meaning)';
+    ELSE
+        lv_cursor_sql := lv_cursor_sql||' seq)';
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql||CHR(10)||awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                                                           ,pi_skip_n_rows  => pi_skip_n_rows
+                                                                           ,pi_pagesize     => pi_pagesize);
+    --
+    IF SUBSTR(pi_column_name,1,3) = 'NE_'
+     THEN
+        IF lv_use_bind
+         THEN
+            IF pi_filter IS NOT NULL
+             THEN
+                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_bind_value, pi_filter;
+            ELSE
+                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_bind_value;
+            END IF;
+        ELSE
+            IF pi_filter IS NOT NULL
+             THEN
+                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_filter;
+            ELSE
+                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter;
+            END IF;
+        END IF;
+        --
+    ELSIF SUBSTR(pi_column_name,1,4) = 'IIT_'
+     THEN
+        --
+        IF pi_filter IS NOT NULL
+         THEN
+            OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_column_name, pi_filter;
+        ELSE
+            OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_column_name;
+        END IF;
+        --
+    ELSE
+        /*
+        ||Column name does not belong to the Element Attributes or
+        ||the Primary AD Asset Attributes so return an empty cursor.
+        */
+        --
+        OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter;
+        --
+    END IF;
+    --
+  END get_paged_nt_flex_domain;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_nt_flex_domain(pi_nt_type          IN  nm_types.nt_type%TYPE
+                                    ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
+                                    ,pi_bind_value       IN  VARCHAR2 DEFAULT NULL
+                                    ,pi_filter           IN  VARCHAR2
+                                    ,pi_skip_n_rows      IN  PLS_INTEGER
+                                    ,pi_pagesize         IN  PLS_INTEGER
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    get_paged_nt_flex_domain(pi_nt_type     => pi_nt_type
+                            ,pi_column_name => pi_column_name
+                            ,pi_bind_value  => pi_bind_value
+                            ,pi_filter      => pi_filter
+                            ,pi_skip_n_rows => pi_skip_n_rows
+                            ,pi_pagesize    => pi_pagesize
+                            ,po_cursor      => po_cursor);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_nt_flex_domain;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_paged_nt_flex_domain(pi_nt_type     IN nm_types.nt_type%TYPE
+                                   ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE
+                                   ,pi_bind_value  IN VARCHAR2 DEFAULT NULL
+                                   ,pi_filter      IN VARCHAR2
+                                   ,pi_skip_n_rows IN PLS_INTEGER
+                                   ,pi_pagesize    IN PLS_INTEGER)
+    RETURN domain_values_tab IS
+    --
+    lv_cursor         sys_refcursor;
+    lt_domain_values  domain_values_tab;
+    --
+  BEGIN
+    --
+    get_paged_nt_flex_domain(pi_nt_type     => pi_nt_type
+                            ,pi_column_name => pi_column_name
+                            ,pi_bind_value  => pi_bind_value
+                            ,pi_filter      => pi_filter
+                            ,pi_skip_n_rows => pi_skip_n_rows
+                            ,pi_pagesize    => pi_pagesize
+                            ,po_cursor      => lv_cursor);
+    --
+    FETCH lv_cursor
+     BULK COLLECT
+     INTO lt_domain_values;
+    CLOSE lv_cursor;
+    --
+    RETURN lt_domain_values;
+    --
+  END get_paged_nt_flex_domain;
 
   --
   -----------------------------------------------------------------------------
