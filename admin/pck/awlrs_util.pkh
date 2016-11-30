@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.5   22 Nov 2016 17:35:24   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.6   30 Nov 2016 15:49:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   22 Nov 2016 17:35:24  $
-  --       Date fetched Out : $Modtime:   18 Nov 2016 13:53:56  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   30 Nov 2016 15:49:04  $
+  --       Date fetched Out : $Modtime:   30 Nov 2016 14:46:04  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -184,12 +184,13 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION gen_row_restriction(pi_index_column IN VARCHAR2
-                              ,pi_where_clause IN BOOLEAN DEFAULT TRUE
-                              ,pi_skip_n_rows  IN PLS_INTEGER
-                              ,pi_pagesize     IN PLS_INTEGER)
-
-    RETURN VARCHAR2;
+  PROCEDURE gen_row_restriction(pi_index_column IN  VARCHAR2
+                               ,pi_where_clause IN  BOOLEAN DEFAULT TRUE
+                               ,pi_skip_n_rows  IN  PLS_INTEGER
+                               ,pi_pagesize     IN  PLS_INTEGER
+                               ,po_lower_index  OUT PLS_INTEGER
+                               ,po_upper_index  OUT PLS_INTEGER
+                               ,po_statement    OUT VARCHAR2);
 
 --
 -----------------------------------------------------------------------------
