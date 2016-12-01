@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.5   22 Nov 2016 17:36:34   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.6   01 Dec 2016 08:43:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   22 Nov 2016 17:36:34  $
-  --       Date fetched Out : $Modtime:   18 Nov 2016 15:27:38  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   01 Dec 2016 08:43:38  $
+  --       Date fetched Out : $Modtime:   23 Nov 2016 17:27:24  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
   --
   g_db_element   nm_elements_all%ROWTYPE;
   g_old_element  nm_elements_all%ROWTYPE;
@@ -238,6 +238,14 @@ AS
                        ,po_message_severity OUT hig_codes.hco_code%TYPE
                        ,po_message_cursor   OUT sys_refcursor
                        ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_element_member_of(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
