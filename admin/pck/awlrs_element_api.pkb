@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.10   22 Nov 2016 17:36:34   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.11   01 Dec 2016 08:59:12   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   22 Nov 2016 17:36:34  $
-  --       Date fetched Out : $Modtime:   18 Nov 2016 18:38:00  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   01 Dec 2016 08:59:12  $
+  --       Date fetched Out : $Modtime:   30 Nov 2016 15:32:22  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -532,23 +532,26 @@ AS
                                     ,po_cursor      OUT sys_refcursor)
     IS
     --
-    lv_use_bind    BOOLEAN;
-    lv_driving_sql  nm3type.max_varchar2;
-    lv_cursor_sql  nm3type.max_varchar2 := 'SELECT code'
-                                ||CHR(10)||'      ,meaning'
-                                ||CHR(10)||'      ,row_count'
-                                ||CHR(10)||'  FROM (SELECT rownum ind'
-                                ||CHR(10)||'              ,code'
-                                ||CHR(10)||'              ,meaning'
-                                ||CHR(10)||'              ,CASE'
-                                ||CHR(10)||'                 WHEN UPPER(meaning) = UPPER(:filter) THEN 1'
-                                ||CHR(10)||'                 WHEN UPPER(meaning) LIKE UPPER(:filter)||''%'' THEN 2'
-                                ||CHR(10)||'                 ELSE 3'
-                                ||CHR(10)||'               END match_quality'
-                                ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                                ||CHR(10)||'          FROM ('
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_use_bind         BOOLEAN;
+    lv_filter           nm3type.max_varchar2;
+    lv_driving_sql      nm3type.max_varchar2;
+    lv_cursor_sql       nm3type.max_varchar2 := 'SELECT code'
+                                     ||CHR(10)||'      ,meaning'
+                                     ||CHR(10)||'      ,row_count'
+                                     ||CHR(10)||'  FROM (SELECT rownum ind'
+                                     ||CHR(10)||'              ,code'
+                                     ||CHR(10)||'              ,meaning'
+                                     ||CHR(10)||'              ,CASE'
+                                     ||CHR(10)||'                 WHEN UPPER(meaning) = UPPER(:filter) THEN 1'
+                                     ||CHR(10)||'                 WHEN UPPER(meaning) LIKE UPPER(:filter)||''%'' THEN 2'
+                                     ||CHR(10)||'                 ELSE 3'
+                                     ||CHR(10)||'               END match_quality'
+                                     ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                     ||CHR(10)||'          FROM ('
     ;
-    lv_filter      nm3type.max_varchar2;
     --
   BEGIN
     --
@@ -556,6 +559,15 @@ AS
      THEN
         lv_filter := ' WHERE UPPER(lov_meaning) LIKE UPPER(''%''||:filter||''%'')';
     END IF;
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
     --
     gen_domain_sql(pi_nt_type     => pi_nt_type
                   ,pi_column_name => pi_column_name
@@ -571,9 +583,7 @@ AS
         lv_cursor_sql := lv_cursor_sql||' seq)';
     END IF;
     --
-    lv_cursor_sql := lv_cursor_sql||CHR(10)||awlrs_util.gen_row_restriction(pi_index_column => 'ind'
-                                                                           ,pi_skip_n_rows  => pi_skip_n_rows
-                                                                           ,pi_pagesize     => pi_pagesize);
+    lv_cursor_sql := lv_cursor_sql||CHR(10)||lv_row_restriction;
     --
     IF SUBSTR(pi_column_name,1,3) = 'NE_'
      THEN
@@ -581,16 +591,36 @@ AS
          THEN
             IF pi_filter IS NOT NULL
              THEN
-                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_bind_value, pi_filter;
+                IF pi_pagesize IS NOT NULL
+                 THEN
+                    OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_bind_value, pi_filter, lv_lower_index, lv_upper_index;
+                ELSE
+                    OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_bind_value, pi_filter, lv_lower_index;
+                END IF;
             ELSE
-                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_bind_value;
+                IF pi_pagesize IS NOT NULL
+                 THEN
+                    OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_bind_value, lv_lower_index, lv_upper_index;
+                ELSE
+                    OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_bind_value, lv_lower_index;
+                END IF;
             END IF;
         ELSE
             IF pi_filter IS NOT NULL
              THEN
-                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_filter;
+                 IF pi_pagesize IS NOT NULL
+                  THEN
+                     OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_filter, lv_lower_index, lv_upper_index;
+                 ELSE
+                     OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_filter, lv_lower_index;
+                 END IF;
             ELSE
-                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter;
+                 IF pi_pagesize IS NOT NULL
+                  THEN
+                     OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, lv_lower_index, lv_upper_index;
+                 ELSE
+                     OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, lv_lower_index;
+                 END IF;
             END IF;
         END IF;
         --
@@ -599,9 +629,19 @@ AS
         --
         IF pi_filter IS NOT NULL
          THEN
-            OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_column_name, pi_filter;
+            IF pi_pagesize IS NOT NULL
+             THEN
+                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_column_name, pi_filter, lv_lower_index, lv_upper_index;
+            ELSE
+                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_column_name, pi_filter, lv_lower_index;
+            END IF;
         ELSE
-            OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_column_name;
+            IF pi_pagesize IS NOT NULL
+             THEN
+                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_column_name, lv_lower_index, lv_upper_index;
+            ELSE
+                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_column_name, lv_lower_index;
+            END IF;
         END IF;
         --
     ELSE
@@ -609,8 +649,12 @@ AS
         ||Column name does not belong to the Element Attributes or
         ||the Primary AD Asset Attributes so return an empty cursor.
         */
-        --
-        OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter;
+        IF pi_pagesize IS NOT NULL
+         THEN
+            OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, lv_lower_index, lv_upper_index;
+        ELSE
+            OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, lv_lower_index;
+        END IF;
         --
     END IF;
     --
@@ -1233,6 +1277,49 @@ AS
                                    ,po_cursor           => po_message_cursor);
   END get_element;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_element_member_of(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT ne_id             element_id
+          ,ne_unique         element_unique
+          ,ne_descr          element_description
+          ,ne_gty_group_type element_group_type
+          ,ngt_descr         element_group_type_descr
+          ,nm_start_date     membership_start_date
+          ,nm_begin_mp       membership_from_offset
+          ,nm_end_mp         membership_to_offset
+          ,nm_slk            membership_slk
+          ,nm_cardinality    membership_cardinality
+      FROM nm_group_types
+          ,nm_elements
+          ,nm_members
+     WHERE nm_type = 'G'
+       AND nm_ne_id_of = pi_ne_id
+       AND nm_ne_id_in = ne_id
+       AND ne_gty_group_type = ngt_group_type
+     ORDER
+        BY ne_unique
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_element_member_of;
+  
   --
   -----------------------------------------------------------------------------
   --
