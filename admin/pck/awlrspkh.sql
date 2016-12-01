@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrspkh.sql-arc   1.1   13 Oct 2016 09:49:22   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrspkh.sql-arc   1.2   01 Dec 2016 09:18:22   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrspkh.sql  $
---       Date into PVCS   : $Date:   13 Oct 2016 09:49:22  $
---       Date fetched Out : $Modtime:   13 Oct 2016 09:47:58  $
---       Version          : $Revision:   1.1  $
+--       Date into PVCS   : $Date:   01 Dec 2016 09:18:22  $
+--       Date fetched Out : $Modtime:   01 Dec 2016 09:15:58  $
+--       Version          : $Revision:   1.2  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
@@ -75,11 +75,39 @@ SET feedback OFF
 -------------------------------------------------------------------------
 --
 SET TERM ON
+PROMPT awlrs_node_api
+SET TERM OFF
+SET define ON
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
+       ||'&terminator'||'awlrs_node_api.pkh' run_file
+  FROM dual
+     ;
+SET feedback ON
+START '&run_file'
+SET feedback OFF
+--
+-------------------------------------------------------------------------
+--
+SET TERM ON
 PROMPT awlrs_element_api
 SET TERM OFF
 SET define ON
 SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
        ||'&terminator'||'awlrs_element_api.pkh' run_file
+  FROM dual
+     ;
+SET feedback ON
+START '&run_file'
+SET feedback OFF
+--
+-------------------------------------------------------------------------
+--
+SET TERM ON
+PROMPT awlrs_group_api
+SET TERM OFF
+SET define ON
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
+       ||'&terminator'||'awlrs_group_api.pkh' run_file
   FROM dual
      ;
 SET feedback ON
@@ -145,11 +173,11 @@ SET feedback OFF
 -------------------------------------------------------------------------
 --
 SET TERM ON
-PROMPT awlrs_node_api
+PROMPT awlrs_undo_api
 SET TERM OFF
 SET define ON
 SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
-       ||'&terminator'||'awlrs_node_api.pkh' run_file
+       ||'&terminator'||'awlrs_undo_api.pkh' run_file
   FROM dual
      ;
 SET feedback ON
@@ -159,11 +187,39 @@ SET feedback OFF
 -------------------------------------------------------------------------
 --
 SET TERM ON
-PROMPT awlrs_undo_api
+PROMPT awlrs_recalibrate_api
 SET TERM OFF
 SET define ON
 SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
-       ||'&terminator'||'awlrs_undo_api.pkh' run_file
+       ||'&terminator'||'awlrs_recalibrate_api.pkh' run_file
+  FROM dual
+     ;
+SET feedback ON
+START '&run_file'
+SET feedback OFF
+--
+-------------------------------------------------------------------------
+--
+SET TERM ON
+PROMPT awlrs_reclassify_api
+SET TERM OFF
+SET define ON
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
+       ||'&terminator'||'awlrs_reclassify_api.pkh' run_file
+  FROM dual
+     ;
+SET feedback ON
+START '&run_file'
+SET feedback OFF
+--
+-------------------------------------------------------------------------
+--
+SET TERM ON
+PROMPT awlrs_bulk_update_api
+SET TERM OFF
+SET define ON
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
+       ||'&terminator'||'awlrs_bulk_update_api.pkh' run_file
   FROM dual
      ;
 SET feedback ON
