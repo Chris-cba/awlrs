@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_close_api.pkh-arc   1.0   13 Oct 2016 09:31:26   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_close_api.pkh-arc   1.1   09 Dec 2016 18:35:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_close_api.pkh  $
-  --       Date into PVCS   : $Date:   13 Oct 2016 09:31:26  $
-  --       Date fetched Out : $Modtime:   03 Oct 2016 18:45:50  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   09 Dec 2016 18:35:04  $
+  --       Date fetched Out : $Modtime:   09 Dec 2016 18:29:04  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -36,6 +36,16 @@ AS
                     ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                     ,po_message_severity OUT hig_codes.hco_code%TYPE
                     ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE close_group(pi_ne_id            IN  nm_elements.ne_id%TYPE
+                       ,pi_effective_date   IN  DATE      
+                       ,pi_close_all        IN  VARCHAR2 DEFAULT 'N'
+                       ,pi_end_date_datums  IN  VARCHAR2
+                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor);
 
 END awlrs_close_api;
 /
