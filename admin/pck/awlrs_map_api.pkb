@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.3   11 Oct 2016 15:12:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.4   09 Dec 2016 13:35:18   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   11 Oct 2016 15:12:20  $
-  --       Date fetched Out : $Modtime:   11 Oct 2016 15:09:42  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   09 Dec 2016 13:35:18  $
+  --       Date fetched Out : $Modtime:   09 Dec 2016 13:05:00  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -98,8 +98,10 @@ AS
     --
     OPEN po_cursor FOR
     SELECT nw_themes.network_type
-          ,nw_themes.group_type network_group_type
+          ,nw_themes.element_type  network_element_type
           ,nw_themes.is_linear  network_is_linear
+          ,nw_themes.group_type  network_group_type
+          ,nw_themes.partial_allowed  network_partial_membership
           ,nw_themes.node_type
           ,nw_themes.unit_id
           ,nith_nit_id asset_type
@@ -157,8 +159,10 @@ AS
            END is_editable
       FROM nm_inv_themes
           ,(SELECT nlt_nt_type network_type
-                  ,nlt_gty_type group_type
+                  ,CASE WHEN nt_datum = 'Y' THEN 'S' ELSE 'G' END element_type
                   ,'Y' is_linear
+                  ,nlt_gty_type group_type
+                  ,ngt_partial partial_allowed
                   ,nt_node_type node_type
                   ,nnth_nth_theme_id theme_id
                   ,un_unit_id unit_id
@@ -166,13 +170,17 @@ AS
                   ,nm_linear_types
                   ,nm_types
                   ,nm_units
+                  ,nm_group_types_all
              WHERE nnth_nlt_id = nlt_id
                AND nlt_nt_type = nt_type
                AND nt_length_unit = un_unit_id(+)
+               AND nlt_gty_type = ngt_group_type(+)
             UNION ALL
             SELECT nat_nt_type network_type
-                  ,nat_gty_group_type group_type
+                  ,CASE WHEN ngt_sub_group_allowed = 'Y' THEN 'P' ELSE 'G' END element_type
                   ,'N' is_linear
+                  ,nat_gty_group_type group_type
+                  ,ngt_partial partial_allowed
                   ,nt_node_type node_type
                   ,nath_nth_theme_id theme_id
                   ,un_unit_id unit_id
@@ -180,9 +188,11 @@ AS
                   ,nm_area_types
                   ,nm_types
                   ,nm_units
+                  ,nm_group_types_all
              WHERE nath_nat_id = nat_id
                AND nat_nt_type = nt_type
-               AND nt_length_unit = un_unit_id(+)) nw_themes
+               AND nt_length_unit = un_unit_id(+)
+               AND nat_gty_group_type = ngt_group_type) nw_themes
           ,nm_themes_all
      WHERE nth_theme_name = pi_theme_name
        AND nth_theme_id = nw_themes.theme_id(+)
@@ -850,33 +860,35 @@ AS
     lt_gtypes       awlrs_sdo.gtype_tab;
     lt_theme_types  theme_types_tab;
     --
-    lv_layer_text                CLOB;
-    lv_layer_type                VARCHAR2(100);
-    lv_gml_msGeometry_type       VARCHAR2(100);
-    lv_wfs_featureid             VARCHAR2(100);
-    lv_group                     VARCHAR2(200);
-    lv_group_name                VARCHAR2(200);
-    lv_name                      VARCHAR2(200);
-    lv_title                     VARCHAR2(200);
-    lv_theme_extra_cols          nm3type.max_varchar2;
-    lv_epsg                      NUMBER;
-    lv_srid                      NUMBER;
-    lv_using_srid                VARCHAR2(20);
-    lv_layer_network_type        nm_types.nt_type%TYPE;
-    lv_layer_group_type          nm_group_types_all.ngt_group_type%TYPE;
-    lv_layer_is_linear           VARCHAR2(1);
-    lv_layer_editable            VARCHAR2(1);
-    lv_layer_units               nm_units.un_unit_id%TYPE;
-    lv_layer_node_type           nm_types.nt_node_type%TYPE;
-    lv_layer_node_layer          nm_themes_all.nth_theme_name%TYPE;
-    lv_layer_asset_type          nm_inv_types_all.nit_inv_type%TYPE;
-    lv_layer_show_in_map         VARCHAR2(10);
-    lv_displayed_on_startup      VARCHAR2(10);
-    lv_displayed_in_legend       VARCHAR2(10);
-    lv_legend_group              nm3type.max_varchar2;
-    lv_tooltip_template_defined  BOOLEAN;
-    lv_tooltip_columns           nm3type.max_varchar2;
-    lv_gtype_restriction         VARCHAR2(100);
+    lv_layer_text                  CLOB;
+    lv_layer_type                  VARCHAR2(100);
+    lv_gml_msGeometry_type         VARCHAR2(100);
+    lv_wfs_featureid               VARCHAR2(100);
+    lv_group                       VARCHAR2(200);
+    lv_group_name                  VARCHAR2(200);
+    lv_name                        VARCHAR2(200);
+    lv_title                       VARCHAR2(200);
+    lv_theme_extra_cols            nm3type.max_varchar2;
+    lv_epsg                        NUMBER;
+    lv_srid                        NUMBER;
+    lv_using_srid                  VARCHAR2(20);
+    lv_layer_network_type          nm_types.nt_type%TYPE;
+    lv_layer_network_element_type  nm_elements_all.ne_type%TYPE;
+    lv_layer_group_type            nm_group_types_all.ngt_group_type%TYPE;
+    lv_layer_group_partial         VARCHAR2(1);
+    lv_layer_is_linear             VARCHAR2(1);
+    lv_layer_editable              VARCHAR2(1);
+    lv_layer_units                 nm_units.un_unit_id%TYPE;
+    lv_layer_node_type             nm_types.nt_node_type%TYPE;
+    lv_layer_node_layer            nm_themes_all.nth_theme_name%TYPE;
+    lv_layer_asset_type            nm_inv_types_all.nit_inv_type%TYPE;
+    lv_layer_show_in_map           VARCHAR2(10);
+    lv_displayed_on_startup        VARCHAR2(10);
+    lv_displayed_in_legend         VARCHAR2(10);
+    lv_legend_group                nm3type.max_varchar2;
+    lv_tooltip_template_defined    BOOLEAN;
+    lv_tooltip_columns             nm3type.max_varchar2;
+    lv_gtype_restriction           VARCHAR2(100);
     --
     ---------------------------------------------------------------------------
     --
@@ -1002,8 +1014,10 @@ AS
       IF lt_theme_types.COUNT > 0
        THEN
           lv_layer_network_type := lt_theme_types(1).network_type;
-          lv_layer_group_type := lt_theme_types(1).network_group_type;
+          lv_layer_network_element_type := lt_theme_types(1).network_element_type;
           lv_layer_is_linear := lt_theme_types(1).network_is_linear;
+          lv_layer_group_type := lt_theme_types(1).network_group_type;
+          lv_layer_group_partial := lt_theme_types(1).network_partial_memb;
           lv_layer_node_type := lt_theme_types(1).node_type;
           IF lv_layer_node_type IS NOT NULL
            THEN
@@ -1017,7 +1031,9 @@ AS
           lv_layer_editable := NVL(lt_theme_types(1).editable,'N');
       ELSE
           lv_layer_network_type := NULL;
+          lv_layer_network_element_type := NULL;
           lv_layer_group_type := NULL;
+          lv_layer_group_partial := NULL;
           lv_layer_is_linear := NULL;
           lv_layer_node_type := NULL;
           lv_layer_node_layer := NULL;
@@ -1148,8 +1164,10 @@ AS
               ||CHR(10)||'      "gml_msGeometry_type"       "'||lv_gml_msGeometry_type||'"'
               ||CHR(10)||'      "layer_group_name"          "'||lv_group_name||'"'
               ||CHR(10)||'      "network_type"              "'||lv_layer_network_type||'"'
-              ||CHR(10)||'      "network_group_type"        "'||lv_layer_group_type||'"'
+              ||CHR(10)||'      "network_element_type"      "'||lv_layer_network_element_type||'"'
               ||CHR(10)||'      "network_is_linear"         "'||lv_layer_is_linear||'"'
+              ||CHR(10)||'      "network_group_type"        "'||lv_layer_group_type||'"'
+              ||CHR(10)||'      "network_partial_members"   "'||lv_layer_group_partial||'"'
               ||CHR(10)||'      "network_units"             "'||lv_layer_units||'"'
               ||CHR(10)||'      "network_node_type"         "'||lv_layer_node_type||'"'
               ||CHR(10)||'      "node_layer_name"           "'||lv_layer_node_layer||'"'
@@ -1232,8 +1250,10 @@ AS
               ||CHR(10)||'      "gml_include_items"         "all"'
               ||CHR(10)||'      "layer_group_name"          "'||lv_group_name||'"'
               ||CHR(10)||'      "network_type"              "'||lv_layer_network_type||'"'
-              ||CHR(10)||'      "network_group_type"        "'||lv_layer_group_type||'"'
+              ||CHR(10)||'      "network_element_type"      "'||lv_layer_network_element_type||'"'
               ||CHR(10)||'      "network_is_linear"         "'||lv_layer_is_linear||'"'
+              ||CHR(10)||'      "network_group_type"        "'||lv_layer_group_type||'"'
+              ||CHR(10)||'      "network_partial_members"   "'||lv_layer_group_partial||'"'
               ||CHR(10)||'      "network_units"             "'||lv_layer_units||'"'
               ||CHR(10)||'      "network_node_type"         "'||lv_layer_node_type||'"'
               ||CHR(10)||'      "node_layer_name"           "'||lv_layer_node_layer||'"'
