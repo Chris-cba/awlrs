@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.4   09 Dec 2016 13:35:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.5   12 Dec 2016 17:27:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   09 Dec 2016 13:35:18  $
-  --       Date fetched Out : $Modtime:   09 Dec 2016 13:05:00  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   12 Dec 2016 17:27:36  $
+  --       Date fetched Out : $Modtime:   12 Dec 2016 14:52:22  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -697,8 +697,9 @@ AS
     --
     lt_wms_themes  wms_themes_tab;
     --
-    lv_layer_text    CLOB;
-    lv_legend_group  nm3type.max_varchar2;
+    lv_layer_text            CLOB;
+    lv_legend_group          nm3type.max_varchar2;
+    lv_displayed_on_startup  VARCHAR2(10);
     --
   BEGIN
     /*
@@ -715,35 +716,49 @@ AS
       lv_legend_group := get_custom_tag_value(pi_theme_name => lt_wms_themes(i).nwt_name
                                              ,pi_tag_name   => 'LegendGroup');
       /*
+      ||Get the DisplayedAtStartup custom tag.
+      ||If it is not specified use the value from nm_wms_themes.
+      */
+      lv_displayed_on_startup := UPPER(NVL(get_custom_tag_value(pi_theme_name => lt_wms_themes(i).nwt_name
+                                                               ,pi_tag_name   => 'DisplayedAtStartup')
+                                          ,lt_wms_themes(i).nwt_visible_on_startup));
+      /*
       ||Write the Layer definition.
       */
       lv_layer_text := '  LAYER'
             ||CHR(10)||'    NAME "'||lt_wms_themes(i).trimmed_name||'"'
             ||CHR(10)||'    METADATA'
             /* Metadata for the theme to be exposed by mapserver. */
-            ||CHR(10)||'      "wms_title"            "'||lt_wms_themes(i).nwt_name||'"'
-            ||CHR(10)||'      "wms_enable_request"   "*"'
+            ||CHR(10)||'      "wms_title"                "'||lt_wms_themes(i).nwt_name||'"'
+            ||CHR(10)||'      "wms_enable_request"       "*"'
             /* Application sepcific metadata. */
-            ||CHR(10)||'      "network_type"         ""'
-            ||CHR(10)||'      "network_group_type"   ""'
-            ||CHR(10)||'      "network_is_linear"    ""'
-            ||CHR(10)||'      "asset_type"           ""'
-            ||CHR(10)||'      "show_in_map"          "N"'
-            ||CHR(10)||'      "displayed_at_startup" "'||lt_wms_themes(i).nwt_visible_on_startup||'"'
-            ||CHR(10)||'      "displayed_in_legend"  "Y"'
-            ||CHR(10)||'      "legend_group"         "'||lv_legend_group||'"'
+            ||CHR(10)||'      "network_type"             ""'
+            ||CHR(10)||'      "network_element_type"     ""'
+            ||CHR(10)||'      "network_is_linear"        "N"'
+            ||CHR(10)||'      "network_group_type"       ""'
+            ||CHR(10)||'      "network_group_memb_types" ""'
+            ||CHR(10)||'      "network_partial_members"  "N"'
+            ||CHR(10)||'      "network_units"            ""'
+            ||CHR(10)||'      "network_node_type"        ""'
+            ||CHR(10)||'      "node_layer_name"          ""'
+            ||CHR(10)||'      "asset_type"               ""'
+            ||CHR(10)||'      "is_editable"              "N"'
+            ||CHR(10)||'      "show_in_map"              "N"'
+            ||CHR(10)||'      "displayed_at_startup"     "'||lv_displayed_on_startup||'"'
+            ||CHR(10)||'      "displayed_in_legend"      "Y"'
+            ||CHR(10)||'      "legend_group"             "'||lv_legend_group||'"'
             /* Metadata for the WMS Theme being consumed. */
-            ||CHR(10)||'      "wms_name"              "'||lt_wms_themes(i).layers||'"'
-            ||CHR(10)||'      "wms_style"             "'||lt_wms_themes(i).styles||'"'
-            ||CHR(10)||'      "wms_bgcolor"           "'||lt_wms_themes(i).bgcolor||'"'
-            ||CHR(10)||'      "wms_transparent"       "'||UPPER(lt_wms_themes(i).transparent)||'"'
-            ||CHR(10)||'      "wms_server_version"    "'||lt_wms_themes(i).version||'"'
-            ||CHR(10)||'      "wms_srs"               "'||lt_wms_themes(i).srs||'"'
-            ||CHR(10)||'      "wms_format"            "'||lt_wms_themes(i).format||'"'
-            ||CHR(10)||'      "wms_exceptions_format" "'||lt_wms_themes(i).exceptions||'"'
-            ||CHR(10)||'      "wms_auth_type"         "any"'
-            ||CHR(10)||'      "wms_auth_username"     "'||lt_wms_themes(i).auth_user||'"'
-            ||CHR(10)||'      "wms_auth_password"     "'||lt_wms_themes(i).auth_password||'"'
+            ||CHR(10)||'      "wms_name"                 "'||lt_wms_themes(i).layers||'"'
+            ||CHR(10)||'      "wms_style"                "'||lt_wms_themes(i).styles||'"'
+            ||CHR(10)||'      "wms_bgcolor"              "'||lt_wms_themes(i).bgcolor||'"'
+            ||CHR(10)||'      "wms_transparent"          "'||UPPER(lt_wms_themes(i).transparent)||'"'
+            ||CHR(10)||'      "wms_server_version"       "'||lt_wms_themes(i).version||'"'
+            ||CHR(10)||'      "wms_srs"                  "'||lt_wms_themes(i).srs||'"'
+            ||CHR(10)||'      "wms_format"               "'||lt_wms_themes(i).format||'"'
+            ||CHR(10)||'      "wms_exceptions_format"    "'||lt_wms_themes(i).exceptions||'"'
+            ||CHR(10)||'      "wms_auth_type"            "any"'
+            ||CHR(10)||'      "wms_auth_username"        "'||lt_wms_themes(i).auth_user||'"'
+            ||CHR(10)||'      "wms_auth_password"        "'||lt_wms_themes(i).auth_password||'"'
             ||CHR(10)||'    END'
             ||CHR(10)||'    DEBUG 5'
             ||CHR(10)||'    TYPE RASTER'
@@ -847,7 +862,59 @@ AS
     RETURN lv_retval;
     --
   END get_node_layer;
-  
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_group_member_types(pi_ne_type    IN nm_elements_all.ne_type%TYPE
+                                 ,pi_group_type IN nm_group_types_all.ngt_group_type%TYPE)
+    RETURN VARCHAR2 IS
+    --
+    lt_types  nm3type.tab_varchar30;
+    lv_retval  nm3type.max_varchar2;
+    --
+    CURSOR get_nt_types(cp_group_type  nm_group_types_all.ngt_group_type%TYPE)
+        IS
+    SELECT nng_nt_type
+      FROM nm_nt_groupings
+     WHERE nng_group_type = cp_group_type
+         ;
+    --
+    CURSOR get_group_types(cp_group_type  nm_group_types_all.ngt_group_type%TYPE)
+        IS
+    SELECT ngr_child_group_type
+      FROM nm_group_relations
+     WHERE ngr_parent_group_type = cp_group_type
+         ;
+    --
+  BEGIN
+    --
+    IF pi_ne_type = 'G'
+     THEN
+        OPEN  get_nt_types(pi_group_type);
+        FETCH get_nt_types
+         BULK COLLECT
+         INTO lt_types;
+        CLOSE get_nt_types;
+    ELSIF pi_ne_type = 'P'
+     THEN
+        OPEN  get_group_types(pi_group_type);
+        FETCH get_group_types
+         BULK COLLECT
+         INTO lt_types;
+        CLOSE get_group_types;   
+    END IF;
+    --
+    FOR i IN 1..lt_types.COUNT LOOP
+      --
+      lv_retval := lv_retval||CASE WHEN i > 1 THEN ',' ELSE NULL END||lt_types(i);
+      --
+    END LOOP;
+    --
+    RETURN lv_retval;
+    --
+  END get_group_member_types;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -876,6 +943,7 @@ AS
     lv_layer_network_element_type  nm_elements_all.ne_type%TYPE;
     lv_layer_group_type            nm_group_types_all.ngt_group_type%TYPE;
     lv_layer_group_partial         VARCHAR2(1);
+    lv_group_memb_types            nm3type.max_varchar2;
     lv_layer_is_linear             VARCHAR2(1);
     lv_layer_editable              VARCHAR2(1);
     lv_layer_units                 nm_units.un_unit_id%TYPE;
@@ -1018,6 +1086,8 @@ AS
           lv_layer_is_linear := lt_theme_types(1).network_is_linear;
           lv_layer_group_type := lt_theme_types(1).network_group_type;
           lv_layer_group_partial := lt_theme_types(1).network_partial_memb;
+          lv_group_memb_types := get_group_member_types(pi_ne_type    => lt_theme_types(1).network_element_type
+                                                       ,pi_group_type => lt_theme_types(1).network_group_type);
           lv_layer_node_type := lt_theme_types(1).node_type;
           IF lv_layer_node_type IS NOT NULL
            THEN
@@ -1034,6 +1104,7 @@ AS
           lv_layer_network_element_type := NULL;
           lv_layer_group_type := NULL;
           lv_layer_group_partial := NULL;
+          lv_group_memb_types := NULL;
           lv_layer_is_linear := NULL;
           lv_layer_node_type := NULL;
           lv_layer_node_layer := NULL;
@@ -1167,6 +1238,7 @@ AS
               ||CHR(10)||'      "network_element_type"      "'||lv_layer_network_element_type||'"'
               ||CHR(10)||'      "network_is_linear"         "'||lv_layer_is_linear||'"'
               ||CHR(10)||'      "network_group_type"        "'||lv_layer_group_type||'"'
+              ||CHR(10)||'      "network_group_memb_types"  "'||lv_group_memb_types||'"'
               ||CHR(10)||'      "network_partial_members"   "'||lv_layer_group_partial||'"'
               ||CHR(10)||'      "network_units"             "'||lv_layer_units||'"'
               ||CHR(10)||'      "network_node_type"         "'||lv_layer_node_type||'"'
@@ -1253,6 +1325,7 @@ AS
               ||CHR(10)||'      "network_element_type"      "'||lv_layer_network_element_type||'"'
               ||CHR(10)||'      "network_is_linear"         "'||lv_layer_is_linear||'"'
               ||CHR(10)||'      "network_group_type"        "'||lv_layer_group_type||'"'
+              ||CHR(10)||'      "network_group_memb_types"  "'||lv_group_memb_types||'"'
               ||CHR(10)||'      "network_partial_members"   "'||lv_layer_group_partial||'"'
               ||CHR(10)||'      "network_units"             "'||lv_layer_units||'"'
               ||CHR(10)||'      "network_node_type"         "'||lv_layer_node_type||'"'
