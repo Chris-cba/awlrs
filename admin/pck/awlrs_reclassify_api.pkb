@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reclassify_api.pkb-arc   1.0   22 Nov 2016 17:30:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reclassify_api.pkb-arc   1.1   13 Dec 2016 13:04:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reclassify_api.pkb  $
-  --       Date into PVCS   : $Date:   22 Nov 2016 17:30:38  $
-  --       Date fetched Out : $Modtime:   22 Nov 2016 17:28:02  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   13 Dec 2016 13:04:16  $
+  --       Date fetched Out : $Modtime:   13 Dec 2016 11:37:16  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reclassify_api';
   --
   g_disp_derived    BOOLEAN := TRUE;
@@ -57,6 +57,7 @@ AS
   --
   PROCEDURE get_nt_flex_attribs(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                                ,pi_nt_type          IN  nm_types.nt_type%TYPE
+                               ,pi_group_type       IN  nm_group_types_all.ngt_group_type%TYPE
                                ,po_message_severity OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor   OUT sys_refcursor
                                ,po_cursor           OUT sys_refcursor)
@@ -70,6 +71,7 @@ AS
     --
     awlrs_element_api.get_nt_flex_attribs(pi_ne_id            => pi_ne_id
                                          ,pi_nt_type          => pi_nt_type
+                                         ,pi_group_type       => pi_group_type
                                          ,pi_disp_derived     => g_disp_derived
                                          ,pi_disp_inherited   => g_disp_inherited
                                          ,pi_disp_primary_ad  => g_disp_primary_ad
@@ -91,8 +93,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_nt_flex_attribs(pi_ne_id   IN nm_elements_all.ne_id%TYPE
-                              ,pi_nt_type IN nm_types.nt_type%TYPE)
+  FUNCTION get_nt_flex_attribs(pi_ne_id      IN nm_elements_all.ne_id%TYPE
+                              ,pi_nt_type    IN nm_types.nt_type%TYPE
+                              ,pi_group_type IN nm_group_types_all.ngt_group_type%TYPE)
     RETURN awlrs_element_api.flex_attr_tab IS
     --
     lt_attrib_values  awlrs_element_api.flex_attr_tab;
@@ -101,6 +104,7 @@ AS
     --
     lt_attrib_values := awlrs_element_api.get_nt_flex_attribs(pi_ne_id           => pi_ne_id
                                                              ,pi_nt_type         => pi_nt_type
+                                                             ,pi_group_type      => pi_group_type
                                                              ,pi_disp_derived    => g_disp_derived
                                                              ,pi_disp_inherited  => g_disp_inherited
                                                              ,pi_disp_primary_ad => g_disp_primary_ad);
@@ -108,253 +112,6 @@ AS
     RETURN lt_attrib_values;
     --
   END get_nt_flex_attribs;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE route_check(pi_ne_id             IN     nm_elements.ne_id%TYPE DEFAULT NULL
-                       ,pi_new_start_node_id IN     nm_elements.ne_no_start%TYPE
-                       ,pi_new_end_node_id   IN     nm_elements.ne_no_end%TYPE
-                       ,pi_new_ne_sub_class  IN     nm_elements.ne_sub_class%TYPE
-                       ,pi_new_ne_group      IN     nm_elements.ne_group%TYPE
-                       ,po_message_severity  IN OUT hig_codes.hco_code%TYPE
-                       ,po_message_tab       IN OUT NOCOPY awlrs_message_tab)
-    IS
-    --
-    e0 exception;
-    pragma exception_init(e0, -20100);
-    e1 exception;
-    pragma exception_init(e1, -20101);
-    e2 exception;
-    pragma exception_init(e2, -20102);
-    e3 exception;
-    pragma exception_init(e3, -20103);
-    e4 exception;
-    pragma exception_init(e4, -20104);
-    e5 exception;
-    pragma exception_init(e5, -20105);
-    e6 exception;
-    pragma exception_init(e6, -20106);
-    e7 exception;
-    pragma exception_init(e7, -20107);
-    e8 exception;
-    pragma exception_init(e8, -20108);
-    e9 exception;
-    pragma exception_init(e9, -20109);
-    e10 exception;
-    pragma exception_init(e10, -20110);
-    e11 exception;
-    pragma exception_init(e11, -20111);
-    e12 exception;
-    pragma exception_init(e12, -20112);
-    e13 exception;
-    pragma exception_init(e13, -20113);
-    e14 exception;
-    pragma exception_init(e14, -20114);
-    --
-    PROCEDURE add_message(pi_appl IN nm_errors.ner_appl%TYPE
-                         ,pi_id   IN nm_errors.ner_id%TYPE)
-      IS
-    BEGIN
-      awlrs_util.add_ner_to_message_tab(pi_ner_appl    => pi_appl
-                                       ,pi_ner_id      => pi_id
-                                       ,pi_category    => awlrs_util.c_msg_cat_ask_continue
-                                       ,po_message_tab => po_message_tab);
-      po_message_severity := awlrs_util.c_msg_cat_ask_continue;
-    END;
-    --
-  BEGIN
-    --
-    nm3nwval.route_check(p_ne_no_start_new  => pi_new_start_node_id
-                        ,p_ne_no_end_new    => pi_new_end_node_id
-                        ,p_ne_sub_class_new => pi_new_ne_sub_class
-                        ,p_ne_group_new     => pi_new_ne_group
-                        ,p_ne_id            => pi_ne_id);
-    --
-  EXCEPTION
-    WHEN e0
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 19);
-    WHEN e1
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 20);
-    WHEN e2
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 21);
-    WHEN e3
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 22);
-    WHEN e4
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 23);
-    WHEN e5
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 24);
-    WHEN e6
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 25);
-    WHEN e7
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 133);
-    WHEN e8
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 134);
-    WHEN e9
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 135);
-    WHEN e10
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 136);
-    WHEN e11
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 137);
-    WHEN e12
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 138);
-    WHEN e13
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 139);
-    WHEN e14
-     THEN
-        add_message(pi_appl => 'NET'
-                   ,pi_id   => 140);
-    WHEN others
-     THEN
-        RAISE;
-  END route_check;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE route_check(pi_ne_id             IN  nm_elements.ne_id%TYPE
-                       ,pi_new_start_node_id IN  nm_elements.ne_no_start%TYPE
-                       ,pi_new_end_node_id   IN  nm_elements.ne_no_end%TYPE
-                       ,pi_new_ne_sub_class  IN  nm_elements.ne_sub_class%TYPE
-                       ,pi_new_ne_group      IN  nm_elements.ne_group%TYPE
-                       ,po_message_severity  OUT hig_codes.hco_code%TYPE
-                       ,po_message_cursor    OUT sys_refcursor)
-    IS
-    --
-    lv_severity  hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
-    --
-    lt_messages  awlrs_message_tab := awlrs_message_tab();
-    --
-  BEGIN
-    --
-    route_check(pi_ne_id             => pi_ne_id
-               ,pi_new_start_node_id => pi_new_start_node_id
-               ,pi_new_end_node_id   => pi_new_end_node_id
-               ,pi_new_ne_sub_class  => pi_new_ne_sub_class
-               ,pi_new_ne_group      => pi_new_ne_group
-               ,po_message_severity  => lv_severity
-               ,po_message_tab       => lt_messages);
-    --
-    IF lt_messages.COUNT > 0
-     THEN
-        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
-                                     ,po_cursor      => po_message_cursor);
-        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
-                                       ,po_message_severity => po_message_severity);
-    ELSE
-        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                             ,po_cursor           => po_message_cursor);
-    END IF;
-    --
-  EXCEPTION
-    WHEN others
-     THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END route_check;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE route_check(pi_ne_id                   IN  nm_elements.ne_id%TYPE
-                       ,pi_new_start_node_id       IN  nm_elements.ne_no_start%TYPE
-                       ,pi_new_end_node_id         IN  nm_elements.ne_no_end%TYPE
-                       ,pi_new_attrib_column_names IN  awlrs_element_api.attrib_column_name_tab
-                       ,pi_new_attrib_prompts      IN  awlrs_element_api.attrib_prompt_tab
-                       ,pi_new_attrib_char_values  IN  awlrs_element_api.attrib_char_value_tab
-                       ,po_message_severity        OUT hig_codes.hco_code%TYPE
-                       ,po_message_cursor          OUT sys_refcursor)
-    IS
-    --
-    lv_severity        hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
-    lv_message_cursor  sys_refcursor;
-    --
-    lr_ne  nm_elements_all%ROWTYPE;
-    --
-    lt_element_attribs  awlrs_element_api.flex_attr_tab;
-    --
-  BEGIN
-    /*
-    ||Make sure the attribute tables have the same number of records.
-    */
-    IF pi_new_attrib_column_names.COUNT != pi_new_attrib_prompts.COUNT
-     OR pi_new_attrib_column_names.COUNT != pi_new_attrib_char_values.COUNT
-     THEN
-        --The attribute tables passed in must have matching row counts
-        hig.raise_ner(pi_appl               => 'AWLRS'
-                     ,pi_id                 => 5
-                     ,pi_supplementary_info => 'awlrs_merge_api.do_merge');
-    END IF;
-    --
-    FOR i IN 1..pi_new_attrib_column_names.COUNT LOOP
-      --
-      lt_element_attribs(i).column_name := pi_new_attrib_column_names(i);
-      lt_element_attribs(i).prompt      := pi_new_attrib_prompts(i);
-      lt_element_attribs(i).char_value  := pi_new_attrib_char_values(i);
-      --
-    END LOOP;
-    --
-    /*
-    ||Build the new element record.
-    */
-    init_element_global;
-    --
-    g_new_element := nm3net.get_ne(pi_ne_id => pi_ne_id);
-    --
-    g_new_element.ne_no_start := pi_new_start_node_id;
-    g_new_element.ne_no_end   := pi_new_end_node_id;
-    --
-    awlrs_element_api.build_element_rec(pi_nt_type    => g_new_element.ne_nt_type
-                                       ,pi_global     => 'awlrs_reclassify_api.g_new_element'
-                                       ,pi_attributes => lt_element_attribs);
-    --
-    lr_ne := g_new_element;
-    --
-    route_check(pi_ne_id             => lr_ne.ne_id
-               ,pi_new_start_node_id => lr_ne.ne_no_start
-               ,pi_new_end_node_id   => lr_ne.ne_no_end
-               ,pi_new_ne_sub_class  => lr_ne.ne_sub_class
-               ,pi_new_ne_group      => lr_ne.ne_group
-               ,po_message_severity  => lv_severity
-               ,po_message_cursor    => lv_message_cursor);
-    --
-    po_message_severity := lv_severity;
-    po_message_cursor := lv_message_cursor;
-    --
-  EXCEPTION
-    WHEN others
-     THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END route_check;
 
   --
   -----------------------------------------------------------------------------
@@ -551,13 +308,16 @@ AS
     lr_ne  nm_elements_all%ROWTYPE;
     --
   BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT reclassify_element_sp;
     --
     IF awlrs_util.historic_mode
      THEN
         hig.raise_ner(pi_appl => 'NET'
                      ,pi_id   => 6);
     END IF;
-    --
     /*
     ||Build the new element record.
     */
@@ -612,13 +372,13 @@ AS
                                       ,po_message_cursor   => lv_message_cursor);
         IF lv_severity = awlrs_util.c_msg_cat_success
          THEN
-            route_check(pi_ne_id             => pi_ne_id
-                       ,pi_new_start_node_id => lr_ne.ne_no_start
-                       ,pi_new_end_node_id   => lr_ne.ne_no_end
-                       ,pi_new_ne_sub_class  => lr_ne.ne_sub_class
-                       ,pi_new_ne_group      => lr_ne.ne_group
-                       ,po_message_severity  => lv_severity
-                       ,po_message_cursor    => lv_message_cursor);
+            awlrs_element_api.route_check(pi_ne_id             => pi_ne_id
+                                         ,pi_new_start_node_id => lr_ne.ne_no_start
+                                         ,pi_new_end_node_id   => lr_ne.ne_no_end
+                                         ,pi_new_ne_sub_class  => lr_ne.ne_sub_class
+                                         ,pi_new_ne_group      => lr_ne.ne_group
+                                         ,po_message_severity  => lv_severity
+                                         ,po_message_cursor    => lv_message_cursor);
         END IF;
     END IF;
     --
@@ -647,6 +407,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO reclassify_element_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END reclassify_element;
