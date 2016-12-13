@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_replace_api.pkb-arc   1.3   21 Oct 2016 14:56:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_replace_api.pkb-arc   1.4   13 Dec 2016 13:04:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_replace_api.pkb  $
-  --       Date into PVCS   : $Date:   21 Oct 2016 14:56:04  $
-  --       Date fetched Out : $Modtime:   21 Oct 2016 14:54:14  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   13 Dec 2016 13:04:14  $
+  --       Date fetched Out : $Modtime:   13 Dec 2016 11:39:04  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_replace_api';
   --
   g_disp_derived    BOOLEAN := TRUE;
@@ -58,6 +58,7 @@ AS
   --
   PROCEDURE get_nt_flex_attribs(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                                ,pi_nt_type          IN  nm_types.nt_type%TYPE
+                               ,pi_group_type       IN  nm_group_types_all.ngt_group_type%TYPE
                                ,po_message_severity OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor   OUT sys_refcursor
                                ,po_cursor           OUT sys_refcursor)
@@ -71,6 +72,7 @@ AS
     --
     awlrs_element_api.get_nt_flex_attribs(pi_ne_id            => pi_ne_id
                                          ,pi_nt_type          => pi_nt_type
+                                         ,pi_group_type       => pi_group_type
                                          ,pi_disp_derived     => g_disp_derived
                                          ,pi_disp_inherited   => g_disp_inherited
                                          ,pi_disp_primary_ad  => g_disp_primary_ad
@@ -92,8 +94,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_nt_flex_attribs(pi_ne_id   IN nm_elements_all.ne_id%TYPE
-                              ,pi_nt_type IN nm_types.nt_type%TYPE)
+  FUNCTION get_nt_flex_attribs(pi_ne_id      IN nm_elements_all.ne_id%TYPE
+                              ,pi_nt_type    IN nm_types.nt_type%TYPE
+                              ,pi_group_type IN nm_group_types_all.ngt_group_type%TYPE)
     RETURN awlrs_element_api.flex_attr_tab IS
     --
     lt_attrib_values  awlrs_element_api.flex_attr_tab;
@@ -102,6 +105,7 @@ AS
     --
     lt_attrib_values := awlrs_element_api.get_nt_flex_attribs(pi_ne_id           => pi_ne_id
                                                              ,pi_nt_type         => pi_nt_type
+                                                             ,pi_group_type      => pi_group_type
                                                              ,pi_disp_derived    => g_disp_derived
                                                              ,pi_disp_inherited  => g_disp_inherited
                                                              ,pi_disp_primary_ad => g_disp_primary_ad);

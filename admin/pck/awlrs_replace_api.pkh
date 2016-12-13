@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_replace_api.pkh-arc   1.1   19 Oct 2016 18:25:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_replace_api.pkh-arc   1.2   13 Dec 2016 13:04:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_replace_api.pkh  $
-  --       Date into PVCS   : $Date:   19 Oct 2016 18:25:12  $
-  --       Date fetched Out : $Modtime:   19 Oct 2016 18:18:42  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   13 Dec 2016 13:04:14  $
+  --       Date fetched Out : $Modtime:   13 Dec 2016 11:38:00  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
   --
   g_new_element  nm_elements_all%ROWTYPE;
   --
@@ -35,6 +35,7 @@ AS
   --
   PROCEDURE get_nt_flex_attribs(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                                ,pi_nt_type          IN  nm_types.nt_type%TYPE
+                               ,pi_group_type       IN  nm_group_types_all.ngt_group_type%TYPE
                                ,po_message_severity OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor   OUT sys_refcursor
                                ,po_cursor           OUT sys_refcursor);
@@ -42,8 +43,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_nt_flex_attribs(pi_ne_id   IN nm_elements_all.ne_id%TYPE
-                              ,pi_nt_type IN nm_types.nt_type%TYPE)
+  FUNCTION get_nt_flex_attribs(pi_ne_id      IN nm_elements_all.ne_id%TYPE
+                              ,pi_nt_type    IN nm_types.nt_type%TYPE
+                              ,pi_group_type IN nm_group_types_all.ngt_group_type%TYPE)
     RETURN awlrs_element_api.flex_attr_tab;
 
   --

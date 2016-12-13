@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reclassify_api.pkh-arc   1.0   22 Nov 2016 17:30:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reclassify_api.pkh-arc   1.1   13 Dec 2016 13:04:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reclassify_api.pkh  $
-  --       Date into PVCS   : $Date:   22 Nov 2016 17:30:38  $
-  --       Date fetched Out : $Modtime:   22 Nov 2016 17:28:02  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   13 Dec 2016 13:04:14  $
+  --       Date fetched Out : $Modtime:   13 Dec 2016 11:37:14  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   --
   g_new_element  nm_elements_all%ROWTYPE;
   --
@@ -35,6 +35,7 @@ AS
   --
   PROCEDURE get_nt_flex_attribs(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                                ,pi_nt_type          IN  nm_types.nt_type%TYPE
+                               ,pi_group_type       IN  nm_group_types_all.ngt_group_type%TYPE
                                ,po_message_severity OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor   OUT sys_refcursor
                                ,po_cursor           OUT sys_refcursor);
@@ -42,32 +43,10 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_nt_flex_attribs(pi_ne_id   IN nm_elements_all.ne_id%TYPE
-                              ,pi_nt_type IN nm_types.nt_type%TYPE)
+  FUNCTION get_nt_flex_attribs(pi_ne_id      IN nm_elements_all.ne_id%TYPE
+                              ,pi_nt_type    IN nm_types.nt_type%TYPE
+                              ,pi_group_type IN nm_group_types_all.ngt_group_type%TYPE)
     RETURN awlrs_element_api.flex_attr_tab;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE route_check(pi_ne_id             IN nm_elements.ne_id%TYPE
-                       ,pi_new_start_node_id IN nm_elements.ne_no_start%TYPE
-                       ,pi_new_end_node_id   IN nm_elements.ne_no_end%TYPE
-                       ,pi_new_ne_sub_class  IN nm_elements.ne_sub_class%TYPE
-                       ,pi_new_ne_group      IN nm_elements.ne_group%TYPE
-                       ,po_message_severity  OUT hig_codes.hco_code%TYPE
-                       ,po_message_cursor    OUT sys_refcursor);
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE route_check(pi_ne_id                   IN  nm_elements.ne_id%TYPE
-                       ,pi_new_start_node_id       IN  nm_elements.ne_no_start%TYPE
-                       ,pi_new_end_node_id         IN  nm_elements.ne_no_end%TYPE
-                       ,pi_new_attrib_column_names IN  awlrs_element_api.attrib_column_name_tab
-                       ,pi_new_attrib_prompts      IN  awlrs_element_api.attrib_prompt_tab
-                       ,pi_new_attrib_char_values  IN  awlrs_element_api.attrib_char_value_tab
-                       ,po_message_severity        OUT hig_codes.hco_code%TYPE
-                       ,po_message_cursor          OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
@@ -83,7 +62,7 @@ AS
   --NB. If the value of pi_run_checks passed in is not 'Y' then the calling code
   --should have either already called the procedure with the value as 'Y' and 
   --handled any errors or prompts for user confirmation or have called the individual
-  --check procedures i.e. check_element_can_be_reclassed and route_check.
+  --check procedures i.e. check_element_can_be_reclassed and awlrs_element_api.route_check.
   --
   PROCEDURE reclassify_element(pi_ne_id               IN     nm_elements_all.ne_id%TYPE
                               ,pi_new_network_type    IN     nm_elements_all.ne_nt_type%TYPE
