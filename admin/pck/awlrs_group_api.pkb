@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.1   Oct 25 2016 09:09:50   Vikas.Mhetre  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.2   15 Dec 2016 23:59:18   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 25 2016 09:09:50  $
-  --       Date fetched Out : $Modtime:   Oct 25 2016 08:40:50  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   15 Dec 2016 23:59:18  $
+  --       Date fetched Out : $Modtime:   15 Dec 2016 23:49:30  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -24,6 +24,7 @@ AS
   BEGIN
     RETURN g_sccsid;
   END get_version;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -32,328 +33,287 @@ AS
   BEGIN
     RETURN g_body_sccsid;
   END get_body_version;
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE create_group_element(pi_theme_name          IN     nm_themes_all.nth_theme_name%TYPE
-                                ,pi_network_type        IN     nm_elements_all.ne_nt_type%TYPE
-                                ,pi_description         IN     nm_elements_all.ne_descr%TYPE
-                                ,pi_admin_unit_id       IN     nm_elements_all.ne_admin_unit%TYPE
-                                ,pi_start_date          IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                                ,pi_end_date            IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
-                                ,pi_group_type          IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
-                                ,pi_start_node_id       IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
-                                ,pi_end_node_id         IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
-                                ,pi_attrib_column_names IN     awlrs_element_api.attrib_column_name_tab
-                                ,pi_attrib_prompts      IN     awlrs_element_api.attrib_prompt_tab
-                                ,pi_attrib_char_values  IN     awlrs_element_api.attrib_char_value_tab
-                                ,po_ne_id               IN OUT nm_elements_all.ne_id%TYPE
-                                ,po_message_severity       OUT hig_codes.hco_code%TYPE
-                                ,po_message_cursor         OUT sys_refcursor) IS
-  BEGIN
-    --
-    awlrs_element_api.create_element(pi_theme_name          => pi_theme_name
-                                    ,pi_network_type        => pi_network_type
-                                    ,pi_element_type        => 'G'
-                                    ,pi_description         => pi_description
-                                    ,pi_length              => ''
-                                    ,pi_admin_unit_id       => pi_admin_unit_id
-                                    ,pi_start_date          => pi_start_date
-                                    ,pi_end_date            => pi_end_date
-                                    ,pi_group_type          => pi_group_type
-                                    ,pi_start_node_id       => pi_start_node_id
-                                    ,pi_end_node_id         => pi_end_node_id
-                                    ,pi_attrib_column_names => pi_attrib_column_names
-                                    ,pi_attrib_prompts      => pi_attrib_prompts
-                                    ,pi_attrib_char_values  => pi_attrib_char_values
-                                    ,pi_shape_wkt           => ''
-                                    ,po_ne_id               => po_ne_id
-                                    ,po_message_severity    => po_message_severity
-                                    ,po_message_cursor      => po_message_cursor);
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-      THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END create_group_element;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_group_element(pi_ne_id             IN nm_elements_all.ne_id%TYPE
-                             ,po_message_severity OUT hig_codes.hco_code%TYPE
-                             ,po_message_cursor   OUT sys_refcursor
-                             ,po_cursor           OUT sys_refcursor) IS
-
-    lv_cursor  sys_refcursor;
-  BEGIN
-
-    IF nm3net.element_is_a_group(pi_ne_id) THEN 
-      awlrs_element_api.get_element(pi_ne_id            => pi_ne_id
-                                   ,po_message_severity => po_message_severity
-                                   ,po_message_cursor   => po_message_cursor
-                                   ,po_cursor           => lv_cursor);
-      po_cursor := lv_cursor;
-    ELSE
-       -- Invalid Group of Datums Id supplied
-       hig.raise_ner(pi_appl => 'AWLRS'
-                    ,pi_id   => 26);
-    END IF;
-
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-      THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END get_group_element;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE end_date_group(pi_ne_id             IN nm_elements.ne_id%TYPE
-                          ,pi_effective_date    IN DATE      
-                          ,pi_close_all         IN VARCHAR2
-                          ,pi_end_date_datums   IN VARCHAR2
-                          ,po_message_severity OUT hig_codes.hco_code%TYPE
-                          ,po_message_cursor   OUT sys_refcursor
-                          ) IS
-    e_route_locked exception;
-    PRAGMA EXCEPTION_INIT(e_route_locked, -54);
-    e_end_date exception;
-    PRAGMA EXCEPTION_INIT(e_end_date, -20984);
-
-  BEGIN
-    /*
-    ||Set a save point.
-    */
-    SAVEPOINT enddate_group_sp;
-    --
-    nm3close.multi_element_close(pi_type            => nm3close.get_c_route
-                                ,pi_id              => pi_ne_id
-                                ,pi_effective_date  => pi_effective_date
-                                ,pi_close_all       => pi_close_all
-                                ,pi_end_date_datums => pi_end_date_datums);
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN e_route_locked
-      THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 33); 
-    WHEN e_end_date
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 13); 
-    WHEN others
-      THEN
-        ROLLBACK TO enddate_group_sp;
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END end_date_group;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_members(pi_ne_id             IN nm_elements_all.ne_id%TYPE
+  PROCEDURE get_members(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                        ,po_message_severity OUT hig_codes.hco_code%TYPE
                        ,po_message_cursor   OUT sys_refcursor
-                       ,po_cursor           OUT sys_refcursor) IS
-    --
+                       ,po_cursor           OUT sys_refcursor)
+    IS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT group_ne_id, 
-           mem_ne_id, 
-           mem_seq,
-           mem_unique,
-           mem_start_node,
-           mem_end_node,
-           mem_start_mp,
-           mem_end_mp,
-           mem_partial_ind,
-           mem_length, 
-           mem_offset,       
-           CASE WHEN mem_poe = 0 
-                THEN NULL
-                WHEN mem_poe < 0
-                THEN 'O'
-                ELSE 'G'
-           END mem_poe,
-           mem_cardinality,
-           mem_start_date,
-           mem_end_date
-      FROM (SELECT nm_seq_no                       mem_seq,
-                   ne.ne_unique                    mem_unique,
-                   ne.ne_no_start                  mem_start_node, 
-                   ne.ne_no_end                    mem_end_node,
-                   nm.nm_begin_mp                  mem_start_mp,
-                   nm.nm_end_mp                    mem_end_mp,
-                   CASE WHEN (nm.nm_end_mp = (nm.nm_end_mp - nm.nm_begin_mp)
-                              AND nm.nm_begin_mp = 0)
-                        THEN 'N'
-                        ELSE 'Y'
-                   END                             mem_partial_ind,
-                   (nm.nm_end_mp - nm.nm_begin_mp) mem_length, 
-                   nm.nm_slk                       mem_offset,       
-                   nm3net_o.get_node_class(nm.nm_ne_id_in, CASE WHEN nm.nm_cardinality = 1 
-                                                                THEN ne.ne_no_start
-                                                                ELSE ne.ne_no_end
-                                                           END).nc_poe   mem_poe,
-                   CASE WHEN nm.nm_cardinality = 1
-                        THEN 'Y'
-                        ELSE 'N'
-                   END mem_cardinality,
-                   nm.nm_start_date mem_start_date, 
-                   nm.nm_end_date mem_end_date,                                           
-                   nm.nm_ne_id_in group_ne_id, 
-                   nm.nm_ne_id_of mem_ne_id, 
-                   nm.nm_type, 
-                   nm.nm_obj_type,
-                   nm.nm_admin_unit, 
-                   nm.nm_date_created, 
-                   nm.nm_date_modified, 
-                   nm.nm_modified_by, 
-                   nm_created_by,        
-                   nm_seg_no, 
-                   nm_true, 
-                   nm_end_slk, 
-                   nm_end_true 
-              FROM nm_members nm, 
-                   nm_elements ne
-             WHERE nm.nm_ne_id_of = ne.ne_id
-               AND nm.nm_type = 'G'
-               AND nm.nm_ne_id_in = pi_ne_id
-               AND nm_start_date <= TO_DATE (SYS_CONTEXT ('NM3CORE', 'EFFECTIVE_DATE'),'DD-MON-YYYY')
-               AND NVL(nm_end_date, TO_DATE ('99991231', 'YYYYMMDD')) > TO_DATE (SYS_CONTEXT ('NM3CORE', 'EFFECTIVE_DATE'),'DD-MON-YYYY')   
-            );   
+    SELECT group_element_id
+          ,member_element_id
+          ,member_seq_no
+          ,member_unique
+          ,member_start_node
+          ,member_end_node
+          ,member_start_mp
+          ,member_end_mp
+          ,member_partial_ind
+          ,member_length
+          ,member_offset
+          ,CASE WHEN member_poe = 0 THEN NULL WHEN member_poe < 0 THEN 'O' ELSE 'G' END member_poe
+          ,member_cardinality
+          ,member_start_date
+          ,member_end_date
+      FROM (SELECT nm_seq_no member_seq_no
+                  ,ne.ne_unique member_unique
+                  ,ne.ne_no_start member_start_node
+                  ,ne.ne_no_end member_end_node
+                  ,nm.nm_begin_mp member_start_mp
+                  ,nm.nm_end_mp member_end_mp
+                  ,CASE
+                     WHEN nm.nm_end_mp = (nm.nm_end_mp - nm.nm_begin_mp)
+                      AND nm.nm_begin_mp = 0
+                      THEN
+                         'N'
+                     ELSE
+                         'Y'
+                   END member_partial_ind
+                  ,(nm.nm_end_mp - nm.nm_begin_mp) member_length
+                  ,nm.nm_slk member_offset
+                  ,nm3net_o.get_node_class(nm.nm_ne_id_in
+                                          ,CASE WHEN nm.nm_cardinality = 1 THEN ne.ne_no_start ELSE ne.ne_no_end END).nc_poe member_poe
+                  ,nm.nm_cardinality member_cardinality
+                  ,nm.nm_start_date member_start_date
+                  ,nm.nm_end_date member_end_date
+                  ,nm.nm_ne_id_in group_element_id
+                  ,nm.nm_ne_id_of member_element_id
+              FROM nm_members nm
+                  ,nm_elements ne
+             WHERE nm.nm_ne_id_in = pi_ne_id
+               AND nm.nm_ne_id_of = ne.ne_id
+               AND nm.nm_type = 'G')
+         ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
-      THEN
+     THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_members;
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE add_membership(pi_group_ne_id          IN nm_elements.ne_id%TYPE
-                          ,pi_mem_ne_id            IN nm_elements.ne_id%TYPE
-                          ,pi_mem_begin_mp         IN nm_members.nm_begin_mp%TYPE
-                          ,pi_mem_end_mp           IN nm_members.nm_end_mp%TYPE
-                          ,pi_start_date           IN nm_members.nm_start_date%TYPE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                          ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                          ,po_message_cursor      OUT sys_refcursor
-                          ) IS
+  PROCEDURE get_sub_groups(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor   OUT sys_refcursor
+                          ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT nm.nm_ne_id_in       group_ne_id
+          ,nm.nm_ne_id_of       subgroup_ne_id
+          ,ne.ne_unique         subgroup_unique
+          ,ne.ne_descr          subgroup_descr
+          ,ne.ne_gty_group_type subgroup_group_type
+          ,nm.nm_start_date     subgroup_start_date
+          ,nm.nm_end_date       subgroup_end_date
+      FROM nm_elements ne
+          ,nm_members nm
+     WHERE nm.nm_ne_id_in = pi_ne_id
+       AND nm.nm_ne_id_of = ne.ne_id
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
 
-    l_group_ne_rec    nm_elements%ROWTYPE;
-    l_mem_ne_rec      nm_elements%ROWTYPE;
-    l_nm_rec          nm_members%ROWTYPE;
+  END get_sub_groups;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_member(pi_group_rec    IN  nm_elements_all%ROWTYPE
+                      ,pi_mem_ne_id    IN  nm_elements.ne_id%TYPE
+                      ,pi_mem_begin_mp IN  nm_members.nm_begin_mp%TYPE DEFAULT 0
+                      ,pi_mem_end_mp   IN  nm_members.nm_end_mp%TYPE DEFAULT 0
+                      ,pi_start_date   IN  nm_members.nm_start_date%TYPE)
+    IS
+    --
+    l_mem_ne_rec  nm_elements%ROWTYPE;
+    l_nm_rec      nm_members%ROWTYPE;
+    --
+  BEGIN
+    /*
+    ||Get the member element record of the datum.
+    */
+    l_mem_ne_rec := nm3get.get_ne( pi_mem_ne_id );
+    /*
+    ||Set the membership details.
+    */
+    l_nm_rec.nm_ne_id_in   := pi_group_rec.ne_id;
+    l_nm_rec.nm_ne_id_of   := pi_mem_ne_id;
+    l_nm_rec.nm_type       := 'G';
+    l_nm_rec.nm_obj_type   := pi_group_rec.ne_gty_group_type;
+    l_nm_rec.nm_start_date := NVL(pi_start_date,GREATEST(pi_group_rec.ne_start_date,l_mem_ne_rec.ne_start_date));
+    --
+    IF nm3net.is_gty_partial (pi_group_rec.ne_nt_type) = 'Y'
+     THEN
+        l_nm_rec.nm_begin_mp := pi_mem_begin_mp;
+        l_nm_rec.nm_end_mp   := pi_mem_end_mp;
+    ELSE
+        l_nm_rec.nm_begin_mp := NVL(pi_mem_begin_mp, 0);
+        l_nm_rec.nm_end_mp   := NVL(pi_mem_end_mp,NVL(nm3net.get_ne_length(pi_mem_ne_id),0));
+    END IF;
+    /*
+    IF nm3net.is_nt_linear (l_group_ne_rec.ne_nt_type) = 'Y'
+     THEN
+        l_nm_rec.nm_slk := nm3net.get_new_slk(p_parent_ne_id => l_nm_rec.nm_ne_id_in
+                                             ,p_no_start_new => l_mem_ne_rec.ne_no_start
+                                             ,p_no_end_new   => l_mem_ne_rec.ne_no_end
+                                             ,p_length       => l_mem_ne_rec.ne_length
+                                             ,p_sub_class    => l_mem_ne_rec.ne_sub_class
+                                             ,p_datum_ne_id  => l_nm_rec.nm_ne_id_of);
+        l_nm_rec.nm_true := l_nm_rec.nm_slk;
+    ELSE
+        l_nm_rec.nm_slk  := NULL;
+        l_nm_rec.nm_true := NULL;
+    END IF;
+    */
+    l_nm_rec.nm_slk         := NULL;
+    l_nm_rec.nm_true        := NULL;
+    l_nm_rec.nm_cardinality := nm3net.get_element_cardinality(p_route_ne_id => pi_group_rec.ne_id
+                                                             ,p_datum_ne_id => pi_mem_ne_id);
+    l_nm_rec.nm_admin_unit  := nm3get.get_ne(pi_ne_id => pi_mem_ne_id).ne_admin_unit;
+    l_nm_rec.nm_end_date    := l_mem_ne_rec.ne_end_date ;
+    l_nm_rec.nm_seq_no      := 0;
+    l_nm_rec.nm_seg_no      := 0;
+    --
+    nm3ins.ins_nm(l_nm_rec);
+    --
+  END add_member;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_member(pi_group_ne_id      IN  nm_elements.ne_id%TYPE
+                      ,pi_mem_ne_id        IN  nm_elements.ne_id%TYPE
+                      ,pi_mem_begin_mp     IN  nm_members.nm_begin_mp%TYPE DEFAULT 0
+                      ,pi_mem_end_mp       IN  nm_members.nm_end_mp%TYPE DEFAULT 0
+                      ,pi_start_date       IN  nm_members.nm_start_date%TYPE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                      ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    lr_group_ne  nm_elements_all%ROWTYPE;
+    --
   BEGIN
     /*
     ||Set a save point.
     */
     SAVEPOINT add_member_sp;
-
-    -- get the group element record 
-    l_group_ne_rec := nm3get.get_ne( pi_group_ne_id );
-
-    -- get the member element record of the datum
-    l_mem_ne_rec := nm3get.get_ne( pi_mem_ne_id );
-
-    -- get the membership details
-    l_nm_rec.nm_ne_id_in      := pi_group_ne_id;
-    l_nm_rec.nm_ne_id_of      := pi_mem_ne_id;
-    l_nm_rec.nm_type          := 'G';
-    l_nm_rec.nm_obj_type      := l_group_ne_rec.ne_gty_group_type;
-    l_nm_rec.nm_start_date    := NVL(pi_start_date, greatest(l_group_ne_rec.ne_start_date, l_mem_ne_rec.ne_start_date));
-
-    IF nm3net.is_gty_partial (l_group_ne_rec.ne_nt_type) = 'Y'
-    THEN 
-      l_nm_rec.nm_begin_mp      := pi_mem_begin_mp;
-      l_nm_rec.nm_end_mp        := pi_mem_end_mp;
-    ELSE
-      l_nm_rec.nm_begin_mp      := NVL(pi_mem_begin_mp, 0);
-      l_nm_rec.nm_end_mp        := NVL(pi_mem_end_mp, NVL(nm3net.get_ne_length(pi_mem_ne_id),0));
-    END IF;
-
     /*
-    IF nm3net.is_nt_linear (l_group_ne_rec.ne_nt_type) = 'Y'
-    THEN
-      l_nm_rec.nm_slk         := nm3net.get_new_slk (p_parent_ne_id => l_nm_rec.nm_ne_id_in
-                                                    ,p_no_start_new => l_mem_ne_rec.ne_no_start
-                                                    ,p_no_end_new   => l_mem_ne_rec.ne_no_end
-                                                    ,p_length       => l_mem_ne_rec.ne_length
-                                                    ,p_sub_class    => l_mem_ne_rec.ne_sub_class
-                                                    ,p_datum_ne_id  => l_nm_rec.nm_ne_id_of
-                                                    );
-      l_nm_rec.nm_true        := l_nm_rec.nm_slk;
-    ELSE
-      l_nm_rec.nm_slk         := NULL;
-      l_nm_rec.nm_true        := NULL;
-    END IF;
+    ||Get the group element record.
     */
-
-    l_nm_rec.nm_slk         := NULL;
-    l_nm_rec.nm_true        := NULL;
-
-    l_nm_rec.nm_cardinality   := nm3net.get_element_cardinality (p_route_ne_id => pi_group_ne_id
-                                                                ,p_datum_ne_id => pi_mem_ne_id);
-
-    l_nm_rec.nm_admin_unit    := nm3get.get_ne(pi_ne_id => pi_mem_ne_id).ne_admin_unit;
-
-    l_nm_rec.nm_end_date      := l_mem_ne_rec.ne_end_date ;
-    l_nm_rec.nm_seq_no        := 0;
-    l_nm_rec.nm_seg_no        := 0;
-
-    nm3ins.ins_nm ( l_nm_rec );
-
-    -- resequence the route to set connectivity
-    IF nm3get.get_nt(pi_nt_type => l_group_ne_rec.ne_nt_type).nt_node_type IS NOT NULL THEN
-      Nm3rsc.reseq_route(pi_group_ne_id);
-    END IF;
-
+    lr_group_ne := nm3get.get_ne(pi_group_ne_id);
+    /*
+    ||Add the Member.
+    */
+    add_member(pi_group_rec    => lr_group_ne
+              ,pi_mem_ne_id    => pi_mem_ne_id
+              ,pi_mem_begin_mp => pi_mem_begin_mp
+              ,pi_mem_end_mp   => pi_mem_end_mp
+              ,pi_start_date   => pi_start_date);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
+    --
   EXCEPTION
     WHEN others
-      THEN
+     THEN
         ROLLBACK TO add_member_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);        
-  END add_membership; 
+                                   ,po_cursor           => po_message_cursor);
+  END add_member;
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE end_date_membership(pi_group_ne_id       IN nm_elements.ne_id%TYPE
-                               ,pi_mem_ne_id         IN nm_elements.ne_id%TYPE
-                               ,pi_mem_begin_mp      IN nm_members.nm_begin_mp%TYPE
-                               ,pi_mem_start_date    IN nm_members.nm_start_date%TYPE
-                               ,pi_effective_date    IN DATE
-                               ,po_message_severity OUT hig_codes.hco_code%TYPE
-                               ,po_message_cursor   OUT sys_refcursor) IS
-
-  TYPE l_rec_nmh_tab IS TABLE OF nm_member_history%ROWTYPE INDEX BY BINARY_INTEGER;
-  l_rec_nmh       l_rec_nmh_tab;
-  
+  PROCEDURE add_members(pi_group_ne_id      IN  nm_elements.ne_id%TYPE
+                       ,pi_mem_ne_ids       IN  awlrs_util.ne_id_tab
+                       ,pi_mem_begin_mps    IN  awlrs_util.offset_tab
+                       ,pi_mem_end_mps      IN  awlrs_util.offset_tab
+                       ,pi_start_date       IN  nm_members.nm_start_date%TYPE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    lr_group_ne  nm_elements_all%ROWTYPE;
+    --
   BEGIN
-     /*
-     ||Set a save point.
-     */
-     SAVEPOINT enddate_member_sp;
-
-    -- end date the membership of a member in a Group of Sections
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT add_members_sp;
+    --
+    IF pi_mem_ne_ids.COUNT != pi_mem_begin_mps.COUNT
+     OR pi_mem_ne_ids.COUNT != pi_mem_end_mps.COUNT
+     THEN
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_group_api.add_members');
+    END IF;
+    /*
+    ||Get the group element record.
+    */
+    lr_group_ne := nm3get.get_ne(pi_group_ne_id);
+    --
+    FOR i IN 1..pi_mem_ne_ids.COUNT LOOP
+      /*
+      ||Add the Member.
+      */
+      add_member(pi_group_rec    => lr_group_ne
+                ,pi_mem_ne_id    => pi_mem_ne_ids(i)
+                ,pi_mem_begin_mp => pi_mem_begin_mps(i)
+                ,pi_mem_end_mp   => pi_mem_end_mps(i)
+                ,pi_start_date   => pi_start_date);
+    END LOOP;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        ROLLBACK TO add_members_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END add_members;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE end_date_membership(pi_group_ne_id      IN  nm_elements.ne_id%TYPE
+                               ,pi_mem_ne_id        IN  nm_elements.ne_id%TYPE
+                               ,pi_mem_begin_mp     IN  nm_members.nm_begin_mp%TYPE
+                               ,pi_mem_start_date   IN  nm_members.nm_start_date%TYPE
+                               ,pi_effective_date   IN  DATE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor)
+    IS
+  BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT enddate_member_sp;
+    /*
+    ||End date the membership of a member in a Group of Sections.
+    */
     UPDATE nm_members
        SET nm_end_date = pi_effective_date
      WHERE nm_ne_id_in = pi_group_ne_id
@@ -361,1115 +321,885 @@ AS
        AND nm_begin_mp = pi_mem_begin_mp
        AND nm_start_date = pi_mem_start_date
        AND nm_end_date IS NULL
-    RETURNING
-       nm_ne_id_in
-      ,nm_ne_id_of
-      ,nm_ne_id_of
-      ,nm_begin_mp
-      ,nm_start_date
-      ,nm_type
-      ,nm_obj_type
-      ,null
-    BULK COLLECT INTO l_rec_nmh;
-
-    FOR i IN 1.. l_rec_nmh.count LOOP
-      nm3ins.ins_nmh(p_rec_nmh => l_rec_nmh(i));
-    END LOOP;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-  EXCEPTION
-    WHEN others
-    THEN
-      ROLLBACK TO enddate_member_sp;
-      awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
-  END end_date_membership;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE check_rescale_date(pi_ne_id             IN nm_elements.ne_id%TYPE,
-                               pi_effective_date    IN DATE,
-                               po_member_found     OUT BOOLEAN
-                              ,po_message_severity OUT hig_codes.hco_code%TYPE
-                              ,po_message_cursor   OUT sys_refcursor) IS
-
-    CURSOR c_rsc_date( c_ne_id nm_elements.ne_id%TYPE,
-                       c_date  DATE ) IS
-    SELECT 1 
-    FROM   nm_members_all
-    WHERE  nm_ne_id_in = c_ne_id
-    AND    (nm_start_date >= c_date 
-           OR nm_end_date > c_date );
-
-    l_rec_found PLS_INTEGER;
-
-  BEGIN
-
-    OPEN c_rsc_date (c_ne_id => pi_ne_id, 
-                     c_date  => pi_effective_date);
-    FETCH c_rsc_date INTO l_rec_found;
-    IF c_rsc_date%FOUND THEN
-      po_member_found := TRUE;
-    ELSE
-      po_member_found := FALSE;
-    END IF;
-    -- If po_member_found returns as TRUE then UI should populate an alert 'NET', 63
-    -- If user responds to alert as Yes then PROCEDURE rescale_route should be called from UI with pi_use_history parameter as 'N'
-    -- else call the PROCEDURE rescale_route from UI with pi_use_history parameter as 'Y'
-    CLOSE c_rsc_date;
+         ;
+    /*
+    ||If the member is a distance break then end date it as well as its membership.
+    */
+    UPDATE nm_elements_all
+       SET ne_end_date = pi_effective_date
+     WHERE ne_id = pi_mem_ne_id
+       AND ne_type = 'D'
+         ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
-      THEN
+     THEN
+        ROLLBACK TO enddate_member_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END check_rescale_date;
+  END end_date_membership;
 
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_circular_start_point(pi_group_ne_id IN nm_elements.ne_id%TYPE)
-                           RETURN nm_elements.ne_id%TYPE IS
-   ln_circle_start nm_elements.ne_id%TYPE;
-  BEGIN
-    
-     SELECT nm_ne_id_of
-       INTO ln_circle_start
-       FROM nm_members
-      WHERE nm_ne_id_in = pi_group_ne_id
-        AND nm_type = 'G'
-    ORDER BY nm_seq_no;
-
-    RETURN ln_circle_start;
-
-  EXCEPTION
-    WHEN OTHERS 
-      THEN
-        RETURN NULL;
-  END get_circular_start_point;
+  --NB. If the value of pi_run_checks passed in is not 'Y' then the calling code
+  --should have already called the procedure with the value as 'Y' and handled any
+  --errors or prompts for user confirmation.
   --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE warn_if_route_ill_formed IS
+  PROCEDURE add_distance_break(pi_route_ne_id      IN  nm_members.nm_ne_id_of%TYPE
+                              ,pi_start_node_id    IN  nm_nodes.no_node_id%TYPE
+                              ,pi_end_node_id      IN  nm_nodes.no_node_id%TYPE
+                              ,pi_start_date       IN  DATE
+                              ,pi_length           IN  nm_elements.ne_length%TYPE
+                              ,pi_run_checks       IN  VARCHAR2 DEFAULT 'Y'
+                              ,po_db_ne_id         OUT nm_members.nm_ne_id_in%TYPE
+                              ,po_db_ne_unique     OUT nm_elements.ne_unique%TYPE
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    lv_ne_id      nm_members.nm_ne_id_in%TYPE;
+    lv_ne_unique  nm_elements.ne_unique%TYPE;
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
   BEGIN
-    IF NOT(nm3rsc.stranded_element_check)
-    THEN
-      --warn user route is ill formed
-      hig.raise_ner(pi_appl => 'NET'
-                   ,pi_id   => 154);    
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT add_distbreak_sp;
+    /*
+    ||TODO - Raise Individual Errors for the parameters being checked.
+    */
+    IF pi_start_node_id IS NULL
+     OR pi_end_node_id IS NULL
+     OR pi_length IS NULL
+     OR pi_start_date IS NULL
+     THEN
+        -- Field must be entered
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 22);
+        --
+    ELSIF pi_start_node_id = pi_end_node_id
+     THEN
+        -- Start and end nodes cannot be the same.
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 126);
+
     END IF;
-  END warn_if_route_ill_formed;
+    --
+    IF pi_run_checks = 'Y'
+     THEN
+        IF nm3net.datum_will_overlap_existing(pi_route          => pi_route_ne_id
+                                             ,pi_new_start_node => pi_start_node_id
+                                             ,pi_new_end_node   => pi_end_node_id)
+         THEN
+            awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'NET'
+                                             ,pi_ner_id      => 155
+                                             ,pi_category    => awlrs_util.c_msg_cat_ask_continue
+                                             ,po_message_tab => lt_messages);
+        END IF;
+    END IF;
+    --
+    IF lt_messages.COUNT > 0
+     THEN
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+    ELSE
+        nm3net.insert_distance_break(pi_route_ne_id   => pi_route_ne_id
+                                    ,pi_start_node_id => pi_start_node_id
+                                    ,pi_end_node_id   => pi_end_node_id
+                                    ,pi_start_date    => pi_start_date
+                                    ,pi_length        => pi_length
+                                    ,po_db_ne_id      => lv_ne_id
+                                    ,po_db_ne_unique  => lv_ne_unique);
+        --
+        po_db_ne_id := lv_ne_id;
+        po_db_ne_unique := lv_ne_unique;
+        --
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+    END IF;
+    --
+  EXCEPTION
+    WHEN others
+      THEN
+        ROLLBACK TO add_distbreak_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END add_distance_break;
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE rescale_route(pi_ne_id             IN nm_elements.ne_id%TYPE
-                         ,pi_effective_date    IN DATE
-                         ,pi_offset_st         IN NUMBER
-                         ,pi_use_history       IN VARCHAR2
+  PROCEDURE warn_if_route_ill_formed(po_message_severity  IN OUT hig_codes.hco_code%TYPE
+                                    ,po_message_tab       IN OUT NOCOPY awlrs_message_tab)
+    IS
+  BEGIN
+    /*
+    ||Warn the user if the route is ill formed.
+    */
+    IF NOT(nm3rsc.stranded_element_check)
+     THEN
+        awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'NET'
+                                         ,pi_ner_id      => 154
+                                         ,pi_category    => awlrs_util.c_msg_cat_warning
+                                         ,po_message_tab => po_message_tab);
+        po_message_severity := awlrs_util.c_msg_cat_warning;
+    END IF;
+    --
+  END warn_if_route_ill_formed;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE rescale_route(pi_ne_id          IN nm_elements.ne_id%TYPE
+                         ,pi_effective_date IN DATE
+                         ,pi_offset_st      IN NUMBER
+                         ,pi_start_ne_id    IN nm_elements.ne_id%TYPE DEFAULT NULL
+                         ,pi_use_history    IN VARCHAR2)
+    IS
+    --
+    e_route_locked exception;
+    PRAGMA EXCEPTION_INIT(e_route_locked, -54);
+    --
+    e_segment_number_error exception;
+    PRAGMA EXCEPTION_INIT(e_segment_number_error, -20201);
+    --
+    e_sequence_number_error exception;
+    PRAGMA EXCEPTION_INIT(e_sequence_number_error, -20202);
+    --
+    e_true_distance_error exception;
+    PRAGMA EXCEPTION_INIT(e_true_distance_error, -20203);
+    --
+    e_cannot_find_slk exception;
+    PRAGMA EXCEPTION_INIT(e_cannot_find_slk, -20204);
+    --
+    e_cannot_find_length exception;
+    PRAGMA EXCEPTION_INIT(e_cannot_find_length, -20205);
+    --
+  BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT rescale_route_sp;
+    /*
+    ||TODO - Need to catch the circular group exception
+    ||and tell the UI to ask the user for the start member
+    ||once the UI has a dialog to do this.
+    ||Until then the circular group exception will be treated
+    ||as an error.
+    */
+    nm3rsc.rescale_route(pi_ne_id          => pi_ne_id
+                        ,pi_effective_date => pi_effective_date
+                        ,pi_offset_st      => pi_offset_st
+                        ,pi_st_element_id  => NULL
+                        ,pi_use_history    => pi_use_history
+                        ,pi_ne_start       => pi_start_ne_id);
+    --
+  EXCEPTION
+    WHEN e_route_locked
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 33);
+    WHEN e_segment_number_error
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 65);
+    WHEN e_sequence_number_error
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 66);
+    WHEN e_true_distance_error
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 67);
+    WHEN e_cannot_find_slk
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 68);
+    WHEN e_cannot_find_length
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 69);
+  END rescale_route;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  --NB. If the value of pi_use_history passed in is not 'Y' then the calling
+  --code should have already called the procedure with the value as 'Y' and 
+  --handled any prompts for user confirmation.
+  --
+  PROCEDURE rescale_route(pi_ne_id            IN  nm_elements.ne_id%TYPE
+                         ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                         ,pi_offset_st        IN  NUMBER
+                         ,pi_start_ne_id      IN  nm_elements.ne_id%TYPE DEFAULT NULL
+                         ,pi_use_history      IN  VARCHAR2
                          ,po_message_severity OUT hig_codes.hco_code%TYPE
-                         ,po_message_cursor   OUT sys_refcursor
-                        ) IS
-
-   e_route_locked exception;
-   PRAGMA EXCEPTION_INIT(e_route_locked, -54);
-
-   e_segment_number_error exception;
-   PRAGMA EXCEPTION_INIT(e_segment_number_error, -20201);
-  
-   e_sequence_number_error exception;
-   PRAGMA EXCEPTION_INIT(e_sequence_number_error, -20202);
-  
-   e_true_distance_error exception;
-   PRAGMA EXCEPTION_INIT(e_true_distance_error, -20203);
-  
-   e_cannot_find_slk exception;
-   PRAGMA EXCEPTION_INIT(e_cannot_find_slk, -20204);
-  
-   e_cannot_find_length exception;
-   PRAGMA EXCEPTION_INIT(e_cannot_find_length, -20205);
-  
-   l_sqlerrm nm3type.max_varchar2 := nm3flx.parse_error_message(SQLERRM);
-
+                         ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    e_member_dates_out_of_range EXCEPTION;
+	  PRAGMA EXCEPTION_INIT(e_member_dates_out_of_range, -20206);
+    --
+    lv_severity  hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
   BEGIN
     /*
     ||Set a save point.
     */
     SAVEPOINT rescale_route_sp;
     --
-    --do rescale
-    DECLARE
-      e_rescale_loop exception;
-      PRAGMA EXCEPTION_INIT(e_rescale_loop, -20207);
-  
-      l_circle_start nm_elements.ne_id%TYPE;
-    
-    BEGIN  
-      nm3rsc.rescale_route(pi_ne_id          => pi_ne_id
-                          ,pi_effective_date => pi_effective_date
-                          ,pi_offset_st      => pi_offset_st
-                          ,pi_st_element_id  => NULL
-                          ,pi_use_history    => pi_use_history
-                          ,pi_ne_start       => NULL);
+    BEGIN
+      --
+      rescale_route(pi_ne_id          => pi_ne_id
+                   ,pi_effective_date => pi_effective_date
+                   ,pi_offset_st      => pi_offset_st
+                   ,pi_start_ne_id    => pi_start_ne_id
+                   ,pi_use_history    => pi_use_history);
+      --
     EXCEPTION
-    WHEN e_rescale_loop
-    THEN  
-       -- get circular start point
-       l_circle_start := get_circular_start_point(pi_group_ne_id => pi_ne_id);
- 
-       IF l_circle_start IS NOT NULL
-       THEN
-         nm3rsc.rescale_route(pi_ne_id          => pi_ne_id
-                             ,pi_effective_date => pi_effective_date
-                             ,pi_offset_st      => pi_offset_st
-                             ,pi_st_element_id  => NULL
-                             ,pi_use_history    => pi_use_history
-                             ,pi_ne_start       => l_circle_start);
-      END IF;
-                        
+      WHEN e_member_dates_out_of_range
+		   THEN
+          /*
+          ||Ask the user if they wish to continue without
+          ||maintaining history.
+          */
+          awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'NET'
+                                           ,pi_ner_id      => 63
+                                           ,pi_category    => awlrs_util.c_msg_cat_ask_continue
+                                           ,po_message_tab => lt_messages);
     END;
     --
-    warn_if_route_ill_formed;
+    IF lt_messages.COUNT = 0
+     THEN
+        /*
+        ||The Ask Continue message has not been raied so check
+        ||the route and return a warning if it is ill formed.
+        */
+        warn_if_route_ill_formed(po_message_severity => lv_severity
+                                ,po_message_tab      => lt_messages);
+    END IF;
     --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --  
-  EXCEPTION  
-    WHEN e_route_locked
-      THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 33); 
-  
-    WHEN e_segment_number_error
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 65); 
-  
-    WHEN e_sequence_number_error
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 66); 
-  
-    WHEN e_true_distance_error
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 67); 
-  
-    WHEN e_cannot_find_slk
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 68); 
-  
-    WHEN e_cannot_find_length
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 69); 
- 
+    IF lt_messages.COUNT > 0
+     THEN
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+    ELSE
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+    END IF;
+    --
+  EXCEPTION
     WHEN others
-      THEN
+     THEN
         ROLLBACK TO rescale_route_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END rescale_route;
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE resequence_route(pi_ne_id             IN nm_elements.ne_id%TYPE
-                            ,po_message_severity OUT hig_codes.hco_code%TYPE
-                            ,po_message_cursor   OUT sys_refcursor  ) IS
-
+  PROCEDURE resequence_route(pi_ne_id       IN nm_elements.ne_id%TYPE
+                            ,pi_start_ne_id IN nm_elements.ne_id%TYPE DEFAULT NULL)
+    IS
+    --
     e_route_locked exception;
     PRAGMA EXCEPTION_INIT(e_route_locked, -54);
-
     e_segment_number_error exception;
     PRAGMA EXCEPTION_INIT(e_segment_number_error, -20201);
-  
     e_sequence_number_error exception;
     PRAGMA EXCEPTION_INIT(e_sequence_number_error, -20202);
-  
     e_true_distance_error exception;
     PRAGMA EXCEPTION_INIT(e_true_distance_error, -20203);
-  
     e_cannot_find_slk exception;
     PRAGMA EXCEPTION_INIT(e_cannot_find_slk, -20204);
-  
     e_cannot_find_length exception;
     PRAGMA EXCEPTION_INIT(e_cannot_find_length, -20205);
-  
-    l_sqlerrm nm3type.max_varchar2 := nm3flx.parse_error_message(SQLERRM);
+    --  e_rescale_loop exception;
+    --  PRAGMA EXCEPTION_INIT(e_rescale_loop, -20207);
+    --
+  BEGIN
+    /*
+    ||TODO - Need to catch the circular group exception
+    ||and tell the UI to ask the user for the start member
+    ||once the UI has a dialog to do this.
+    ||Until then the circular group exception will be treated
+    ||as an error.
+    */
+    nm3rsc.reseq_route(pi_ne_id    => pi_ne_id
+                      ,pi_ne_start => pi_start_ne_id);
+    --
+  EXCEPTION
+    WHEN e_route_locked
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 33);
+    WHEN e_segment_number_error
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 65);
+    WHEN e_sequence_number_error
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 66);
+    WHEN e_true_distance_error
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 67);
+    WHEN e_cannot_find_slk
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 68);
+    WHEN e_cannot_find_length
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 69);
+  END resequence_route;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE resequence_route(pi_ne_id            IN  nm_elements.ne_id%TYPE
+                            ,pi_start_ne_id      IN  nm_elements.ne_id%TYPE DEFAULT NULL
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    lv_severity  hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
   BEGIN
     /*
     ||Set a save point.
     */
     SAVEPOINT reseq_route_sp;
+    /*
+    ||do resequence
+    */
+    resequence_route(pi_ne_id       => pi_ne_id
+                    ,pi_start_ne_id => pi_start_ne_id);
+    /*
+    ||Return a warning if the route is ill formed.
+    */
+    warn_if_route_ill_formed(po_message_severity => lv_severity
+                            ,po_message_tab      => lt_messages);
     --
-    --do resequence
-    DECLARE
-      e_rescale_loop exception;
-      PRAGMA EXCEPTION_INIT(e_rescale_loop, -20207);
-  
-      l_circle_start nm_elements.ne_id%TYPE;
-    
-    BEGIN  
-      nm3rsc.reseq_route(pi_ne_id    => pi_ne_id
-                        ,pi_ne_start => NULL);
-                        
-    EXCEPTION
-    WHEN e_rescale_loop
-    THEN  
-       -- get circular start point
-       l_circle_start := get_circular_start_point(pi_group_ne_id => pi_ne_id);
- 
-       IF l_circle_start IS NOT NULL
-       THEN
-         nm3rsc.reseq_route(pi_ne_id    => pi_ne_id
-                           ,pi_ne_start => l_circle_start);
-      END IF;
-                        
-    END;
+    IF lt_messages.COUNT > 0
+     THEN
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+    ELSE
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+    END IF;
     --
-    warn_if_route_ill_formed;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --  
-  EXCEPTION  
-    WHEN e_route_locked
-      THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 33); 
-  
-    WHEN e_segment_number_error
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 65); 
-  
-    WHEN e_sequence_number_error
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 66); 
-  
-    WHEN e_true_distance_error
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 67); 
-  
-    WHEN e_cannot_find_slk
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 68); 
-  
-    WHEN e_cannot_find_length
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 69); 
-
+  EXCEPTION
     WHEN others
-      THEN
+     THEN
         ROLLBACK TO reseq_route_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END resequence_route;
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE reverse_route(pi_ne_id             IN nm_elements.ne_id%TYPE
-                         ,pi_effective_date    IN DATE
-                         ,po_message_severity OUT hig_codes.hco_code%TYPE
-                         ,po_message_cursor   OUT sys_refcursor) IS
-
-    e_route_has_shape exception;
-
+  PROCEDURE reverse_route(pi_ne_id          IN nm_elements.ne_id%TYPE
+                         ,pi_effective_date IN DATE)
+    IS
+    --
     e_route_locked exception;
     PRAGMA EXCEPTION_INIT(e_route_locked, -54);
-
+    --
     e_segment_number_error exception;
     PRAGMA EXCEPTION_INIT(e_segment_number_error, -20201);
-  
+    --
     e_sequence_number_error exception;
     PRAGMA EXCEPTION_INIT(e_sequence_number_error, -20202);
-  
+    --
     e_true_distance_error exception;
     PRAGMA EXCEPTION_INIT(e_true_distance_error, -20203);
-  
+    --
     e_cannot_find_slk exception;
     PRAGMA EXCEPTION_INIT(e_cannot_find_slk, -20204);
-  
+    --
     e_cannot_find_length exception;
     PRAGMA EXCEPTION_INIT(e_cannot_find_length, -20205);
-
+    --
     e_no_xsp_reversal exception;
     PRAGMA EXCEPTION_INIT(e_no_xsp_reversal, -20251);
-
+    --
     e_unique_found exception;
     PRAGMA EXCEPTION_INIT(e_unique_found, -00001);
+    --
+  BEGIN
+    --
+    nm3rvrs.reverse_route(pi_ne_id          => pi_ne_id
+                         ,pi_effective_date => pi_effective_date);
+    --
+  EXCEPTION
+    WHEN e_route_locked
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 33);
+    WHEN e_segment_number_error
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 65);
+    WHEN e_sequence_number_error
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 66);
+    WHEN e_true_distance_error
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 67);
+    WHEN e_cannot_find_slk
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 68);
+    WHEN e_cannot_find_length
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 69);
+    WHEN e_no_xsp_reversal
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 64);
+    WHEN e_unique_found
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 64);
+  END reverse_route;
 
-    l_sqlerrm nm3type.max_varchar2 := nm3flx.parse_error_message(SQLERRM);
-
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE reverse_route(pi_ne_id            IN  nm_elements.ne_id%TYPE
+                         ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
   BEGIN
     /*
     ||Set a save point.
     */
     SAVEPOINT reverse_route_sp;
     --
-    nm3rvrs.reverse_route(pi_ne_id          => pi_ne_id
-                         ,pi_effective_date => pi_effective_date
-                         );
-    /*
-    IF nm3rvrs.get_g_rvrs_circroute = 'Y'
-    THEN
-      -- Circular route - please rescale with no history
-      Alert('NET',300);
-    END IF;
-    */
+    reverse_route(pi_ne_id          => pi_ne_id
+                 ,pi_effective_date => pi_effective_date);
     --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --  
-  EXCEPTION  
-    WHEN e_route_locked
-      THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 33); 
-  
-    WHEN e_route_has_shape
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 65); 
-
-    WHEN e_segment_number_error
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 65); 
-  
-    WHEN e_sequence_number_error
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 66); 
-  
-    WHEN e_true_distance_error
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 67); 
-  
-    WHEN e_cannot_find_slk
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 68); 
-  
-    WHEN e_cannot_find_length
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 69); 
-    
-    WHEN e_no_xsp_reversal
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 64); 
-
-    WHEN e_unique_found
-      THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 64); 
-
+    IF nm3rvrs.get_g_rvrs_circroute = 'Y'
+     THEN
+        /*
+        ||Circular route - please rescale with no history.
+        */
+        awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'NET'
+                                         ,pi_ner_id      => 300
+                                         ,pi_category    => awlrs_util.c_msg_cat_warning
+                                         ,po_message_tab => lt_messages);
+    END IF;
+    --
+    IF lt_messages.COUNT > 0
+     THEN
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+    ELSE
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+    END IF;
+    --
+  EXCEPTION
     WHEN others
       THEN
         ROLLBACK TO reverse_route_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);        
-  END reverse_route;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE check_rescale_member(pi_ne_id_in          IN nm_members.nm_ne_id_in%TYPE
-                                ,pi_ne_id_of          IN nm_members.nm_ne_id_of%TYPE
-                                ,pi_begin_mp          IN nm_members.nm_begin_mp%TYPE
-                                ,pi_member_found     OUT BOOLEAN
-                                ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                ,po_message_cursor   OUT sys_refcursor
-                                ) IS
-
-    CURSOR c_nm(c_ne_id_in       IN nm_members.nm_ne_id_in%TYPE
-               ,c_ne_id_of       IN nm_members.nm_ne_id_of%TYPE
-               ,c_begin_mp       IN nm_members.nm_begin_mp%TYPE
-               ,c_effective_date IN date) IS
-      SELECT 1
-        FROM nm_members_all nm
-       WHERE nm.nm_ne_id_in = c_ne_id_in
-         AND nm.nm_ne_id_of = c_ne_id_of
-         AND nm.nm_begin_mp = c_begin_mp
-         AND (nm.nm_start_date >= c_effective_date
-              OR nm.nm_end_date > c_effective_date);
-
-      l_rec_found PLS_INTEGER;
-
-  BEGIN
-
-    OPEN c_nm(c_ne_id_in       => pi_ne_id_in
-             ,c_ne_id_of       => pi_ne_id_of
-             ,c_begin_mp       => pi_begin_mp
-             ,c_effective_date => To_Date(Sys_Context('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY'));
-    FETCH c_nm INTO l_rec_found;
-    IF c_nm%FOUND THEN
-      pi_member_found := TRUE;
-    ELSE
-      pi_member_found := FALSE;
-    END IF;
-    -- If pi_member_found returns as TRUE then UI should populate an alert 'NET', 63
-    -- If user responds to alert as Yes then PROCEDURE local_rescale should be called from UI with pi_use_history parameter as FALSE
-    -- else call the PROCEDURE local_rescale from UI with pi_use_history parameter as TRUE
-    CLOSE c_nm;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --  
-  EXCEPTION
-    WHEN others
-      THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END check_rescale_member;
+  END reverse_route;
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE local_rescale(pi_ne_id_in          IN nm_elements.ne_id%TYPE
-                         ,pi_ne_id_of          IN nm_elements.ne_id%TYPE
-                         ,pi_begin_mp          IN nm_members.nm_begin_mp%TYPE
-                         ,pi_use_history       IN BOOLEAN
+  --NB. If the value of pi_use_history passed in is not 'Y' then the calling
+  --code should have already called the procedure with the value as 'Y' and 
+  --handled any prompts for user confirmation.
+  --
+  PROCEDURE local_rescale(pi_ne_id_in         IN  nm_elements.ne_id%TYPE
+                         ,pi_ne_id_of         IN  nm_elements.ne_id%TYPE
+                         ,pi_begin_mp         IN  nm_members.nm_begin_mp%TYPE
+                         ,pi_use_history      IN  VARCHAR2 DEFAULT 'Y'
                          ,po_message_severity OUT hig_codes.hco_code%TYPE
-                         ,po_message_cursor   OUT sys_refcursor) IS
-  
-    e_route_locked exception;
+                         ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    e_member_dates_out_of_range EXCEPTION;
+	  PRAGMA EXCEPTION_INIT(e_member_dates_out_of_range, -20206);
+    --
+    e_route_locked EXCEPTION;
     PRAGMA EXCEPTION_INIT(e_route_locked, -54);
-
-    l_sqlerrm nm3type.max_varchar2 := nm3flx.parse_error_message(SQLERRM);
-
+    --
+    lv_severity  hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
   BEGIN
     /*
     ||Set a save point.
     */
     SAVEPOINT local_rescale_sp;
-    --    
-    IF pi_ne_id_in IS NOT NULL 
-      AND pi_ne_id_of IS NOT NULL 
-    THEN 
-
-    nm3rsc.local_rescale(pi_ne_id_in        => pi_ne_id_in
-                         ,pi_ne_id_of       => pi_ne_id_of
-                         ,pi_begin_mp       => pi_begin_mp
-                         ,pi_effective_date => To_Date(Sys_Context('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                         ,pi_use_history    => pi_use_history);
+    --
+    IF pi_ne_id_in IS NOT NULL
+     AND pi_ne_id_of IS NOT NULL
+     THEN
+        BEGIN
+          nm3rsc.local_rescale(pi_ne_id_in       => pi_ne_id_in
+                              ,pi_ne_id_of       => pi_ne_id_of
+                              ,pi_begin_mp       => pi_begin_mp
+                              ,pi_effective_date => TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                              ,pi_use_history    => (pi_use_history = 'Y'));
+        EXCEPTION
+          WHEN e_member_dates_out_of_range
+		       THEN
+              awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'NET'
+                                               ,pi_ner_id      => 63
+                                               ,pi_category    => awlrs_util.c_msg_cat_ask_continue
+                                               ,po_message_tab => lt_messages);
+          WHEN e_route_locked
+           THEN
+              hig.raise_ner(pi_appl => 'HIG'
+                           ,pi_id   => 33);
+        END;
     END IF;
     --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --  
+    IF lt_messages.COUNT > 0
+     THEN
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+    ELSE
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+    END IF;
+    --
   EXCEPTION
-    WHEN e_route_locked
-      THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 33); 
-
     WHEN others
-      THEN
+     THEN
         ROLLBACK TO local_rescale_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);        
-  END local_rescale;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE validate_distance_break (pi_route_ne_id       IN nm_members.nm_ne_id_of%TYPE
-                                    ,pi_start_node_id     IN nm_nodes.no_node_id%TYPE
-                                    ,pi_end_node_id       IN nm_nodes.no_node_id%TYPE
-                                    ,pi_start_date        IN DATE
-                                    ,pi_length            IN nm_elements.ne_length%TYPE DEFAULT 0
-                                    ,po_overlap_exists   OUT BOOLEAN
-                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                    ,po_message_cursor   OUT sys_refcursor
-                                   ) IS
-  BEGIN
-
-    IF pi_start_node_id IS NULL 
-       OR pi_end_node_id IS NULL
-       OR pi_length IS NULL
-       OR pi_start_date IS NULL
-    THEN
-       -- Field must be entered
-       hig.raise_ner(pi_appl => 'HIG'
-                    ,pi_id   => 22);
-
-    ELSIF pi_start_node_id = pi_end_node_id
-    THEN  
-       -- Start and end nodes cannot be the same.
-       hig.raise_ner(pi_appl => 'NET'
-                    ,pi_id   => 126);
-
-    END IF;
-
-    po_overlap_exists := nm3net.datum_will_overlap_existing(pi_route          => pi_route_ne_id
-                                                           ,pi_new_start_node => pi_start_node_id
-                                                           ,pi_new_end_node   => pi_end_node_id);
-
-    -- If po_overlap_exists is TRUE, UI should populate an alert of 'NET', 155
-    -- If user responds 'YES' to alert, then UI should call add_distance_break procedure
-    -- to create a distance break.
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --  
-  EXCEPTION
-    WHEN others
-      THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END validate_distance_break;
+  END local_rescale;
+
+  --
   -----------------------------------------------------------------------------
-
-  PROCEDURE add_distance_break (pi_route_ne_id       IN nm_members.nm_ne_id_of%TYPE
-                               ,pi_start_node_id     IN nm_nodes.no_node_id%TYPE
-                               ,pi_end_node_id       IN nm_nodes.no_node_id%TYPE
-                               ,pi_start_date        IN DATE
-                               ,pi_length            IN nm_elements.ne_length%TYPE DEFAULT 0
-                               ,po_db_ne_id         OUT nm_members.nm_ne_id_in%TYPE
-                               ,po_db_ne_unique     OUT nm_elements.ne_unique%TYPE
-                               ,po_message_severity OUT hig_codes.hco_code%TYPE
-                               ,po_message_cursor   OUT sys_refcursor) IS
-
-    lv_ne_id     nm_members.nm_ne_id_in%TYPE;
-    lv_ne_unique nm_elements.ne_unique%TYPE;
-
-  BEGIN
-    /*
-    ||Set a save point.
-    */
-    SAVEPOINT add_distbreak_sp;
-    --  
-    --all checks passed, ok to create distance break    
-    nm3net.insert_distance_break(pi_route_ne_id   => pi_route_ne_id
-                                ,pi_start_node_id => pi_start_node_id
-                                ,pi_end_node_id   => pi_end_node_id
-                                ,pi_start_date    => pi_start_date
-                                ,pi_length        => pi_length
-                                ,po_db_ne_id      => lv_ne_id
-                                ,po_db_ne_unique  => lv_ne_unique);
-
-     po_db_ne_id     := lv_ne_id;
-     po_db_ne_unique := lv_ne_unique;
-
+  --
+  PROCEDURE route_check(pi_ne_id IN nm_elements.ne_id%TYPE)
+    IS
     --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --  
-  EXCEPTION
-    WHEN others
-      THEN
-        ROLLBACK TO add_distbreak_sp;
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);        
-  END add_distance_break;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE route_check(pi_ne_id                    IN nm_elements.ne_id%TYPE
-                       ,po_message_severity        OUT hig_codes.hco_code%TYPE
-                       ,po_message_cursor          OUT sys_refcursor) IS
-
-    -- -20351 'Start of Right <unique> exists with no compatible end'
-    e_right_end_not_compat exception;
-   
-    -- -20352 'Start of Left  <unique> exists with no compatible end'
-    e_left_end_not_compat exception;
-  
-    -- -20353 'Start of <unique> and <unique> are incompatible'
-    e_datum_starts_not_campat exception;
-  
-    -- -20354 'End of <unique> and <unique> are incompatible'
-    e_datum_ends_not_campat exception;
-  
-    -- -20355 'Too many start points'
-    e_too_many_starts exception;
-    PRAGMA EXCEPTION_INIT(e_too_many_starts, -20355);
-  
-    -- -20356 'Too many end points'
-    e_too_many_ends exception;
-    PRAGMA EXCEPTION_INIT(e_too_many_ends, -20356);
-  
-    -- -20357 'Invalid sub class combination at start of route'
-    e_invalid_scl_start exception;
-    PRAGMA EXCEPTION_INIT(e_invalid_scl_start, -20357);
-  
-    -- -20358 'Invalid sub class combination at end of route'
-    e_invalid_scl_end exception;
-    PRAGMA EXCEPTION_INIT(e_invalid_scl_end, -20358);
-
-    l_route_status          PLS_INTEGER;
-    l_offending_datums      nm3type.tab_varchar30;
-  
-    l_offending_datums_msg  VARCHAR2(32767);
-  
+    e_right_end_not_compat EXCEPTION;
+    --
+    e_left_end_not_compat EXCEPTION;
+    --
+    e_datum_starts_not_campat EXCEPTION;
+    --
+    e_datum_ends_not_campat EXCEPTION;
+    --
+    e_too_many_starts EXCEPTION;
+    PRAGMA exception_init(e_too_many_starts, -20355);
+    --
+    e_too_many_ends EXCEPTION;
+    PRAGMA exception_init(e_too_many_ends, -20356);
+    --
+    e_invalid_scl_start EXCEPTION;
+    PRAGMA exception_init(e_invalid_scl_start, -20357);
+    --
+    e_invalid_scl_end EXCEPTION;
+    PRAGMA exception_init(e_invalid_scl_end, -20358);
+    --
+    lv_route_status          PLS_INTEGER;
+    lv_offending_datums_msg  nm3type.max_varchar2;
+    --
+    lt_offending_datums  nm3type.tab_varchar30;
+    --
   BEGIN
-    --route check
+    --
     IF pi_ne_id IS NOT NULL
-    THEN
- 
-      nm3route_check.route_check(pi_ne_id            => pi_ne_id
-                                ,po_route_status     => l_route_status
-                                ,po_offending_datums => l_offending_datums);
-    
-      --check route status
-      IF l_route_status > 0
-      THEN
-        IF l_offending_datums.COUNT > 0
-        THEN
-          l_offending_datums_msg := CHR(10) || CHR(10);
-      
-          FOR l_i IN l_offending_datums.FIRST..l_offending_datums.LAST
-          LOOP
-            l_offending_datums_msg :=    l_offending_datums_msg
-                                      || l_offending_datums(l_i)
-                                      || ', ';
-          END LOOP;
-          l_offending_datums_msg := RTRIM(l_offending_datums_msg, ', ');
+     THEN
+        nm3route_check.route_check(pi_ne_id            => pi_ne_id
+                                  ,po_route_status     => lv_route_status
+                                  ,po_offending_datums => lt_offending_datums);
+        --check route status
+        IF lv_route_status > 0
+         THEN
+            IF lt_offending_datums.COUNT > 0
+             THEN
+                --
+                lv_offending_datums_msg := CHR(10)||CHR(10);
+                --
+                FOR i IN 1..lt_offending_datums.COUNT LOOP
+                  --
+                  lv_offending_datums_msg := lv_offending_datums_msg||lt_offending_datums(i)||', ';
+                  --
+                END LOOP;
+                --
+                lv_offending_datums_msg := RTRIM(lv_offending_datums_msg,', ');
+                --
+            END IF;
+            --
+            IF lv_route_status = 5
+             THEN
+                RAISE e_right_end_not_compat;
+            ELSIF lv_route_status = 10
+             THEN
+                RAISE e_left_end_not_compat;
+            ELSIF lv_route_status = 15
+             THEN
+                RAISE e_datum_starts_not_campat;
+            ELSIF lv_route_status = 20
+             THEN
+                RAISE e_datum_ends_not_campat;
+            END IF;
         END IF;
-    
-        IF l_route_status = 5
-        THEN
-          RAISE e_right_end_not_compat;
-        
-        ELSIF l_route_status = 10
-        THEN
-          RAISE e_left_end_not_compat;
-          
-        ELSIF l_route_status = 15
-        THEN
-          RAISE e_datum_starts_not_campat;
-        
-        ELSIF l_route_status = 20
-        THEN
-          RAISE e_datum_ends_not_campat;
-        END IF;
-      END IF;
-   
-      --route ok
-      hig.raise_ner(pi_appl => 'NET'
-                   ,pi_id   => 156);
     END IF;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN e_right_end_not_compat
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 157
-                     ,pi_supplementary_info => l_offending_datums_msg );  
+     THEN
+        hig.raise_ner(pi_appl               => 'NET'
+                     ,pi_id                 => 157
+                     ,pi_supplementary_info => lv_offending_datums_msg);
     WHEN e_left_end_not_compat
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 158
-                     ,pi_supplementary_info => l_offending_datums_msg ); 
+     THEN
+        hig.raise_ner(pi_appl               => 'NET'
+                     ,pi_id                 => 158
+                     ,pi_supplementary_info => lv_offending_datums_msg);
     WHEN e_datum_starts_not_campat
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 159
-                     ,pi_supplementary_info => l_offending_datums_msg ); 
+     THEN
+        hig.raise_ner(pi_appl               => 'NET'
+                     ,pi_id                 => 159
+                     ,pi_supplementary_info => lv_offending_datums_msg);
     WHEN e_datum_ends_not_campat
-      THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 160
-                     ,pi_supplementary_info => l_offending_datums_msg );     
+     THEN
+        hig.raise_ner(pi_appl               => 'NET'
+                     ,pi_id                 => 160
+                     ,pi_supplementary_info => lv_offending_datums_msg);
     WHEN e_too_many_starts
-      THEN
+     THEN
         hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 161
-                     ,pi_supplementary_info => l_offending_datums_msg );
-    
+                     ,pi_id   => 161);
     WHEN e_too_many_ends
-      THEN
+     THEN
         hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 162
-                     ,pi_supplementary_info => l_offending_datums_msg ); 
+                     ,pi_id   => 162);
     WHEN e_invalid_scl_start
-      THEN
+     THEN
         hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 163
-                     ,pi_supplementary_info => l_offending_datums_msg );     
+                     ,pi_id   => 163);
     WHEN e_invalid_scl_end
-      THEN
+     THEN
         hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 164
-                     ,pi_supplementary_info => l_offending_datums_msg ); 
-    WHEN OTHERS
-      THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
+                     ,pi_id   => 164);
   END route_check;
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE route_details(pi_ne_id                    IN nm_elements.ne_id%TYPE
-                         ,po_min_slk                 OUT nm_members.nm_slk%TYPE
-                         ,po_max_slk                 OUT nm_members.nm_slk%TYPE
-                         ,po_max_true                OUT nm_members.nm_slk%TYPE
-                         ,po_total_route_length      OUT nm_members.nm_slk%TYPE
-                         ,po_min_slk_unit            OUT VARCHAR2
-                         ,po_max_slk_unit            OUT VARCHAR2
-                         ,po_max_true_unit           OUT VARCHAR2
-                         ,po_total_route_length_unit OUT VARCHAR2
-                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
-                         ,po_message_cursor          OUT sys_refcursor) IS
-    
-    l_group_ne_rec       nm_elements%ROWTYPE;
-    l_unit_name          nm_units.un_unit_name%TYPE;
-
-    l_total_length_unit  nm_units.un_unit_id%TYPE;
-    l_mem_ne_id          nm_members.nm_ne_id_of%TYPE;
-
+  PROCEDURE route_check(pi_ne_id            IN nm_elements.ne_id%TYPE
+                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
   BEGIN
-    
+    --
+    route_check(pi_ne_id => pi_ne_id);
+    /*
+    ||No errors raised so return a success message.
+    */
+    awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'NET'
+                                     ,pi_ner_id      => 156
+                                     ,pi_category    => awlrs_util.c_msg_cat_success
+                                     ,po_message_tab => lt_messages);
+    --
+    awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                 ,po_cursor      => po_message_cursor);
+    awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                   ,po_message_severity => po_message_severity);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END route_check;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_route_details(pi_ne_id            IN  nm_elements.ne_id%TYPE
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_min_offset       NUMBER;
+    lv_max_offset       NUMBER;
+    lv_max_true_offset  NUMBER;
+    lv_total_length     NUMBER;
+    lv_group_unit_id    NUMBER;
+    lv_group_unit_name  nm_units.un_unit_name%TYPE;
+    lv_datum_unit_id    NUMBER;
+    lv_datum_unit_name  nm_units.un_unit_name%TYPE;
+    lv_member_ne_id     nm_elements_all.ne_id%TYPE;
+    --
+    lr_ne_group  nm_elements%ROWTYPE;
+    --
+    CURSOR get_member_id(cp_ne_id IN nm_elements_all.ne_id%TYPE)
+        IS
+    SELECT nm_ne_id_of
+      FROM nm_members
+     WHERE nm_ne_id_in = cp_ne_id
+       AND nm_type = 'G'
+         ;
+    --
+  BEGIN
+    --
     IF pi_ne_id IS NOT NULL
-    THEN    
-      -- get the group element record 
-      l_group_ne_rec := nm3get.get_ne(pi_ne_id);
-
-      po_min_slk            := nm3net.get_min_slk(pi_ne_id);
-      po_max_slk            := nm3net.get_max_slk(pi_ne_id);
-      po_max_true           := nm3net.get_max_true(pi_ne_id);
-      po_total_route_length := nm3net.get_ne_length(pi_ne_id);
-      --
-      po_min_slk_unit  := NULL;
-      po_max_slk_unit  := NULL;
-      po_max_true_unit := NULL;
-      po_total_route_length_unit := NULL;
-      --
-      IF nm3net.get_nt_units(l_group_ne_rec.ne_nt_type) IS NOT NULL
-      THEN
-        l_unit_name := nm3unit.get_unit_name(nm3net.get_nt_units(l_group_ne_rec.ne_nt_type));
-        po_min_slk_unit  := l_unit_name;
-        po_max_slk_unit  := l_unit_name;
-        po_max_true_unit := l_unit_name;
-      END IF;
-      
-      BEGIN
-        SELECT nm_ne_id_of
-        INTO l_mem_ne_id
-        FROM v_nm_members
-        WHERE nm_ne_id_in = pi_ne_id
-        AND nm_type = 'G';
-      EXCEPTION 
-        WHEN OTHERS
-          THEN 
-            l_mem_ne_id := '';
-      END;
-      
-      IF l_mem_ne_id IS NOT NULL
-      THEN
-        l_total_length_unit := nm3net.get_nt_units(nm3net.get_nt_type (l_mem_ne_id));
-      END IF;
-      --
-
-      IF l_total_length_unit IS NOT NULL
-      THEN
-        l_unit_name := nm3unit.get_unit_name (l_total_length_unit);
-        po_total_route_length_unit := l_unit_name;
-      END IF;
-      --
+     THEN
+        -- get the group element record
+        lr_ne_group := nm3get.get_ne(pi_ne_id);
+        --
+        lv_min_offset         := nm3net.get_min_slk(pi_ne_id);
+        lv_max_offset         := nm3net.get_max_slk(pi_ne_id);
+        lv_max_true_offset    := nm3net.get_max_true(pi_ne_id);
+        lv_total_length := nm3net.get_ne_length(pi_ne_id);
+        --
+        lv_group_unit_id := nm3net.get_nt_units(p_nt_type => lr_ne_group.ne_nt_type);
+        --
+        IF lv_group_unit_id IS NOT NULL
+         THEN
+            lv_group_unit_name := nm3unit.get_unit_name(p_un_id => lv_group_unit_id);
+        END IF;
+        --
+        OPEN  get_member_id(pi_ne_id);
+        FETCH get_member_id
+         INTO lv_member_ne_id;
+        CLOSE get_member_id;
+        --
+        IF lv_member_ne_id IS NOT NULL
+        THEN
+           lv_datum_unit_id := nm3net.get_nt_units(p_nt_type => nm3net.get_nt_type(p_ne_id => lv_member_ne_id));
+        END IF;
+        --
+        IF lv_datum_unit_id IS NOT NULL
+        THEN
+          lv_datum_unit_name := nm3unit.get_unit_name(p_un_id => lv_datum_unit_id);
+        END IF;
+        --
     END IF;
+    --
+    OPEN po_cursor FOR
+    SELECT lv_min_offset      min_offset
+          ,lv_group_unit_name min_offset_units
+          ,lv_max_offset      max_offset
+          ,lv_group_unit_name max_offset_units
+          ,lv_max_true_offset max_true_offset
+          ,lv_group_unit_name max_true_offset_units
+          ,lv_total_length    total_length
+          ,lv_datum_unit_name total_length_units
+      FROM dual
+         ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
-      THEN
+     THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END route_details;
+  END get_route_details;
+  
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE resize_route(pi_ne_id                    IN nm_elements.ne_id%TYPE
-                        ,pi_new_length               IN nm_elements.ne_length%TYPE
-                        ,po_message_severity        OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor          OUT sys_refcursor) IS
+  PROCEDURE resize_route(pi_ne_id            IN  nm_elements.ne_id%TYPE
+                        ,pi_start_ne_id      IN  nm_elements.ne_id%TYPE DEFAULT NULL
+                        ,pi_new_length       IN  nm_elements.ne_length%TYPE
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    lv_severity  hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
+    --e_circular_route exception;
+    --PRAGMA EXCEPTION_INIT(e_circular_route, -20207);
+    --
   BEGIN
     /*
     ||Set a save point.
     */
     SAVEPOINT resize_route_sp;
+    /*
+    ||TODO - Need to catch the circular group exception
+    ||and tell the UI to ask the user for the start member
+    ||once the UI has a dialog to do this.
+    ||Until then the circular group exception will be treated
+    ||as an error.
+    */
+    nm3rsc.resize_route(pi_ne_id    => pi_ne_id
+                       ,pi_new_size => pi_new_length
+                       ,pi_ne_start => pi_start_ne_id);
+    /*
+    ||Return a warning if the route is ill formed.
+    */
+    warn_if_route_ill_formed(po_message_severity => lv_severity
+                            ,po_message_tab      => lt_messages);
     --
-    DECLARE
-      e_circular_route exception;
-      PRAGMA EXCEPTION_INIT(e_circular_route, -20207);
-     
-      l_circle_start nm_elements.ne_id%TYPE;
-    
-    BEGIN  
-      nm3rsc.resize_route(pi_ne_id    => pi_ne_id
-                         ,pi_new_size => pi_new_length);
-
-    EXCEPTION
-      WHEN e_circular_route
-        THEN
-          -- get circular start point
-          l_circle_start := get_circular_start_point(pi_group_ne_id => pi_ne_id);
-
-          IF l_circle_start IS NOT NULL
-          THEN
-            -- try again with user chosen start point
-            nm3rsc.resize_route(pi_ne_id    => pi_ne_id
-                               ,pi_new_size => pi_new_length
-                               ,pi_ne_start => l_circle_start);
-          END IF;
-    END;
-    --
-    warn_if_route_ill_formed;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
+    IF lt_messages.COUNT > 0
+     THEN
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+    ELSE
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+    END IF;
     --
   EXCEPTION
     WHEN others
-      THEN
+     THEN
         ROLLBACK TO resize_route_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END resize_route;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE create_group_of_group(pi_theme_name          IN     nm_themes_all.nth_theme_name%TYPE
-                                 ,pi_network_type        IN     nm_elements_all.ne_nt_type%TYPE
-                                 ,pi_description         IN     nm_elements_all.ne_descr%TYPE
-                                 ,pi_admin_unit_id       IN     nm_elements_all.ne_admin_unit%TYPE
-                                 ,pi_start_date          IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                                 ,pi_end_date            IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
-                                 ,pi_group_type          IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
-                                 ,pi_start_node_id       IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
-                                 ,pi_end_node_id         IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
-                                 ,pi_attrib_column_names IN     awlrs_element_api.attrib_column_name_tab
-                                 ,pi_attrib_prompts      IN     awlrs_element_api.attrib_prompt_tab
-                                 ,pi_attrib_char_values  IN     awlrs_element_api.attrib_char_value_tab
-                                 ,po_ne_id               IN OUT nm_elements_all.ne_id%TYPE
-                                 ,po_message_severity       OUT hig_codes.hco_code%TYPE
-                                 ,po_message_cursor         OUT sys_refcursor) IS
-  BEGIN
-    --
-    awlrs_element_api.create_element(pi_theme_name          => pi_theme_name
-                                    ,pi_network_type        => pi_network_type
-                                    ,pi_element_type        => 'P'
-                                    ,pi_description         => pi_description
-                                    ,pi_length              => ''
-                                    ,pi_admin_unit_id       => pi_admin_unit_id
-                                    ,pi_start_date          => pi_start_date
-                                    ,pi_end_date            => pi_end_date
-                                    ,pi_group_type          => pi_group_type
-                                    ,pi_start_node_id       => pi_start_node_id
-                                    ,pi_end_node_id         => pi_end_node_id
-                                    ,pi_attrib_column_names => pi_attrib_column_names
-                                    ,pi_attrib_prompts      => pi_attrib_prompts
-                                    ,pi_attrib_char_values  => pi_attrib_char_values
-                                    ,pi_shape_wkt           => ''
-                                    ,po_ne_id               => po_ne_id
-                                    ,po_message_severity    => po_message_severity
-                                    ,po_message_cursor      => po_message_cursor);
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-      THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END create_group_of_group;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_group_of_group(pi_ne_id             IN nm_elements_all.ne_id%TYPE
-                              ,po_message_severity OUT hig_codes.hco_code%TYPE
-                              ,po_message_cursor   OUT sys_refcursor
-                              ,po_cursor           OUT sys_refcursor) IS
 
-    lv_cursor  sys_refcursor;
-  BEGIN
-    IF nm3net.element_is_a_group_of_groups(pi_ne_id) THEN 
-      awlrs_element_api.get_element(pi_ne_id            => pi_ne_id
-                                   ,po_message_severity => po_message_severity
-                                   ,po_message_cursor   => po_message_cursor
-                                   ,po_cursor           => lv_cursor);
-      po_cursor := lv_cursor;
-    ELSE
-       -- Invalid Group of Groups Id supplied
-       hig.raise_ner(pi_appl => 'AWLRS'
-                     ,pi_id   => 27);
-
-    END IF;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-      THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END get_group_of_group;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE end_date_group_of_group(pi_ne_id             IN nm_elements.ne_id%TYPE
-                                   ,pi_effective_date    IN DATE      
-                                   ,pi_close_all         IN VARCHAR2
-                                   ,pi_end_date_datums   IN VARCHAR2
-                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                   ,po_message_cursor   OUT sys_refcursor
-                                   ) IS
-  BEGIN
-
-    awlrs_group_api.end_date_group(pi_ne_id             => pi_ne_id
-                                  ,pi_effective_date    => pi_effective_date
-                                  ,pi_close_all         => pi_close_all
-                                  ,pi_end_date_datums   => pi_end_date_datums
-                                  ,po_message_severity  => po_message_severity
-                                  ,po_message_cursor    => po_message_cursor
-                                  );
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-      THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-
-  END end_date_group_of_group;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_sub_groups(pi_ne_id             IN nm_elements_all.ne_id%TYPE
-                          ,po_message_severity OUT hig_codes.hco_code%TYPE
-                          ,po_message_cursor   OUT sys_refcursor
-                          ,po_cursor           OUT sys_refcursor) IS
-    --
-    lv_cursor  sys_refcursor;
-    --
-  BEGIN
-    --
-    OPEN po_cursor FOR
-    SELECT nm.nm_ne_id_in       group_ne_id,
-           nm.nm_ne_id_of       subgroup_ne_id,
-           ne.ne_unique         subgroup_unique,
-           ne.ne_descr          subgroup_descr,
-           ne.ne_gty_group_type subgroup_group_type,
-           nm.nm_start_date     subgroup_start_date, 
-           nm.nm_end_date       subgroup_end_date,                                           
-           nm.nm_begin_mp,
-           nm.nm_end_mp,
-           (nm.nm_end_mp - nm.nm_begin_mp) mem_length, 
-           nm.nm_slk,
-           nm.nm_cardinality,
-           nm.nm_seq_no,
-           nm.nm_type, 
-           nm.nm_obj_type,
-           nm.nm_admin_unit, 
-           nm.nm_date_created, 
-           nm.nm_date_modified, 
-           nm.nm_modified_by, 
-           nm_created_by,        
-           nm_seg_no, 
-           nm_true, 
-           nm_end_slk, 
-           nm_end_true 
-      FROM nm_members nm, 
-           nm_elements ne
-     WHERE nm.nm_ne_id_of = ne.ne_id
-       AND nm.nm_ne_id_in = pi_ne_id
-       AND nm_start_date <= TO_DATE (SYS_CONTEXT ('NM3CORE', 'EFFECTIVE_DATE'),'DD-MON-YYYY')
-       AND NVL(nm_end_date, TO_DATE ('99991231', 'YYYYMMDD')) > TO_DATE (SYS_CONTEXT ('NM3CORE', 'EFFECTIVE_DATE'),'DD-MON-YYYY');    
-    --
-    po_cursor := lv_cursor;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-      THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-
-  END get_sub_groups;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE add_subgroup_member(pi_group_ne_id          IN nm_elements.ne_id%TYPE
-                               ,pi_subgroup_ne_id       IN nm_elements.ne_id%TYPE
-                               ,pi_subgroup_begin_mp    IN nm_members.nm_begin_mp%TYPE
-                               ,pi_subgroup_end_mp      IN nm_members.nm_end_mp%TYPE
-                               ,pi_start_date           IN nm_members.nm_start_date%TYPE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                               ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                               ,po_message_cursor      OUT sys_refcursor
-                               ) IS
-  BEGIN
-     awlrs_group_api.add_membership(pi_group_ne_id        => pi_group_ne_id
-                                   ,pi_mem_ne_id          => pi_subgroup_ne_id
-                                   ,pi_mem_begin_mp       => NVL(pi_subgroup_begin_mp,0)
-                                   ,pi_mem_end_mp         => NVL(pi_subgroup_end_mp,0)
-                                   ,pi_start_date         => pi_start_date
-                                   ,po_message_severity   => po_message_severity
-                                   ,po_message_cursor     => po_message_cursor
-                                   );
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-      THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-
-  END add_subgroup_member;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE end_date_subgroup_member(pi_group_ne_id          IN nm_elements.ne_id%TYPE
-                                    ,pi_subgroup_ne_id       IN nm_elements.ne_id%TYPE
-                                    ,pi_subgroup_begin_mp    IN nm_members.nm_begin_mp%TYPE
-                                    ,pi_subgroup_start_date  IN nm_members.nm_start_date%TYPE
-                                    ,pi_effective_date       IN DATE
-                                    ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                                    ,po_message_cursor      OUT sys_refcursor) IS
-  BEGIN
-
-    awlrs_group_api.end_date_membership(pi_group_ne_id       => pi_group_ne_id
-                                       ,pi_mem_ne_id         => pi_subgroup_ne_id
-                                       ,pi_mem_begin_mp      => pi_subgroup_begin_mp
-                                       ,pi_mem_start_date    => pi_subgroup_start_date
-                                       ,pi_effective_date    => pi_effective_date
-                                       ,po_message_severity  => po_message_severity
-                                       ,po_message_cursor    => po_message_cursor);
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-      THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-
-  END end_date_subgroup_member;
-  --
-  -----------------------------------------------------------------------------
-  --
+--
+-----------------------------------------------------------------------------
+--
 END awlrs_group_api;
 /
