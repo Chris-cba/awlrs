@@ -3,23 +3,25 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.7   15 Dec 2016 09:47:48   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.8   15 Dec 2016 17:04:10   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   15 Dec 2016 09:47:48  $
-  --       Date fetched Out : $Modtime:   15 Dec 2016 08:48:48  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   15 Dec 2016 17:04:10  $
+  --       Date fetched Out : $Modtime:   15 Dec 2016 11:28:28  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
   TYPE product_codes_tab IS TABLE OF hig_products.hpr_product%TYPE INDEX BY BINARY_INTEGER;
   --
   TYPE ne_id_tab IS TABLE OF nm_elements_all.ne_id%TYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE offset_tab IS TABLE OF nm_members_all.nm_begin_mp%TYPE INDEX BY BINARY_INTEGER;
   --
   TYPE admin_unit_rec IS RECORD(admin_unit  nm_admin_units_all.nau_admin_unit%TYPE
                                ,unit_code   nm_admin_units_all.nau_unit_code%TYPE
