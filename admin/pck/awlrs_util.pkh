@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.6   30 Nov 2016 15:49:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.7   15 Dec 2016 09:47:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   30 Nov 2016 15:49:04  $
-  --       Date fetched Out : $Modtime:   30 Nov 2016 14:46:04  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   15 Dec 2016 09:47:48  $
+  --       Date fetched Out : $Modtime:   15 Dec 2016 08:48:48  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -47,6 +47,12 @@ AS
   --
   FUNCTION get_body_version
     RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION set_effective_date(pi_date IN DATE)
+    RETURN PLS_INTEGER;
 
   --
   -----------------------------------------------------------------------------
