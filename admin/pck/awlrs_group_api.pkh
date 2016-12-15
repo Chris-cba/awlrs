@@ -3,251 +3,168 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkh-arc   1.1   Oct 25 2016 09:09:40   Vikas.Mhetre  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkh-arc   1.2   15 Dec 2016 23:59:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkh  $
-  --       Date into PVCS   : $Date:   Oct 25 2016 09:09:40  $
-  --       Date fetched Out : $Modtime:   Oct 25 2016 08:41:10  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   15 Dec 2016 23:59:16  $
+  --       Date fetched Out : $Modtime:   15 Dec 2016 23:50:26  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE create_group_element(pi_theme_name          IN     nm_themes_all.nth_theme_name%TYPE
-                                ,pi_network_type        IN     nm_elements_all.ne_nt_type%TYPE
-                                ,pi_description         IN     nm_elements_all.ne_descr%TYPE
-                                ,pi_admin_unit_id       IN     nm_elements_all.ne_admin_unit%TYPE
-                                ,pi_start_date          IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                                ,pi_end_date            IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
-                                ,pi_group_type          IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
-                                ,pi_start_node_id       IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
-                                ,pi_end_node_id         IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
-                                ,pi_attrib_column_names IN     awlrs_element_api.attrib_column_name_tab
-                                ,pi_attrib_prompts      IN     awlrs_element_api.attrib_prompt_tab
-                                ,pi_attrib_char_values  IN     awlrs_element_api.attrib_char_value_tab
-                                ,po_ne_id               IN OUT nm_elements_all.ne_id%TYPE
-                                ,po_message_severity       OUT hig_codes.hco_code%TYPE
-                                ,po_message_cursor         OUT sys_refcursor);
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_group_element(pi_ne_id             IN nm_elements_all.ne_id%TYPE
-                             ,po_message_severity OUT hig_codes.hco_code%TYPE
-                             ,po_message_cursor   OUT sys_refcursor
-                             ,po_cursor           OUT sys_refcursor);
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE end_date_group(pi_ne_id             IN nm_elements.ne_id%TYPE
-                          ,pi_effective_date    IN DATE      
-                          ,pi_close_all         IN VARCHAR2
-                          ,pi_end_date_datums   IN VARCHAR2
-                          ,po_message_severity OUT hig_codes.hco_code%TYPE
-                          ,po_message_cursor   OUT sys_refcursor
-                          );
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_members(pi_ne_id             IN nm_elements_all.ne_id%TYPE
+  PROCEDURE get_members(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                        ,po_message_severity OUT hig_codes.hco_code%TYPE
                        ,po_message_cursor   OUT sys_refcursor
                        ,po_cursor           OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE add_membership(pi_group_ne_id          IN nm_elements.ne_id%TYPE
-                          ,pi_mem_ne_id            IN nm_elements.ne_id%TYPE
-                          ,pi_mem_begin_mp         IN nm_members.nm_begin_mp%TYPE
-                          ,pi_mem_end_mp           IN nm_members.nm_end_mp%TYPE
-                          ,pi_start_date           IN nm_members.nm_start_date%TYPE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                          ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                          ,po_message_cursor      OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE end_date_membership(pi_group_ne_id       IN nm_elements.ne_id%TYPE
-                               ,pi_mem_ne_id         IN nm_elements.ne_id%TYPE
-                               ,pi_mem_begin_mp      IN nm_members.nm_begin_mp%TYPE
-                               ,pi_mem_start_date    IN nm_members.nm_start_date%TYPE
-                               ,pi_effective_date    IN DATE
-                               ,po_message_severity OUT hig_codes.hco_code%TYPE
-                               ,po_message_cursor   OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE check_rescale_date(pi_ne_id             IN nm_elements.ne_id%TYPE
-                              ,pi_effective_date    IN DATE
-                              ,po_member_found     OUT BOOLEAN
-                              ,po_message_severity OUT hig_codes.hco_code%TYPE
-                              ,po_message_cursor   OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  FUNCTION get_circular_start_point(pi_group_ne_id IN nm_elements.ne_id%TYPE)
-                                    RETURN nm_elements.ne_id%TYPE;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE warn_if_route_ill_formed;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE rescale_route(pi_ne_id             IN nm_elements.ne_id%TYPE
-                         ,pi_effective_date    IN DATE
-                         ,pi_offset_st         IN NUMBER
-                         ,pi_use_history       IN VARCHAR2
-                         ,po_message_severity OUT hig_codes.hco_code%TYPE
-                         ,po_message_cursor   OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE resequence_route(pi_ne_id             IN nm_elements.ne_id%TYPE
-                            ,po_message_severity OUT hig_codes.hco_code%TYPE
-                            ,po_message_cursor   OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE reverse_route(pi_ne_id             IN nm_elements.ne_id%TYPE
-                         ,pi_effective_date    IN DATE
-                         ,po_message_severity OUT hig_codes.hco_code%TYPE
-                         ,po_message_cursor   OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE check_rescale_member(pi_ne_id_in          IN nm_members.nm_ne_id_in%TYPE
-                                ,pi_ne_id_of          IN nm_members.nm_ne_id_of%TYPE
-                                ,pi_begin_mp          IN nm_members.nm_begin_mp%TYPE
-                                ,pi_member_found     OUT BOOLEAN
-                                ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                ,po_message_cursor   OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE local_rescale(pi_ne_id_in          IN nm_elements.ne_id%TYPE
-                         ,pi_ne_id_of          IN nm_elements.ne_id%TYPE
-                         ,pi_begin_mp          IN nm_members.nm_begin_mp%TYPE
-                         ,pi_use_history       IN BOOLEAN
-                         ,po_message_severity OUT hig_codes.hco_code%TYPE
-                         ,po_message_cursor   OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE validate_distance_break (pi_route_ne_id       IN nm_members.nm_ne_id_of%TYPE
-                                    ,pi_start_node_id     IN nm_nodes.no_node_id%TYPE
-                                    ,pi_end_node_id       IN nm_nodes.no_node_id%TYPE
-                                    ,pi_start_date        IN DATE
-                                    ,pi_length            IN nm_elements.ne_length%TYPE DEFAULT 0
-                                    ,po_overlap_exists   OUT BOOLEAN
-                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                    ,po_message_cursor   OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE add_distance_break (pi_route_ne_id       IN nm_members.nm_ne_id_of%TYPE
-                               ,pi_start_node_id     IN nm_nodes.no_node_id%TYPE
-                               ,pi_end_node_id       IN nm_nodes.no_node_id%TYPE
-                               ,pi_start_date        IN DATE
-                               ,pi_length            IN nm_elements.ne_length%TYPE DEFAULT 0
-                               ,po_db_ne_id         OUT nm_members.nm_ne_id_in%TYPE
-                               ,po_db_ne_unique     OUT nm_elements.ne_unique%TYPE
-                               ,po_message_severity OUT hig_codes.hco_code%TYPE
-                               ,po_message_cursor   OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE route_check(pi_ne_id                    IN nm_elements.ne_id%TYPE
-                       ,po_message_severity        OUT hig_codes.hco_code%TYPE
-                       ,po_message_cursor          OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE route_details(pi_ne_id                    IN nm_elements.ne_id%TYPE
-                         ,po_min_slk                 OUT nm_members.nm_slk%TYPE
-                         ,po_max_slk                 OUT nm_members.nm_slk%TYPE
-                         ,po_max_true                OUT nm_members.nm_slk%TYPE
-                         ,po_total_route_length      OUT nm_members.nm_slk%TYPE
-                         ,po_min_slk_unit            OUT VARCHAR2
-                         ,po_max_slk_unit            OUT VARCHAR2
-                         ,po_max_true_unit           OUT VARCHAR2
-                         ,po_total_route_length_unit OUT VARCHAR2
-                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
-                         ,po_message_cursor          OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE resize_route(pi_ne_id                    IN nm_elements.ne_id%TYPE
-                        ,pi_new_length               IN nm_elements.ne_length%TYPE
-                        ,po_message_severity        OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor          OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE create_group_of_group(pi_theme_name          IN     nm_themes_all.nth_theme_name%TYPE
-                                 ,pi_network_type        IN     nm_elements_all.ne_nt_type%TYPE
-                                 ,pi_description         IN     nm_elements_all.ne_descr%TYPE
-                                 ,pi_admin_unit_id       IN     nm_elements_all.ne_admin_unit%TYPE
-                                 ,pi_start_date          IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                                 ,pi_end_date            IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
-                                 ,pi_group_type          IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
-                                 ,pi_start_node_id       IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
-                                 ,pi_end_node_id         IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
-                                 ,pi_attrib_column_names IN     awlrs_element_api.attrib_column_name_tab
-                                 ,pi_attrib_prompts      IN     awlrs_element_api.attrib_prompt_tab
-                                 ,pi_attrib_char_values  IN     awlrs_element_api.attrib_char_value_tab
-                                 ,po_ne_id               IN OUT nm_elements_all.ne_id%TYPE
-                                 ,po_message_severity       OUT hig_codes.hco_code%TYPE
-                                 ,po_message_cursor         OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_group_of_group(pi_ne_id             IN nm_elements_all.ne_id%TYPE
-                              ,po_message_severity OUT hig_codes.hco_code%TYPE
-                              ,po_message_cursor   OUT sys_refcursor
-                              ,po_cursor           OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE end_date_group_of_group(pi_ne_id             IN nm_elements.ne_id%TYPE
-                                   ,pi_effective_date    IN DATE      
-                                   ,pi_close_all         IN VARCHAR2
-                                   ,pi_end_date_datums   IN VARCHAR2
-                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                   ,po_message_cursor   OUT sys_refcursor
-                                   );
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_sub_groups(pi_ne_id             IN nm_elements_all.ne_id%TYPE
+  PROCEDURE get_sub_groups(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                           ,po_message_severity OUT hig_codes.hco_code%TYPE
                           ,po_message_cursor   OUT sys_refcursor
                           ,po_cursor           OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE add_subgroup_member(pi_group_ne_id          IN nm_elements.ne_id%TYPE
-                               ,pi_subgroup_ne_id       IN nm_elements.ne_id%TYPE
-                               ,pi_subgroup_begin_mp    IN nm_members.nm_begin_mp%TYPE
-                               ,pi_subgroup_end_mp      IN nm_members.nm_end_mp%TYPE
-                               ,pi_start_date           IN nm_members.nm_start_date%TYPE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                               ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                               ,po_message_cursor      OUT sys_refcursor
-                               );
+  PROCEDURE add_member(pi_group_ne_id      IN  nm_elements.ne_id%TYPE
+                      ,pi_mem_ne_id        IN  nm_elements.ne_id%TYPE
+                      ,pi_mem_begin_mp     IN  nm_members.nm_begin_mp%TYPE DEFAULT 0
+                      ,pi_mem_end_mp       IN  nm_members.nm_end_mp%TYPE DEFAULT 0
+                      ,pi_start_date       IN  nm_members.nm_start_date%TYPE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                      ,po_message_cursor   OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE end_date_subgroup_member(pi_group_ne_id          IN nm_elements.ne_id%TYPE
-                                    ,pi_subgroup_ne_id       IN nm_elements.ne_id%TYPE
-                                    ,pi_subgroup_begin_mp    IN nm_members.nm_begin_mp%TYPE
-                                    ,pi_subgroup_start_date  IN nm_members.nm_start_date%TYPE
-                                    ,pi_effective_date       IN DATE
-                                    ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                                    ,po_message_cursor      OUT sys_refcursor);
+  PROCEDURE add_members(pi_group_ne_id      IN  nm_elements.ne_id%TYPE
+                       ,pi_mem_ne_ids       IN  awlrs_util.ne_id_tab
+                       ,pi_mem_begin_mps    IN  awlrs_util.offset_tab
+                       ,pi_mem_end_mps      IN  awlrs_util.offset_tab
+                       ,pi_start_date       IN  nm_members.nm_start_date%TYPE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE end_date_membership(pi_group_ne_id      IN  nm_elements.ne_id%TYPE
+                               ,pi_mem_ne_id        IN  nm_elements.ne_id%TYPE
+                               ,pi_mem_begin_mp     IN  nm_members.nm_begin_mp%TYPE
+                               ,pi_mem_start_date   IN  nm_members.nm_start_date%TYPE
+                               ,pi_effective_date   IN  DATE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  --NB. If the value of pi_run_checks passed in is not 'Y' then the calling code
+  --should have already called the procedure with the value as 'Y' and handled any
+  --errors or prompts for user confirmation.
+  --
+  PROCEDURE add_distance_break(pi_route_ne_id      IN  nm_members.nm_ne_id_of%TYPE
+                              ,pi_start_node_id    IN  nm_nodes.no_node_id%TYPE
+                              ,pi_end_node_id      IN  nm_nodes.no_node_id%TYPE
+                              ,pi_start_date       IN  DATE
+                              ,pi_length           IN  nm_elements.ne_length%TYPE
+                              ,pi_run_checks       IN  VARCHAR2 DEFAULT 'Y'
+                              ,po_db_ne_id         OUT nm_members.nm_ne_id_in%TYPE
+                              ,po_db_ne_unique     OUT nm_elements.ne_unique%TYPE
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  --NB. If the value of pi_use_history passed in is not 'Y' then the calling
+  --code should have already called the procedure with the value as 'Y' and 
+  --handled any prompts for user confirmation.
+  --
+  PROCEDURE rescale_route(pi_ne_id            IN  nm_elements.ne_id%TYPE
+                         ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                         ,pi_offset_st        IN  NUMBER
+                         ,pi_start_ne_id      IN  nm_elements.ne_id%TYPE DEFAULT NULL
+                         ,pi_use_history      IN  VARCHAR2
+                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE resequence_route(pi_ne_id            IN  nm_elements.ne_id%TYPE
+                            ,pi_start_ne_id      IN  nm_elements.ne_id%TYPE DEFAULT NULL
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE reverse_route(pi_ne_id            IN  nm_elements.ne_id%TYPE
+                         ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  --NB. If the value of pi_use_history passed in is not 'Y' then the calling
+  --code should have already called the procedure with the value as 'Y' and 
+  --handled any prompts for user confirmation.
+  --
+  PROCEDURE local_rescale(pi_ne_id_in         IN  nm_elements.ne_id%TYPE
+                         ,pi_ne_id_of         IN  nm_elements.ne_id%TYPE
+                         ,pi_begin_mp         IN  nm_members.nm_begin_mp%TYPE
+                         ,pi_use_history      IN  VARCHAR2 DEFAULT 'Y'
+                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE route_check(pi_ne_id            IN  nm_elements.ne_id%TYPE
+                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_route_details(pi_ne_id            IN  nm_elements.ne_id%TYPE
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE resize_route(pi_ne_id            IN  nm_elements.ne_id%TYPE
+                        ,pi_start_ne_id      IN  nm_elements.ne_id%TYPE DEFAULT NULL
+                        ,pi_new_length       IN  nm_elements.ne_length%TYPE
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor);
+
+--
+-----------------------------------------------------------------------------
+--
 END awlrs_group_api;
 /
