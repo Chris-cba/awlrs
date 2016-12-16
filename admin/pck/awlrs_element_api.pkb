@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.11   01 Dec 2016 08:59:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.12   16 Dec 2016 00:04:08   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   01 Dec 2016 08:59:12  $
-  --       Date fetched Out : $Modtime:   30 Nov 2016 15:32:22  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   16 Dec 2016 00:04:08  $
+  --       Date fetched Out : $Modtime:   15 Dec 2016 17:50:26  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -364,7 +364,7 @@ AS
             --
             lv_retval := lv_retval
                   ||CHR(10)||'UNION ALL'
-                  ||CHR(10)||'SELECT sql.*,rownum lov_seq FROM ('||lv_lov_sql||') sql'
+                  ||CHR(10)||'SELECT sql.*,rownum lov_seq FROM ('||lv_lov_sql||' ORDER BY 1) sql'
             ;
         END IF;
         --
@@ -394,6 +394,7 @@ AS
               ||CHR(10)||'                              FROM nm_inv_type_attribs'
               ||CHR(10)||'                                  ,nm_nw_ad_types'
               ||CHR(10)||'                             WHERE nad_nt_type = :nt_type'
+              ||CHR(10)||'                               AND NVL(nad_gty_type,''~~~~~'') = NVL(:pi_gty_type,''~~~~~'')'
               ||CHR(10)||'                               AND nad_primary_ad = ''Y'''
               ||CHR(10)||'                               AND nad_inv_type = ita_inv_type'
               ||CHR(10)||'                               AND ita_attrib_name = :pi_column_name'
@@ -420,6 +421,7 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_nt_flex_domain(pi_nt_type     IN  nm_types.nt_type%TYPE
+                              ,pi_group_type  IN  nm_group_types_all.ngt_group_type%TYPE
                               ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
                               ,pi_bind_value  IN  VARCHAR2 DEFAULT NULL
                               ,po_cursor      OUT sys_refcursor)
@@ -452,7 +454,7 @@ AS
     ELSIF SUBSTR(pi_column_name,1,4) = 'IIT_'
      THEN
         --
-        OPEN po_cursor FOR lv_cursor_sql USING pi_nt_type, pi_column_name;
+        OPEN po_cursor FOR lv_cursor_sql USING pi_nt_type, pi_group_type, pi_column_name;
         --
     ELSE
         /*
@@ -470,6 +472,7 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_nt_flex_domain(pi_nt_type          IN  nm_types.nt_type%TYPE
+                              ,pi_group_type       IN  nm_group_types_all.ngt_group_type%TYPE
                               ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
                               ,pi_bind_value       IN  VARCHAR2 DEFAULT NULL
                               ,po_message_severity OUT hig_codes.hco_code%TYPE
@@ -479,6 +482,7 @@ AS
   BEGIN
     --
     get_nt_flex_domain(pi_nt_type     => pi_nt_type
+                      ,pi_group_type  => pi_group_type
                       ,pi_column_name => pi_column_name
                       ,pi_bind_value  => pi_bind_value
                       ,po_cursor      => po_cursor);
@@ -497,6 +501,7 @@ AS
   -----------------------------------------------------------------------------
   --
   FUNCTION get_nt_flex_domain(pi_nt_type     IN nm_types.nt_type%TYPE
+                             ,pi_group_type  IN nm_group_types_all.ngt_group_type%TYPE
                              ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE
                              ,pi_bind_value  IN VARCHAR2 DEFAULT NULL)
     RETURN domain_values_tab IS
@@ -507,6 +512,7 @@ AS
   BEGIN
     --
     get_nt_flex_domain(pi_nt_type     => pi_nt_type
+                      ,pi_group_type  => pi_group_type
                       ,pi_column_name => pi_column_name
                       ,pi_bind_value  => pi_bind_value
                       ,po_cursor      => lv_cursor);
@@ -524,6 +530,7 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_paged_nt_flex_domain(pi_nt_type     IN  nm_types.nt_type%TYPE
+                                    ,pi_group_type  IN  nm_group_types_all.ngt_group_type%TYPE
                                     ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
                                     ,pi_bind_value  IN  VARCHAR2 DEFAULT NULL
                                     ,pi_filter      IN  VARCHAR2
@@ -574,16 +581,7 @@ AS
                   ,po_use_bind    => lv_use_bind
                   ,po_sql         => lv_driving_sql);
     --
-    lv_cursor_sql := lv_cursor_sql||lv_driving_sql||lv_filter||') ORDER BY match_quality,';
-    --
-    IF SUBSTR(pi_column_name,1,3) = 'NE_'
-     THEN
-        lv_cursor_sql := lv_cursor_sql||' meaning)';
-    ELSE
-        lv_cursor_sql := lv_cursor_sql||' seq)';
-    END IF;
-    --
-    lv_cursor_sql := lv_cursor_sql||CHR(10)||lv_row_restriction;
+    lv_cursor_sql := lv_cursor_sql||lv_driving_sql||lv_filter||') ORDER BY match_quality,seq)'||CHR(10)||lv_row_restriction;
     --
     IF SUBSTR(pi_column_name,1,3) = 'NE_'
      THEN
@@ -631,16 +629,16 @@ AS
          THEN
             IF pi_pagesize IS NOT NULL
              THEN
-                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_column_name, pi_filter, lv_lower_index, lv_upper_index;
+                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_group_type, pi_column_name, pi_filter, lv_lower_index, lv_upper_index;
             ELSE
-                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_column_name, pi_filter, lv_lower_index;
+                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_group_type, pi_column_name, pi_filter, lv_lower_index;
             END IF;
         ELSE
             IF pi_pagesize IS NOT NULL
              THEN
-                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_column_name, lv_lower_index, lv_upper_index;
+                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_group_type, pi_column_name, lv_lower_index, lv_upper_index;
             ELSE
-                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_column_name, lv_lower_index;
+                OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_nt_type, pi_group_type, pi_column_name, lv_lower_index;
             END IF;
         END IF;
         --
@@ -664,6 +662,7 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_paged_nt_flex_domain(pi_nt_type          IN  nm_types.nt_type%TYPE
+                                    ,pi_group_type       IN  nm_group_types_all.ngt_group_type%TYPE
                                     ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
                                     ,pi_bind_value       IN  VARCHAR2 DEFAULT NULL
                                     ,pi_filter           IN  VARCHAR2
@@ -676,6 +675,7 @@ AS
   BEGIN
     --
     get_paged_nt_flex_domain(pi_nt_type     => pi_nt_type
+                            ,pi_group_type  => pi_group_type
                             ,pi_column_name => pi_column_name
                             ,pi_bind_value  => pi_bind_value
                             ,pi_filter      => pi_filter
@@ -697,6 +697,7 @@ AS
   -----------------------------------------------------------------------------
   --
   FUNCTION get_paged_nt_flex_domain(pi_nt_type     IN nm_types.nt_type%TYPE
+                                   ,pi_group_type  IN nm_group_types_all.ngt_group_type%TYPE
                                    ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE
                                    ,pi_bind_value  IN VARCHAR2 DEFAULT NULL
                                    ,pi_filter      IN VARCHAR2
@@ -710,6 +711,7 @@ AS
   BEGIN
     --
     get_paged_nt_flex_domain(pi_nt_type     => pi_nt_type
+                            ,pi_group_type  => pi_group_type
                             ,pi_column_name => pi_column_name
                             ,pi_bind_value  => pi_bind_value
                             ,pi_filter      => pi_filter
@@ -729,8 +731,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_nt_flex_domains(pi_nt_type IN  nm_types.nt_type%TYPE
-                               ,po_cursor  OUT sys_refcursor)
+  PROCEDURE get_nt_flex_domains(pi_nt_type    IN  nm_types.nt_type%TYPE
+                               ,pi_group_type IN  nm_group_types_all.ngt_group_type%TYPE
+                               ,po_cursor     OUT sys_refcursor)
     IS
     --
     lv_cursor_sql  nm3type.max_varchar2 := 'SELECT domain'
@@ -804,13 +807,14 @@ AS
                          ||CHR(10)||'                              FROM nm_inv_type_attribs'
                          ||CHR(10)||'                                  ,nm_nw_ad_types'
                          ||CHR(10)||'                             WHERE nad_nt_type = :nt_type'
+                         ||CHR(10)||'                               AND NVL(nad_gty_type,''~~~~~'') = NVL(:pi_gty_type,''~~~~~'')'
                          ||CHR(10)||'                               AND nad_primary_ad = ''Y'''
                          ||CHR(10)||'                               AND nad_inv_type = ita_inv_type'
                          ||CHR(10)||'                               AND ita_id_domain IS NOT NULL)'
                          ||CHR(10)||'        ORDER BY ial_domain,ial_seq)'
     ;
     --
-    OPEN po_cursor FOR lv_cursor_sql USING pi_nt_type;
+    OPEN po_cursor FOR lv_cursor_sql USING pi_nt_type, pi_group_type;
     --
   END get_nt_flex_domains;
 
@@ -818,14 +822,16 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_nt_flex_domains(pi_nt_type          IN  nm_types.nt_type%TYPE
+                               ,pi_group_type       IN  nm_group_types_all.ngt_group_type%TYPE
                                ,po_message_severity OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor   OUT sys_refcursor
                                ,po_cursor           OUT sys_refcursor)
     IS
   BEGIN
     --
-    get_nt_flex_domains(pi_nt_type => pi_nt_type
-                       ,po_cursor  => po_cursor);
+    get_nt_flex_domains(pi_nt_type    => pi_nt_type
+                       ,pi_group_type => pi_group_type
+                       ,po_cursor     => po_cursor);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -840,15 +846,17 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_nt_flex_domains(pi_nt_type IN  nm_types.nt_type%TYPE)
+  FUNCTION get_nt_flex_domains(pi_nt_type    IN  nm_types.nt_type%TYPE
+                              ,pi_group_type IN  nm_group_types_all.ngt_group_type%TYPE)
     RETURN domain_name_and_values_tab IS
     lv_cursor         sys_refcursor;
     lt_domain_values  domain_name_and_values_tab;
     --
   BEGIN
     --
-    get_nt_flex_domains(pi_nt_type => pi_nt_type
-                       ,po_cursor  => lv_cursor);
+    get_nt_flex_domains(pi_nt_type    => pi_nt_type
+                       ,pi_group_type => pi_group_type
+                       ,po_cursor     => lv_cursor);
     --
     FETCH lv_cursor
      BULK COLLECT
@@ -864,6 +872,7 @@ AS
   --
   PROCEDURE get_nt_flex_attribs(pi_ne_id           IN  nm_elements_all.ne_id%TYPE
                                ,pi_nt_type         IN  nm_types.nt_type%TYPE
+                               ,pi_group_type      IN  nm_group_types_all.ngt_group_type%TYPE
                                ,pi_disp_derived    IN  BOOLEAN DEFAULT TRUE
                                ,pi_disp_inherited  IN  BOOLEAN DEFAULT TRUE
                                ,pi_disp_primary_ad IN  BOOLEAN DEFAULT TRUE
@@ -1002,6 +1011,7 @@ AS
                   ,nm_nw_ad_types adt
              WHERE lv_disp_primary_ad = 'Y'
                AND adt.nad_nt_type = pi_nt_type
+               AND NVL(adt.nad_gty_type,'~~~~~') = NVL(pi_group_type,'~~~~~')
                AND adt.nad_primary_ad = 'Y'
                AND adt.nad_inv_type = ita_inv_type
                AND adt.nad_id = adlink.nad_id(+)
@@ -1018,6 +1028,7 @@ AS
   --
   PROCEDURE get_nt_flex_attribs(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                                ,pi_nt_type          IN  nm_types.nt_type%TYPE
+                               ,pi_group_type       IN  nm_group_types_all.ngt_group_type%TYPE
                                ,pi_disp_derived     IN  BOOLEAN DEFAULT TRUE
                                ,pi_disp_inherited   IN  BOOLEAN DEFAULT TRUE
                                ,pi_disp_primary_ad  IN  BOOLEAN DEFAULT TRUE
@@ -1029,6 +1040,7 @@ AS
     --
     get_nt_flex_attribs(pi_ne_id           => pi_ne_id
                        ,pi_nt_type         => pi_nt_type
+                       ,pi_group_type      => pi_group_type
                        ,pi_disp_derived    => pi_disp_derived
                        ,pi_disp_inherited  => pi_disp_inherited
                        ,pi_disp_primary_ad => pi_disp_primary_ad
@@ -1049,6 +1061,7 @@ AS
   --
   FUNCTION get_nt_flex_attribs(pi_ne_id           IN nm_elements_all.ne_id%TYPE
                               ,pi_nt_type         IN nm_types.nt_type%TYPE
+                              ,pi_group_type      IN nm_group_types_all.ngt_group_type%TYPE
                               ,pi_disp_derived    IN BOOLEAN DEFAULT TRUE
                               ,pi_disp_inherited  IN BOOLEAN DEFAULT TRUE
                               ,pi_disp_primary_ad IN BOOLEAN DEFAULT TRUE)
@@ -1061,6 +1074,7 @@ AS
     --
     get_nt_flex_attribs(pi_ne_id           => pi_ne_id
                        ,pi_nt_type         => pi_nt_type
+                       ,pi_group_type      => pi_group_type
                        ,pi_disp_derived    => pi_disp_derived
                        ,pi_disp_inherited  => pi_disp_inherited
                        ,pi_disp_primary_ad => pi_disp_primary_ad
@@ -1171,6 +1185,7 @@ AS
     --
     OPEN po_cursor FOR
     SELECT ne_id             element_id
+          ,ne_type           element_type
           ,ne_nt_type        element_network_type
           ,nt_unique         element_network_type_unique
           ,nt_descr          element_network_type_descr
@@ -1355,36 +1370,318 @@ AS
     END IF;
     --
   END create_primary_ad_asset;
-  
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE create_element(pi_theme_name     IN     nm_themes_all.nth_theme_name%TYPE
-                          ,pi_element_rec    IN     nm_elements_all%ROWTYPE
-                          ,pi_primary_ad_rec IN     nm_inv_items_all%ROWTYPE
-                          ,pi_shape_wkt      IN     CLOB
-                          ,po_ne_id          IN OUT nm_elements_all.ne_id%TYPE)
+  PROCEDURE route_check(pi_ne_id             IN     nm_elements.ne_id%TYPE DEFAULT NULL
+                       ,pi_new_start_node_id IN     nm_elements.ne_no_start%TYPE
+                       ,pi_new_end_node_id   IN     nm_elements.ne_no_end%TYPE
+                       ,pi_new_ne_sub_class  IN     nm_elements.ne_sub_class%TYPE
+                       ,pi_new_ne_group      IN     nm_elements.ne_group%TYPE
+                       ,po_message_severity  IN OUT hig_codes.hco_code%TYPE
+                       ,po_message_tab       IN OUT NOCOPY awlrs_message_tab)
     IS
     --
-    lv_shape         mdsys.sdo_geometry;
-    lv_srid          NUMBER;
-    lv_x             NUMBER;
-    lv_y             NUMBER;
+    e0 exception;
+    pragma exception_init(e0, -20100);
+    e1 exception;
+    pragma exception_init(e1, -20101);
+    e2 exception;
+    pragma exception_init(e2, -20102);
+    e3 exception;
+    pragma exception_init(e3, -20103);
+    e4 exception;
+    pragma exception_init(e4, -20104);
+    e5 exception;
+    pragma exception_init(e5, -20105);
+    e6 exception;
+    pragma exception_init(e6, -20106);
+    e7 exception;
+    pragma exception_init(e7, -20107);
+    e8 exception;
+    pragma exception_init(e8, -20108);
+    e9 exception;
+    pragma exception_init(e9, -20109);
+    e10 exception;
+    pragma exception_init(e10, -20110);
+    e11 exception;
+    pragma exception_init(e11, -20111);
+    e12 exception;
+    pragma exception_init(e12, -20112);
+    e13 exception;
+    pragma exception_init(e13, -20113);
+    e14 exception;
+    pragma exception_init(e14, -20114);
+    --
+    PROCEDURE add_message(pi_appl IN nm_errors.ner_appl%TYPE
+                         ,pi_id   IN nm_errors.ner_id%TYPE)
+      IS
+    BEGIN
+      awlrs_util.add_ner_to_message_tab(pi_ner_appl    => pi_appl
+                                       ,pi_ner_id      => pi_id
+                                       ,pi_category    => awlrs_util.c_msg_cat_ask_continue
+                                       ,po_message_tab => po_message_tab);
+      po_message_severity := awlrs_util.c_msg_cat_ask_continue;
+    END;
+    --
+  BEGIN
+    --
+    nm3nwval.route_check(p_ne_no_start_new  => pi_new_start_node_id
+                        ,p_ne_no_end_new    => pi_new_end_node_id
+                        ,p_ne_sub_class_new => pi_new_ne_sub_class
+                        ,p_ne_group_new     => pi_new_ne_group
+                        ,p_ne_id            => pi_ne_id);
+    --
+  EXCEPTION
+    WHEN e0
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 19);
+    WHEN e1
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 20);
+    WHEN e2
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 21);
+    WHEN e3
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 22);
+    WHEN e4
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 23);
+    WHEN e5
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 24);
+    WHEN e6
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 25);
+    WHEN e7
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 133);
+    WHEN e8
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 134);
+    WHEN e9
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 135);
+    WHEN e10
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 136);
+    WHEN e11
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 137);
+    WHEN e12
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 138);
+    WHEN e13
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 139);
+    WHEN e14
+     THEN
+        add_message(pi_appl => 'NET'
+                   ,pi_id   => 140);
+    WHEN others
+     THEN
+        RAISE;
+  END route_check;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE route_check(pi_ne_id             IN  nm_elements.ne_id%TYPE
+                       ,pi_new_start_node_id IN  nm_elements.ne_no_start%TYPE
+                       ,pi_new_end_node_id   IN  nm_elements.ne_no_end%TYPE
+                       ,pi_new_ne_sub_class  IN  nm_elements.ne_sub_class%TYPE
+                       ,pi_new_ne_group      IN  nm_elements.ne_group%TYPE
+                       ,po_message_severity  OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor    OUT sys_refcursor)
+    IS
+    --
+    lv_severity  hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
+  BEGIN
+    --
+    route_check(pi_ne_id             => pi_ne_id
+               ,pi_new_start_node_id => pi_new_start_node_id
+               ,pi_new_end_node_id   => pi_new_end_node_id
+               ,pi_new_ne_sub_class  => pi_new_ne_sub_class
+               ,pi_new_ne_group      => pi_new_ne_group
+               ,po_message_severity  => lv_severity
+               ,po_message_tab       => lt_messages);
+    --
+    IF lt_messages.COUNT > 0
+     THEN
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+    ELSE
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+    END IF;
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END route_check;
+
+--  FUNCTION check_slk RETURN BOOLEAN IS
+--    e_start_slk EXCEPTION;
+--    PRAGMA EXCEPTION_INIT(e_start_slk, -20198);
+--    e_end_slk EXCEPTION;
+--    PRAGMA EXCEPTION_INIT(e_end_slk, -20199);
+--    --
+--  BEGIN
+--  	nm_Debug.debug('check_slk');
+--    IF nm3net.is_nt_inclusion_child(pi_nt => :ne.ne_nt_type)
+--    THEN
+--  
+--  	  set_application_property(cursor_style, 'Busy');
+--  	  --
+--  	  FOR cs_rec IN (SELECT *
+--  	                  FROM  nm_type_inclusion
+--  	                 WHERE  nti_nw_child_type = :ne.ne_nt_type
+--  	                )
+--  	   LOOP
+--  	    
+--        DECLARE
+--        	 l_allow_fail_on_ele_lookup BOOLEAN;
+--         	 x_parent_element_not_found EXCEPTION;
+--      	   PRAGMA EXCEPTION_INIT(x_parent_element_not_found,-20001);
+--        BEGIN
+--           l_allow_fail_on_ele_lookup := nm3net.column_is_autocreate_child_col (:ne.NE_NT_TYPE,cs_rec.NTI_CHILD_COLUMN);
+--           
+--        	  nm3nwval.check_slk (p_parent_ne_id => nm3net.get_single_ne_id (cs_rec.nti_nw_parent_type
+--        	                                                                ,cs_rec.NTI_PARENT_COLUMN
+--        	                                                                ,name_in ('ne.'||cs_rec.NTI_CHILD_COLUMN)
+--        	                                                                )
+--      	                       ,p_no_start_new => :ne.ne_no_start
+--      	                       ,p_no_end_new   => :ne.ne_no_end
+--      	                       ,p_length       => :ne.ne_length
+--      	                       ,p_sub_class    => :ne.ne_sub_class
+--      	                       ,p_datum_ne_id  => NVL(:ne.ne_id,1)
+--      	                       );
+--        EXCEPTION
+--        	 WHEN x_parent_element_not_found
+--        	  THEN
+--         		  IF NOT l_allow_fail_on_ele_lookup
+--      	   	   THEN
+--      	   	     hig.raise_ner('HIG',67);
+--      	   	  END IF;
+--        END;
+--  	  END LOOP;
+--  	  set_application_property(cursor_style, 'Default');
+--    END IF;
+--    
+--    RETURN TRUE;
+--  EXCEPTION
+--    WHEN e_start_slk
+--     THEN
+--        set_application_property(cursor_style, 'Default');
+--        RETURN ask(get_error_text('NET', 187));
+--    WHEN e_end_slk
+--     THEN
+--        set_application_property(cursor_style, 'Default');
+--        RETURN ask(get_error_text('NET', 188));
+--  END check_slk;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_element(pi_theme_name      IN     nm_themes_all.nth_theme_name%TYPE
+                          ,pi_network_type    IN     nm_elements_all.ne_nt_type%TYPE
+                          ,pi_element_type    IN     nm_elements_all.ne_type%TYPE
+                          ,pi_description     IN     nm_elements_all.ne_descr%TYPE
+                          ,pi_length          IN     nm_elements_all.ne_length%TYPE
+                          ,pi_admin_unit_id   IN     nm_elements_all.ne_admin_unit%TYPE
+                          ,pi_start_date      IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                          ,pi_end_date        IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
+                          ,pi_group_type      IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
+                          ,pi_start_node_id   IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
+                          ,pi_end_node_id     IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
+                          ,pi_element_attribs IN     flex_attr_tab
+                          ,pi_shape_wkt       IN     CLOB
+                          ,pi_run_checks      IN     VARCHAR2 DEFAULT 'Y'
+                          ,po_ne_id           IN OUT nm_elements_all.ne_id%TYPE
+                          ,po_message_severity   OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor     OUT sys_refcursor)
+    IS
+    --
+    lv_shape           mdsys.sdo_geometry;
+    lv_srid            NUMBER;
+    lv_x               NUMBER;
+    lv_y               NUMBER;
+    lv_prim_ad_type    nm_inv_types_all.nit_inv_type%TYPE;
+    lv_severity        hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    lv_message_cursor  sys_refcursor;
     --
     lr_ne  nm_elements_all%ROWTYPE;
     lr_nt  nm_types%ROWTYPE;
+    lr_ad  nm_inv_items_all%ROWTYPE;
     --
   BEGIN
     /*
     ||Set a save point.
     */
     SAVEPOINT cre_element_sp;
+    /*
+    ||Process the Element details.
+    */
+    init_element_globals;
     --
-    lr_ne := pi_element_rec;
-    lr_nt := nm3net.get_nt(pi_nt_type => lr_ne.ne_nt_type);
+    g_new_element.ne_nt_type        := pi_network_type;
+    g_new_element.ne_type           := pi_element_type;
+    g_new_element.ne_descr          := pi_description;
+    g_new_element.ne_length         := pi_length;
+    g_new_element.ne_admin_unit     := pi_admin_unit_id;
+    g_new_element.ne_start_date     := pi_start_date;
+    g_new_element.ne_end_date       := pi_end_date;
+    g_new_element.ne_gty_group_type := pi_group_type;
+    g_new_element.ne_no_start       := pi_start_node_id;
+    g_new_element.ne_no_end         := pi_end_node_id;
+    --
+    build_element_rec(pi_nt_type    => g_new_element.ne_nt_type
+                     ,pi_global     => 'awlrs_element_api.g_new_element'
+                     ,pi_attributes => pi_element_attribs);
+    --
+    lr_ne := g_new_element;
+    /*
+    ||Process any primary AD asset details.
+    */
+    init_ad_globals;
+    --
+    lv_prim_ad_type := get_primary_ad_inv_type(pi_nt_type    => lr_ne.ne_nt_type
+                                              ,pi_group_type => lr_ne.ne_gty_group_type);
+    IF lv_prim_ad_type IS NOT NULL
+     THEN
+        build_ad_rec(pi_inv_type   => lv_prim_ad_type
+                    ,pi_global     => 'awlrs_element_api.g_new_prim_ad_asset'
+                    ,pi_attributes => pi_element_attribs);
+        lr_ad := g_new_prim_ad_asset;
+    END IF;
     /*
     ||Make sure that either start\end nodes have been passed in or a shape has been passed in.
     */
+    lr_nt := nm3net.get_nt(pi_nt_type => lr_ne.ne_nt_type);
+    --
     IF lr_nt.nt_node_type IS NOT NULL
      AND (lr_ne.ne_no_start IS NULL OR lr_ne.ne_no_end IS NULL)
      AND pi_shape_wkt IS NULL
@@ -1394,7 +1691,7 @@ AS
                      ,pi_id   => 4);
     END IF;
     /*
-    ||Convert the shape to geom so we can use it for nodes if needed.
+    ||Convert the shape to sdo geom.
     */
     IF pi_shape_wkt IS NOT NULL
      THEN
@@ -1442,180 +1739,61 @@ AS
                                   ,po_node_id    => lr_ne.ne_no_end);
     END IF;
     /*
-    ||TODO - SM uses nm3net.gis_insert_element which calls the code below first, need to work out whether this is needed.
-    IF pi_ignore_check = 'N'
+    ||Run some route based checks.
+    */
+    IF pi_run_checks = 'Y'
      AND hig.get_sysopt('CHECKROUTE') = 'Y'
      THEN
-        nm3nwval.route_check(p_ne_no_start_new  => lr_ne.ne_no_start
-                            ,p_ne_no_end_new    => lr_ne.ne_no_end
-                            ,p_ne_sub_class_new => lr_ne.ne_sub_class
-                            ,p_ne_group_new     => lr_ne.ne_group);
+        route_check(pi_ne_id             => NULL
+                   ,pi_new_start_node_id => lr_ne.ne_no_start
+                   ,pi_new_end_node_id   => lr_ne.ne_no_end
+                   ,pi_new_ne_sub_class  => lr_ne.ne_sub_class
+                   ,pi_new_ne_group      => lr_ne.ne_group
+                   ,po_message_severity  => lv_severity
+                   ,po_message_cursor    => lv_message_cursor);
     END IF;
-    */
-    /*
-    ||TODO - passing in defaults for p_nm_cardinality and p_auto_include need to work out if this is okay.
-    */
-    nm3net.insert_any_element(p_rec_ne         => lr_ne
-                             ,p_nm_cardinality => NULL
-                             ,p_auto_include   => TRUE);
-    /*
-    ||Create primary AD asset if required.
-    */
-    create_primary_ad_asset(pi_ne_id          => lr_ne.ne_id
-                           ,pi_nt_type        => lr_ne.ne_nt_type
-                           ,pi_group_type     => lr_ne.ne_gty_group_type
-                           ,pi_admin_unit     => lr_ne.ne_admin_unit
-                           ,pi_start_date     => lr_ne.ne_start_date
-                           ,pi_primary_ad_rec => pi_primary_ad_rec);
     --
-    IF lv_shape IS NOT NULL
+    IF lv_severity = awlrs_util.c_msg_cat_success
      THEN
+        /*
+        ||TODO - passing in defaults for p_nm_cardinality and p_auto_include need to work out if this is okay.
+        */
+        nm3net.insert_any_element(p_rec_ne         => lr_ne
+                                 ,p_nm_cardinality => NULL
+                                 ,p_auto_include   => TRUE);
+        /*
+        ||Create primary AD asset if required.
+        */
+        create_primary_ad_asset(pi_ne_id          => lr_ne.ne_id
+                               ,pi_nt_type        => lr_ne.ne_nt_type
+                               ,pi_group_type     => lr_ne.ne_gty_group_type
+                               ,pi_admin_unit     => lr_ne.ne_admin_unit
+                               ,pi_start_date     => lr_ne.ne_start_date
+                               ,pi_primary_ad_rec => lr_ad);
         --
-        nm3sdo.insert_element_shape(p_layer => nm3get.get_nth(pi_nth_theme_name => pi_theme_name).nth_theme_id
-                                   ,p_ne_id => lr_ne.ne_id
-                                   ,p_geom  => lv_shape);
+        IF lv_shape IS NOT NULL
+         THEN
+            --
+            nm3sdo.insert_element_shape(p_layer => nm3get.get_nth(pi_nth_theme_name => pi_theme_name).nth_theme_id
+                                       ,p_ne_id => lr_ne.ne_id
+                                       ,p_geom  => lv_shape);
+            --
+        END IF;
+        po_ne_id := lr_ne.ne_id;
+        --
+    ELSE
+        --
+        po_message_severity := lv_severity;
+        po_message_cursor := lv_message_cursor;
         --
     END IF;
-    po_ne_id := lr_ne.ne_id;
     --
   EXCEPTION
     WHEN others
      THEN
         ROLLBACK TO cre_element_sp;
-        RAISE;
-  END create_element;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE create_element(pi_theme_name     IN     nm_themes_all.nth_theme_name%TYPE
-                          ,pi_network_type   IN     nm_elements_all.ne_nt_type%TYPE
-                          ,pi_element_type   IN     nm_elements_all.ne_type%TYPE
-                          ,pi_description    IN     nm_elements_all.ne_descr%TYPE
-                          ,pi_length         IN     nm_elements_all.ne_length%TYPE
-                          ,pi_admin_unit_id  IN     nm_elements_all.ne_admin_unit%TYPE
-                          ,pi_start_date     IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                          ,pi_end_date       IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
-                          ,pi_group_type     IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
-                          ,pi_start_node_id  IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
-                          ,pi_end_node_id    IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
-                          ,pi_unique         IN     nm_elements_all.ne_unique%TYPE         DEFAULT NULL
-                          ,pi_owner          IN     nm_elements_all.ne_owner%TYPE          DEFAULT NULL
-                          ,pi_name_1         IN     nm_elements_all.ne_name_1%TYPE         DEFAULT NULL
-                          ,pi_name_2         IN     nm_elements_all.ne_name_2%TYPE         DEFAULT NULL
-                          ,pi_prefix         IN     nm_elements_all.ne_prefix%TYPE         DEFAULT NULL
-                          ,pi_number         IN     nm_elements_all.ne_number%TYPE         DEFAULT NULL
-                          ,pi_sub_type       IN     nm_elements_all.ne_sub_type%TYPE       DEFAULT NULL
-                          ,pi_group          IN     nm_elements_all.ne_group%TYPE          DEFAULT NULL
-                          ,pi_sub_class      IN     nm_elements_all.ne_sub_class%TYPE      DEFAULT NULL
-                          ,pi_nsg_ref        IN     nm_elements_all.ne_nsg_ref%TYPE        DEFAULT NULL
-                          ,pi_version_no     IN     nm_elements_all.ne_version_no%TYPE     DEFAULT NULL
-                          ,pi_primary_ad_rec IN     nm_inv_items_all%ROWTYPE
-                          ,pi_shape_wkt      IN     CLOB
-                          ,po_ne_id          IN OUT nm_elements_all.ne_id%TYPE)
-    IS
-    --
-    lr_ne  nm_elements_all%ROWTYPE;
-    --
-  BEGIN
-    --
-    lr_ne.ne_unique         := pi_unique;
-    lr_ne.ne_type           := pi_element_type;
-    lr_ne.ne_nt_type        := pi_network_type;
-    lr_ne.ne_descr          := pi_description;
-    lr_ne.ne_length         := pi_length;
-    lr_ne.ne_admin_unit     := pi_admin_unit_id;
-    lr_ne.ne_start_date     := pi_start_date;
-    lr_ne.ne_end_date       := pi_end_date;
-    lr_ne.ne_gty_group_type := pi_group_type;
-    lr_ne.ne_owner          := pi_owner;
-    lr_ne.ne_name_1         := pi_name_1;
-    lr_ne.ne_name_2         := pi_name_2;
-    lr_ne.ne_prefix         := pi_prefix;
-    lr_ne.ne_number         := pi_number;
-    lr_ne.ne_sub_type       := pi_sub_type;
-    lr_ne.ne_group          := pi_group;
-    lr_ne.ne_no_start       := pi_start_node_id;
-    lr_ne.ne_no_end         := pi_end_node_id;
-    lr_ne.ne_sub_class      := pi_sub_class;
-    lr_ne.ne_nsg_ref        := pi_nsg_ref;
-    lr_ne.ne_version_no     := pi_version_no;
-    --
-    create_element(pi_theme_name     => pi_theme_name
-                  ,pi_element_rec    => lr_ne
-                  ,pi_primary_ad_rec => pi_primary_ad_rec
-                  ,pi_shape_wkt      => pi_shape_wkt
-                  ,po_ne_id          => po_ne_id);
-    --
-  END create_element;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE create_element(pi_theme_name      IN     nm_themes_all.nth_theme_name%TYPE
-                          ,pi_network_type    IN     nm_elements_all.ne_nt_type%TYPE
-                          ,pi_element_type    IN     nm_elements_all.ne_type%TYPE
-                          ,pi_description     IN     nm_elements_all.ne_descr%TYPE
-                          ,pi_length          IN     nm_elements_all.ne_length%TYPE
-                          ,pi_admin_unit_id   IN     nm_elements_all.ne_admin_unit%TYPE
-                          ,pi_start_date      IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                          ,pi_end_date        IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
-                          ,pi_group_type      IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
-                          ,pi_start_node_id   IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
-                          ,pi_end_node_id     IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
-                          ,pi_element_attribs IN     flex_attr_tab
-                          ,pi_shape_wkt       IN     CLOB
-                          ,po_ne_id           IN OUT nm_elements_all.ne_id%TYPE)
-    IS
-    --
-    lv_prim_ad_type  nm_inv_types_all.nit_inv_type%TYPE;
-    --
-    lr_ne  nm_elements_all%ROWTYPE;
-    lr_ad  nm_inv_items_all%ROWTYPE;
-    --
-  BEGIN
-    /*
-    ||Process the Element details.
-    */
-    init_element_globals;
-    --
-    g_new_element.ne_nt_type        := pi_network_type;
-    g_new_element.ne_type           := pi_element_type;
-    g_new_element.ne_descr          := pi_description;
-    g_new_element.ne_length         := pi_length;
-    g_new_element.ne_admin_unit     := pi_admin_unit_id;
-    g_new_element.ne_start_date     := pi_start_date;
-    g_new_element.ne_end_date       := pi_end_date;
-    g_new_element.ne_gty_group_type := pi_group_type;
-    g_new_element.ne_no_start       := pi_start_node_id;
-    g_new_element.ne_no_end         := pi_end_node_id;
-    --
-    build_element_rec(pi_nt_type    => g_new_element.ne_nt_type
-                     ,pi_global     => 'awlrs_element_api.g_new_element'
-                     ,pi_attributes => pi_element_attribs);
-    --
-    lr_ne := g_new_element;
-    /*
-    ||Process any primary AD asset details.
-    */
-    init_ad_globals;
-    --
-    lv_prim_ad_type := get_primary_ad_inv_type(pi_nt_type    => lr_ne.ne_nt_type
-                                              ,pi_group_type => lr_ne.ne_gty_group_type);
-    IF lv_prim_ad_type IS NOT NULL
-     THEN
-        build_ad_rec(pi_inv_type   => lv_prim_ad_type
-                    ,pi_global     => 'awlrs_element_api.g_new_prim_ad_asset'
-                    ,pi_attributes => pi_element_attribs);
-        lr_ad := g_new_prim_ad_asset;
-    END IF;
-    --
-    create_element(pi_theme_name     => pi_theme_name
-                  ,pi_element_rec    => lr_ne
-                  ,pi_primary_ad_rec => lr_ad
-                  ,pi_shape_wkt      => pi_shape_wkt
-                  ,po_ne_id          => po_ne_id);
-    --
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
   END create_element;
 
   --
@@ -1636,10 +1814,14 @@ AS
                           ,pi_attrib_prompts      IN     attrib_prompt_tab
                           ,pi_attrib_char_values  IN     attrib_char_value_tab
                           ,pi_shape_wkt           IN     CLOB
+                          ,pi_run_checks          IN     VARCHAR2 DEFAULT 'Y'
                           ,po_ne_id               IN OUT nm_elements_all.ne_id%TYPE
                           ,po_message_severity       OUT hig_codes.hco_code%TYPE
                           ,po_message_cursor         OUT sys_refcursor)
     IS
+    --
+    lv_message_severity  hig_codes.hco_code%TYPE;
+    lv_message_cursor    sys_refcursor;
     --
     lt_element_attribs  flex_attr_tab;
     --
@@ -1662,23 +1844,26 @@ AS
       --
     END LOOP;
     --
-    create_element(pi_theme_name      => pi_theme_name
-                  ,pi_network_type    => pi_network_type
-                  ,pi_element_type    => pi_element_type
-                  ,pi_description     => pi_description
-                  ,pi_length          => pi_length
-                  ,pi_admin_unit_id   => pi_admin_unit_id
-                  ,pi_start_date      => pi_start_date
-                  ,pi_end_date        => pi_end_date
-                  ,pi_group_type      => pi_group_type
-                  ,pi_start_node_id   => pi_start_node_id
-                  ,pi_end_node_id     => pi_end_node_id
-                  ,pi_element_attribs => lt_element_attribs
-                  ,pi_shape_wkt       => pi_shape_wkt
-                  ,po_ne_id           => po_ne_id);
+    create_element(pi_theme_name       => pi_theme_name
+                  ,pi_network_type     => pi_network_type
+                  ,pi_element_type     => pi_element_type
+                  ,pi_description      => pi_description
+                  ,pi_length           => pi_length
+                  ,pi_admin_unit_id    => pi_admin_unit_id
+                  ,pi_start_date       => pi_start_date
+                  ,pi_end_date         => pi_end_date
+                  ,pi_group_type       => pi_group_type
+                  ,pi_start_node_id    => pi_start_node_id
+                  ,pi_end_node_id      => pi_end_node_id
+                  ,pi_element_attribs  => lt_element_attribs
+                  ,pi_shape_wkt        => pi_shape_wkt
+                  ,pi_run_checks       => pi_run_checks
+                  ,po_ne_id            => po_ne_id
+                  ,po_message_severity => lv_message_severity
+                  ,po_message_cursor   => lv_message_cursor);
     --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
+    po_message_severity := lv_message_severity;
+    po_message_cursor := lv_message_cursor;
     --
   EXCEPTION
     WHEN others
@@ -2021,9 +2206,9 @@ AS
     /*
     ||Set a save point.
     */
-    SAVEPOINT reshape_element;
+    SAVEPOINT reshape_element_sp;
     /*
-    ||Convert the shape to geom so we can use it for nodes if needed.
+    ||Convert the shape to sdo geom.
     */
     IF pi_shape_wkt IS NOT NULL
      THEN
