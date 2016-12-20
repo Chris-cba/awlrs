@@ -3,19 +3,20 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.0   Nov 30 2016 15:59:46   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.1   Dec 20 2016 13:48:08   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   Nov 30 2016 15:59:46  $
-  --       Date fetched Out : $Modtime:   Nov 17 2016 16:54:08  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Dec 20 2016 13:48:08  $
+  --       Date fetched Out : $Modtime:   Dec 13 2016 15:13:16  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
+  g_db_iit_rec          nm_inv_items_all%ROWTYPE;
   g_old_iit_rec         nm_inv_items_all%ROWTYPE;
   g_new_iit_rec         nm_inv_items_all%ROWTYPE;
   g_attr_valid_iit_rec  nm_inv_items_all%ROWTYPE;
@@ -89,6 +90,7 @@ AS
   -----------------------------------------------------------------------------
   -- 
   PROCEDURE get_asset(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                     ,pi_iit_inv_type     IN  nm_inv_items_all.iit_inv_type%TYPE
                      ,po_message_severity OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor   OUT sys_refcursor
                      ,po_cursor           OUT sys_refcursor);
@@ -153,7 +155,6 @@ AS
                         ,pi_start_date          IN     nm_inv_items_all.iit_start_date%TYPE
                         ,pi_end_date            IN     nm_inv_items_all.iit_end_date%TYPE
                         ,pi_notes               IN     VARCHAR2
-                        ,pi_commit              IN     VARCHAR2
                         ,pi_attrib_names        IN     attrib_name_tab
                         ,pi_attrib_scrn_texts   IN     attrib_scrn_text_tab
                         ,pi_attrib_char_values  IN     attrib_value_tab
@@ -163,43 +164,58 @@ AS
   --
   -----------------------------------------------------------------------------
   -- 
-  PROCEDURE update_asset(pi_asset_type          IN     nm_inv_items_all.iit_inv_type%TYPE
-                        ,pi_primary_key         IN     nm_inv_items_all.iit_primary_key%TYPE
-                        ,pi_admin_unit          IN     nm_inv_items_all.iit_admin_unit%TYPE                       
-                        ,pi_xsp                 IN     nm_inv_items_all.iit_x_sect%TYPE                       
-                        ,pi_description         IN     nm_inv_items_all.iit_descr%TYPE
-                        ,pi_start_date          IN     nm_inv_items_all.iit_start_date%TYPE
-                        ,pi_end_date            IN     nm_inv_items_all.iit_end_date%TYPE
-                        ,pi_notes               IN     VARCHAR2
-                        ,pi_commit              IN     VARCHAR2
-                        ,pi_attrib_names        IN     attrib_name_tab
-                        ,pi_attrib_scrn_texts   IN     attrib_scrn_text_tab
-                        ,pi_attrib_char_values  IN     attrib_value_tab
+  PROCEDURE update_asset(pi_iit_ne_id               IN     nm_inv_items_all.iit_ne_id%TYPE
+                        ,pi_asset_type              IN     nm_inv_items_all.iit_inv_type%TYPE
+                        ,pi_old_primary_key         IN     nm_inv_items_all.iit_primary_key%TYPE
+                        ,pi_old_admin_unit          IN     nm_inv_items_all.iit_admin_unit%TYPE                       
+                        ,pi_old_xsp                 IN     nm_inv_items_all.iit_x_sect%TYPE                       
+                        ,pi_old_description         IN     nm_inv_items_all.iit_descr%TYPE
+                        ,pi_old_start_date          IN     nm_inv_items_all.iit_start_date%TYPE
+                        ,pi_old_end_date            IN     nm_inv_items_all.iit_end_date%TYPE
+                        ,pi_old_notes               IN     VARCHAR2
+                        ,pi_new_primary_key         IN     nm_inv_items_all.iit_primary_key%TYPE
+                        ,pi_new_admin_unit          IN     nm_inv_items_all.iit_admin_unit%TYPE                       
+                        ,pi_new_xsp                 IN     nm_inv_items_all.iit_x_sect%TYPE                       
+                        ,pi_new_description         IN     nm_inv_items_all.iit_descr%TYPE
+                        ,pi_new_start_date          IN     nm_inv_items_all.iit_start_date%TYPE
+                        ,pi_new_end_date            IN     nm_inv_items_all.iit_end_date%TYPE
+                        ,pi_new_notes               IN     VARCHAR2
+                        ,pi_old_attrib_names        IN     attrib_name_tab
+                        ,pi_attrib_names            IN     attrib_name_tab                        
+                        ,pi_old_attrib_scrn_texts   IN     attrib_scrn_text_tab                        
+                        ,pi_attrib_scrn_texts       IN     attrib_scrn_text_tab
+                        ,pi_old_attrib_char_values  IN     attrib_value_tab
+                        ,pi_new_attrib_char_values  IN     attrib_value_tab
                         ,po_message_severity       OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor         OUT sys_refcursor);                        
+                        ,po_message_cursor         OUT sys_refcursor);                       
   --
   -----------------------------------------------------------------------------
   -- 
 
- PROCEDURE asset_enddate(pi_iit_ne_id        IN nm_inv_items_all.iit_ne_id%TYPE
+ /*PROCEDURE asset_enddate(pi_iit_ne_id        IN nm_inv_items_all.iit_ne_id%TYPE
                         ,pi_asset_type       IN nm_inv_items_all.iit_inv_type%TYPE
                         ,pi_end_date         IN DATE
                         ,po_message_severity OUT hig_codes.hco_code%TYPE
                         ,po_message_cursor   OUT sys_refcursor
-                        ,po_cursor           OUT sys_refcursor);                        
+                        ,po_cursor           OUT sys_refcursor);          */              
 --
 -----------------------------------------------------------------------------
 --
-  PROCEDURE location_enddate(pi_asset_type       IN  nm_inv_items_all.iit_inv_type%TYPE
-                            ,pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
-                            ,pi_ne_id            IN  nm_elements_all.ne_id%TYPE
-                            ,pi_x_sect           IN  nm_inv_items_all.iit_x_sect%TYPE
-                            ,pi_end_date         IN  DATE
-                            ,pi_datum            IN  VARCHAR2
-                            ,po_message_severity OUT hig_codes.hco_code%TYPE
-                            ,po_message_cursor   OUT sys_refcursor
-                            ,po_cursor           OUT sys_refcursor) ;
-               
+ PROCEDURE location_enddate(pi_asset_type       IN  nm_inv_items_all.iit_inv_type%TYPE
+                           ,pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                           ,pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                           ,pi_x_sect           IN  nm_inv_items_all.iit_x_sect%TYPE
+                           ,pi_end_date         IN  DATE
+                           ,pi_datum            IN  VARCHAR2
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor);
+                           
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_locations(pi_iit_ne_id IN  nm_inv_items_all.iit_ne_id%TYPE
+                         ,po_cursor    OUT sys_refcursor);
   
 END awlrs_asset_api;
 /
