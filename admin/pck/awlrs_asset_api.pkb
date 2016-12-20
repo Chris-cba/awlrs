@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.0   Nov 30 2016 15:59:46   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.1   Dec 20 2016 13:48:12   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Nov 30 2016 15:59:46  $
-  --       Date fetched Out : $Modtime:   Nov 30 2016 15:59:12  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Dec 20 2016 13:48:12  $
+  --       Date fetched Out : $Modtime:   Dec 20 2016 11:22:36  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -38,11 +38,24 @@ AS
   -----------------------------------------------------------------------------
   --
 
-  /*FUNCTION validate_location_limit(pi_itemvalue                 IN  NUMBER, --new needs to be passed in to place l_cur_val   NUMBER := Name_In(pi_item);
+  PROCEDURE init_asset_globals
+    IS
+    --
+    lv_empty_rec  nm_inv_items_all%ROWTYPE;
+    --
+  BEGIN
+    --
+    g_db_iit_rec := lv_empty_rec;
+    g_old_iit_rec := lv_empty_rec;
+    g_new_iit_rec := lv_empty_rec;
+    --
+  END init_asset_globals;  
+  --
+  -----------------------------------------------------------------------------
+  --  
+  FUNCTION validate_location_limit(pi_itemvalue                 IN  NUMBER, --new needs to be passed in to place l_cur_val   NUMBER := Name_In(pi_item);
     	                           pi_locate_mp            	    IN 	VARCHAR2,
-    	                           pi_ne_id                	    IN 	nm_Elements.ne_id%TYPE,
-    	                           pi_lref_max             	    IN 	NUMBER 		DEFAULT NULL,
-    	                           pi_alert                	    IN	BOOLEAN 	DEFAULT TRUE) 
+    	                           pi_ne_id                	    IN 	nm_Elements.ne_id%TYPE) 
                                    RETURN BOOLEAN
     IS
       l_ne_rec    nm_elements%ROWTYPE;
@@ -57,9 +70,8 @@ AS
         lr_ne := nm3get.get_ne(pi_ne_id);
         --
     	IF pi_itemvalue IS NOT NULL THEN
-    	  IF pi_locate_mp = 'BEGIN'
-    	  	THEN
-    	  -- Use the route min SLK  if it's a route to allow negative location
+    	  IF pi_locate_mp = 'BEGIN' THEN
+    	    -- Use the route min SLK  if it's a route to allow negative location
     	  	IF lr_ne.ne_type = 'G' THEN
     	      lv_min := nm3net.get_min_slk(pi_ne_id);
     	  	ELSE
@@ -73,9 +85,8 @@ AS
     		  Nm_Debug.Debug('Validate_Location_Limit - Finished (False)');
     		  RETURN FALSE;
     	    END IF;
-    	  --
-    	  ELSIF pi_locate_mp = 'END'
-    	    THEN
+    	    --
+    	  ELSIF pi_locate_mp = 'END' THEN
     	    -- Use the route max SLK  if it's a route to allow negative location
     	  	IF lr_ne.ne_type = 'G' THEN
     	      l_max := nm3net.get_max_slk(pi_ne_id);
@@ -91,72 +102,13 @@ AS
     	    END IF;
     	  --
     	  END IF;
-    --
-    	  IF pi_lref_max IS NOT NULL THEN
-    	  	IF pi_itemvalue > pi_lref_max THEN
-              hig.raise_ner(pi_appl               => 'NET'
-                           ,pi_id                 => 29);    
-    	      Nm_Debug.Debug('Validate_Location_Limit - Finished (False)');
-    	      RETURN FALSE;
-    	  	END IF;
-    	  END IF;
-    --
-    	  IF nm3net.is_nt_datum(nm3net.get_nt_type(pi_ne_id)) = 'N' THEN	  
-    	    IF ((pi_locate_mp = 'BEGIN' AND :locate.begin_ambig_processed = 'N')
-    	  	   OR
-    	  	   (pi_locate_mp = 'END' AND :locate.end_ambig_processed = 'N')) THEN	  	
-    		  	IF Not(Check_lref_Ambig(pi_parent_id => pi_ne_id 
-    		                               ,pi_offset    => pi_itemvalue
-    		                               ,pi_sub_class => :locate.ambig_sub_class
-    		                               ,pi_alert     => pi_alert))
-    		    THEN		      
-    		      maintain_sect_date_modified(pi_position      => pi_locate_mp
-                                         ,pi_date_modified => NULL);
-    		      
-    		      Nm_Debug.Debug('Locate.Validate_Location_Limit - Finished (False)');
-    		      RETURN FALSE;
-    		      
-    		    ELSE
-    		      IF pi_locate_mp = 'BEGIN'
-    				  THEN
-    				    :locate.begin_ambig_processed := 'Y';
-    		      ELSE
-    		      	:locate.end_ambig_processed := 'Y';
-    		      END IF;
-    		  	END IF;
-    	  	END IF;
-    	  ELSE
-    	    l_ne_rec := nm3net.get_ne_all_rowtype(pi_ne_id);
-    	    
-    	    IF pi_locate_mp = 'BEGIN'
-    			THEN
-    			  :locate.begin_sect               := pi_ne_id;
-    			  :locate.begin_sect_unique        := l_ne_rec.ne_unique;
-    			  :locate.begin_sect_offset        := :locate.begin_mp;
-    			  :locate.prev_begin_mp            := :locate.begin_mp;
-    			  :locate.begin_sect_sub_class     := l_ne_rec.ne_sub_class;
-    			  
-    			  set_sub_class(pi_sub_class => :locate.begin_sect_sub_class);
-    	    ELSE
-    	    	    :locate.end_sect               := pi_ne_id;
-    				:locate.end_sect_unique        := l_ne_rec.ne_unique;
-    				:locate.end_sect_offset        := :locate.end_mp;
-    				:locate.prev_end_mp            := :locate.end_mp;
-    				:locate.end_sect_sub_class     := l_ne_rec.ne_sub_class;
-    				:locate.end_sect_date_modified := l_ne_rec.ne_date_modified;
-    				
-    				set_sub_class(pi_sub_class => :locate.end_sect_sub_class);
-    	    END IF;
-    	    
-    	    maintain_sect_date_modified(pi_position      => pi_locate_mp
-                                     ,pi_date_modified => l_ne_rec.ne_date_modified);
-    	  END IF;
-     END IF;
+      --
+       END IF;
      END IF;	 
     --
     RETURN TRUE;
     --
-    END Validate_Location_Limit; */
+    END Validate_Location_Limit; 
   --
   -----------------------------------------------------------------------------
   --
@@ -173,6 +125,7 @@ AS
     l_job_id       Nm_Nw_Temp_Extents.Nte_Job_Id%Type;
     --
     e_item_not_entered EXCEPTION;
+    e_validation_error exception;    
   BEGIN
     --
     /*
@@ -187,6 +140,10 @@ AS
     IF pi_ne_id IS NULL THEN
       RAISE e_item_not_entered;
   	END IF;
+    
+    IF lv_pnt_or_cont = 'P' AND pi_begin_mp <> pi_end_mp THEN
+      RAISE e_validation_error;
+    END IF;
     /*
     ||Continuous checks
     */
@@ -197,92 +154,39 @@ AS
   	END IF;
     /*
     ||Validate Location Limit procedure
-        ||Check_lref_Ambig checks
-    
-	IF NOT(validate_location_limit(pi_item                 => 'locate.begin_mp'
-	                              ,pi_locate_mp            => 'BEGIN'
-	                              ,pi_ne_id                => :locate.ne_id
-                                ,pi_lref_max             => NULL
-                                ,pi_selected_ne_id_item  => 'locate.begin_sect'     
-                                ,pi_selected_offset_item => 'locate.begin_sect_offset'))
-  THEN
-    Go_Item('locate.begin_mp');
-    RAISE e_validation_error;
-  END IF;
-	
-	IF :locate.pnt_or_cont = 'C'
-		AND NOT(validate_location_limit(pi_item                 => 'locate.end_mp'
-	                                 ,pi_locate_mp            => 'END'
-	                                 ,pi_ne_id                => :locate.ne_id
-                                   ,pi_lref_max             => NULL
-                                   ,pi_selected_ne_id_item  => 'locate.end_sect'     
-                                   ,pi_selected_offset_item => 'locate.end_sect_offset'))
-  THEN
-    Go_Item('locate.end_mp');
-    RAISE e_validation_error;
-  END IF;
-	
-	IF :locate.begin_no IS NOT NULL
-		OR :locate.end_no IS NOT NULL
-	THEN
-	  validate_locate_nodes;
-	END IF;*/
-    
-    
-    
-    --todod
-    /*
-    ||Check relative start/end
     */
-    --to do below
-  	/*IF lv_pnt_or_cont = 'C' THEN
-      --check relative positions of start/end for continuous inventory
-      IF :locate.ne_datum = 'N'
-      THEN
-        nm3wrap.check_relative_start_end(pi_route        => pi_ne_id
-                                        ,pi_start_sect   => pi_locate.begin_sect
-                                        ,pi_start_offset => pi_begin_sect_offset
-                                        ,pi_end_sect     => pi_end_sect       
-                                        ,pi_end_offset   => pi_end_sect_offset);
-      ELSE
-        IF pi_begin_mp = pi_end_mp THEN
-          RAISE e_cont_start_equals_end;
-        ELSIF pi_begin_mp > pi_end_mp THEN
-          RAISE e_start_after_end;
-        END IF;
-      END IF;
-    END IF;*/
-    /*
-    ||Check sections for updates. Compare dates to see if any of sections have been modified?
-    */     
-    --todo?
-    
-	/*IF nm3net.is_nt_datum(lr_ne.ne_nt_type) = 'N'
-	THEN
-	  nm3wrap.create_temp_ne_from_route(pi_route                   => pi_ne_id
-                                       ,pi_start_ne_id             => :locate.begin_sect
-                                       ,pi_start_offset            => :locate.begin_sect_offset
-                                       ,pi_end_ne_id               => l_end_sect
-                                       ,pi_end_offset              => l_end_sect_offset
-                                       ,pi_sub_class               => get_locate_sub_class
-                                       ,pi_restrict_excl_sub_class => :locate.restrict_excl_sub_class
-                                       ,pi_homo_check              => TRUE
-                                       ,po_job_id                  => l_job_id);
-	ELSE*/
+	IF NOT(validate_location_limit(pi_itemvalue            => pi_begin_mp
+	                              ,pi_locate_mp            => 'BEGIN'
+	                              ,pi_ne_id                => pi_ne_id))
+    THEN
+      RAISE e_validation_error;
+    END IF;
+  	--
+	IF lv_pnt_or_cont = 'C' AND NOT(validate_location_limit(pi_itemvalue            => pi_end_mp
+	                                                       ,pi_locate_mp            => 'END'
+	                                                       ,pi_ne_id                => pi_ne_id))
+    THEN
+      RAISE e_validation_error;
+    END IF;
+    --
     nm3extent.create_temp_ne(pi_source_id => pi_ne_id
                             ,pi_source    => nm3extent.get_route
                             ,pi_begin_mp  => pi_begin_mp
                             ,pi_end_mp    => pi_end_mp
                             ,po_job_id    => l_job_id);
-	--END IF;    
+    
     RETURN l_job_id;
     --
-    
   EXCEPTION
     WHEN e_item_not_entered
     THEN
       hig.raise_ner(pi_appl               => 'NET'
                    ,pi_id                 => 29);   
+    WHEN e_validation_error
+    THEN
+      --
+      hig.raise_ner(pi_appl               => 'AWLRS'
+                   ,pi_id                 => 36);                    
   END get_network_location;
   
   --
@@ -384,6 +288,7 @@ AS
   -----------------------------------------------------------------------------
   -- 
   PROCEDURE get_asset(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                     ,pi_iit_inv_type     IN  nm_inv_items_all.iit_inv_type%TYPE
                      ,po_message_severity OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor   OUT sys_refcursor  
                      ,po_cursor           OUT sys_refcursor)
@@ -392,20 +297,17 @@ AS
    lr_iit nm_inv_items_all%ROWTYPE;
    --
   BEGIN
-    --
-    /*
-    ||pb todo pass in asset type on get_asset and use below to check exists,
-    ||chk_asset_exists(pi_iit_ne_id    => pi_iit_ne_id
-    ||                ,pi_nit_inv_type => )
-    */
-    --                    
+    --check asset exist
+    lr_iit := get_asset(pi_iit_ne_id    => pi_iit_ne_id
+                         ,pi_nit_inv_type => pi_iit_inv_type);
+    --                   
     OPEN po_cursor FOR
     SELECT  iit_ne_id
            ,iit_inv_type
            ,iit_primary_key
            ,iit_x_sect
 		   ,nm3user.get_username(iit_peo_invent_by_id)
-           ,iit_admin_unit  --PB TODO admin unit
+           ,iit_admin_unit
            ,nm3inv.get_nit_descr(iit_inv_type)
            ,iit_start_date
            ,iit_end_date
@@ -415,28 +317,18 @@ AS
    --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
+   --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
    --  
   END get_asset;
   --
   -----------------------------------------------------------------------------
-  --  
-  PROCEDURE chk_asset_exists(pi_iit_ne_id    IN nm_inv_items_all.iit_ne_id%TYPE
-                            ,pi_nit_inv_type IN nm_inv_types_all.nit_inv_type%TYPE)
-    IS
-    --
-    lr_asset  nm_inv_items_all%ROWTYPE;
-    --
-  BEGIN
-    /*
-    ||Make sure the asset exists.
-    */
-    lr_asset := get_asset(pi_iit_ne_id    => pi_iit_ne_id
-                         ,pi_nit_inv_type => pi_nit_inv_type);
-    --
-  END;  
-  --
-  -----------------------------------------------------------------------------
-  --  pb todo validate XSP needs plugging in when chosen.
+  -- .
+
   PROCEDURE check_xsp_validate (pi_iit_ne_id      IN nm_elements.ne_id%TYPE
                                ,pi_inv_type       IN nm_inv_items.iit_inv_type%TYPE
                                ,pi_iit_x_sect     IN xsp_restraints.xsr_x_sect_value%TYPE
@@ -544,7 +436,7 @@ AS
   EXCEPTION
     WHEN others
      THEN 
-        awlrs_util.handle_EXCEPTION(po_message_severity => po_message_severity
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);    
   END get_xsps;
   --
@@ -714,7 +606,10 @@ AS
                              ,po_message_severity    OUT    hig_codes.hco_code%TYPE
                              ,po_message_cursor      OUT    sys_refcursor)
   IS
-  BEGIN  --check user can update item
+  BEGIN  
+    /*
+    ||check user can update item
+    */
     IF NOT(invsec.is_inv_item_updatable(p_iit_inv_type           => pi_asset_type
   			                           ,p_iit_admin_unit         => pi_admin_unit
   			                           ,pi_unrestricted_override => FALSE))
@@ -724,8 +619,9 @@ AS
                                          ,pi_module   => :system.current_form))*/
   	THEN
   	  null;
-      --pbtodo THROW NER
+      --pb todo THROW NER
     END IF;
+    --
   END can_update_asset;
   
   PROCEDURE create_asset(pi_asset_type          IN     nm_inv_items_all.iit_inv_type%TYPE
@@ -736,7 +632,6 @@ AS
                         ,pi_start_date          IN     nm_inv_items_all.iit_start_date%TYPE
                         ,pi_end_date            IN     nm_inv_items_all.iit_end_date%TYPE
                         ,pi_notes               IN     VARCHAR2
-                        ,pi_commit              IN     VARCHAR2
                         ,pi_attrib_names        IN     attrib_name_tab
                         ,pi_attrib_scrn_texts   IN     attrib_scrn_text_tab
                         ,pi_attrib_char_values  IN     attrib_value_tab        
@@ -751,6 +646,8 @@ AS
     e_invalid_xsp_inv exception;
     PRAGMA EXCEPTION_INIT(e_invalid_xsp_inv, -20506);
   BEGIN
+    --
+    SAVEPOINT create_asset_sp;
     /*
     ||Create the asset.
     */
@@ -800,45 +697,404 @@ AS
                                          ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
-    WHEN e_invalid_xsp_inv
-     THEN
-       hig.raise_ner(pi_appl               => 'NET'
-                    ,pi_id                 => 44);
-    --
     WHEN others
      THEN
-        nm_debug.debug('awlrs_asset_api.create_asset EXCEPTION '||sqlerrm);         
-        awlrs_util.handle_EXCEPTION(po_message_severity => po_message_severity
+        ROLLBACK TO create_asset_sp;  
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);                                   
     --
   END create_asset;
-  --pb to do
+  --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE update_asset(pi_asset_type          IN     nm_inv_items_all.iit_inv_type%TYPE
-                        ,pi_primary_key         IN     nm_inv_items_all.iit_primary_key%TYPE
-                        ,pi_admin_unit          IN     nm_inv_items_all.iit_admin_unit%TYPE                       
-                        ,pi_xsp                 IN     nm_inv_items_all.iit_x_sect%TYPE                       
-                        ,pi_description         IN     nm_inv_items_all.iit_descr%TYPE
-                        ,pi_start_date          IN     nm_inv_items_all.iit_start_date%TYPE
-                        ,pi_end_date            IN     nm_inv_items_all.iit_end_date%TYPE
-                        ,pi_notes               IN     VARCHAR2
-                        ,pi_commit              IN     VARCHAR2
-                        ,pi_attrib_names        IN     attrib_name_tab
-                        ,pi_attrib_scrn_texts   IN     attrib_scrn_text_tab
-                        ,pi_attrib_char_values  IN     attrib_value_tab
+  PROCEDURE update_asset(pi_iit_ne_id               IN     nm_inv_items_all.iit_ne_id%TYPE
+                        ,pi_old_primary_key         IN     nm_inv_items_all.iit_primary_key%TYPE
+                        ,pi_old_admin_unit          IN     nm_inv_items_all.iit_admin_unit%TYPE                       
+                        ,pi_old_xsp                 IN     nm_inv_items_all.iit_x_sect%TYPE                       
+                        ,pi_old_description         IN     nm_inv_items_all.iit_descr%TYPE
+                        ,pi_old_start_date          IN     nm_inv_items_all.iit_start_date%TYPE
+                        ,pi_old_end_date            IN     nm_inv_items_all.iit_end_date%TYPE
+                        ,pi_old_notes               IN     VARCHAR2
+                        ,pi_new_primary_key         IN     nm_inv_items_all.iit_primary_key%TYPE
+                        ,pi_new_admin_unit          IN     nm_inv_items_all.iit_admin_unit%TYPE                       
+                        ,pi_new_xsp                 IN     nm_inv_items_all.iit_x_sect%TYPE                       
+                        ,pi_new_description         IN     nm_inv_items_all.iit_descr%TYPE
+                        ,pi_new_start_date          IN     nm_inv_items_all.iit_start_date%TYPE
+                        ,pi_new_end_date            IN     nm_inv_items_all.iit_end_date%TYPE
+                        ,pi_new_notes               IN     VARCHAR2
+                        ,pi_old_attributes          IN     flex_attr_tab
+                        ,pi_new_attributes          IN     flex_attr_tab)
+    IS
+    --
+    PROCEDURE get_db_rec(pi_iit_ne_id IN nm_elements_all.ne_id%TYPE)
+      IS
+    BEGIN
+      BEGIN
+        --
+        SELECT *
+          INTO g_db_iit_rec
+          FROM nm_inv_items_all
+         WHERE iit_ne_id = pi_iit_ne_id
+           FOR UPDATE NOWAIT
+             ;
+        --
+      EXCEPTION
+       WHEN no_data_found
+        THEN
+           hig.raise_ner(pi_appl => 'AWLRS'
+                        ,pi_id   => 37);
+      END;
+      --
+    END get_db_rec;
+    --
+    --
+    PROCEDURE compare_old_with_db
+      IS
+      --
+      lv_sql nm3type.max_varchar2;
+      --
+    BEGIN
+      /*
+      ||Check the fixed attributes, Description,primary key, admin unit, xsp,start date, end date
+      */
+      --
+      IF g_db_iit_rec.iit_descr != pi_old_description
+       OR (g_db_iit_rec.iit_descr IS NULL AND pi_old_description IS NOT NULL)
+       OR (g_db_iit_rec.iit_descr IS NOT NULL AND pi_old_description IS NULL)
+       --pk
+       OR (g_db_iit_rec.iit_primary_key != pi_old_primary_key)
+       OR (g_db_iit_rec.iit_primary_key IS NULL AND pi_old_primary_key IS NOT NULL)
+       OR (g_db_iit_rec.iit_primary_key IS NOT NULL AND pi_old_primary_key IS NULL)
+       --au
+       OR (g_db_iit_rec.iit_admin_unit != pi_old_admin_unit)
+       OR (g_db_iit_rec.iit_admin_unit IS NULL AND pi_old_admin_unit IS NOT NULL)
+       OR (g_db_iit_rec.iit_admin_unit IS NOT NULL AND pi_old_admin_unit IS NULL)
+       --xsp
+       OR (g_db_iit_rec.iit_x_sect != pi_old_xsp)
+       OR (g_db_iit_rec.iit_x_sect IS NULL AND pi_old_xsp IS NOT NULL)
+       OR (g_db_iit_rec.iit_x_sect IS NOT NULL AND pi_old_xsp IS NULL)
+       --sd
+       OR (g_db_iit_rec.iit_start_date != pi_old_start_date)
+       OR (g_db_iit_rec.iit_start_date IS NULL AND pi_old_start_date IS NOT NULL)
+       OR (g_db_iit_rec.iit_start_date IS NOT NULL AND pi_old_start_date IS NULL)
+       --ed
+       OR (g_db_iit_rec.iit_end_date != pi_old_end_date)
+       OR (g_db_iit_rec.iit_end_date IS NULL AND pi_old_end_date IS NOT NULL)
+       OR (g_db_iit_rec.iit_end_date IS NOT NULL AND pi_old_end_date IS NULL)
+       THEN
+          --Updated by another user
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 24);
+                       nm_debug.debug_off;
+      END IF;
+      --
+      /*
+      ||Check the flexible attributes 
+      */
+      FOR i IN 1..pi_old_attributes.count LOOP
+        --
+        lv_sql := NULL;
+        --
+        lv_sql := 'BEGIN'
+        ||CHR(10)||'  IF awlrs_asset_api.g_db_iit_rec.'||pi_old_attributes(i).attrib_name||' != awlrs_asset_api.g_old_iit_rec.'||pi_old_attributes(i).attrib_name
+        ||CHR(10)||'   OR (awlrs_asset_api.g_db_iit_rec.'||pi_old_attributes(i).attrib_name||' IS NULL AND awlrs_asset_api.g_old_iit_rec.'||pi_old_attributes(i).attrib_name||' IS NOT NULL)'
+        ||CHR(10)||'   OR (awlrs_asset_api.g_db_iit_rec.'||pi_old_attributes(i).attrib_name||' IS NOT NULL AND awlrs_asset_api.g_old_iit_rec.'||pi_old_attributes(i).attrib_name||' IS NULL)'
+        ||CHR(10)||'   THEN '
+        ||CHR(10)||'      hig.raise_ner(pi_appl => ''AWLRS'''
+        ||CHR(10)||'                   ,pi_id   => 24);'
+        ||CHR(10)||'  END IF;'
+        ||CHR(10)||'END;'
+        ;
+        --
+        IF lv_sql IS NOT NULL
+         THEN
+            EXECUTE IMMEDIATE lv_sql;
+        END IF;
+        --
+      END LOOP;
+      --
+    END compare_old_with_db;
+    --
+    PROCEDURE compare_old_with_new
+      IS
+      --
+      lv_sql              nm3type.max_varchar2;
+      lv_upd_sql          nm3type.max_varchar2 := 'DECLARE lr_iit nm_inv_items_all%ROWTYPE := awlrs_asset_api.g_new_iit_rec; BEGIN UPDATE nm_inv_items_all SET ';
+      lv_upd              VARCHAR2(1) := 'N';
+      --
+    BEGIN
+      --
+      IF g_old_iit_rec.iit_primary_key != g_new_iit_rec.iit_primary_key   
+       THEN
+          lv_upd_sql := lv_upd_sql||'iit_primary_key = lr_iit.iit_primary_key';
+          lv_upd := 'Y';
+      END IF;
+      --
+      IF g_old_iit_rec.iit_admin_unit != g_new_iit_rec.iit_admin_unit
+       THEN
+          IF lv_upd = 'Y' 
+           THEN
+             lv_upd_sql := lv_upd_sql || ', ';
+          END IF;
+          --
+          lv_upd_sql := lv_upd_sql||'iit_admin_unit = lr_iit.iit_admin_unit';
+          lv_upd := 'Y';
+      END IF;
+      --
+      IF g_old_iit_rec.iit_x_sect != g_new_iit_rec.iit_x_sect
+       OR (g_old_iit_rec.iit_x_sect IS NULL AND g_new_iit_rec.iit_x_sect IS NOT NULL)
+       OR (g_old_iit_rec.iit_x_sect IS NOT NULL AND g_new_iit_rec.iit_x_sect IS NULL)         
+       THEN
+          IF lv_upd = 'Y' 
+           THEN
+             lv_upd_sql := lv_upd_sql || ', ';
+          END IF;       
+          lv_upd_sql := lv_upd_sql||'iit_x_sect = lr_iit.iit_x_sect';
+          lv_upd := 'Y';
+      END IF;
+      --
+      nm_debug.debug('old:'||g_old_iit_rec.iit_descr);
+      nm_debug.debug('new:'||g_new_iit_rec.iit_descr);
+      IF g_old_iit_rec.iit_descr != g_new_iit_rec.iit_descr
+       OR (g_old_iit_rec.iit_descr IS NULL AND g_new_iit_rec.iit_descr IS NOT NULL)
+       OR (g_old_iit_rec.iit_descr IS NOT NULL AND g_new_iit_rec.iit_descr IS NULL)          
+       THEN
+          IF lv_upd = 'Y' 
+           THEN
+             lv_upd_sql := lv_upd_sql || ', ';
+          END IF;       
+          lv_upd_sql := lv_upd_sql||'iit_descr = lr_iit.iit_descr';
+          lv_upd := 'Y';
+      END IF;
+       nm_debug.debug('lv_upd:'||lv_upd);
+      --
+      IF g_old_iit_rec.iit_start_date != g_new_iit_rec.iit_start_date
+       THEN
+          IF lv_upd = 'Y' 
+           THEN
+             lv_upd_sql := lv_upd_sql || ', ';
+          END IF;       
+          lv_upd_sql := lv_upd_sql||'iit_start_date = lr_iit.iit_start_date';
+          lv_upd := 'Y';
+      END IF;
+      --
+      IF g_old_iit_rec.iit_end_date != g_new_iit_rec.iit_end_date
+       OR (g_old_iit_rec.iit_end_date IS NULL AND g_new_iit_rec.iit_end_date IS NOT NULL)
+       OR (g_old_iit_rec.iit_end_date IS NOT NULL AND g_new_iit_rec.iit_end_date IS NULL)       
+       THEN
+          IF lv_upd = 'Y' 
+           THEN
+             lv_upd_sql := lv_upd_sql || ', ';
+          END IF;       
+          lv_upd_sql := lv_upd_sql||'iit_end_date = lr_iit.iit_end_date';
+          lv_upd := 'Y';
+      END IF;
+      --
+      IF g_old_iit_rec.iit_note != g_new_iit_rec.iit_note
+       OR (g_old_iit_rec.iit_note IS NULL AND g_new_iit_rec.iit_note IS NOT NULL)
+       OR (g_old_iit_rec.iit_note IS NOT NULL AND g_new_iit_rec.iit_note IS NULL)         
+       THEN
+          IF lv_upd = 'Y' 
+           THEN
+             lv_upd_sql := lv_upd_sql || ', ';
+          END IF;       
+          lv_upd_sql := lv_upd_sql||'iit_note = lr_iit.iit_note';
+          lv_upd := 'Y';
+      END IF;      
+      --
+      FOR i IN 1..pi_new_attributes.count LOOP
+        --
+        lv_sql := NULL;
+        --
+        lv_sql := 'BEGIN IF awlrs_asset_api.g_old_iit_rec.'||pi_new_attributes(i).attrib_name||' != awlrs_asset_api.g_new_iit_rec.'||pi_new_attributes(i).attrib_name
+                ||' OR (awlrs_asset_api.g_old_iit_rec.'||pi_new_attributes(i).attrib_name||' IS NULL AND awlrs_asset_api.g_new_iit_rec.'||pi_new_attributes(i).attrib_name||' IS NOT NULL)'
+                ||' OR (awlrs_asset_api.g_old_iit_rec.'||pi_new_attributes(i).attrib_name||' IS NOT NULL AND awlrs_asset_api.g_new_iit_rec.'||pi_new_attributes(i).attrib_name||' IS NULL)'
+                ||' THEN :sql_out := :sql_in||'''||CASE WHEN lv_upd = 'Y' THEN ', ' ELSE NULL END||LOWER(pi_new_attributes(i).attrib_name)||' = lr_iit.'||LOWER(pi_new_attributes(i).attrib_name)||''';'
+                ||' :do_update := ''Y''; END IF; END;'
+        ;
+        EXECUTE IMMEDIATE lv_sql USING OUT lv_upd_sql, IN lv_upd_sql, OUT lv_upd;
+        --
+      END LOOP;
+      --
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      END IF;
+      --
+      IF lv_upd = 'Y'
+       THEN
+         /*
+         ||Complete and execute the asset update statement.
+         */
+         lv_upd_sql := lv_upd_sql||' WHERE iit_ne_id = :iit_ne_id; END;';
+         --
+         EXECUTE IMMEDIATE lv_upd_sql USING g_db_iit_rec.iit_ne_id;
+         --
+      END IF;
+      --
+    END compare_old_with_new;    
+    --
+  BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT upd_asset_sp;
+    /*
+    ||Init globals.
+    */
+    init_asset_globals;
+    /*
+    ||Get and Lock the record.
+    */
+    get_db_rec (pi_iit_ne_id => pi_iit_ne_id);
+    g_old_iit_rec := g_db_iit_rec;
+    g_new_iit_rec := g_db_iit_rec;
+    /*
+    ||Build and validate the records
+    */
+    --
+    g_old_iit_rec.iit_primary_key := pi_old_primary_key;
+    g_new_iit_rec.iit_primary_key := pi_new_primary_key;
+    --
+    g_old_iit_rec.iit_admin_unit := pi_old_admin_unit;
+    g_new_iit_rec.iit_admin_unit := pi_new_admin_unit;
+    --
+    g_old_iit_rec.iit_x_sect := pi_old_xsp;
+    g_new_iit_rec.iit_x_sect := pi_new_xsp;
+    --
+    g_old_iit_rec.iit_descr := pi_old_description;
+    g_new_iit_rec.iit_descr := pi_new_description;
+    --
+    g_old_iit_rec.iit_start_date := pi_old_start_date;
+    g_new_iit_rec.iit_start_date := pi_new_start_date;
+    --
+    g_old_iit_rec.iit_end_date := pi_old_end_date;
+    g_new_iit_rec.iit_end_date := pi_new_end_date;    
+    --
+    g_old_iit_rec.iit_note := pi_old_notes;
+    g_new_iit_rec.iit_note := pi_new_notes;       
+    --
+    build_asset_rec(pi_inv_type    => g_db_iit_rec.iit_inv_type
+                   ,pi_global     => 'awlrs_asset_api.g_old_iit_rec'
+                   ,pi_attributes => pi_old_attributes);
+    --
+    build_asset_rec(pi_inv_type    => g_db_iit_rec.iit_inv_type
+                   ,pi_global     => 'awlrs_asset_api.g_new_iit_rec'
+                   ,pi_attributes => pi_new_attributes);
+
+    /*
+    ||Compare old with DB.
+    */
+    compare_old_with_db;
+    /*
+    ||Compare new with old.
+    */
+    compare_old_with_new;
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        ROLLBACK TO upd_asset_sp;
+        RAISE;
+    --    
+    --
+  END update_asset;  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_asset(pi_iit_ne_id               IN     nm_inv_items_all.iit_ne_id%TYPE
+                        ,pi_asset_type              IN     nm_inv_items_all.iit_inv_type%TYPE
+                        ,pi_old_primary_key         IN     nm_inv_items_all.iit_primary_key%TYPE
+                        ,pi_old_admin_unit          IN     nm_inv_items_all.iit_admin_unit%TYPE                       
+                        ,pi_old_xsp                 IN     nm_inv_items_all.iit_x_sect%TYPE                       
+                        ,pi_old_description         IN     nm_inv_items_all.iit_descr%TYPE
+                        ,pi_old_start_date          IN     nm_inv_items_all.iit_start_date%TYPE
+                        ,pi_old_end_date            IN     nm_inv_items_all.iit_end_date%TYPE
+                        ,pi_old_notes               IN     VARCHAR2
+                        ,pi_new_primary_key         IN     nm_inv_items_all.iit_primary_key%TYPE
+                        ,pi_new_admin_unit          IN     nm_inv_items_all.iit_admin_unit%TYPE                       
+                        ,pi_new_xsp                 IN     nm_inv_items_all.iit_x_sect%TYPE                       
+                        ,pi_new_description         IN     nm_inv_items_all.iit_descr%TYPE
+                        ,pi_new_start_date          IN     nm_inv_items_all.iit_start_date%TYPE
+                        ,pi_new_end_date            IN     nm_inv_items_all.iit_end_date%TYPE
+                        ,pi_new_notes               IN     VARCHAR2
+                        ,pi_old_attrib_names        IN     attrib_name_tab
+                        ,pi_attrib_names            IN     attrib_name_tab                        
+                        ,pi_old_attrib_scrn_texts   IN     attrib_scrn_text_tab                        
+                        ,pi_attrib_scrn_texts       IN     attrib_scrn_text_tab
+                        ,pi_old_attrib_char_values  IN     attrib_value_tab
+                        ,pi_new_attrib_char_values  IN     attrib_value_tab
                         ,po_message_severity       OUT hig_codes.hco_code%TYPE
                         ,po_message_cursor         OUT sys_refcursor)
     IS
+    --
+    lt_old_asset_attribs  flex_attr_tab;
+    lt_new_asset_attribs  flex_attr_tab;
+    --
+    lr_nit nm_inv_types%ROWTYPE;
   BEGIN
     --
-    null;
+    IF pi_old_attrib_names.COUNT != pi_old_attrib_scrn_texts.COUNT
+     OR pi_old_attrib_names.COUNT != pi_old_attrib_char_values.COUNT
+     OR pi_old_attrib_names.COUNT != pi_attrib_names.COUNT
+     OR pi_old_attrib_names.COUNT != pi_attrib_scrn_texts.COUNT
+     OR pi_old_attrib_names.COUNT != pi_new_attrib_char_values.COUNT
+     THEN
+        --The attribute tables passed in must have matching row counts
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_element_api.create_element');
+    END IF;
+    --
+    lr_nit := nm3get.get_nit(pi_asset_type);	      
+    IF pi_new_end_date IS NOT NULL AND pi_old_end_date IS NULL AND lr_nit.nit_contiguous = 'Y'
+    THEN
+      hig.raise_ner(pi_appl => 'NET'
+                   ,pi_id   => 125);  
+      --
+    END IF;          
+    --
+    FOR i IN 1..pi_old_attrib_names.COUNT LOOP
+      --
+      lt_old_asset_attribs(i).attrib_name := pi_old_attrib_names(i);
+      lt_old_asset_attribs(i).scrn_text   := pi_old_attrib_scrn_texts(i);
+      lt_old_asset_attribs(i).char_value  := pi_old_attrib_char_values(i);
+      --
+      lt_new_asset_attribs(i).attrib_name := pi_attrib_names(i);
+      lt_new_asset_attribs(i).scrn_text   := pi_attrib_scrn_texts(i);
+      lt_new_asset_attribs(i).char_value  := pi_new_attrib_char_values(i);
+      --
+    END LOOP;
+    --
+    update_asset(pi_iit_ne_id               =>  pi_iit_ne_id
+                ,pi_old_primary_key         =>  pi_old_primary_key
+                ,pi_old_admin_unit          =>  pi_old_admin_unit
+                ,pi_old_xsp                 =>  pi_old_xsp           
+                ,pi_old_description         =>  pi_old_description
+                ,pi_old_start_date          =>  pi_old_start_date
+                ,pi_old_end_date            =>  pi_old_end_date
+                ,pi_old_notes               =>  pi_old_notes
+                ,pi_new_primary_key         =>  pi_new_primary_key
+                ,pi_new_admin_unit          =>  pi_new_admin_unit
+                ,pi_new_xsp                 =>  pi_new_xsp     
+                ,pi_new_description         =>  pi_new_description
+                ,pi_new_start_date          =>  pi_new_start_date
+                ,pi_new_end_date            =>  pi_new_end_date
+                ,pi_new_notes               =>  pi_new_notes
+                ,pi_old_attributes          =>  lt_old_asset_attribs
+                ,pi_new_attributes          =>  lt_new_asset_attribs);              
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
-    --    
-    --
-  END;  
+    --  
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_asset;
   --
   -----------------------------------------------------------------------------
   --
@@ -911,9 +1167,9 @@ AS
   --
   -------
   --  
-  PROCEDURE add_asset_location(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+  PROCEDURE add_asset_location(pi_iit              IN  nm_inv_items_all%ROWTYPE
                               ,pi_nit_inv_type     IN  nm_inv_types_all.nit_inv_type%TYPE
-                              ,pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                              ,pi_ne               IN  nm_elements_all%ROWTYPE
                               ,pi_begin_mp         IN  nm_members_all.nm_begin_mp%TYPE
                               ,pi_end_mp           IN  nm_members_all.nm_end_mp%TYPE
                               ,pi_startdate        IN  nm_members_all.nm_start_date%TYPE
@@ -929,9 +1185,7 @@ AS
     lv_no_overlaps_job_id  NUMBER;
     lv_warning_code        VARCHAR2(1000);
     lv_warning_msg         VARCHAR2(1000);
-    --    
-    lr_ne nm_elements%ROWTYPE;    
-    lr_iit nm_inv_items_all%ROWTYPE;
+
     --
     e_no_permission EXCEPTION;
 	e_item_not_entered EXCEPTION;
@@ -1050,27 +1304,23 @@ AS
     l_geom mdsys.sdo_geometry; 
   BEGIN
     --
-    lr_iit := get_asset(pi_iit_ne_id    => pi_iit_ne_id
-                       ,pi_nit_inv_type => pi_nit_inv_type);
-    --
-    lr_ne := nm3net.get_ne(pi_ne_id);
-    --
-    IF lr_ne.ne_id IS NULL THEN
+    IF pi_ne.ne_id IS NULL THEN
   	  RAISE e_item_not_entered;    
     END IF;
     --
-    lv_is_datum := nm3net.is_nt_datum(lr_ne.ne_nt_type);
+    lv_is_datum := nm3net.is_nt_datum(pi_ne.ne_nt_type);
     --    
     /*
-    ||create temp_ne based on validation same as form. some todo
+    ||create temp_ne 
     */
-    --    
-    lv_job_id := get_network_location(pi_iit_ne_id        =>  pi_iit_ne_id
+    -- 
+    lv_job_id := get_network_location(pi_iit_ne_id        =>  pi_iit.iit_ne_id
                                      ,pi_nit_inv_type     =>  pi_nit_inv_type
-                                     ,pi_ne_id            =>  pi_ne_id
+                                     ,pi_ne_id            =>  pi_ne.ne_id
                                      ,pi_begin_mp         =>  pi_begin_mp
                                      ,pi_end_mp           =>  pi_end_mp
                                      ,pi_startdate        =>  pi_startdate);
+                            
     /*                            
     ||check temp ne is valid for homo update
     */
@@ -1084,7 +1334,7 @@ AS
       /*
       ||get_existing
       */
-      nm3extent.create_temp_ne(pi_source_id => pi_iit_ne_id
+      nm3extent.create_temp_ne(pi_source_id => pi_iit.iit_ne_id
                               ,pi_source    => nm3extent.get_route
                               ,pi_begin_mp  => NULL
                               ,pi_end_mp    => NULL
@@ -1101,15 +1351,15 @@ AS
     lv_no_overlaps_job_id := nm3extent.remove_overlaps(pi_nte_id => lv_job_id);
     --
     nm3homo.homo_update(p_temp_ne_id_in  => lv_no_overlaps_job_id
-                       ,p_iit_ne_id      => pi_iit_ne_id
+                       ,p_iit_ne_id      => pi_iit.iit_ne_id
                        ,p_effective_date => TRUNC(pi_startdate) 
                        ,p_warning_code   => lv_warning_code
                        ,p_warning_msg    => lv_warning_msg);
     --
     check_contiguity(pi_asset_type   => pi_nit_inv_type
                     ,pi_datum        => lv_is_datum
-                    ,pi_ne_id        => pi_ne_id
-                    ,pi_x_sect       => lr_iit.iit_x_sect
+                    ,pi_ne_id        => pi_ne.ne_id
+                    ,pi_x_sect       => pi_iit.iit_x_sect
                     ,pi_warning_code => lv_warning_code);
 
     --                    
@@ -1279,13 +1529,59 @@ AS
       hig.raise_ner(pi_appl => 'HIG'
                    ,pi_id   => 88);  
      
+    /*WHEN OTHERS
+  	THEN
+      awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                 ,po_cursor           => po_message_cursor);*/
+  
+    --
+  END add_asset_location; 
+
+  PROCEDURE add_asset_location(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                              ,pi_nit_inv_type     IN  nm_inv_types_all.nit_inv_type%TYPE
+                              ,pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                              ,pi_begin_mp         IN  nm_members_all.nm_begin_mp%TYPE
+                              ,pi_end_mp           IN  nm_members_all.nm_end_mp%TYPE
+                              ,pi_startdate        IN  nm_members_all.nm_start_date%TYPE
+                              ,pi_append_replace   IN  VARCHAR2
+                              ,po_message_severity OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT  sys_refcursor)
+    IS
+    --
+    lr_ne nm_elements%ROWTYPE;    
+    lr_iit nm_inv_items_all%ROWTYPE;
+    --    
+  BEGIN
+    --
+    lr_iit := get_asset(pi_iit_ne_id    => pi_iit_ne_id
+                       ,pi_nit_inv_type => pi_nit_inv_type);
+    --
+    lr_ne := nm3net.get_ne(pi_ne_id);
+    --
+    add_asset_location(pi_iit              => lr_iit
+                      ,pi_ne               => lr_ne
+                      ,pi_nit_inv_type     => pi_nit_inv_type
+                      ,pi_begin_mp         => pi_begin_mp
+                      ,pi_end_mp           => pi_end_mp
+                      ,pi_startdate        => pi_startdate
+                      ,pi_append_replace   => pi_append_replace
+                      ,po_message_severity => po_message_severity
+                      ,po_message_cursor   => po_message_cursor);
+ 
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);    
+
+  EXCEPTION  
     WHEN OTHERS
   	THEN
-      awlrs_util.handle_EXCEPTION(po_message_severity => po_message_severity
+        nm_Debug.debug('exception handling?');
+      awlrs_util.handle_exception(po_message_severity => po_message_severity
                                  ,po_cursor           => po_message_cursor);
   
     --
   END add_asset_location; 
+  
   --
   -------
   --
@@ -1473,7 +1769,7 @@ AS
       --
     WHEN others
      THEN
-        awlrs_util.handle_EXCEPTION(po_message_severity => po_message_severity
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END location_enddate;
   --
@@ -1482,9 +1778,11 @@ AS
   /*
   ||to do
   ||pb to do throughout. ROLLBACK when raising ners. UI to handle commits. get rid of ex
+  ||wrap any ners and only ahve when others handle_exception.
+  ||look at mikes recalibrate and element api for examples.
   ||to do
   */
-  PROCEDURE asset_enddate(pi_iit_ne_id        IN nm_inv_items_all.iit_ne_id%TYPE
+  /*PROCEDURE asset_enddate(pi_iit_ne_id        IN nm_inv_items_all.iit_ne_id%TYPE
                          ,pi_asset_type       IN nm_inv_items_all.iit_inv_type%TYPE
                          ,pi_end_date         IN DATE
                          ,po_message_severity OUT hig_codes.hco_code%TYPE
@@ -1516,11 +1814,26 @@ AS
   EXCEPTION
     WHEN others
      THEN
-        awlrs_util.handle_EXCEPTION(po_message_severity => po_message_severity
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END asset_enddate; 
+  END asset_enddate; */
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_locations(pi_iit_ne_id IN  nm_inv_items_all.iit_ne_id%TYPE
+                         ,po_cursor    OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT *
+      FROM nm_members
+     WHERE nm_ne_id_in = pi_iit_ne_id
+       AND nm_type = 'I'
+     ORDER
+        BY nm_seq_no
+         ;
+    --
+  END get_locations;
 END awlrs_asset_api;
 /
