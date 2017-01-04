@@ -1,19 +1,19 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.3   22 Nov 2016 18:21:48   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.4   Jan 04 2017 14:31:16   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   22 Nov 2016 18:21:48  $
---       Date fetched Out : $Modtime:   22 Nov 2016 18:01:44  $
---       Version          : $Revision:   1.3  $
+--       Date into PVCS   : $Date:   Jan 04 2017 14:31:16  $
+--       Date fetched Out : $Modtime:   Jan 04 2017 13:58:32  $
+--       Version          : $Revision:   1.4  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 22-NOV-2016 18:01
+--       Generation Date  : 04-JAN-2017 13:58
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
 --
 -------------------------------------------------------------------------
---   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
 --
 --   TABLES PROCESSED
@@ -687,6 +687,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 36);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,37
+      ,null
+      ,'Invalid Asset Id supplied'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 37);
 --
 ----------------------------------------------------------------------------------------
 --
