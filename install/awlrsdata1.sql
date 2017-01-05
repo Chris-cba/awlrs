@@ -1,19 +1,19 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.1   07 Oct 2016 18:57:02   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.2   Jan 05 2017 11:09:30   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   07 Oct 2016 18:57:02  $
---       Date fetched Out : $Modtime:   07 Oct 2016 18:54:32  $
---       Version          : $Revision:   1.1  $
+--       Date into PVCS   : $Date:   Jan 05 2017 11:09:30  $
+--       Date fetched Out : $Modtime:   Jan 05 2017 11:08:36  $
+--       Version          : $Revision:   1.2  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 07-OCT-2016 18:54
+--       Generation Date  : 05-JAN-2017 11:08
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
 --
 -------------------------------------------------------------------------
---   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
 --
 --   TABLES PROCESSED
@@ -54,7 +54,7 @@ INSERT
       ,HPR_SEQUENCE)
 SELECT 'AWLRS'
       ,'Assetwise Linear Referencing Services'
-      ,'4.7.0.0'
+      ,'1.0.0.0'
       ,''
       ,null
       ,null
@@ -138,7 +138,7 @@ INSERT
 SELECT 'AWLMAPNAME'
       ,'AWLRS'
       ,'AWLRS Map Name'
-      ,'The name of the base map to be used by Assetwise Linear Referencing Services.'
+      ,'The name of the base map to be used by AWLRS.'
       ,''
       ,'VARCHAR2'
       ,'N'
