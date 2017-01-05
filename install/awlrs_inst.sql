@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_inst.sql-arc   1.0   26 Sep 2016 18:20:42   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_inst.sql-arc   1.1   Jan 05 2017 11:10:20   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrs_inst.sql  $
---       Date into PVCS   : $Date:   26 Sep 2016 18:20:42  $
---       Date fetched Out : $Modtime:   26 Sep 2016 17:07:38  $
---       Version          : $Revision:   1.0  $
+--       Date into PVCS   : $Date:   Jan 05 2017 11:10:20  $
+--       Date fetched Out : $Modtime:   Jan 05 2017 10:33:08  $
+--       Version          : $Revision:   1.1  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
@@ -58,7 +58,7 @@ START '&run_file'
 SET term ON
 --
 PROMPT
-PROMPT About to install Assetwise Linear Referencing Services using exor base : &exor_base
+PROMPT About to install AssetWise ALIM Linear Referencing Services using exor base : &exor_base
 PROMPT
 ACCEPT ok_res PROMPT "OK to Continue with this setting ? (Y/N) "
 --
