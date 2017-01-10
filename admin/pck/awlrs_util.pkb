@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.8   15 Dec 2016 09:47:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.9   10 Jan 2017 15:31:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   15 Dec 2016 09:47:50  $
-  --       Date fetched Out : $Modtime:   15 Dec 2016 09:11:34  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   10 Jan 2017 15:31:28  $
+  --       Date fetched Out : $Modtime:   10 Jan 2017 14:14:10  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -151,14 +151,20 @@ AS
     ELSIF pi_inv_or_ne = 'NE'
      THEN
         --
-        SELECT ntc_column_type
-              ,ntc_format
-          INTO po_datatype
-              ,po_format
-          FROM nm_type_columns
-         WHERE ntc_nt_type = pi_obj_type
-           AND ntc_column_name = pi_column_name
-             ;
+        IF pi_column_name = 'NE_UNIQUE'
+         THEN
+            po_datatype := 'VARCHAR2';
+            po_format := NULL;
+        ELSE
+            SELECT ntc_column_type
+                  ,ntc_format
+              INTO po_datatype
+                  ,po_format
+              FROM nm_type_columns
+             WHERE ntc_nt_type = pi_obj_type
+               AND ntc_column_name = pi_column_name
+                 ;
+        END IF;
         --
     ELSE
         RAISE no_data_found;
