@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.0   15 Dec 2016 18:45:02   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.1   11 Jan 2017 15:54:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkb  $
-  --       Date into PVCS   : $Date:   15 Dec 2016 18:45:02  $
-  --       Date fetched Out : $Modtime:   15 Dec 2016 17:55:50  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   11 Jan 2017 15:54:48  $
+  --       Date fetched Out : $Modtime:   10 Jan 2017 17:19:22  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reshape_api';
   --
@@ -130,6 +130,7 @@ AS
     IS
     --
     lv_message_cursor  sys_refcursor;
+    lv_new_ne_id       nm_elements_all.ne_id%TYPE;
     --
     lt_messages  awlrs_util.message_tab;
     --
@@ -139,6 +140,7 @@ AS
                                           ,pi_start_point       => pi_recal_start_point
                                           ,pi_new_length_to_end => pi_recal_new_length_to_end
                                           ,pi_reason            => pi_reason
+                                          ,po_new_ne_id         => lv_new_ne_id
                                           ,po_message_severity  => po_message_severity
                                           ,po_message_cursor    => lv_message_cursor);
     --
