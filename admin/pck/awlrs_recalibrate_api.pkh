@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_recalibrate_api.pkh-arc   1.0   14 Nov 2016 13:51:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_recalibrate_api.pkh-arc   1.1   11 Jan 2017 15:55:26   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_recalibrate_api.pkh  $
-  --       Date into PVCS   : $Date:   14 Nov 2016 13:51:28  $
-  --       Date fetched Out : $Modtime:   14 Nov 2016 13:01:22  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   11 Jan 2017 15:55:26  $
+  --       Date fetched Out : $Modtime:   10 Jan 2017 17:47:16  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
 
   --
   -----------------------------------------------------------------------------
@@ -32,12 +32,17 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE do_recalibration(pi_ne_id             IN  nm_elements_all.ne_id%TYPE
-                            ,pi_start_point       IN  NUMBER
-                            ,pi_new_length_to_end IN  NUMBER
-                            ,pi_reason            IN  nm_element_history.neh_descr%TYPE DEFAULT NULL
-                            ,po_message_severity  OUT hig_codes.hco_code%TYPE
-                            ,po_message_cursor    OUT sys_refcursor);
+  PROCEDURE do_recalibration(pi_ne_id                    IN     nm_elements_all.ne_id%TYPE
+                            ,pi_start_point              IN     NUMBER
+                            ,pi_new_length_to_end        IN     NUMBER
+                            ,pi_reason                   IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
+                            ,pi_maintain_history         IN     VARCHAR2 DEFAULT 'N'
+                            ,pi_new_element_column_names IN     awlrs_element_api.attrib_column_name_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_column_name_tab)
+                            ,pi_new_element_prompts      IN     awlrs_element_api.attrib_prompt_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_prompt_tab)
+                            ,pi_new_element_char_values  IN     awlrs_element_api.attrib_char_value_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_char_value_tab)
+                            ,po_new_ne_id                IN OUT nm_elements_all.ne_id%TYPE
+                            ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor              OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
