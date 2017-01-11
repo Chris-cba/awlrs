@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.13   21 Dec 2016 18:49:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.14   11 Jan 2017 11:30:34   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   21 Dec 2016 18:49:44  $
-  --       Date fetched Out : $Modtime:   21 Dec 2016 18:37:20  $
-  --       Version          : $Revision:   1.13  $
+  --       Date into PVCS   : $Date:   11 Jan 2017 11:30:34  $
+  --       Date fetched Out : $Modtime:   11 Jan 2017 11:28:54  $
+  --       Version          : $Revision:   1.14  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -898,6 +898,7 @@ AS
           ,CAST(max_value AS NUMBER(11,3)) max_value
           ,field_case
           ,CAST(domain_id AS VARCHAR2(40)) domain_id
+          ,CAST(sql_based_domain AS VARCHAR2(1)) sql_based_domain
           ,CAST(domain_bind_column AS VARCHAR2(30)) domain_bind_column
           ,CAST(char_value AS VARCHAR2(500)) char_value
           ,required
@@ -913,6 +914,7 @@ AS
                   ,NULL        max_value
                   ,'UPPER'     field_case
                   ,NULL        domain_id
+                  ,'N'         sql_based_domain
                   ,NULL        domain_bind_column
                   ,NULL        char_value
                   ,'Y'         required
@@ -956,6 +958,13 @@ AS
                                                                 ,pi_column_name => ntc_column_name)
                          END
                    END domain_id
+                  ,CASE
+                     WHEN ntc_query IS NOT NULL
+                      THEN
+                         'Y'
+                     ELSE
+                         'N'
+                   END sql_based_domain
                   ,REPLACE(nm3flx.extract_bind_variable(domain_sql),':',NULL) domain_bind_column
                   ,awlrs_element_api.get_nt_flx_col_value(pi_ne_id       => pi_ne_id
                                                          ,pi_column_name => ntc_column_name
@@ -1000,6 +1009,7 @@ AS
                   ,ita_max           max_value
                   ,ita_case          field_case
                   ,ita_id_domain     domain_id
+                  ,'N'               sql_based_domain
                   ,NULL              domain_bind_column
                   ,nm3inv.get_attrib_value(p_ne_id       => adlink.nad_iit_ne_id
                                           ,p_attrib_name => ita_attrib_name) char_value
