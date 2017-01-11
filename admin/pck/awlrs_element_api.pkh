@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.7   16 Dec 2016 00:04:06   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.8   11 Jan 2017 11:30:32   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   16 Dec 2016 00:04:06  $
-  --       Date fetched Out : $Modtime:   13 Dec 2016 18:09:58  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   11 Jan 2017 11:30:32  $
+  --       Date fetched Out : $Modtime:   11 Jan 2017 11:08:38  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
   --
   g_db_element   nm_elements_all%ROWTYPE;
   g_old_element  nm_elements_all%ROWTYPE;
@@ -66,6 +66,7 @@ AS
                               ,max_value          NUMBER(11,3)
                               ,field_case         VARCHAR2(5)
                               ,domain_id          VARCHAR2(40)
+                              ,sql_based_domain   VARCHAR2(1)
                               ,domain_bind_column nm_type_columns.ntc_column_name%TYPE
                               ,char_value         VARCHAR2(500)
                               ,required           nm_type_columns.ntc_mandatory%TYPE
