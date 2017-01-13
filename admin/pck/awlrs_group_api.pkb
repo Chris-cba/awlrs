@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.2   15 Dec 2016 23:59:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.3   13 Jan 2017 11:28:46   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   15 Dec 2016 23:59:18  $
-  --       Date fetched Out : $Modtime:   15 Dec 2016 23:49:30  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   13 Jan 2017 11:28:46  $
+  --       Date fetched Out : $Modtime:   13 Jan 2017 11:27:20  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -162,7 +162,7 @@ AS
     l_nm_rec.nm_obj_type   := pi_group_rec.ne_gty_group_type;
     l_nm_rec.nm_start_date := NVL(pi_start_date,GREATEST(pi_group_rec.ne_start_date,l_mem_ne_rec.ne_start_date));
     --
-    IF nm3net.is_gty_partial (pi_group_rec.ne_nt_type) = 'Y'
+    IF nm3net.is_gty_partial (pi_group_rec.ne_gty_group_type) = 'Y'
      THEN
         l_nm_rec.nm_begin_mp := pi_mem_begin_mp;
         l_nm_rec.nm_end_mp   := pi_mem_end_mp;
@@ -171,7 +171,7 @@ AS
         l_nm_rec.nm_end_mp   := NVL(pi_mem_end_mp,NVL(nm3net.get_ne_length(pi_mem_ne_id),0));
     END IF;
     /*
-    IF nm3net.is_nt_linear (l_group_ne_rec.ne_nt_type) = 'Y'
+    IF nm3net.is_nt_linear (l_group_ne_rec.ne_gty_group_type) = 'Y'
      THEN
         l_nm_rec.nm_slk := nm3net.get_new_slk(p_parent_ne_id => l_nm_rec.nm_ne_id_in
                                              ,p_no_start_new => l_mem_ne_rec.ne_no_start
