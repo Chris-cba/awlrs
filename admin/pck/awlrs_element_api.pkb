@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.14   11 Jan 2017 11:30:34   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.15   18 Jan 2017 17:09:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   11 Jan 2017 11:30:34  $
-  --       Date fetched Out : $Modtime:   11 Jan 2017 11:28:54  $
-  --       Version          : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   18 Jan 2017 17:09:56  $
+  --       Date fetched Out : $Modtime:   18 Jan 2017 17:08:10  $
+  --       Version          : $Revision:   1.15  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -916,9 +916,17 @@ AS
                   ,NULL        domain_id
                   ,'N'         sql_based_domain
                   ,NULL        domain_bind_column
-                  ,NULL        char_value
+                  ,CASE
+                     WHEN pi_ne_id IS NOT NULL
+                      THEN
+                         (SELECT ne_unique
+                            FROM nm_elements_all
+                           WHERE ne_id = pi_ne_id)
+                     ELSE
+                         NULL
+                   END char_value
                   ,'Y'         required
-                  ,'Y'         updateable
+                  ,'N'         updateable
                   ,0           seq_no
               FROM nm_types
              WHERE nt_type = pi_nt_type
@@ -1956,41 +1964,49 @@ AS
       ||Check the flexible attributes (Element and AD Asset).
       */
       FOR i IN 1..pi_old_attributes.count LOOP
-        --
-        lv_sql := NULL;
-        --
-        IF SUBSTR(pi_old_attributes(i).column_name,1,3) = 'NE_'
+        /*
+        ||Ignore NE_UNIQUE as it is not updatable.
+        */
+        IF pi_old_attributes(i).column_name != 'NE_UNIQUE'
          THEN
-            lv_sql := 'BEGIN'
-           ||CHR(10)||'  IF awlrs_element_api.g_db_element.'||pi_old_attributes(i).column_name||' != awlrs_element_api.g_old_element.'||pi_old_attributes(i).column_name
-           ||CHR(10)||'   OR (awlrs_element_api.g_db_element.'||pi_old_attributes(i).column_name||' IS NULL AND awlrs_element_api.g_old_element.'||pi_old_attributes(i).column_name||' IS NOT NULL)'
-           ||CHR(10)||'   OR (awlrs_element_api.g_db_element.'||pi_old_attributes(i).column_name||' IS NOT NULL AND awlrs_element_api.g_old_element.'||pi_old_attributes(i).column_name||' IS NULL)'
-           ||CHR(10)||'   THEN '
-           ||CHR(10)||'      hig.raise_ner(pi_appl => ''AWLRS'''
-           ||CHR(10)||'                   ,pi_id   => 24);'
-           ||CHR(10)||'  END IF;'
-           ||CHR(10)||'END;'
-            ;
-        ELSIF SUBSTR(pi_old_attributes(i).column_name,1,4) = 'IIT_'
-         THEN
-            lv_sql := 'BEGIN'
-           ||CHR(10)||'  IF awlrs_element_api.g_db_prim_ad_asset.'||pi_old_attributes(i).column_name||' != awlrs_element_api.g_old_prim_ad_asset.'||pi_old_attributes(i).column_name
-           ||CHR(10)||'   OR (awlrs_element_api.g_db_prim_ad_asset.'||pi_old_attributes(i).column_name||' IS NULL AND awlrs_element_api.g_old_prim_ad_asset.'||pi_old_attributes(i).column_name||' IS NOT NULL)'
-           ||CHR(10)||'   OR (awlrs_element_api.g_db_prim_ad_asset.'||pi_old_attributes(i).column_name||' IS NOT NULL AND awlrs_element_api.g_old_prim_ad_asset.'||pi_old_attributes(i).column_name||' IS NULL)'
-           ||CHR(10)||'   THEN '
-           ||CHR(10)||'      hig.raise_ner(pi_appl => ''AWLRS'''
-           ||CHR(10)||'                   ,pi_id   => 24);'
-           ||CHR(10)||'  END IF;'
-           ||CHR(10)||'END;'
-            ;
-        END IF;
-        --
-        IF lv_sql IS NOT NULL
-         THEN
-            EXECUTE IMMEDIATE lv_sql;
+          --
+          lv_sql := NULL;
+          --
+          IF SUBSTR(pi_old_attributes(i).column_name,1,3) = 'NE_'
+           THEN
+              lv_sql := 'BEGIN'
+             ||CHR(10)||'  IF awlrs_element_api.g_db_element.'||pi_old_attributes(i).column_name||' != awlrs_element_api.g_old_element.'||pi_old_attributes(i).column_name
+             ||CHR(10)||'   OR (awlrs_element_api.g_db_element.'||pi_old_attributes(i).column_name||' IS NULL AND awlrs_element_api.g_old_element.'||pi_old_attributes(i).column_name||' IS NOT NULL)'
+             ||CHR(10)||'   OR (awlrs_element_api.g_db_element.'||pi_old_attributes(i).column_name||' IS NOT NULL AND awlrs_element_api.g_old_element.'||pi_old_attributes(i).column_name||' IS NULL)'
+             ||CHR(10)||'   THEN '
+             ||CHR(10)||'      hig.raise_ner(pi_appl => ''AWLRS'''
+             ||CHR(10)||'                   ,pi_id   => 24);'
+             ||CHR(10)||'  END IF;'
+             ||CHR(10)||'END;'
+              ;
+          ELSIF SUBSTR(pi_old_attributes(i).column_name,1,4) = 'IIT_'
+           THEN
+              lv_sql := 'BEGIN'
+             ||CHR(10)||'  IF awlrs_element_api.g_db_prim_ad_asset.'||pi_old_attributes(i).column_name||' != awlrs_element_api.g_old_prim_ad_asset.'||pi_old_attributes(i).column_name
+             ||CHR(10)||'   OR (awlrs_element_api.g_db_prim_ad_asset.'||pi_old_attributes(i).column_name||' IS NULL AND awlrs_element_api.g_old_prim_ad_asset.'||pi_old_attributes(i).column_name||' IS NOT NULL)'
+             ||CHR(10)||'   OR (awlrs_element_api.g_db_prim_ad_asset.'||pi_old_attributes(i).column_name||' IS NOT NULL AND awlrs_element_api.g_old_prim_ad_asset.'||pi_old_attributes(i).column_name||' IS NULL)'
+             ||CHR(10)||'   THEN '
+             ||CHR(10)||'      hig.raise_ner(pi_appl => ''AWLRS'''
+             ||CHR(10)||'                   ,pi_id   => 24);'
+             ||CHR(10)||'  END IF;'
+             ||CHR(10)||'END;'
+              ;
+          END IF;
+          --
+          IF lv_sql IS NOT NULL
+           THEN
+              EXECUTE IMMEDIATE lv_sql;
+          END IF;
+          --
         END IF;
         --
       END LOOP;
+      --
     END compare_old_with_db;
     --
     PROCEDURE compare_old_with_new
@@ -2011,28 +2027,35 @@ AS
       END IF;
       --
       FOR i IN 1..pi_new_attributes.count LOOP
-        --
-        lv_sql := NULL;
-        --
-        IF SUBSTR(pi_new_attributes(i).column_name,1,3) = 'NE_'
+        /*
+        ||Ignore NE_UNIQUE as it is not updatable.
+        */
+        IF pi_old_attributes(i).column_name != 'NE_UNIQUE'
          THEN
-            lv_sql := 'BEGIN IF awlrs_element_api.g_old_element.'||pi_new_attributes(i).column_name||' != awlrs_element_api.g_new_element.'||pi_new_attributes(i).column_name
-                    ||' OR (awlrs_element_api.g_old_element.'||pi_new_attributes(i).column_name||' IS NULL AND awlrs_element_api.g_new_element.'||pi_new_attributes(i).column_name||' IS NOT NULL)'
-                    ||' OR (awlrs_element_api.g_old_element.'||pi_new_attributes(i).column_name||' IS NOT NULL AND awlrs_element_api.g_new_element.'||pi_new_attributes(i).column_name||' IS NULL)'
-                    ||' THEN :sql_out := :sql_in||'''||CASE WHEN lv_upd_element = 'Y' THEN ', ' ELSE NULL END||LOWER(pi_new_attributes(i).column_name)||' = lr_ne.'||LOWER(pi_new_attributes(i).column_name)||''';'
-                    ||' :do_update := ''Y''; END IF; END;'
-            ;
-            EXECUTE IMMEDIATE lv_sql USING OUT lv_upd_element_sql, IN lv_upd_element_sql, OUT lv_upd_element;
             --
-        ELSIF SUBSTR(pi_new_attributes(i).column_name,1,4) = 'IIT_'
-         THEN
-            lv_sql := 'BEGIN IF awlrs_element_api.g_old_prim_ad_asset.'||pi_new_attributes(i).column_name||' != awlrs_element_api.g_new_prim_ad_asset.'||pi_new_attributes(i).column_name
-                    ||' OR (awlrs_element_api.g_old_prim_ad_asset.'||pi_new_attributes(i).column_name||' IS NULL AND awlrs_element_api.g_new_prim_ad_asset.'||pi_new_attributes(i).column_name||' IS NOT NULL)'
-                    ||' OR (awlrs_element_api.g_old_prim_ad_asset.'||pi_new_attributes(i).column_name||' IS NOT NULL AND awlrs_element_api.g_new_prim_ad_asset.'||pi_new_attributes(i).column_name||' IS NULL)'
-                    ||' THEN :sql_out := :sql_in||'''||CASE WHEN lv_upd_ad = 'Y' THEN ', ' ELSE NULL END||LOWER(pi_new_attributes(i).column_name)||' = lr_iit.'||LOWER(pi_new_attributes(i).column_name)||''';'
-                    ||' :do_update := ''Y''; END IF; END;'
-            ;
-            EXECUTE IMMEDIATE lv_sql USING OUT lv_upd_ad_sql, IN lv_upd_ad_sql, OUT lv_upd_ad;
+            lv_sql := NULL;
+            --
+            IF SUBSTR(pi_new_attributes(i).column_name,1,3) = 'NE_'
+             THEN
+                lv_sql := 'BEGIN IF awlrs_element_api.g_old_element.'||pi_new_attributes(i).column_name||' != awlrs_element_api.g_new_element.'||pi_new_attributes(i).column_name
+                        ||' OR (awlrs_element_api.g_old_element.'||pi_new_attributes(i).column_name||' IS NULL AND awlrs_element_api.g_new_element.'||pi_new_attributes(i).column_name||' IS NOT NULL)'
+                        ||' OR (awlrs_element_api.g_old_element.'||pi_new_attributes(i).column_name||' IS NOT NULL AND awlrs_element_api.g_new_element.'||pi_new_attributes(i).column_name||' IS NULL)'
+                        ||' THEN :sql_out := :sql_in||'''||CASE WHEN lv_upd_element = 'Y' THEN ', ' ELSE NULL END||LOWER(pi_new_attributes(i).column_name)||' = lr_ne.'||LOWER(pi_new_attributes(i).column_name)||''';'
+                        ||' :do_update := ''Y''; END IF; END;'
+                ;
+                EXECUTE IMMEDIATE lv_sql USING OUT lv_upd_element_sql, IN lv_upd_element_sql, OUT lv_upd_element;
+                --
+            ELSIF SUBSTR(pi_new_attributes(i).column_name,1,4) = 'IIT_'
+             THEN
+                lv_sql := 'BEGIN IF awlrs_element_api.g_old_prim_ad_asset.'||pi_new_attributes(i).column_name||' != awlrs_element_api.g_new_prim_ad_asset.'||pi_new_attributes(i).column_name
+                        ||' OR (awlrs_element_api.g_old_prim_ad_asset.'||pi_new_attributes(i).column_name||' IS NULL AND awlrs_element_api.g_new_prim_ad_asset.'||pi_new_attributes(i).column_name||' IS NOT NULL)'
+                        ||' OR (awlrs_element_api.g_old_prim_ad_asset.'||pi_new_attributes(i).column_name||' IS NOT NULL AND awlrs_element_api.g_new_prim_ad_asset.'||pi_new_attributes(i).column_name||' IS NULL)'
+                        ||' THEN :sql_out := :sql_in||'''||CASE WHEN lv_upd_ad = 'Y' THEN ', ' ELSE NULL END||LOWER(pi_new_attributes(i).column_name)||' = lr_iit.'||LOWER(pi_new_attributes(i).column_name)||''';'
+                        ||' :do_update := ''Y''; END IF; END;'
+                ;
+                EXECUTE IMMEDIATE lv_sql USING OUT lv_upd_ad_sql, IN lv_upd_ad_sql, OUT lv_upd_ad;
+                --
+            END IF;
             --
         END IF;
         --
