@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.8   11 Jan 2017 11:30:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.9   18 Jan 2017 17:09:02   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   11 Jan 2017 11:30:32  $
-  --       Date fetched Out : $Modtime:   11 Jan 2017 11:08:38  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   18 Jan 2017 17:09:02  $
+  --       Date fetched Out : $Modtime:   18 Jan 2017 14:45:02  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
   --
   g_db_element   nm_elements_all%ROWTYPE;
   g_old_element  nm_elements_all%ROWTYPE;
@@ -27,6 +27,7 @@ AS
   g_update_element_sql  nm3type.max_varchar2;
   --
   TYPE element_rec IS RECORD(element_id                  nm_elements_all.ne_id%TYPE
+                            ,element_type                nm_elements_all.ne_type%TYPE
                             ,element_network_type        nm_elements_all.ne_nt_type%TYPE
                             ,element_network_type_unique nm_types.nt_unique%TYPE
                             ,element_network_type_descr  nm_types.nt_descr%TYPE
