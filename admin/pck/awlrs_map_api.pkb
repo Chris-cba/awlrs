@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.5   12 Dec 2016 17:27:36   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.6   18 Jan 2017 18:22:08   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   12 Dec 2016 17:27:36  $
-  --       Date fetched Out : $Modtime:   12 Dec 2016 14:52:22  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   18 Jan 2017 18:22:08  $
+  --       Date fetched Out : $Modtime:   18 Jan 2017 18:17:18  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -1206,7 +1206,7 @@ AS
          THEN
             lv_name  := lt_themes(i).trimmed_name||'_'||lv_layer_type;
             lv_title := lt_themes(i).name||' '||lv_layer_type;
-            lv_gtype_restriction := ' shp WHERE shp.geoloc.sdo_gtype '||get_layer_type_in_clause(pi_layer_type => lv_layer_type);
+            lv_gtype_restriction := LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_shape_column)||'.sdo_gtype '||get_layer_type_in_clause(pi_layer_type => lv_layer_type);
         ELSE
             lv_name  := lt_themes(i).trimmed_name;
             lv_title := lt_themes(i).name;
@@ -1257,16 +1257,30 @@ AS
               ||CHR(10)||'    PROCESSING "CLOSE_CONNECTION=DEFER"'
               ||CHR(10)||'    PLUGIN "msplugin_oracle.dll"'
               ||CHR(10)||'    CONNECTION "%user%/%pwd%@%dbhost%"'
-              ||CHR(10)||'    DATA "'||lt_themes(i).nth_feature_shape_column||' FROM (SELECT '||lt_themes(i).nth_feature_pk_column
+              ||CHR(10)||'    DATA "'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM (SELECT '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_pk_column)
         ;
         --
         IF lv_theme_extra_cols IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||lv_theme_extra_cols;
+            lv_layer_text := lv_layer_text||lv_theme_extra_cols
+                             ||CASE
+                                 WHEN lv_layer_network_element_type = 'S'
+                                  THEN
+                                     ', datum_lookup.ne_no_start start_node, datum_lookup.ne_no_end end_node'
+                                 ELSE
+                                     NULL
+                               END;
         END IF;
         --
-        lv_layer_text := lv_layer_text||', '||lt_themes(i).nth_feature_shape_column||' FROM '||lt_themes(i).nth_feature_table
-                       ||lv_gtype_restriction||') USING UNIQUE '||lt_themes(i).nth_feature_pk_column||lv_using_srid||'"'
+        lv_layer_text := lv_layer_text||', '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM '||LOWER(lt_themes(i).nth_feature_table)||' '||LOWER(lt_themes(i).nth_feature_table)
+                       ||CASE
+                           WHEN lv_layer_network_element_type = 'S'
+                            THEN
+                               ' , nm_elements_all datum_lookup WHERE datum_lookup.ne_id = '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_pk_column)||CASE WHEN lv_gtype_restriction IS NOT NULL THEN ' AND '||lv_gtype_restriction ELSE NULL END
+                           ELSE
+                               CASE WHEN lv_gtype_restriction IS NOT NULL THEN ' WHERE '||lv_gtype_restriction ELSE NULL END
+                         END
+                       ||') USING UNIQUE '||lt_themes(i).nth_feature_pk_column||lv_using_srid||'"'
               ||CHR(10)||'    FILTER "%featurekey%=%featurekeyvalue%"'
               ||CHR(10)||'    VALIDATION'
               ||CHR(10)||'      "user"                    "^.*"'
@@ -1344,16 +1358,30 @@ AS
               ||CHR(10)||'    PLUGIN "msplugin_oracle.dll"'
               ||CHR(10)||'    PROCESSING "CLOSE_CONNECTION=DEFER"'
               ||CHR(10)||'    CONNECTION "%user%/%pwd%@%dbhost%"'
-              ||CHR(10)||'    DATA "'||lt_themes(i).nth_feature_shape_column||' FROM (SELECT '||lt_themes(i).nth_feature_pk_column
+              ||CHR(10)||'    DATA "'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM (SELECT '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_pk_column)
         ;
         --
         IF lv_theme_extra_cols IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||lv_theme_extra_cols;
+            lv_layer_text := lv_layer_text||lv_theme_extra_cols
+                             ||CASE
+                                 WHEN lv_layer_network_element_type = 'S'
+                                  THEN
+                                     ', datum_lookup.ne_no_start start_node, datum_lookup.ne_no_end end_node'
+                                 ELSE
+                                     NULL
+                               END;
         END IF;
         --
-        lv_layer_text := lv_layer_text||', '||lt_themes(i).nth_feature_shape_column||' FROM '||lt_themes(i).nth_feature_table
-                       ||lv_gtype_restriction||') USING UNIQUE '||lt_themes(i).nth_feature_pk_column||' NONE"'
+        lv_layer_text := lv_layer_text||', '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM '||LOWER(lt_themes(i).nth_feature_table)||' '||LOWER(lt_themes(i).nth_feature_table)
+                       ||CASE
+                           WHEN lv_layer_network_element_type = 'S'
+                            THEN
+                               ' , nm_elements_all datum_lookup WHERE datum_lookup.ne_id = '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_pk_column)||CASE WHEN lv_gtype_restriction IS NOT NULL THEN ' AND '||lv_gtype_restriction ELSE NULL END
+                           ELSE
+                               CASE WHEN lv_gtype_restriction IS NOT NULL THEN ' WHERE '||lv_gtype_restriction ELSE NULL END
+                         END
+                       ||') USING UNIQUE '||lt_themes(i).nth_feature_pk_column||' NONE"'
               ||CHR(10)||'    PROJECTION'
               ||CHR(10)||'      "init=epsg:'||lv_epsg||'"'
               ||CHR(10)||'    END'
