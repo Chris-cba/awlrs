@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.3   13 Jan 2017 11:28:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.4   19 Jan 2017 09:26:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   13 Jan 2017 11:28:46  $
-  --       Date fetched Out : $Modtime:   13 Jan 2017 11:27:20  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   19 Jan 2017 09:26:36  $
+  --       Date fetched Out : $Modtime:   19 Jan 2017 08:04:54  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -160,7 +160,7 @@ AS
     l_nm_rec.nm_ne_id_of   := pi_mem_ne_id;
     l_nm_rec.nm_type       := 'G';
     l_nm_rec.nm_obj_type   := pi_group_rec.ne_gty_group_type;
-    l_nm_rec.nm_start_date := NVL(pi_start_date,GREATEST(pi_group_rec.ne_start_date,l_mem_ne_rec.ne_start_date));
+    l_nm_rec.nm_start_date := TRUNC(NVL(pi_start_date,GREATEST(pi_group_rec.ne_start_date,l_mem_ne_rec.ne_start_date)));
     --
     IF nm3net.is_gty_partial (pi_group_rec.ne_gty_group_type) = 'Y'
      THEN
@@ -315,7 +315,7 @@ AS
     ||End date the membership of a member in a Group of Sections.
     */
     UPDATE nm_members
-       SET nm_end_date = pi_effective_date
+       SET nm_end_date = TRUNC(pi_effective_date)
      WHERE nm_ne_id_in = pi_group_ne_id
        AND nm_ne_id_of = pi_mem_ne_id
        AND nm_begin_mp = pi_mem_begin_mp
@@ -326,7 +326,7 @@ AS
     ||If the member is a distance break then end date it as well as its membership.
     */
     UPDATE nm_elements_all
-       SET ne_end_date = pi_effective_date
+       SET ne_end_date = TRUNC(pi_effective_date)
      WHERE ne_id = pi_mem_ne_id
        AND ne_type = 'D'
          ;
@@ -414,7 +414,7 @@ AS
         nm3net.insert_distance_break(pi_route_ne_id   => pi_route_ne_id
                                     ,pi_start_node_id => pi_start_node_id
                                     ,pi_end_node_id   => pi_end_node_id
-                                    ,pi_start_date    => pi_start_date
+                                    ,pi_start_date    => TRUNC(pi_start_date)
                                     ,pi_length        => pi_length
                                     ,po_db_ne_id      => lv_ne_id
                                     ,po_db_ne_unique  => lv_ne_unique);
@@ -496,7 +496,7 @@ AS
     ||as an error.
     */
     nm3rsc.rescale_route(pi_ne_id          => pi_ne_id
-                        ,pi_effective_date => pi_effective_date
+                        ,pi_effective_date => TRUNC(pi_effective_date)
                         ,pi_offset_st      => pi_offset_st
                         ,pi_st_element_id  => NULL
                         ,pi_use_history    => pi_use_history
