@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_close_api.pkb-arc   1.2   09 Dec 2016 18:35:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_close_api.pkb-arc   1.3   19 Jan 2017 11:37:44   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_close_api.pkb  $
-  --       Date into PVCS   : $Date:   09 Dec 2016 18:35:04  $
-  --       Date fetched Out : $Modtime:   09 Dec 2016 18:34:36  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   19 Jan 2017 11:37:44  $
+  --       Date fetched Out : $Modtime:   19 Jan 2017 11:34:38  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_close_api';
   --
@@ -104,7 +104,7 @@ AS
     BEGIN
       nm3close.multi_element_close(pi_type            => nm3close.get_c_route
                                   ,pi_id              => pi_ne_id
-                                  ,pi_effective_date  => pi_effective_date
+                                  ,pi_effective_date  => TRUNC(pi_effective_date)
                                   ,pi_close_all       => pi_close_all
                                   ,pi_end_date_datums => pi_end_date_datums);
     EXCEPTION
