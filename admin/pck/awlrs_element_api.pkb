@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.15   18 Jan 2017 17:09:56   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.16   31 Jan 2017 15:51:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   18 Jan 2017 17:09:56  $
-  --       Date fetched Out : $Modtime:   18 Jan 2017 17:08:10  $
-  --       Version          : $Revision:   1.15  $
+  --       Date into PVCS   : $Date:   31 Jan 2017 15:51:28  $
+  --       Date fetched Out : $Modtime:   31 Jan 2017 14:16:08  $
+  --       Version          : $Revision:   1.16  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -101,6 +101,33 @@ AS
     --
   END;
 
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION is_nt_inclusion_parent(pi_nt_type IN nm_types.nt_type%TYPE)
+    RETURN BOOLEAN IS
+    --
+    lv_dummy  PLS_INTEGER;
+    lv_retval BOOLEAN;
+    --
+    CURSOR chk_inclusion(cp_type IN nm_types.nt_type%TYPE)
+        IS
+    SELECT 1
+      FROM nm_type_inclusion
+     WHERE nti_nw_parent_type = cp_type
+         ;
+  BEGIN
+    --
+    OPEN  chk_inclusion(pi_nt_type);
+    FETCH chk_inclusion
+     INTO lv_dummy;
+    lv_retval := chk_inclusion%FOUND;
+    CLOSE chk_inclusion;
+    --
+    RETURN lv_retval;
+    --
+  END is_nt_inclusion_parent;
+  
   --
   -----------------------------------------------------------------------------
   --
@@ -968,6 +995,7 @@ AS
                    END domain_id
                   ,CASE
                      WHEN ntc_query IS NOT NULL
+                      OR (domain_sql IS NOT NULL AND ntc_domain IS NULL)
                       THEN
                          'Y'
                      ELSE
@@ -1325,6 +1353,13 @@ AS
     SELECT ne_id             element_id
           ,ne_unique         element_unique
           ,ne_descr          element_description
+          ,CASE
+             WHEN ngt_sub_group_allowed = 'Y'
+              THEN
+                 'P' --Group Of Groups
+             ELSE
+                 'G' --Group Of Datums
+           END               element_type
           ,ne_gty_group_type element_group_type
           ,ngt_descr         element_group_type_descr
           ,nm_start_date     membership_start_date
@@ -1454,62 +1489,77 @@ AS
   EXCEPTION
     WHEN e0
      THEN
+        --Adding an element with the same sub class as one that exists at this start node.
         add_message(pi_appl => 'NET'
                    ,pi_id   => 19);
     WHEN e1
      THEN
+        --More that one element with this sub-class at this start node.
         add_message(pi_appl => 'NET'
                    ,pi_id   => 20);
     WHEN e2
      THEN
+        --Adding an element with the same sub class as one that exists at this end node.
         add_message(pi_appl => 'NET'
                    ,pi_id   => 21);
     WHEN e3
      THEN
+        --More that one element with this sub-class at this end node.
         add_message(pi_appl => 'NET'
                    ,pi_id   => 22);
     WHEN e4
      THEN
+        --A Single and Left or Right element start at this node
         add_message(pi_appl => 'NET'
                    ,pi_id   => 23);
     WHEN e5
      THEN
+        --A Single and a Left element start at this node
         add_message(pi_appl => 'NET'
                    ,pi_id   => 24);
     WHEN e6
      THEN
+        --A Single and a Right element start at this node
         add_message(pi_appl => 'NET'
                    ,pi_id   => 25);
     WHEN e7
      THEN
+        --Left Starts without a right
         add_message(pi_appl => 'NET'
                    ,pi_id   => 133);
     WHEN e8
      THEN
+        --Right Starts without a Left
         add_message(pi_appl => 'NET'
                    ,pi_id   => 134);
     WHEN e9
      THEN
+        --Adding a Left without a right
         add_message(pi_appl => 'NET'
                    ,pi_id   => 135);
     WHEN e10
      THEN
+        --Adding a Right without a Left
         add_message(pi_appl => 'NET'
                    ,pi_id   => 136);
     WHEN e11
      THEN
+        --Left ends without a right
         add_message(pi_appl => 'NET'
                    ,pi_id   => 137);
     WHEN e12
      THEN
+        --Adding a Left without a right
         add_message(pi_appl => 'NET'
                    ,pi_id   => 138);
     WHEN e13
      THEN
+        --Adding a Right without a Left
         add_message(pi_appl => 'NET'
                    ,pi_id   => 139);
     WHEN e14
      THEN
+        --Adding a Right without a Left
         add_message(pi_appl => 'NET'
                    ,pi_id   => 140);
     WHEN others
