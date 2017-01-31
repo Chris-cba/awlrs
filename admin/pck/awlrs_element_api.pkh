@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.9   18 Jan 2017 17:09:02   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.10   31 Jan 2017 15:47:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   18 Jan 2017 17:09:02  $
-  --       Date fetched Out : $Modtime:   18 Jan 2017 14:45:02  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   31 Jan 2017 15:47:36  $
+  --       Date fetched Out : $Modtime:   30 Jan 2017 12:46:36  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
   --
   g_db_element   nm_elements_all%ROWTYPE;
   g_old_element  nm_elements_all%ROWTYPE;
@@ -110,6 +110,12 @@ AS
   FUNCTION gen_domain_name(pi_nt_type     IN nm_types.nt_type%TYPE
                           ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE)
     RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION is_nt_inclusion_parent(pi_nt_type IN nm_types.nt_type%TYPE)
+    RETURN BOOLEAN;
 
   --
   -----------------------------------------------------------------------------
