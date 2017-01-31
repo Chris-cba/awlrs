@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.5   20 Jan 2017 17:09:42   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.6   31 Jan 2017 16:26:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   20 Jan 2017 17:09:42  $
-  --       Date fetched Out : $Modtime:   20 Jan 2017 15:41:34  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   31 Jan 2017 16:26:28  $
+  --       Date fetched Out : $Modtime:   31 Jan 2017 16:25:08  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -88,6 +88,8 @@ AS
              WHERE nm.nm_ne_id_in = pi_ne_id
                AND nm.nm_ne_id_of = ne.ne_id
                AND nm.nm_type = 'G')
+     ORDER
+        BY member_seq_no
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -122,6 +124,8 @@ AS
           ,nm_members nm
      WHERE nm.nm_ne_id_in = pi_ne_id
        AND nm.nm_ne_id_of = ne.ne_id
+     ORDER
+        BY ne.ne_unique
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -132,7 +136,6 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-
   END get_sub_groups;
 
   --
@@ -149,6 +152,13 @@ AS
     l_nm_rec      nm_members%ROWTYPE;
     --
   BEGIN
+    --
+    IF awlrs_element_api.is_nt_inclusion_parent(pi_nt_type => pi_group_rec.ne_nt_type)
+     THEN
+        --Membership of an Inclusion Parent Group cannot be modified
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 39);
+    END IF;
     /*
     ||Get the member element record of the datum.
     */
@@ -161,15 +171,8 @@ AS
     l_nm_rec.nm_type       := 'G';
     l_nm_rec.nm_obj_type   := pi_group_rec.ne_gty_group_type;
     l_nm_rec.nm_start_date := TRUNC(NVL(pi_start_date,GREATEST(pi_group_rec.ne_start_date,l_mem_ne_rec.ne_start_date)));
-    --
-    IF nm3net.is_gty_partial (pi_group_rec.ne_gty_group_type) = 'Y'
-     THEN
-        l_nm_rec.nm_begin_mp := pi_mem_begin_mp;
-        l_nm_rec.nm_end_mp   := pi_mem_end_mp;
-    ELSE
-        l_nm_rec.nm_begin_mp := NVL(pi_mem_begin_mp, 0);
-        l_nm_rec.nm_end_mp   := NVL(pi_mem_end_mp,NVL(nm3net.get_ne_length(pi_mem_ne_id),0));
-    END IF;
+    l_nm_rec.nm_begin_mp   := NVL(pi_mem_begin_mp, 0);
+    l_nm_rec.nm_end_mp     := NVL(pi_mem_end_mp,NVL(nm3net.get_ne_length(pi_mem_ne_id),0));
     /*
     IF nm3net.is_nt_linear (l_group_ne_rec.ne_gty_group_type) = 'Y'
      THEN
@@ -320,7 +323,138 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END add_members;
-  
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_member(pi_group_ne_id      IN  nm_elements.ne_id%TYPE
+                         ,pi_mem_ne_id        IN  nm_elements.ne_id%TYPE
+                         ,pi_mem_start_date   IN  nm_members.nm_start_date%TYPE
+                         ,pi_old_mem_begin_mp IN  nm_members.nm_begin_mp%TYPE
+                         ,pi_old_mem_end_mp   IN  nm_members.nm_end_mp%TYPE
+                         ,pi_new_mem_begin_mp IN  nm_members.nm_begin_mp%TYPE
+                         ,pi_new_mem_end_mp   IN  nm_members.nm_end_mp%TYPE
+                         ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    lr_group_ne  nm_elements_all%ROWTYPE;
+    lr_db_rec    nm_members%ROWTYPE;
+    --
+    PROCEDURE get_db_rec(pi_group_ne_id    IN nm_elements.ne_id%TYPE
+                        ,pi_mem_ne_id      IN nm_elements.ne_id%TYPE
+                        ,pi_mem_begin_mp   IN nm_members.nm_begin_mp%TYPE
+                        ,pi_mem_start_date IN nm_members.nm_start_date%TYPE)
+      IS
+    BEGIN
+      BEGIN
+        --
+        SELECT *
+          INTO lr_db_rec
+          FROM nm_members
+         WHERE nm_ne_id_in = pi_group_ne_id
+           AND nm_ne_id_of = pi_mem_ne_id
+           AND nm_begin_mp = pi_mem_begin_mp
+           AND nm_start_date = pi_mem_start_date
+           FOR UPDATE NOWAIT
+             ;
+        --
+      EXCEPTION
+       WHEN no_data_found
+        THEN
+           --Invalid Group Member supplied
+           hig.raise_ner(pi_appl => 'AWLRS'
+                        ,pi_id   => 41);
+      END;
+      --       
+    END get_db_rec;
+    --
+  BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT update_member_sp;
+    /*
+    ||Get the group element record.
+    */
+    lr_group_ne := nm3get.get_ne(pi_group_ne_id);
+    --
+    IF nm3net.is_gty_partial(lr_group_ne.ne_gty_group_type) = 'N'
+     THEN
+        --Update of Start and/or End of a Member is not allowed for non Partial Group Types
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 40);        
+    END IF;
+    --
+    IF awlrs_element_api.is_nt_inclusion_parent(pi_nt_type => lr_group_ne.ne_nt_type)
+     THEN
+        --Membership of an Inclusion Parent Group cannot be modified
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 39);
+    END IF;
+    /*
+    ||Lock the row.
+    */
+    get_db_rec(pi_group_ne_id    => pi_group_ne_id
+              ,pi_mem_ne_id      => pi_mem_ne_id
+              ,pi_mem_begin_mp   => pi_old_mem_begin_mp
+              ,pi_mem_start_date => pi_mem_start_date);
+    /*
+    ||Compare old with DB.
+    ||Start has effectively already been checked as it is part of the primary key.
+    */
+    IF lr_db_rec.nm_end_mp != pi_old_mem_end_mp
+     OR (lr_db_rec.nm_end_mp IS NULL AND pi_old_mem_end_mp IS NOT NULL)
+     OR (lr_db_rec.nm_end_mp IS NOT NULL AND pi_old_mem_end_mp IS NULL)
+     THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    END IF;
+    /*
+    ||Compare new with old.
+    */
+    IF (pi_old_mem_begin_mp = pi_new_mem_begin_mp OR (pi_old_mem_begin_mp IS NULL AND pi_new_mem_begin_mp IS NULL))
+     AND (pi_old_mem_end_mp = pi_new_mem_end_mp OR (pi_old_mem_end_mp IS NULL AND pi_new_mem_end_mp IS NULL))
+     THEN
+        --There are no changes to be applied
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 25);
+    END IF;
+    /*
+    ||Update the record.
+    */
+    UPDATE nm_members
+       SET nm_begin_mp = pi_new_mem_begin_mp
+          ,nm_end_mp = pi_new_mem_end_mp
+     WHERE nm_ne_id_in = pi_group_ne_id
+       AND nm_ne_id_of = pi_mem_ne_id
+       AND nm_begin_mp = pi_old_mem_begin_mp
+       AND nm_start_date = pi_mem_start_date
+         ;
+    /*
+    ||If the Group Type is linear then update the shape so that there is
+    ||something to see in the map.
+    ||The user will need to execute resequence or rescale to be sure
+    ||that the shape is correct, this is just so that there is something
+    ||to see.
+    */
+    IF nm3net.is_gty_linear(p_gty => lr_group_ne.ne_gty_group_type) = 'Y'
+     THEN
+        nm3sdm.reshape_route(pi_ne_id          => pi_group_ne_id
+                            ,pi_effective_date => TRUNC(pi_effective_date)
+                            ,pi_use_history    => 'Y');
+    END IF;
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        ROLLBACK TO update_member_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_member;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -332,11 +466,25 @@ AS
                                ,po_message_severity OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor   OUT sys_refcursor)
     IS
+    --
+    lr_group_ne  nm_elements_all%ROWTYPE;
+    --
   BEGIN
     /*
     ||Set a save point.
     */
     SAVEPOINT enddate_member_sp;
+    /*
+    ||Get the group element record.
+    */
+    lr_group_ne := nm3get.get_ne(pi_group_ne_id);
+    --
+    IF awlrs_element_api.is_nt_inclusion_parent(pi_nt_type => lr_group_ne.ne_nt_type)
+     THEN
+        --Membership of an Inclusion Parent Group cannot be modified
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 39);
+    END IF;
     /*
     ||End date the membership of a member in a Group of Sections.
     */
@@ -356,6 +504,19 @@ AS
      WHERE ne_id = pi_mem_ne_id
        AND ne_type = 'D'
          ;
+    /*
+    ||If the Group Type is linear then update the shape so that there is
+    ||something to see in the map.
+    ||The user will need to execute resequence or rescale to be sure
+    ||that the shape is correct, this is just so that there is something
+    ||to see.
+    */
+    IF nm3net.is_gty_linear(p_gty => lr_group_ne.ne_gty_group_type) = 'Y'
+     THEN
+        nm3sdm.reshape_route(pi_ne_id          => pi_group_ne_id
+                            ,pi_effective_date => TRUNC(pi_effective_date)
+                            ,pi_use_history    => 'Y');
+    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -390,6 +551,8 @@ AS
     lv_ne_id      nm_members.nm_ne_id_in%TYPE;
     lv_ne_unique  nm_elements.ne_unique%TYPE;
     --
+    lr_group_ne  nm_elements_all%ROWTYPE;
+    --
     lt_messages  awlrs_message_tab := awlrs_message_tab();
     --
   BEGIN
@@ -397,6 +560,18 @@ AS
     ||Set a save point.
     */
     SAVEPOINT add_distbreak_sp;
+    /*
+    ||Get the group element record.
+    */
+    lr_group_ne := nm3get.get_ne(pi_route_ne_id);
+    --
+    IF awlrs_element_api.is_nt_inclusion_parent(pi_nt_type => lr_group_ne.ne_nt_type)
+     THEN
+        --Membership of an Inclusion Parent Group cannot be modified
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 39);
+    END IF;
+    --
     /*
     ||TODO - Raise Individual Errors for the parameters being checked.
     */
@@ -776,7 +951,7 @@ AS
   BEGIN
     --
     nm3rvrs.reverse_route(pi_ne_id          => pi_ne_id
-                         ,pi_effective_date => pi_effective_date);
+                         ,pi_effective_date => TRUNC(pi_effective_date));
     --
   EXCEPTION
     WHEN e_route_locked
