@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkh-arc   1.2   15 Dec 2016 23:59:16   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkh-arc   1.3   31 Jan 2017 16:00:06   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkh  $
-  --       Date into PVCS   : $Date:   15 Dec 2016 23:59:16  $
-  --       Date fetched Out : $Modtime:   15 Dec 2016 23:50:26  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   31 Jan 2017 16:00:06  $
+  --       Date fetched Out : $Modtime:   30 Jan 2017 15:46:48  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -64,6 +64,20 @@ AS
                        ,pi_start_date       IN  nm_members.nm_start_date%TYPE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                        ,po_message_severity OUT hig_codes.hco_code%TYPE
                        ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_member(pi_group_ne_id      IN  nm_elements.ne_id%TYPE
+                         ,pi_mem_ne_id        IN  nm_elements.ne_id%TYPE
+                         ,pi_mem_start_date   IN  nm_members.nm_start_date%TYPE
+                         ,pi_old_mem_begin_mp IN  nm_members.nm_begin_mp%TYPE
+                         ,pi_old_mem_end_mp   IN  nm_members.nm_end_mp%TYPE
+                         ,pi_new_mem_begin_mp IN  nm_members.nm_begin_mp%TYPE
+                         ,pi_new_mem_end_mp   IN  nm_members.nm_end_mp%TYPE
+                         ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
