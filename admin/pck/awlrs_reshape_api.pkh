@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkh-arc   1.0   15 Dec 2016 18:45:00   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkh-arc   1.1   31 Jan 2017 16:34:00   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkh  $
-  --       Date into PVCS   : $Date:   15 Dec 2016 18:45:00  $
-  --       Date fetched Out : $Modtime:   15 Dec 2016 15:25:12  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   31 Jan 2017 16:34:00  $
+  --       Date fetched Out : $Modtime:   30 Jan 2017 18:14:46  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   
   --
   -----------------------------------------------------------------------------
@@ -36,14 +36,18 @@ AS
                            ,pi_ne_id                    IN     nm_elements_all.ne_id%TYPE
                            ,pi_shape_wkt                IN     CLOB
                            ,pi_do_replace               IN     VARCHAR2 DEFAULT 'N'
+                           ,pi_do_reclassify            IN     VARCHAR2 DEFAULT 'N'
                            ,pi_new_element_column_names IN     awlrs_element_api.attrib_column_name_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_column_name_tab)
                            ,pi_new_element_prompts      IN     awlrs_element_api.attrib_prompt_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_prompt_tab)
                            ,pi_new_element_char_values  IN     awlrs_element_api.attrib_char_value_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_char_value_tab)
+                           ,pi_new_start_node           IN     nm_elements_all.ne_no_start%TYPE
+                           ,pi_new_end_node             IN     nm_elements_all.ne_no_end%TYPE
                            ,pi_do_recalibrate           IN     VARCHAR2 DEFAULT 'N'
                            ,pi_recal_start_point        IN     NUMBER DEFAULT NULL
                            ,pi_recal_new_length_to_end  IN     NUMBER DEFAULT NULL
                            ,pi_reason                   IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                            ,pi_effective_date           IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                           ,pi_run_checks               IN     VARCHAR2 DEFAULT 'Y'
                            ,po_new_ne_id                IN OUT nm_elements_all.ne_id%TYPE
                            ,po_message_severity            OUT hig_codes.hco_code%TYPE
                            ,po_message_cursor              OUT sys_refcursor);
