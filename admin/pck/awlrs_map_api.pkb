@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.6   18 Jan 2017 18:22:08   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.7   31 Jan 2017 15:58:24   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   18 Jan 2017 18:22:08  $
-  --       Date fetched Out : $Modtime:   18 Jan 2017 18:17:18  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   31 Jan 2017 15:58:24  $
+  --       Date fetched Out : $Modtime:   31 Jan 2017 13:48:30  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -97,11 +97,24 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT nw_themes.network_type
-          ,nw_themes.element_type  network_element_type
-          ,nw_themes.is_linear  network_is_linear
-          ,nw_themes.group_type  network_group_type
-          ,nw_themes.partial_allowed  network_partial_membership
+    SELECT CASE
+             WHEN nw_themes.network_type IS NOT NULL
+              THEN
+                 nw_themes.admin_type
+             WHEN nith_nit_id IS NOT NULL
+              THEN
+                 (SELECT nit_admin_type
+                    FROM nm_inv_types_all
+                   WHERE nit_inv_type = nith_nit_id)
+             ELSE
+                 NULL
+           END admin_type
+          ,nw_themes.network_type
+          ,nw_themes.element_type             network_element_type
+          ,nw_themes.is_linear                network_is_linear
+          ,nw_themes.is_inclusion_parent_type network_is_incl_parent_type
+          ,nw_themes.group_type               network_group_type
+          ,nw_themes.partial_allowed          network_partial_membership
           ,nw_themes.node_type
           ,nw_themes.unit_id
           ,nith_nit_id asset_type
@@ -158,39 +171,71 @@ AS
                  NULL
            END is_editable
       FROM nm_inv_themes
-          ,(SELECT nlt_nt_type network_type
-                  ,CASE WHEN nt_datum = 'Y' THEN 'S' ELSE 'G' END element_type
-                  ,'Y' is_linear
-                  ,nlt_gty_type group_type
-                  ,ngt_partial partial_allowed
-                  ,nt_node_type node_type
+          ,(SELECT nt_admin_type     admin_type
+                  ,nlt_nt_type       network_type
+                  ,CASE
+                     WHEN nt_datum = 'Y'
+                      THEN
+                         'S'
+                     ELSE
+                         'G'
+                   END               element_type
+                  ,'Y'               is_linear
+                  ,CASE
+                     WHEN nti_nw_parent_type IS NOT NULL
+                      THEN
+                         'Y'
+                     ELSE
+                         'N'
+                   END               is_inclusion_parent_type
+                  ,nlt_gty_type      group_type
+                  ,ngt_partial       partial_allowed
+                  ,nt_node_type      node_type
                   ,nnth_nth_theme_id theme_id
-                  ,un_unit_id unit_id
+                  ,un_unit_id        unit_id
               FROM nm_nw_themes
                   ,nm_linear_types
                   ,nm_types
+                  ,nm_type_inclusion
                   ,nm_units
                   ,nm_group_types_all
              WHERE nnth_nlt_id = nlt_id
                AND nlt_nt_type = nt_type
+               AND nt_type = nti_nw_parent_type(+)
                AND nt_length_unit = un_unit_id(+)
                AND nlt_gty_type = ngt_group_type(+)
             UNION ALL
-            SELECT nat_nt_type network_type
-                  ,CASE WHEN ngt_sub_group_allowed = 'Y' THEN 'P' ELSE 'G' END element_type
-                  ,'N' is_linear
+            SELECT nt_admin_type      admin_type
+                  ,nat_nt_type        network_type
+                  ,CASE
+                     WHEN ngt_sub_group_allowed = 'Y'
+                      THEN
+                         'P'
+                     ELSE
+                         'G'
+                   END                element_type
+                  ,'N'                is_linear
+                  ,CASE
+                     WHEN nti_nw_parent_type IS NOT NULL
+                      THEN
+                         'Y'
+                     ELSE
+                         'N'
+                   END                is_inclusion_parent_type
                   ,nat_gty_group_type group_type
-                  ,ngt_partial partial_allowed
-                  ,nt_node_type node_type
-                  ,nath_nth_theme_id theme_id
-                  ,un_unit_id unit_id
+                  ,ngt_partial        partial_allowed
+                  ,nt_node_type       node_type
+                  ,nath_nth_theme_id  theme_id
+                  ,un_unit_id         unit_id
               FROM nm_area_themes
                   ,nm_area_types
                   ,nm_types
+                  ,nm_type_inclusion
                   ,nm_units
                   ,nm_group_types_all
              WHERE nath_nat_id = nat_id
                AND nat_nt_type = nt_type
+               AND nt_type = nti_nw_parent_type(+)
                AND nt_length_unit = un_unit_id(+)
                AND nat_gty_group_type = ngt_group_type) nw_themes
           ,nm_themes_all
@@ -939,12 +984,14 @@ AS
     lv_epsg                        NUMBER;
     lv_srid                        NUMBER;
     lv_using_srid                  VARCHAR2(20);
+    lv_layer_admin_type            nm_au_types.nat_admin_type%TYPE;
     lv_layer_network_type          nm_types.nt_type%TYPE;
     lv_layer_network_element_type  nm_elements_all.ne_type%TYPE;
     lv_layer_group_type            nm_group_types_all.ngt_group_type%TYPE;
     lv_layer_group_partial         VARCHAR2(1);
     lv_group_memb_types            nm3type.max_varchar2;
     lv_layer_is_linear             VARCHAR2(1);
+    lv_layer_is_incl_parent_type   VARCHAR2(1);
     lv_layer_editable              VARCHAR2(1);
     lv_layer_units                 nm_units.un_unit_id%TYPE;
     lv_layer_node_type             nm_types.nt_node_type%TYPE;
@@ -1081,9 +1128,11 @@ AS
       lt_theme_types := get_theme_types(pi_theme_name => lt_themes(i).name);
       IF lt_theme_types.COUNT > 0
        THEN
+          lv_layer_admin_type := lt_theme_types(1).admin_type;
           lv_layer_network_type := lt_theme_types(1).network_type;
           lv_layer_network_element_type := lt_theme_types(1).network_element_type;
           lv_layer_is_linear := lt_theme_types(1).network_is_linear;
+          lv_layer_is_incl_parent_type := lt_theme_types(1).network_is_incl_parent_type;
           lv_layer_group_type := lt_theme_types(1).network_group_type;
           lv_layer_group_partial := lt_theme_types(1).network_partial_memb;
           lv_group_memb_types := get_group_member_types(pi_ne_type    => lt_theme_types(1).network_element_type
@@ -1100,12 +1149,14 @@ AS
           lv_layer_asset_type := lt_theme_types(1).asset_type;
           lv_layer_editable := NVL(lt_theme_types(1).editable,'N');
       ELSE
+          lv_layer_admin_type := NULL;
           lv_layer_network_type := NULL;
           lv_layer_network_element_type := NULL;
           lv_layer_group_type := NULL;
           lv_layer_group_partial := NULL;
           lv_group_memb_types := NULL;
           lv_layer_is_linear := NULL;
+          lv_layer_is_incl_parent_type := NULL;
           lv_layer_node_type := NULL;
           lv_layer_node_layer := NULL;
           lv_layer_units := NULL;
@@ -1223,32 +1274,34 @@ AS
         --
         lv_layer_text := lv_layer_text
               ||CHR(10)||'    METADATA'
-              ||CHR(10)||'      "wms_title"                 "'||lv_title||'"'
-              ||CHR(10)||'      "wms_enable_request"        "*"'
-              ||CHR(10)||'      "wfs_title"                 "'||lv_title||'"'
-              ||CHR(10)||'      "wfs_featureid"             "'||lv_wfs_featureid||'"'
-              ||CHR(10)||'      "wfs_enable_request"        "*"'
-              ||CHR(10)||'      "wfs_getfeature_formatlist"	"SHAPEZIP,CSV,JSON"'
-              ||CHR(10)||'      "gml_featureid"             "'||lt_themes(i).nth_feature_pk_column||'"'
-              ||CHR(10)||'      "gml_include_items"         "all"'
-              ||CHR(10)||'      "gml_geometries"            "msGeometry"'
-              ||CHR(10)||'      "gml_msGeometry_type"       "'||lv_gml_msGeometry_type||'"'
-              ||CHR(10)||'      "layer_group_name"          "'||lv_group_name||'"'
-              ||CHR(10)||'      "network_type"              "'||lv_layer_network_type||'"'
-              ||CHR(10)||'      "network_element_type"      "'||lv_layer_network_element_type||'"'
-              ||CHR(10)||'      "network_is_linear"         "'||lv_layer_is_linear||'"'
-              ||CHR(10)||'      "network_group_type"        "'||lv_layer_group_type||'"'
-              ||CHR(10)||'      "network_group_memb_types"  "'||lv_group_memb_types||'"'
-              ||CHR(10)||'      "network_partial_members"   "'||lv_layer_group_partial||'"'
-              ||CHR(10)||'      "network_units"             "'||lv_layer_units||'"'
-              ||CHR(10)||'      "network_node_type"         "'||lv_layer_node_type||'"'
-              ||CHR(10)||'      "node_layer_name"           "'||lv_layer_node_layer||'"'
-              ||CHR(10)||'      "asset_type"                "'||lv_layer_asset_type||'"'
-              ||CHR(10)||'      "is_editable"               "'||lv_layer_editable||'"'
-              ||CHR(10)||'      "show_in_map"               "'||lv_layer_show_in_map||'"'
-              ||CHR(10)||'      "displayed_at_startup"      "'||lv_displayed_on_startup||'"'
-              ||CHR(10)||'      "displayed_in_legend"       "'||lv_displayed_in_legend||'"'
-              ||CHR(10)||'      "legend_group"              "'||lv_legend_group||'"'
+              ||CHR(10)||'      "wms_title"                   "'||lv_title||'"'
+              ||CHR(10)||'      "wms_enable_request"          "*"'
+              ||CHR(10)||'      "wfs_title"                   "'||lv_title||'"'
+              ||CHR(10)||'      "wfs_featureid"               "'||lv_wfs_featureid||'"'
+              ||CHR(10)||'      "wfs_enable_request"          "*"'
+              ||CHR(10)||'      "wfs_getfeature_formatlist"	  "SHAPEZIP,CSV,JSON"'
+              ||CHR(10)||'      "gml_featureid"               "'||lt_themes(i).nth_feature_pk_column||'"'
+              ||CHR(10)||'      "gml_include_items"           "all"'
+              ||CHR(10)||'      "gml_geometries"              "msGeometry"'
+              ||CHR(10)||'      "gml_msGeometry_type"         "'||lv_gml_msGeometry_type||'"'
+              ||CHR(10)||'      "layer_group_name"            "'||lv_group_name||'"'
+              ||CHR(10)||'      "admin_type"                  "'||lv_layer_admin_type||'"'
+              ||CHR(10)||'      "network_type"                "'||lv_layer_network_type||'"'
+              ||CHR(10)||'      "network_element_type"        "'||lv_layer_network_element_type||'"'
+              ||CHR(10)||'      "network_is_linear"           "'||lv_layer_is_linear||'"'
+              ||CHR(10)||'      "network_is_incl_parent_type" "'||lv_layer_is_incl_parent_type||'"'
+              ||CHR(10)||'      "network_group_type"          "'||lv_layer_group_type||'"'
+              ||CHR(10)||'      "network_group_memb_types"    "'||lv_group_memb_types||'"'
+              ||CHR(10)||'      "network_partial_members"     "'||lv_layer_group_partial||'"'
+              ||CHR(10)||'      "network_units"               "'||lv_layer_units||'"'
+              ||CHR(10)||'      "network_node_type"           "'||lv_layer_node_type||'"'
+              ||CHR(10)||'      "node_layer_name"             "'||lv_layer_node_layer||'"'
+              ||CHR(10)||'      "asset_type"                  "'||lv_layer_asset_type||'"'
+              ||CHR(10)||'      "is_editable"                 "'||lv_layer_editable||'"'
+              ||CHR(10)||'      "show_in_map"                 "'||lv_layer_show_in_map||'"'
+              ||CHR(10)||'      "displayed_at_startup"        "'||lv_displayed_on_startup||'"'
+              ||CHR(10)||'      "displayed_in_legend"         "'||lv_displayed_in_legend||'"'
+              ||CHR(10)||'      "legend_group"                "'||lv_legend_group||'"'
               ||CHR(10)||'    END'
               ||CHR(10)||'    DEBUG 5'
               ||CHR(10)||'    TYPE '||lv_layer_type
@@ -1262,14 +1315,12 @@ AS
         --
         IF lv_theme_extra_cols IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||lv_theme_extra_cols
-                             ||CASE
-                                 WHEN lv_layer_network_element_type = 'S'
-                                  THEN
-                                     ', datum_lookup.ne_no_start start_node, datum_lookup.ne_no_end end_node'
-                                 ELSE
-                                     NULL
-                               END;
+            lv_layer_text := lv_layer_text||lv_theme_extra_cols;
+        END IF;
+        --
+        IF lv_layer_network_element_type = 'S'
+         THEN
+            lv_layer_text := lv_layer_text||', datum_lookup.ne_no_start start_node, datum_lookup.ne_no_end end_node';
         END IF;
         --
         lv_layer_text := lv_layer_text||', '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM '||LOWER(lt_themes(i).nth_feature_table)||' '||LOWER(lt_themes(i).nth_feature_table)
@@ -1326,30 +1377,32 @@ AS
         --
         lv_layer_text := lv_layer_text
               ||CHR(10)||'    METADATA'
-              ||CHR(10)||'      "wms_title"                 "'||lv_title||'"'
-              ||CHR(10)||'      "wms_enable_request"        "*"'
-              ||CHR(10)||'      "wfs_title"                 "'||lv_title||'"'
-              ||CHR(10)||'      "wfs_featureid"             "'||lv_wfs_featureid||'"'
-              ||CHR(10)||'      "wfs_enable_request"        "*"'
-              ||CHR(10)||'      "wfs_getfeature_formatlist"	"SHAPEZIP,CSV,JSON"'
-              ||CHR(10)||'      "gml_featureid"             "'||lt_themes(i).nth_feature_pk_column||'"'
-              ||CHR(10)||'      "gml_include_items"         "all"'
-              ||CHR(10)||'      "layer_group_name"          "'||lv_group_name||'"'
-              ||CHR(10)||'      "network_type"              "'||lv_layer_network_type||'"'
-              ||CHR(10)||'      "network_element_type"      "'||lv_layer_network_element_type||'"'
-              ||CHR(10)||'      "network_is_linear"         "'||lv_layer_is_linear||'"'
-              ||CHR(10)||'      "network_group_type"        "'||lv_layer_group_type||'"'
-              ||CHR(10)||'      "network_group_memb_types"  "'||lv_group_memb_types||'"'
-              ||CHR(10)||'      "network_partial_members"   "'||lv_layer_group_partial||'"'
-              ||CHR(10)||'      "network_units"             "'||lv_layer_units||'"'
-              ||CHR(10)||'      "network_node_type"         "'||lv_layer_node_type||'"'
-              ||CHR(10)||'      "node_layer_name"           "'||lv_layer_node_layer||'"'
-              ||CHR(10)||'      "asset_type"                "'||lv_layer_asset_type||'"'
-              ||CHR(10)||'      "is_editable"               "'||lv_layer_editable||'"'
-              ||CHR(10)||'      "show_in_map"               "'||lv_layer_show_in_map||'"'
-              ||CHR(10)||'      "displayed_at_startup"      "'||lv_displayed_on_startup||'"'
-              ||CHR(10)||'      "displayed_in_legend"       "'||lv_displayed_in_legend||'"'
-              ||CHR(10)||'      "legend_group"              "'||lv_legend_group||'"'
+              ||CHR(10)||'      "wms_title"                   "'||lv_title||'"'
+              ||CHR(10)||'      "wms_enable_request"          "*"'
+              ||CHR(10)||'      "wfs_title"                   "'||lv_title||'"'
+              ||CHR(10)||'      "wfs_featureid"               "'||lv_wfs_featureid||'"'
+              ||CHR(10)||'      "wfs_enable_request"          "*"'
+              ||CHR(10)||'      "wfs_getfeature_formatlist"	  "SHAPEZIP,CSV,JSON"'
+              ||CHR(10)||'      "gml_featureid"               "'||lt_themes(i).nth_feature_pk_column||'"'
+              ||CHR(10)||'      "gml_include_items"           "all"'
+              ||CHR(10)||'      "layer_group_name"            "'||lv_group_name||'"'
+              ||CHR(10)||'      "admin_type"                  "'||lv_layer_admin_type||'"'
+              ||CHR(10)||'      "network_type"                "'||lv_layer_network_type||'"'
+              ||CHR(10)||'      "network_element_type"        "'||lv_layer_network_element_type||'"'
+              ||CHR(10)||'      "network_is_linear"           "'||lv_layer_is_linear||'"'
+              ||CHR(10)||'      "network_is_incl_parent_type" "'||lv_layer_is_incl_parent_type||'"'
+              ||CHR(10)||'      "network_group_type"          "'||lv_layer_group_type||'"'
+              ||CHR(10)||'      "network_group_memb_types"    "'||lv_group_memb_types||'"'
+              ||CHR(10)||'      "network_partial_members"     "'||lv_layer_group_partial||'"'
+              ||CHR(10)||'      "network_units"               "'||lv_layer_units||'"'
+              ||CHR(10)||'      "network_node_type"           "'||lv_layer_node_type||'"'
+              ||CHR(10)||'      "node_layer_name"             "'||lv_layer_node_layer||'"'
+              ||CHR(10)||'      "asset_type"                  "'||lv_layer_asset_type||'"'
+              ||CHR(10)||'      "is_editable"                 "'||lv_layer_editable||'"'
+              ||CHR(10)||'      "show_in_map"                 "'||lv_layer_show_in_map||'"'
+              ||CHR(10)||'      "displayed_at_startup"        "'||lv_displayed_on_startup||'"'
+              ||CHR(10)||'      "displayed_in_legend"         "'||lv_displayed_in_legend||'"'
+              ||CHR(10)||'      "legend_group"                "'||lv_legend_group||'"'
               ||CHR(10)||'    END'
               ||CHR(10)||'    DEBUG 5'
               ||CHR(10)||'    TYPE '||lv_layer_type
@@ -1363,14 +1416,12 @@ AS
         --
         IF lv_theme_extra_cols IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||lv_theme_extra_cols
-                             ||CASE
-                                 WHEN lv_layer_network_element_type = 'S'
-                                  THEN
-                                     ', datum_lookup.ne_no_start start_node, datum_lookup.ne_no_end end_node'
-                                 ELSE
-                                     NULL
-                               END;
+            lv_layer_text := lv_layer_text||lv_theme_extra_cols;
+        END IF;
+        --
+        IF lv_layer_network_element_type = 'S'
+         THEN
+            lv_layer_text := lv_layer_text||', datum_lookup.ne_no_start start_node, datum_lookup.ne_no_end end_node';
         END IF;
         --
         lv_layer_text := lv_layer_text||', '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM '||LOWER(lt_themes(i).nth_feature_table)||' '||LOWER(lt_themes(i).nth_feature_table)
@@ -1531,10 +1582,10 @@ AS
       ||CHR(10)||'  END # OUTPUTFORMAT '
       ||CHR(10)||''
       ||CHR(10)||'  LEGEND'
-      ||CHR(10)||'    KEYSIZE 20 12'
+      ||CHR(10)||'    KEYSIZE 22 12'
       ||CHR(10)||'    KEYSPACING 8 8'
       ||CHR(10)||'    LABEL'
-      ||CHR(10)||'      FONT "SegoeUI"'
+      ||CHR(10)||'      FONT "MicrosoftSansSerifRegular"'
       ||CHR(10)||'      SIZE 10'
       ||CHR(10)||'      TYPE TRUETYPE'
       ||CHR(10)||'    END # LABEL'
