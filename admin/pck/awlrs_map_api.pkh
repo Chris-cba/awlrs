@@ -3,27 +3,29 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.3   09 Dec 2016 13:35:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.4   31 Jan 2017 15:52:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkh  $
-  --       Date into PVCS   : $Date:   09 Dec 2016 13:35:18  $
-  --       Date fetched Out : $Modtime:   09 Dec 2016 12:57:16  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   31 Jan 2017 15:52:58  $
+  --       Date fetched Out : $Modtime:   27 Jan 2017 17:52:22  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
   --
-  TYPE theme_types_rec IS RECORD(network_type          nm_types.nt_type%TYPE
-                                ,network_element_type  nm_elements_all.ne_type%TYPE
-                                ,network_is_linear     VARCHAR2(1)
-                                ,network_group_type    nm_group_types_all.ngt_group_type%TYPE
-                                ,network_partial_memb  VARCHAR2(1)
-                                ,node_type             nm_types.nt_node_type%TYPE
-                                ,unit_id               nm_units.un_unit_id%TYPE
-                                ,asset_type            nm_inv_types_all.nit_inv_type%TYPE
-                                ,editable              VARCHAR2(1));
+  TYPE theme_types_rec IS RECORD(admin_type                   nm_au_types.nat_admin_type%TYPE
+                                ,network_type                 nm_types.nt_type%TYPE
+                                ,network_element_type         nm_elements_all.ne_type%TYPE
+                                ,network_is_linear            VARCHAR2(1)
+                                ,network_is_incl_parent_type  VARCHAR2(1)
+                                ,network_group_type           nm_group_types_all.ngt_group_type%TYPE
+                                ,network_partial_memb         VARCHAR2(1)
+                                ,node_type                    nm_types.nt_node_type%TYPE
+                                ,unit_id                      nm_units.un_unit_id%TYPE
+                                ,asset_type                   nm_inv_types_all.nit_inv_type%TYPE
+                                ,editable                     VARCHAR2(1));
   TYPE theme_types_tab IS TABLE OF theme_types_rec INDEX BY BINARY_INTEGER;
   --
   TYPE wms_themes_rec IS RECORD(nwt_id                  v_nm_wms_themes.nwt_id%TYPE
