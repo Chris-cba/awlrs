@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.4   Jan 04 2017 14:31:16   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.5   Feb 01 2017 11:47:40   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Jan 04 2017 14:31:16  $
---       Date fetched Out : $Modtime:   Jan 04 2017 13:58:32  $
---       Version          : $Revision:   1.4  $
+--       Date into PVCS   : $Date:   Feb 01 2017 11:47:40  $
+--       Date fetched Out : $Modtime:   Feb 01 2017 11:44:34  $
+--       Version          : $Revision:   1.5  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 04-JAN-2017 13:58
+--       Generation Date  : 01-FEB-2017 11:44
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -705,6 +705,78 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 37);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,38
+      ,null
+      ,'The specified Node is not within tollerance of the element'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 38);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,39
+      ,null
+      ,'Membership of an Inclusion Parent Group cannot be modified'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 39);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,40
+      ,null
+      ,'Update of Start and/or End of a Member is not allowed for non Partial Group Types'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 40);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,41
+      ,null
+      ,'Invalid Group Member supplied'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 41);
 --
 ----------------------------------------------------------------------------------------
 --
