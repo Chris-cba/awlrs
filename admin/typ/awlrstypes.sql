@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/typ/awlrstypes.sql-arc   1.0   26 Sep 2016 18:18:44   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/typ/awlrstypes.sql-arc   1.1   02 Feb 2017 10:03:10   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrstypes.sql  $
---       Date into PVCS   : $Date:   26 Sep 2016 18:18:44  $
---       Date fetched Out : $Modtime:   26 Sep 2016 17:14:48  $
---       Version          : $Revision:   1.0  $
+--       Date into PVCS   : $Date:   02 Feb 2017 10:03:10  $
+--       Date fetched Out : $Modtime:   02 Feb 2017 09:50:40  $
+--       Version          : $Revision:   1.1  $
 -------------------------------------------------------------------------
---   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
 --
 SET TERM ON
