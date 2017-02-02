@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_inst.sql-arc   1.1   Jan 05 2017 11:10:20   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_inst.sql-arc   1.2   02 Feb 2017 10:03:12   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs_inst.sql  $
---       Date into PVCS   : $Date:   Jan 05 2017 11:10:20  $
---       Date fetched Out : $Modtime:   Jan 05 2017 10:33:08  $
---       Version          : $Revision:   1.1  $
+--       Date into PVCS   : $Date:   02 Feb 2017 10:03:12  $
+--       Date fetched Out : $Modtime:   02 Feb 2017 09:51:20  $
+--       Version          : $Revision:   1.2  $
 -------------------------------------------------------------------------
---   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
 --
 UNDEFINE exor_base
