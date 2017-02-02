@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_replace_api.pkb-arc   1.4   13 Dec 2016 13:04:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_replace_api.pkb-arc   1.5   02 Feb 2017 10:02:42   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_replace_api.pkb  $
-  --       Date into PVCS   : $Date:   13 Dec 2016 13:04:14  $
-  --       Date fetched Out : $Modtime:   13 Dec 2016 11:39:04  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:42  $
+  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
-  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_replace_api';
   --
   g_disp_derived    BOOLEAN := TRUE;
