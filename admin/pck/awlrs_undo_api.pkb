@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkb-arc   1.5   31 Oct 2016 17:22:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkb-arc   1.6   02 Feb 2017 10:02:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_undo_api.pkb  $
-  --       Date into PVCS   : $Date:   31 Oct 2016 17:22:28  $
-  --       Date fetched Out : $Modtime:   31 Oct 2016 17:16:40  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:56  $
+  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
-  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_undo_api';
   --
   --
