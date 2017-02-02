@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_node_api.pkh-arc   1.1   13 Oct 2016 12:49:40   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_node_api.pkh-arc   1.2   02 Feb 2017 10:02:32   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_node_api.pkh  $
-  --       Date into PVCS   : $Date:   13 Oct 2016 12:49:40  $
-  --       Date fetched Out : $Modtime:   13 Oct 2016 12:48:20  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:32  $
+  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
-  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
 
   --
   -----------------------------------------------------------------------------
