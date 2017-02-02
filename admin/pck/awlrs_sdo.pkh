@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.0   26 Sep 2016 18:17:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.1   02 Feb 2017 10:02:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkh  $
-  --       Date into PVCS   : $Date:   26 Sep 2016 18:17:30  $
-  --       Date fetched Out : $Modtime:   26 Sep 2016 17:09:26  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:50  $
+  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
-  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
   --
   TYPE gtype_rec IS RECORD(theme_id  nm_theme_gtypes.ntg_theme_id%TYPE
                           ,gtype     nm_theme_gtypes.ntg_gtype%TYPE);
