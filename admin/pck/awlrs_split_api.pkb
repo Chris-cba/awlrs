@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.9   02 Feb 2017 10:02:52   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.10   02 Feb 2017 11:12:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:52  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   02 Feb 2017 11:12:16  $
+  --       Date fetched Out : $Modtime:   02 Feb 2017 11:09:32  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -371,14 +371,14 @@ AS
         END;
     END IF;
     --
-    lr_ne := nm3net.get_ne( pi_ne_id )
+    lr_ne := nm3net.get_ne(pi_ne_id);
     IF NOT nm3net.element_is_a_datum(pi_ne_type => lr_ne.ne_type)
      AND lv_datum_split
      THEN
         lv_datum_only := 'N';
     END IF;
     --
-    po_datum_only := lv_datum_only;
+    po_split_datum_only := lv_datum_only;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -386,7 +386,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
-        po_datum_only := lv_datum_only;
+        po_split_datum_only := lv_datum_only;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END check_element_can_be_split;
@@ -406,21 +406,21 @@ AS
          ;
      --
      lv_node_id    nm_nodes.no_node_id%TYPE;
-     lv_row_found  BOOLEAN;
+     lv_node_found  BOOLEAN;
      --
   BEGIN
   	IF pi_node_id IS NOT NULL
   	 THEN
         NM3CTX.SET_CONTEXT('PROX_NE_ID', TO_CHAR(pi_ne_id));
         --  	  
-        OPEN  chk_node;
+        OPEN  chk_node(pi_node_id);
         FETCH chk_node
          INTO lv_node_id;
         --
         lv_node_found := chk_node%FOUND;        
         CLOSE chk_node;
         --
-        IF NOT l_row_found
+        IF NOT lv_node_found
          THEN
             hig.raise_ner(pi_appl => 'AWLRS'
                          ,pi_id   => 38);
