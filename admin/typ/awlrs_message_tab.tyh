@@ -1,0 +1,20 @@
+CREATE OR REPLACE TYPE awlrs_message_tab
+-------------------------------------------------------------------------
+--   PVCS Identifiers :-
+--
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/typ/awlrs_message_tab.tyh-arc   1.1   02 Feb 2017 10:03:06   Mike.Huitson  $
+--       Module Name      : $Workfile:   awlrs_message_tab.tyh  $
+--       Date into PVCS   : $Date:   02 Feb 2017 10:03:06  $
+--       Date fetched Out : $Modtime:   02 Feb 2017 09:50:40  $
+--       Version          : $Revision:   1.1  $
+-------------------------------------------------------------------------
+--   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+-------------------------------------------------------------------------
+--
+IS TABLE OF awlrs_message
+/
+
+
+
+
+
