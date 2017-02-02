@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.6   31 Jan 2017 16:26:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.7   02 Feb 2017 09:24:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   31 Jan 2017 16:26:28  $
-  --       Date fetched Out : $Modtime:   31 Jan 2017 16:25:08  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   02 Feb 2017 09:24:48  $
+  --       Date fetched Out : $Modtime:   02 Feb 2017 09:23:18  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -446,6 +446,9 @@ AS
                             ,pi_effective_date => TRUNC(pi_effective_date)
                             ,pi_use_history    => 'Y');
     END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
