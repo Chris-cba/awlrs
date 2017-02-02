@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_recalibrate_api.pkb-arc   1.1   11 Jan 2017 15:55:26   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_recalibrate_api.pkb-arc   1.2   02 Feb 2017 10:02:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_recalibrate_api.pkb  $
-  --       Date into PVCS   : $Date:   11 Jan 2017 15:55:26  $
-  --       Date fetched Out : $Modtime:   10 Jan 2017 17:47:02  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:36  $
+  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
-  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_recalibrate_api';
   --
