@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkh-arc   1.2   13 Dec 2016 13:04:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkh-arc   1.3   02 Feb 2017 10:02:54   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkh  $
-  --       Date into PVCS   : $Date:   13 Dec 2016 13:04:14  $
-  --       Date fetched Out : $Modtime:   13 Dec 2016 11:45:58  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:54  $
+  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
-  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
   --
   g_new_element_1  nm_elements_all%ROWTYPE;
   g_new_element_2  nm_elements_all%ROWTYPE;
@@ -52,9 +52,38 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_coinciding_nodes(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                ,pi_offset           IN  NUMBER
+                                ,po_node_count       OUT NUMBER
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_datum_offset(pi_group_ne_id      IN  nm_elements_all.ne_id%TYPE
+                            ,pi_group_offset     IN  NUMBER
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE check_element_can_be_split(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                      ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE do_split(pi_ne_id                IN     nm_elements_all.ne_id%TYPE
                     ,pi_split_offset         IN     NUMBER
                     ,pi_split_at_node_id     IN     nm_nodes.no_node_id%TYPE
+                    ,pi_split_datum_id       IN     nm_elements_all.ne_id%TYPE DEFAULT NULL
+                    ,pi_split_datum_offset   IN     NUMBER DEFAULT NULL
                     ,pi_reason               IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                     ,pi_new_element1_attribs IN     awlrs_element_api.flex_attr_tab
                     ,pi_new_element2_attribs IN     awlrs_element_api.flex_attr_tab
@@ -69,6 +98,8 @@ AS
   PROCEDURE do_split(pi_ne_id                     IN     nm_elements_all.ne_id%TYPE
                     ,pi_split_offset              IN     NUMBER
                     ,pi_split_at_node_id          IN     nm_nodes.no_node_id%TYPE
+                    ,pi_split_datum_id            IN     nm_elements_all.ne_id%TYPE DEFAULT NULL
+                    ,pi_split_datum_offset        IN     NUMBER DEFAULT NULL
                     ,pi_reason                    IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                     ,pi_new_element1_column_names IN     awlrs_element_api.attrib_column_name_tab
                     ,pi_new_element1_prompts      IN     awlrs_element_api.attrib_prompt_tab
