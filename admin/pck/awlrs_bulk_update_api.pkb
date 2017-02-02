@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_bulk_update_api.pkb-arc   1.0   02 Feb 2017 09:38:10   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_bulk_update_api.pkb-arc   1.1   02 Feb 2017 10:02:06   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_bulk_update_api.pkb  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 09:38:10  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:33:40  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:06  $
+  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
-  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_bulk_update_api';
   --
