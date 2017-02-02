@@ -3,22 +3,38 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.8   13 Dec 2016 13:04:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.9   02 Feb 2017 10:02:52   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   13 Dec 2016 13:04:14  $
-  --       Date fetched Out : $Modtime:   13 Dec 2016 11:45:58  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:52  $
+  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
-  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
   g_disp_inherited  BOOLEAN := FALSE;
   g_disp_primary_ad BOOLEAN := FALSE;
+  --
+  c_nodes_within_tolerance_sql VARCHAR2(1000) := 'SELECT no_node_name, no_descr, no_node_id'
+                                      ||CHR(10)||'  FROM nm_node_usages'
+                                      ||CHR(10)||'      ,nm_members'
+                                      ||CHR(10)||'      ,nm_nodes'
+                                      ||CHR(10)||'      ,nm_route_nodes'
+                                      ||CHR(10)||' WHERE node_id = nnu_no_node_id'
+                                      ||CHR(10)||'   AND node_type != ''T'''
+                                      ||CHR(10)||'   AND nnu_ne_id = nm_ne_id_of'
+                                      ||CHR(10)||'   AND nnu_no_node_id = no_node_id'
+                                      ||CHR(10)||'   AND nm_ne_id_in = :ne_id'
+                                      ||CHR(10)||'   AND nnu_chain = decode(nm_cardinality,-1,nm_end_mp,nm_begin_mp)'
+                                      ||CHR(10)||'   AND nm_slk + nm3unit.convert_unit(:datum_units'
+                                      ||CHR(10)||'                                    ,:route_units'
+                                      ||CHR(10)||'                                    ,nm_begin_mp) BETWEEN (:split_offset - :tolerance)'
+                                      ||CHR(10)||'                                                      AND (:split_offset + :tolerance)';
   --
   --
   -----------------------------------------------------------------------------
@@ -73,8 +89,8 @@ AS
     awlrs_element_api.get_nt_flex_attribs(pi_ne_id            => pi_ne_id
                                          ,pi_nt_type          => pi_nt_type
                                          ,pi_group_type       => pi_group_type
-                                         ,pi_disp_derived     => g_disp_derived   
-                                         ,pi_disp_inherited   => g_disp_inherited 
+                                         ,pi_disp_derived     => g_disp_derived
+                                         ,pi_disp_inherited   => g_disp_inherited
                                          ,pi_disp_primary_ad  => g_disp_primary_ad
                                          ,po_message_severity => lv_message_severity
                                          ,po_message_cursor   => lv_message_cursor
@@ -107,8 +123,8 @@ AS
     lt_attrib_values := awlrs_element_api.get_nt_flex_attribs(pi_ne_id           => pi_ne_id
                                                              ,pi_nt_type         => pi_nt_type
                                                              ,pi_group_type      => pi_group_type
-                                                             ,pi_disp_derived    => g_disp_derived   
-                                                             ,pi_disp_inherited  => g_disp_inherited 
+                                                             ,pi_disp_derived    => g_disp_derived
+                                                             ,pi_disp_inherited  => g_disp_inherited
                                                              ,pi_disp_primary_ad => g_disp_primary_ad);
     --
     RETURN lt_attrib_values;
@@ -118,9 +134,309 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION get_nodes_within_tolerance(pi_ne_id       IN nm_elements.ne_id%TYPE
+                                     ,pi_datum_units IN nm_units.un_unit_id%TYPE
+                                     ,pi_route_units IN nm_units.un_unit_id%TYPE
+                                     ,pi_offset      IN NUMBER
+                                     ,pi_tolerance   IN NUMBER) 
+    RETURN nm3lrs.tab_rec_nodes IS
+    --
+    lv_cursor  sys_refcursor;
+    --
+    lt_retval  nm3lrs.tab_rec_nodes;
+    --
+  BEGIN
+    --
+    OPEN lv_cursor FOR c_nodes_within_tolerance_sql
+    USING pi_ne_id
+         ,pi_datum_units
+         ,pi_route_units
+         ,pi_offset
+         ,pi_tolerance
+         ,pi_offset
+         ,pi_tolerance;
+    FETCH lv_cursor
+     BULK COLLECT
+     INTO lt_retval;
+    CLOSE lv_cursor;
+    --
+    RETURN lt_retval;
+    --
+  END get_nodes_within_tolerance;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_coinciding_nodes(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                ,pi_offset           IN  NUMBER
+                                ,po_node_count       OUT NUMBER
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_empty_cur      VARCHAR2(1000) := 'SELECT no_node_name, no_descr, no_node_id FROM nm_nodes WHERE 1=2';
+    lv_datum_nt       nm_types.nt_type%TYPE;
+    lv_datum_units    nm_units.un_unit_id%TYPE;
+    lv_route_units    nm_units.un_unit_id%TYPE;
+    lv_tolerance_opt  hig_option_values.hov_value%TYPE;
+    lv_tolerance      PLS_INTEGER;
+    --
+    lr_ne  nm_elements_all%ROWTYPE;
+    --
+    lt_nodes  nm3lrs.tab_rec_nodes;
+    --
+  BEGIN
+    --
+    lr_ne := nm3net.get_ne(pi_ne_id => pi_ne_id);
+    --
+    IF nm3net.element_is_a_group(pi_ne_type => lr_ne.ne_type)
+     THEN
+        --
+        nm3net_o.set_g_ne_id_to_restrict_on(pi_ne_id => lr_ne.ne_id);
+        lt_nodes := nm3lrs.get_coinciding_nodes(pi_route_ne_id => lr_ne.ne_id
+                                               ,pi_offset      => pi_offset);
+        --
+        IF lt_nodes.COUNT > 0
+         THEN
+            /*
+            ||Return the coinciding_nodes cursor.
+            */
+            OPEN po_cursor FOR nm3lrs.get_coinciding_nodes_sql(pi_route_ne_id => lr_ne.ne_id
+                                                              ,pi_offset      => pi_offset);
+            --set_split_point_fields;
+        ELSE
+            /*
+            ||No coinsiding nodes found to check for nodes within tolerance of the given offset.
+            */
+            lv_datum_nt := nm3net.get_datum_nt(pi_gty => lr_ne.ne_gty_group_type);
+            lv_datum_units := nm3net.get_nt_units(p_nt_type => lv_datum_nt);
+            lv_route_units := nm3net.get_nt_units(p_nt_type => lr_ne.ne_nt_type);
+            lv_tolerance_opt := hig.get_sysopt('NODETOL');
+            lv_tolerance := TO_NUMBER(lv_tolerance_opt);
+            --
+            lt_nodes := get_nodes_within_tolerance(pi_ne_id       => lr_ne.ne_id
+                                                  ,pi_datum_units => lv_datum_units
+                                                  ,pi_route_units => lv_route_units
+                                                  ,pi_offset      => pi_offset
+                                                  ,pi_tolerance   => lv_tolerance);
+            IF lt_nodes.COUNT > 0
+             THEN
+                /*
+                ||Return the coinciding_nodes cursor.
+                */
+                OPEN po_cursor FOR c_nodes_within_tolerance_sql
+                USING lr_ne.ne_id
+                     ,lv_datum_units
+                     ,lv_route_units
+                     ,pi_offset
+                     ,lv_tolerance
+                     ,pi_offset
+                     ,lv_tolerance;
+            ELSE
+                OPEN po_cursor FOR lv_empty_cur;
+            END IF;
+        END IF;
+    END IF;
+    --
+    po_node_count := lt_nodes.COUNT;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_coinciding_nodes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_datum_offset(pi_group_ne_id      IN  nm_elements_all.ne_id%TYPE
+                            ,pi_group_offset     IN  NUMBER
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lt_lref          nm3lrs.lref_table;
+    lv_parent_units  nm_units.un_unit_id%TYPE;
+    lv_child_units   nm_units.un_unit_id%TYPE;
+    --
+  BEGIN
+    --
+    Nm3net.get_group_units(pi_ne_id       => pi_group_ne_id
+                          ,po_group_units => lv_parent_units
+                          ,po_child_units => lv_child_units);
+    --
+    DECLARE
+      no_datum  EXCEPTION;
+      PRAGMA    exception_init(no_datum, -20015);
+    BEGIN
+      nm3lrs.get_ambiguous_lrefs(p_parent_id    => pi_group_ne_id
+                                ,p_parent_units => lv_parent_units
+                                ,p_datum_units  => lv_child_units
+                                ,p_offset       => pi_group_offset
+                                ,p_lrefs        => lt_lref);
+    EXCEPTION
+      WHEN no_datum
+       THEN
+          hig.raise_ner(pi_appl => 'NET'
+                       ,pi_id   => 85);
+    END;
+    --
+    IF lt_lref(1).r_offset = 0
+     OR lt_lref(1).r_offset = nm3net.get_ne_length(p_ne_id => lt_lref(1).r_ne_id)
+     THEN
+          hig.raise_ner(pi_appl => 'NET'
+                       ,pi_id   => 358);
+    END IF;
+    --
+    OPEN po_cursor FOR
+    SELECT ne_id
+          ,ne_unique
+          ,ne_descr
+          ,lt_lref(1).r_offset
+      FROM nm_elements
+     WHERE ne_id = lt_lref(1).r_ne_id
+         ;
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+    --
+  END get_datum_offset;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE check_element_can_be_split(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                      ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                                      ,po_split_datum_only OUT VARCHAR2
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    lv_datum_split  BOOLEAN := TRUE;
+    lv_datum_only   VARCHAR2(1) := 'Y';
+    --
+    lr_ne  nm_elements_all%ROWTYPE;
+  BEGIN
+    /*
+    ||Make sure the element can be split.
+    */
+    BEGIN
+      nm3split.check_element_can_be_split(pi_ne_id          => pi_ne_id
+                                         ,pi_effective_date => pi_effective_date);
+    EXCEPTION
+		  WHEN others
+       THEN
+		      IF SQLERRM LIKE '%Start point of group is ambiguous.%'
+		       THEN
+		      	  lv_datum_split := FALSE;
+          --
+		      ELSIF UPPER(SQLERRM) LIKE '%NET-0361%'
+		      THEN
+		      -- Don't allow spilt of route if autoincluded into
+		      --
+              lv_datum_split := FALSE;
+		      ELSE
+		      	  RAISE;
+		      END IF;
+    END;
+    /*
+    ||If the above check has not already set lv_datum_split to FLASE then
+    ||check whether the split should only be applied to the underlying Datum.
+    ||NB. the name of procedure nm3split.datum_split_required is misleading
+    ||it will return true if the ne_id passed in is either:
+    ||  * A Datum Element.
+    ||  * A Partial Group and the underlying Datum Unique can be derived without user
+    ||    input (because when splitting the Group as well as the Datum the attributes
+    ||    presented to the user will be those of the Group Type.
+    ||All other circumstances will return FALSE.
+    */
+    IF lv_datum_split
+     THEN
+        BEGIN
+          lv_datum_split := nm3split.datum_split_required(pi_ne_id            => pi_ne_id
+                                                         ,pi_split_at_node_id => null);
+        EXCEPTION
+          WHEN others
+           THEN
+              lv_datum_split := FALSE;
+        END;
+    END IF;
+    --
+    lr_ne := nm3net.get_ne( pi_ne_id )
+    IF NOT nm3net.element_is_a_datum(pi_ne_type => lr_ne.ne_type)
+     AND lv_datum_split
+     THEN
+        lv_datum_only := 'N';
+    END IF;
+    --
+    po_datum_only := lv_datum_only;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        po_datum_only := lv_datum_only;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END check_element_can_be_split;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_node(pi_ne_id   IN nm_elements_all.ne_id%TYPE
+                         ,pi_node_id IN nm_nodes.no_node_id%TYPE)
+    IS
+    --
+  	CURSOR chk_node(cp_node_id IN nm_nodes.no_node_id%TYPE)
+        IS
+  	SELECT no_node_id
+      FROM v_node_proximity_check
+     WHERE no_node_id = cp_node_id
+         ;
+     --
+     lv_node_id    nm_nodes.no_node_id%TYPE;
+     lv_row_found  BOOLEAN;
+     --
+  BEGIN
+  	IF pi_node_id IS NOT NULL
+  	 THEN
+        NM3CTX.SET_CONTEXT('PROX_NE_ID', TO_CHAR(pi_ne_id));
+        --  	  
+        OPEN  chk_node;
+        FETCH chk_node
+         INTO lv_node_id;
+        --
+        lv_node_found := chk_node%FOUND;        
+        CLOSE chk_node;
+        --
+        IF NOT l_row_found
+         THEN
+            hig.raise_ner(pi_appl => 'AWLRS'
+                         ,pi_id   => 38);
+  	    END IF;	
+        --
+    END IF;
+  END;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE do_split(pi_ne_id                IN     nm_elements_all.ne_id%TYPE
                     ,pi_split_offset         IN     NUMBER
                     ,pi_split_at_node_id     IN     nm_nodes.no_node_id%TYPE
+                    ,pi_split_datum_id       IN     nm_elements_all.ne_id%TYPE DEFAULT NULL
+                    ,pi_split_datum_offset   IN     NUMBER DEFAULT NULL
                     ,pi_reason               IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                     ,pi_new_element1_attribs IN     awlrs_element_api.flex_attr_tab
                     ,pi_new_element2_attribs IN     awlrs_element_api.flex_attr_tab
@@ -143,6 +459,19 @@ AS
     ||Set a save point.
     */
     SAVEPOINT do_split_sp;
+    /*
+    ||Make sure the element can be split.
+    */
+    nm3split.check_element_can_be_split(pi_ne_id          => pi_ne_id
+                                       ,pi_effective_date => pi_effective_date);
+    /*
+    ||Check that the given node is valid.
+    */
+    IF pi_split_at_node_id IS NOT NULL
+     THEN
+        validate_node(pi_ne_id   => pi_ne_id
+                     ,pi_node_id => pi_split_at_node_id);
+    END IF;
     --
     init_element_globals;
     --
@@ -183,12 +512,13 @@ AS
                                     ,pi_ne_id_2                => po_new_ne_ids(2)
                                     ,pi_effective_date         => pi_effective_date
                                     ,pi_split_offset           => pi_split_offset
-                                    ,pi_non_ambig_ne_id        => NULL --:split.datum_ne
-                                    ,pi_non_ambig_split_offset => NULL --:split.datum_offset
+                                    ,pi_non_ambig_ne_id        => pi_split_datum_id
+                                    ,pi_non_ambig_split_offset => pi_split_datum_offset
                                     ,pi_split_at_node_id       => pi_split_at_node_id
                                     ,pi_create_node            => lv_create_node
                                     /*
-                                    ||SM always creates a new node when splitting at measure and allows the core api to generate the detail.
+                                    ||SM always creates a new node when splitting at measure
+                                    ||and allows the core api to generate the detail.
                                     */
                                     ,pi_node_id                => lv_new_node_id
                                     ,pi_no_node_name           => NULL --:split.cre_node_name
@@ -239,6 +569,8 @@ AS
   PROCEDURE do_split(pi_ne_id                     IN     nm_elements_all.ne_id%TYPE
                     ,pi_split_offset              IN     NUMBER
                     ,pi_split_at_node_id          IN     nm_nodes.no_node_id%TYPE
+                    ,pi_split_datum_id            IN     nm_elements_all.ne_id%TYPE DEFAULT NULL
+                    ,pi_split_datum_offset        IN     NUMBER DEFAULT NULL
                     ,pi_reason                    IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                     ,pi_new_element1_column_names IN     awlrs_element_api.attrib_column_name_tab
                     ,pi_new_element1_prompts      IN     awlrs_element_api.attrib_prompt_tab
@@ -289,6 +621,8 @@ AS
     do_split(pi_ne_id                => pi_ne_id
             ,pi_split_offset         => pi_split_offset
             ,pi_split_at_node_id     => pi_split_at_node_id
+            ,pi_split_datum_id       => pi_split_datum_id
+            ,pi_split_datum_offset   => pi_split_datum_offset
             ,pi_reason               => pi_reason
             ,pi_new_element1_attribs => lt_new_element1_attribs
             ,pi_new_element2_attribs => lt_new_element2_attribs
