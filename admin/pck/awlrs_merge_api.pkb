@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.8   13 Dec 2016 13:04:16   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.9   02 Feb 2017 10:02:26   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_merge_api.pkb  $
-  --       Date into PVCS   : $Date:   13 Dec 2016 13:04:16  $
-  --       Date fetched Out : $Modtime:   13 Dec 2016 11:11:42  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:26  $
+  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
-  --   Copyright (c) 2016 Bentley Systems Incorporated. All rights reserved.
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_merge_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
