@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.3   02 Feb 2017 10:02:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.4   03 Feb 2017 10:38:06   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkb  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:46  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   03 Feb 2017 10:38:06  $
+  --       Date fetched Out : $Modtime:   03 Feb 2017 10:37:00  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reshape_api';
   --
@@ -227,8 +227,8 @@ AS
                            ,pi_new_element_column_names IN     awlrs_element_api.attrib_column_name_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_column_name_tab)
                            ,pi_new_element_prompts      IN     awlrs_element_api.attrib_prompt_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_prompt_tab)
                            ,pi_new_element_char_values  IN     awlrs_element_api.attrib_char_value_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_char_value_tab)
-                           ,pi_new_start_node           IN     nm_elements_all.ne_no_start%TYPE
-                           ,pi_new_end_node             IN     nm_elements_all.ne_no_end%TYPE
+                           ,pi_new_start_node           IN     nm_elements_all.ne_no_start%TYPE DEFAULT NULL
+                           ,pi_new_end_node             IN     nm_elements_all.ne_no_end%TYPE DEFAULT NULL
                            ,pi_do_recalibrate           IN     VARCHAR2 DEFAULT 'N'
                            ,pi_recal_start_point        IN     NUMBER DEFAULT NULL
                            ,pi_recal_new_length_to_end  IN     NUMBER DEFAULT NULL
