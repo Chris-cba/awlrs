@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.8   02 Feb 2017 10:02:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.9   06 Feb 2017 10:06:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:18  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   06 Feb 2017 10:06:14  $
+  --       Date fetched Out : $Modtime:   06 Feb 2017 09:59:06  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -49,12 +49,13 @@ AS
           ,member_element_id
           ,member_seq_no
           ,member_unique
+          ,member_length
           ,member_start_node
           ,member_end_node
           ,member_start_mp
           ,member_end_mp
           ,member_partial_ind
-          ,member_length
+          ,member_membership_length
           ,member_offset
           ,CASE WHEN member_poe = 0 THEN NULL WHEN member_poe < 0 THEN 'O' ELSE 'G' END member_poe
           ,member_cardinality
@@ -62,6 +63,7 @@ AS
           ,member_end_date
       FROM (SELECT nm_seq_no member_seq_no
                   ,ne.ne_unique member_unique
+                  ,nm3net.get_ne_length(ne.ne_id) member_length
                   ,ne.ne_no_start member_start_node
                   ,ne.ne_no_end member_end_node
                   ,nm.nm_begin_mp member_start_mp
@@ -74,7 +76,7 @@ AS
                      ELSE
                          'Y'
                    END member_partial_ind
-                  ,(nm.nm_end_mp - nm.nm_begin_mp) member_length
+                  ,(nm.nm_end_mp - nm.nm_begin_mp) member_membership_length
                   ,nm.nm_slk member_offset
                   ,nm3net_o.get_node_class(nm.nm_ne_id_in
                                           ,CASE WHEN nm.nm_cardinality = 1 THEN ne.ne_no_start ELSE ne.ne_no_end END).nc_poe member_poe
