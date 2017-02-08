@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_persistence_api.pkb-arc   1.4   08 Feb 2017 10:45:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_persistence_api.pkb-arc   1.5   08 Feb 2017 10:59:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_persistence_api.pkb  $
-  --       Date into PVCS   : $Date:   08 Feb 2017 10:45:12  $
-  --       Date fetched Out : $Modtime:   08 Feb 2017 10:33:10  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   08 Feb 2017 10:59:56  $
+  --       Date fetched Out : $Modtime:   08 Feb 2017 10:57:02  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_persistence_api';
   --
@@ -70,8 +70,8 @@ AS
                 ,ap_key
                 ,ap_data)
           VALUES(ap_id_seq.NEXTVAL
-                ,param.param_product
                 ,param.user_id
+                ,param.param_product
                 ,param.param_key
                 ,param.param_data)
     ;
