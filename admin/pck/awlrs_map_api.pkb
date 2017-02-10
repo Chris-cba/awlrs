@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.8   02 Feb 2017 10:02:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.9   10 Feb 2017 15:26:42   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:22  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   10 Feb 2017 15:26:42  $
+  --       Date fetched Out : $Modtime:   10 Feb 2017 14:40:42  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -1521,8 +1521,8 @@ AS
       ||CHR(10)||'      "wfs_onlineresource"          "http://localhost/cgi-bin/mapserv"'
       ||CHR(10)||'      "wms_title"                   "WMS '||NVL(lr_usm.description,lr_usm.name)||'"'
       ||CHR(10)||'      "wfs_title"                   "WFS '||NVL(lr_usm.description,lr_usm.name)||'"'
-      ||CHR(10)||'      "wms_srs"                     "'||lv_wms_srs||'EPSG:900913"'
-      ||CHR(10)||'      "wfs_srs"                     "'||lv_wms_srs||'EPSG:900913"'
+      ||CHR(10)||'      "wms_srs"                     "'||lv_wms_srs||'EPSG:3857"'
+      ||CHR(10)||'      "wfs_srs"                     "'||lv_wms_srs||'EPSG:3857"'
       ||CHR(10)||'      "wfs_abstract"                "Bentley AWLRS Service."'
       ||CHR(10)||'      "wfs_request_method"          "GET"'
       ||CHR(10)||'      "wfs_enable_request"          "*"'
