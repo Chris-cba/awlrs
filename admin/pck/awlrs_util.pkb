@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.10   02 Feb 2017 10:03:00   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.11   14 Feb 2017 16:40:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:03:00  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   14 Feb 2017 16:40:14  $
+  --       Date fetched Out : $Modtime:   14 Feb 2017 16:36:40  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -613,7 +613,7 @@ AS
                                 ,po_message_severity OUT hig_codes.hco_code%TYPE)
     IS
     --
-    lv_severity  hig_codes.hco_code%TYPE;
+    lv_severity  hig_codes.hco_code%TYPE := c_msg_cat_success;
     --
   BEGIN
     --
@@ -639,12 +639,8 @@ AS
              THEN
                 lv_severity := c_msg_cat_info;
             END IF;
-        WHEN c_msg_cat_success
-         THEN
-            IF lv_severity NOT IN (c_msg_cat_ask_continue,c_msg_cat_warning,c_msg_cat_info)
-             THEN
-                lv_severity := c_msg_cat_success;
-            END IF;
+        ELSE
+            NULL;
       END CASE;
       --
     END LOOP;
