@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkh-arc   1.5   10 Feb 2017 18:29:24   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkh-arc   1.6   14 Feb 2017 14:41:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkh  $
-  --       Date into PVCS   : $Date:   10 Feb 2017 18:29:24  $
-  --       Date fetched Out : $Modtime:   07 Feb 2017 21:02:22  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   14 Feb 2017 14:41:48  $
+  --       Date fetched Out : $Modtime:   14 Feb 2017 14:12:14  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
   --
   g_new_element_1  nm_elements_all%ROWTYPE;
   g_new_element_2  nm_elements_all%ROWTYPE;
@@ -64,6 +64,7 @@ AS
   --
   PROCEDURE get_datum_offset(pi_group_ne_id      IN  nm_elements_all.ne_id%TYPE
                             ,pi_group_offset     IN  NUMBER
+                            ,po_datum_offset     OUT NUMBER
                             ,po_message_severity OUT hig_codes.hco_code%TYPE
                             ,po_message_cursor   OUT sys_refcursor
                             ,po_cursor           OUT sys_refcursor);
@@ -85,6 +86,7 @@ AS
                                    ,pi_split_at_node_id IN  nm_nodes.no_node_id%TYPE
                                    ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                                    ,po_split_datum_only OUT VARCHAR2
+                                   ,po_datum_offset     OUT NUMBER
                                    ,po_datum_cursor     OUT sys_refcursor
                                    ,po_node_count       OUT PLS_INTEGER
                                    ,po_node_cursor      OUT sys_refcursor

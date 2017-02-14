@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.11   10 Feb 2017 18:29:24   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.12   14 Feb 2017 14:41:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   10 Feb 2017 18:29:24  $
-  --       Date fetched Out : $Modtime:   09 Feb 2017 15:56:42  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   14 Feb 2017 14:41:48  $
+  --       Date fetched Out : $Modtime:   14 Feb 2017 14:37:32  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -271,9 +271,10 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_datum_offset(pi_group_ne_id  IN  nm_elements_all.ne_id%TYPE
-                            ,pi_group_offset IN  NUMBER
-                            ,po_cursor       OUT sys_refcursor)
+  PROCEDURE get_datum_offset(pi_group_ne_id  IN     nm_elements_all.ne_id%TYPE
+                            ,pi_group_offset IN     NUMBER
+                            ,po_datum_ne_id  IN OUT nm_elements_all.ne_id%TYPE
+                            ,po_datum_offset IN OUT NUMBER)
     IS
     --
     lv_parent_units  nm_units.un_unit_id%TYPE;
@@ -324,14 +325,8 @@ AS
                        ,pi_id   => 358);
     END IF;
     --
-    OPEN po_cursor FOR
-    SELECT ne_id               datum_ne_id
-          ,ne_unique           datum_unique
-          ,ne_descr            datum_descr
-          ,lt_lref(1).r_offset datum_offset
-      FROM nm_elements
-     WHERE ne_id = lt_lref(1).r_ne_id
-         ;
+    po_datum_ne_id := lt_lref(1).r_ne_id;
+    po_datum_offset := lt_lref(1).r_offset;
     --
   END get_datum_offset;
 
@@ -340,15 +335,26 @@ AS
   --
   PROCEDURE get_datum_offset(pi_group_ne_id      IN  nm_elements_all.ne_id%TYPE
                             ,pi_group_offset     IN  NUMBER
+                            ,po_datum_offset     OUT NUMBER
                             ,po_message_severity OUT hig_codes.hco_code%TYPE
                             ,po_message_cursor   OUT sys_refcursor
                             ,po_cursor           OUT sys_refcursor)
     IS
+    --
+    lv_datum_id  nm_elements_all.ne_id%TYPE;
+    lt_ids       awlrs_util.ne_id_tab;
+    --
   BEGIN
+    --
+    lt_ids(1) := NULL;
     --
     get_datum_offset(pi_group_ne_id  => pi_group_ne_id
                     ,pi_group_offset => pi_group_offset
-                    ,po_cursor       => po_cursor);
+                    ,po_datum_ne_id  => lt_ids(1)
+                    ,po_datum_offset => po_datum_offset);
+    --
+    awlrs_element_api.get_elements(pi_ne_ids => lt_ids
+                                  ,po_cursor => po_cursor);
     --
   EXCEPTION
     WHEN others
@@ -393,7 +399,6 @@ AS
 		          -- Don't allow spilt of route if autoincluded into
               lv_group_split := FALSE;
     		      --
-              RAISE;
 		      ELSE
 		      	  RAISE;
 		      END IF;
@@ -507,6 +512,7 @@ AS
                                    ,pi_split_at_node_id IN  nm_nodes.no_node_id%TYPE
                                    ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                                    ,po_split_datum_only OUT VARCHAR2
+                                   ,po_datum_offset     OUT NUMBER
                                    ,po_datum_cursor     OUT sys_refcursor
                                    ,po_node_count       OUT PLS_INTEGER
                                    ,po_node_cursor      OUT sys_refcursor
@@ -514,13 +520,11 @@ AS
                                    ,po_message_cursor   OUT sys_refcursor)
     IS
     --
-    --lv_severity  hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
-    lv_is_datum    VARCHAR2(1);
-    lv_datum_only  VARCHAR2(1) := 'Y';
+    lv_is_datum  VARCHAR2(1);
     --
     lr_ne  nm_elements_all%ROWTYPE;
     --
-    --lt_messages  awlrs_message_tab := awlrs_message_tab();
+    lt_ids  awlrs_util.ne_id_tab;
     --
   BEGIN
     --
@@ -553,9 +557,15 @@ AS
         --
     ELSE
         --
+        lt_ids(1) := NULL;
+        --
         get_datum_offset(pi_group_ne_id  => pi_ne_id
                         ,pi_group_offset => pi_split_offset
-                        ,po_cursor       => po_datum_cursor);
+                        ,po_datum_ne_id  => lt_ids(1)
+                        ,po_datum_offset => po_datum_offset);
+        --
+        awlrs_element_api.get_elements(pi_ne_ids => lt_ids
+                                      ,po_cursor => po_datum_cursor);
         --
         get_coinciding_nodes(pi_ne_id      => pi_ne_id
                             ,pi_offset     => pi_split_offset
@@ -570,7 +580,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
-        po_split_datum_only := lv_datum_only;
+        po_split_datum_only := 'Y';
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END validate_split_position;
