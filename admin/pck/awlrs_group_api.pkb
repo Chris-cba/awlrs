@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.9   06 Feb 2017 10:06:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.10   14 Feb 2017 16:46:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   06 Feb 2017 10:06:14  $
-  --       Date fetched Out : $Modtime:   06 Feb 2017 09:59:06  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   14 Feb 2017 16:46:20  $
+  --       Date fetched Out : $Modtime:   14 Feb 2017 16:43:28  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -1245,7 +1245,7 @@ AS
     */
     awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'NET'
                                      ,pi_ner_id      => 156
-                                     ,pi_category    => awlrs_util.c_msg_cat_success
+                                     ,pi_category    => awlrs_util.c_msg_cat_info
                                      ,po_message_tab => lt_messages);
     --
     awlrs_util.get_message_cursor(pi_message_tab => lt_messages
