@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.12   14 Feb 2017 14:41:48   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.13   15 Feb 2017 11:19:44   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   14 Feb 2017 14:41:48  $
-  --       Date fetched Out : $Modtime:   14 Feb 2017 14:37:32  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   15 Feb 2017 11:19:44  $
+  --       Date fetched Out : $Modtime:   15 Feb 2017 11:18:40  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -513,11 +513,11 @@ AS
                                    ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                                    ,po_split_datum_only OUT VARCHAR2
                                    ,po_datum_offset     OUT NUMBER
-                                   ,po_datum_cursor     OUT sys_refcursor
                                    ,po_node_count       OUT PLS_INTEGER
-                                   ,po_node_cursor      OUT sys_refcursor
                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                   ,po_message_cursor   OUT sys_refcursor)
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_datum_cursor     OUT sys_refcursor
+                                   ,po_node_cursor      OUT sys_refcursor)
     IS
     --
     lv_is_datum  VARCHAR2(1);
