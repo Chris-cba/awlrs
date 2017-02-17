@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.17   02 Feb 2017 10:02:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.18   17 Feb 2017 18:22:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:12  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.17  $
+  --       Date into PVCS   : $Date:   17 Feb 2017 18:22:28  $
+  --       Date fetched Out : $Modtime:   17 Feb 2017 18:04:10  $
+  --       Version          : $Revision:   1.18  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -368,11 +368,10 @@ AS
   --
   PROCEDURE gen_domain_sql(pi_nt_type     IN  nm_types.nt_type%TYPE
                           ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
-                          ,po_use_bind    OUT BOOLEAN
+                          ,pi_bind_value  IN  VARCHAR2 DEFAULT NULL
                           ,po_sql         OUT VARCHAR2)
     IS
     --
-    lv_use_bind  BOOLEAN := FALSE;
     lv_retval    nm3type.max_varchar2 := 'SELECT NVL(lov_value,lov_code) code'
                                  ||CHR(10)||'      ,lov_meaning meaning'
                                  ||CHR(10)||'      ,lov_seq seq'
@@ -386,21 +385,31 @@ AS
         lv_lov_sql := get_domain_sql_with_bind(pi_nt_type     => pi_nt_type
                                               ,pi_column_name => pi_column_name);
         --
+        IF nm3flx.extract_bind_variable(lv_lov_sql) IS NOT NULL
+         THEN
+            lv_lov_sql := nm3flx.build_lov_sql_string(p_nt_type                    => pi_nt_type
+                                                     ,p_column_name                => pi_column_name
+	 			                                             ,p_include_bind_variable      => FALSE
+                                                     ,p_replace_bind_variable_with => pi_bind_value);
+        END IF;
+        --
         IF lv_lov_sql IS NOT NULL
          THEN
             --
             lv_retval := lv_retval
                   ||CHR(10)||'UNION ALL'
-                  ||CHR(10)||'SELECT sql.*,rownum lov_seq FROM ('||lv_lov_sql||' ORDER BY 1) sql'
+                  ||CHR(10)||'SELECT sql.*,rownum lov_seq FROM('||lv_lov_sql
+                           ||CASE
+                               WHEN lv_lov_sql LIKE '%ORDER BY%'
+                                THEN
+                                   ') sql'
+                               ELSE
+                                   ' ORDER BY 1) sql'
+                             END
             ;
         END IF;
         --
         lv_retval := lv_retval||')';
-        --
-        IF nm3flx.extract_bind_variable(lv_lov_sql) IS NOT NULL
-         THEN
-            lv_use_bind := TRUE;
-        END IF;
         --
     ELSIF SUBSTR(pi_column_name,1,4) = 'IIT_'
      THEN
@@ -439,7 +448,6 @@ AS
         --
     END IF;
     --
-    po_use_bind := lv_use_bind;
     po_sql := lv_retval;
     --
   END gen_domain_sql;
@@ -454,14 +462,13 @@ AS
                               ,po_cursor      OUT sys_refcursor)
     IS
     --
-    lv_use_bind    BOOLEAN;
     lv_cursor_sql  nm3type.max_varchar2;
     --
   BEGIN
     --
     gen_domain_sql(pi_nt_type     => pi_nt_type
                   ,pi_column_name => pi_column_name
-                  ,po_use_bind    => lv_use_bind
+                  ,pi_bind_value  => pi_bind_value
                   ,po_sql         => lv_cursor_sql);
     --
     lv_cursor_sql := 'SELECT code'
@@ -471,12 +478,7 @@ AS
     IF SUBSTR(pi_column_name,1,3) = 'NE_'
      THEN
         --
-        IF lv_use_bind
-         THEN
-            OPEN po_cursor FOR lv_cursor_sql USING pi_bind_value;
-        ELSE
-            OPEN po_cursor FOR lv_cursor_sql;
-        END IF;
+        OPEN po_cursor FOR lv_cursor_sql;
         --
     ELSIF SUBSTR(pi_column_name,1,4) = 'IIT_'
      THEN
@@ -569,7 +571,6 @@ AS
     lv_lower_index      PLS_INTEGER;
     lv_upper_index      PLS_INTEGER;
     lv_row_restriction  nm3type.max_varchar2;
-    lv_use_bind         BOOLEAN;
     lv_filter           nm3type.max_varchar2;
     lv_driving_sql      nm3type.max_varchar2;
     lv_cursor_sql       nm3type.max_varchar2 := 'SELECT code'
@@ -605,48 +606,29 @@ AS
     --
     gen_domain_sql(pi_nt_type     => pi_nt_type
                   ,pi_column_name => pi_column_name
-                  ,po_use_bind    => lv_use_bind
+                  ,pi_bind_value  => pi_bind_value
                   ,po_sql         => lv_driving_sql);
     --
     lv_cursor_sql := lv_cursor_sql||lv_driving_sql||lv_filter||') ORDER BY match_quality,seq)'||CHR(10)||lv_row_restriction;
     --
     IF SUBSTR(pi_column_name,1,3) = 'NE_'
      THEN
-        IF lv_use_bind
+        --
+        IF pi_filter IS NOT NULL
          THEN
-            IF pi_filter IS NOT NULL
-             THEN
-                IF pi_pagesize IS NOT NULL
-                 THEN
-                    OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_bind_value, pi_filter, lv_lower_index, lv_upper_index;
-                ELSE
-                    OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_bind_value, pi_filter, lv_lower_index;
-                END IF;
-            ELSE
-                IF pi_pagesize IS NOT NULL
-                 THEN
-                    OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_bind_value, lv_lower_index, lv_upper_index;
-                ELSE
-                    OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_bind_value, lv_lower_index;
-                END IF;
-            END IF;
+             IF pi_pagesize IS NOT NULL
+              THEN
+                 OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_filter, lv_lower_index, lv_upper_index;
+             ELSE
+                 OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_filter, lv_lower_index;
+             END IF;
         ELSE
-            IF pi_filter IS NOT NULL
-             THEN
-                 IF pi_pagesize IS NOT NULL
-                  THEN
-                     OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_filter, lv_lower_index, lv_upper_index;
-                 ELSE
-                     OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, pi_filter, lv_lower_index;
-                 END IF;
-            ELSE
-                 IF pi_pagesize IS NOT NULL
-                  THEN
-                     OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, lv_lower_index, lv_upper_index;
-                 ELSE
-                     OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, lv_lower_index;
-                 END IF;
-            END IF;
+             IF pi_pagesize IS NOT NULL
+              THEN
+                 OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, lv_lower_index, lv_upper_index;
+             ELSE
+                 OPEN po_cursor FOR lv_cursor_sql USING pi_filter, pi_filter, lv_lower_index;
+             END IF;
         END IF;
         --
     ELSIF SUBSTR(pi_column_name,1,4) = 'IIT_'
