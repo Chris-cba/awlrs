@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.9   02 Feb 2017 10:03:02   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.10   17 Feb 2017 18:19:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:03:02  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   17 Feb 2017 18:19:30  $
+  --       Date fetched Out : $Modtime:   14 Feb 2017 21:17:40  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -75,6 +75,14 @@ AS
                           ,pi_token       IN VARCHAR2 DEFAULT ','
                           ,pi_trim_values IN BOOLEAN DEFAULT TRUE)
     RETURN nm3type.tab_varchar32767;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_assignment(pi_value       IN VARCHAR2
+                         ,pi_datatype    IN VARCHAR2
+                         ,pi_format_mask IN VARCHAR2)
+    RETURN VARCHAR2;
 
   --
   -----------------------------------------------------------------------------
