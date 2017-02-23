@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.12   23 Feb 2017 15:05:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.13   23 Feb 2017 20:53:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   23 Feb 2017 15:05:14  $
-  --       Date fetched Out : $Modtime:   23 Feb 2017 00:52:26  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   23 Feb 2017 20:53:48  $
+  --       Date fetched Out : $Modtime:   23 Feb 2017 20:53:02  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
   --
   g_db_element   nm_elements_all%ROWTYPE;
   g_old_element  nm_elements_all%ROWTYPE;
@@ -129,6 +129,14 @@ AS
   FUNCTION get_domain_sql_with_bind(pi_nt_type     IN nm_types.nt_type%TYPE
                                    ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE)
     RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE gen_domain_sql(pi_nt_type     IN  nm_types.nt_type%TYPE
+                          ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
+                          ,pi_bind_value  IN  VARCHAR2 DEFAULT NULL
+                          ,po_sql         OUT VARCHAR2);
 
   --
   -----------------------------------------------------------------------------
