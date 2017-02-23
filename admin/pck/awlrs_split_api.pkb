@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.13   15 Feb 2017 11:19:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.14   23 Feb 2017 15:03:08   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   15 Feb 2017 11:19:44  $
-  --       Date fetched Out : $Modtime:   15 Feb 2017 11:18:40  $
-  --       Version          : $Revision:   1.13  $
+  --       Date into PVCS   : $Date:   23 Feb 2017 15:03:08  $
+  --       Date fetched Out : $Modtime:   15 Feb 2017 18:59:56  $
+  --       Version          : $Revision:   1.14  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -469,8 +469,41 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE validate_node(pi_ne_id   IN nm_elements_all.ne_id%TYPE
-                         ,pi_node_id IN nm_nodes.no_node_id%TYPE)
+  PROCEDURE get_existing_nodes(pi_ne_id   IN nm_elements_all.ne_id%TYPE
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    NM3CTX.SET_CONTEXT('PROX_NE_ID', TO_CHAR(pi_ne_id));
+    --
+    OPEN po_cursor FOR
+    SELECT no_node_id
+          ,no_node_name
+          ,no_descr
+          ,TO_CHAR(distance,'9999990.99') distance
+      FROM v_node_proximity_check
+     ORDER
+        BY distance
+         ;    
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_existing_nodes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_use_existing_node(pi_ne_id   IN nm_elements_all.ne_id%TYPE
+                                      ,pi_node_id IN nm_nodes.no_node_id%TYPE)
     IS
     --
   	CURSOR chk_node(cp_node_id IN nm_nodes.no_node_id%TYPE)
@@ -484,8 +517,10 @@ AS
      lv_node_found  BOOLEAN;
      --
   BEGIN
+    --
   	IF pi_node_id IS NOT NULL
   	 THEN
+        --
         NM3CTX.SET_CONTEXT('PROX_NE_ID', TO_CHAR(pi_ne_id));
         --  	  
         OPEN  chk_node(pi_node_id);
@@ -502,7 +537,46 @@ AS
   	    END IF;	
         --
     END IF;
-  END;
+  END validate_use_existing_node;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_split_at_node(pi_ne_id   IN nm_elements_all.ne_id%TYPE
+                                  ,pi_node_id IN nm_nodes.no_node_id%TYPE)
+    IS
+    --
+  	CURSOR chk_node(cp_node_id IN nm_nodes.no_node_id%TYPE)
+        IS
+  	SELECT node_id
+      FROM nm_route_nodes
+     WHERE node_id = cp_node_id
+       AND node_type != 'T'
+         ;
+     --
+     lv_node_id    nm_nodes.no_node_id%TYPE;
+     lv_node_found  BOOLEAN;
+     --
+  BEGIN
+  	IF pi_node_id IS NOT NULL
+  	 THEN
+        nm3net_o.set_g_ne_id_to_restrict_on(pi_ne_id => pi_ne_id);
+        --  	  
+        OPEN  chk_node(pi_node_id);
+        FETCH chk_node
+         INTO lv_node_id;
+        --
+        lv_node_found := chk_node%FOUND;        
+        CLOSE chk_node;
+        --
+        IF NOT lv_node_found
+         THEN
+            hig.raise_ner(pi_appl => 'AWLRS'
+                         ,pi_id   => 38);
+  	    END IF;	
+        --
+    END IF;
+  END validate_split_at_node;
 
   --
   -----------------------------------------------------------------------------
@@ -513,11 +587,11 @@ AS
                                    ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                                    ,po_split_datum_only OUT VARCHAR2
                                    ,po_datum_offset     OUT NUMBER
-                                   ,po_node_count       OUT PLS_INTEGER
+                                   /*,po_node_count       OUT PLS_INTEGER*/
                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
                                    ,po_message_cursor   OUT sys_refcursor
                                    ,po_datum_cursor     OUT sys_refcursor
-                                   ,po_node_cursor      OUT sys_refcursor)
+                                   /*,po_node_cursor      OUT sys_refcursor*/)
     IS
     --
     lv_is_datum  VARCHAR2(1);
@@ -552,8 +626,8 @@ AS
             po_split_datum_only := 'N';
         END IF;
         --
-        validate_node(pi_ne_id   => pi_ne_id
-                     ,pi_node_id => pi_split_at_node_id);
+        validate_split_at_node(pi_ne_id   => pi_ne_id
+                              ,pi_node_id => pi_split_at_node_id);
         --
     ELSE
         --
@@ -567,10 +641,10 @@ AS
         awlrs_element_api.get_elements(pi_ne_ids => lt_ids
                                       ,po_cursor => po_datum_cursor);
         --
-        get_coinciding_nodes(pi_ne_id      => pi_ne_id
-                            ,pi_offset     => pi_split_offset
-                            ,po_node_count => po_node_count
-                            ,po_cursor     => po_node_cursor);
+        --get_coinciding_nodes(pi_ne_id      => pi_ne_id
+        --                    ,pi_offset     => pi_split_offset
+        --                    ,po_node_count => po_node_count
+        --                    ,po_cursor     => po_node_cursor);
         --
     END IF;
     --
@@ -627,8 +701,8 @@ AS
     */
     IF pi_split_at_node_id IS NOT NULL
      THEN
-        validate_node(pi_ne_id   => pi_ne_id
-                     ,pi_node_id => pi_split_at_node_id);
+        validate_split_at_node(pi_ne_id   => pi_ne_id
+                              ,pi_node_id => pi_split_at_node_id);
     END IF;
     --
     init_element_globals;
