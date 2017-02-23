@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.18   17 Feb 2017 18:22:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.19   23 Feb 2017 15:05:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   17 Feb 2017 18:22:28  $
-  --       Date fetched Out : $Modtime:   17 Feb 2017 18:04:10  $
-  --       Version          : $Revision:   1.18  $
+  --       Date into PVCS   : $Date:   23 Feb 2017 15:05:14  $
+  --       Date fetched Out : $Modtime:   23 Feb 2017 10:34:10  $
+  --       Version          : $Revision:   1.19  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -216,156 +216,6 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_nt_flx_col_value(pi_ne_id                  IN nm_elements.ne_id%TYPE
-                               ,pi_column_name            IN nm_type_columns.ntc_column_name%TYPE
-                               ,pi_prompt_text            IN nm_type_columns.ntc_prompt%TYPE
-                               ,pi_disp_validation_errors IN BOOLEAN DEFAULT FALSE
-                               ,pi_continue_after_val_err IN BOOLEAN DEFAULT FALSE)
-    RETURN VARCHAR2 IS
-    --
-    lv_value    VARCHAR2(240);
-    lv_meaning  VARCHAR2(240);
-    --
-    e_col_mandatory EXCEPTION;
-    PRAGMA EXCEPTION_INIT(e_col_mandatory, -20602);
-    --
-    e_val_too_long EXCEPTION;
-    PRAGMA EXCEPTION_INIT(e_val_too_long, -20603);
-    --
-    e_val_invalid_for_domain EXCEPTION;
-    PRAGMA EXCEPTION_INIT(e_val_invalid_for_domain, -20604);
-    --
-    e_too_many_records EXCEPTION;
-    PRAGMA EXCEPTION_INIT(e_too_many_records, -20605);
-    --
-    e_val_invalid_for_format_mask EXCEPTION;
-    PRAGMA EXCEPTION_INIT(e_val_invalid_for_format_mask, -20606);
-    --
-    e_too_many_bind_variables EXCEPTION;
-    PRAGMA EXCEPTION_INIT(e_too_many_bind_variables, -20609);
-    --
-    e_no_bind_variable EXCEPTION;
-    PRAGMA EXCEPTION_INIT(e_no_bind_variable, -20610);
-    --
-    e_error_in_sql EXCEPTION;
-    PRAGMA EXCEPTION_INIT(e_error_in_sql, -20611);
-    --
-    FUNCTION handle_error(pi_err_app     IN varchar2
-                         ,pi_err_no      IN varchar2
-                         ,pi_err_type    IN varchar2 DEFAULT 'E'
-                         ,pi_prompt_text IN nm_type_columns.ntc_prompt%TYPE)
-      RETURN BOOLEAN IS
-      --
-      lv_retval BOOLEAN := TRUE;
-      --
-    BEGIN
-      --
-      IF pi_disp_validation_errors
-       THEN
-          hig.raise_ner(pi_appl               => pi_err_app
-                       ,pi_id                 => pi_err_no
-                       ,pi_supplementary_info => CHR(10)||CHR(10)||pi_prompt_text);
-      END IF;
-      /*
-      ||TODO - Forms app can continue after an error is displayed to the user
-      ||obviously this API can't raise an exception and continue.
-      */
-      --IF NOT(pi_continue_after_val_err)
-      -- THEN
-      --    lv_retval := FALSE;
-      --END IF;
-      --
-      RETURN FALSE; --lv_retval;
-      --
-    END;
-    --
-  BEGIN
-    --
-    nm3flx.get_flx_col_data(pi_ne_id       => pi_ne_id
-                           ,pi_column_name => pi_column_name
-                           ,po_value       => lv_value
-                           ,po_meaning     => lv_meaning);
-    --
-    RETURN lv_value;
-    --
-  EXCEPTION
-    WHEN e_col_mandatory
-     THEN
-        IF NOT(handle_error(pi_err_app     => 'HIG'
-                           ,pi_err_no      => 107
-                           ,pi_err_type    => 'W'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
-    WHEN e_val_too_long
-     THEN
-        IF NOT(handle_error(pi_err_app     => 'HIG'
-                           ,pi_err_no      => 108
-                           ,pi_err_type    => 'W'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
-    WHEN e_val_invalid_for_domain
-     THEN
-        IF NOT(handle_error(pi_err_app     => 'HIG'
-                           ,pi_err_no      => 109
-                           ,pi_err_type    => 'W'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
-    WHEN e_too_many_records
-     THEN
-        IF NOT(handle_error(pi_err_app     => 'NET'
-                           ,pi_err_no      => 47
-                           ,pi_err_type    => 'E'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
-    WHEN e_val_invalid_for_format_mask
-     THEN
-        IF NOT(handle_error(pi_err_app     => 'HIG'
-                           ,pi_err_no      => 70
-                           ,pi_err_type    => 'W'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
-    WHEN e_too_many_bind_variables
-     THEN
-        IF NOT(handle_error(pi_err_app     => 'NET'
-                           ,pi_err_no      => 48
-                           ,pi_err_type    => 'E'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
-    WHEN e_no_bind_variable
-     THEN
-        IF NOT(handle_error(pi_err_app     => 'NET'
-                           ,pi_err_no      => 48
-                           ,pi_err_type    => 'E'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
-    WHEN e_error_in_sql
-     THEN
-        IF NOT(handle_error(pi_err_app     => 'HIG'
-                           ,pi_err_no      => 83
-                           ,pi_err_type    => 'E'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
-  END get_nt_flx_col_value;
-
-  --
-  -----------------------------------------------------------------------------
-  --
   PROCEDURE gen_domain_sql(pi_nt_type     IN  nm_types.nt_type%TYPE
                           ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
                           ,pi_bind_value  IN  VARCHAR2 DEFAULT NULL
@@ -451,6 +301,217 @@ AS
     po_sql := lv_retval;
     --
   END gen_domain_sql;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_flx_col_data(pi_ne_id                  IN  nm_elements.ne_id%TYPE
+                               ,pi_column_name            IN  nm_type_columns.ntc_column_name%TYPE
+                               ,pi_prompt_text            IN  nm_type_columns.ntc_prompt%TYPE
+                               ,pi_disp_validation_errors IN  BOOLEAN DEFAULT FALSE
+                               ,pi_continue_after_val_err IN  BOOLEAN DEFAULT FALSE
+                               ,po_value                  OUT VARCHAR2
+                               ,po_meaning                OUT VARCHAR2)
+    IS
+    --
+--    lv_value    VARCHAR2(240);
+--    lv_meaning  VARCHAR2(240);
+    --
+    e_col_mandatory EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_col_mandatory, -20602);
+    --
+    e_val_too_long EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_val_too_long, -20603);
+    --
+    e_val_invalid_for_domain EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_val_invalid_for_domain, -20604);
+    --
+    e_too_many_records EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_too_many_records, -20605);
+    --
+    e_val_invalid_for_format_mask EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_val_invalid_for_format_mask, -20606);
+    --
+    e_too_many_bind_variables EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_too_many_bind_variables, -20609);
+    --
+    e_no_bind_variable EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_no_bind_variable, -20610);
+    --
+    e_error_in_sql EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_error_in_sql, -20611);
+    --
+    FUNCTION handle_error(pi_err_app     IN varchar2
+                         ,pi_err_no      IN varchar2
+                         ,pi_err_type    IN varchar2 DEFAULT 'E'
+                         ,pi_prompt_text IN nm_type_columns.ntc_prompt%TYPE)
+      RETURN BOOLEAN IS
+      --
+      lv_retval BOOLEAN := TRUE;
+      --
+    BEGIN
+      --
+      IF pi_disp_validation_errors
+       THEN
+          hig.raise_ner(pi_appl               => pi_err_app
+                       ,pi_id                 => pi_err_no
+                       ,pi_supplementary_info => CHR(10)||CHR(10)||pi_prompt_text);
+      END IF;
+      /*
+      ||TODO - Forms app can continue after an error is displayed to the user
+      ||obviously this API can't raise an exception and continue.
+      */
+      --IF NOT(pi_continue_after_val_err)
+      -- THEN
+      --    lv_retval := FALSE;
+      --END IF;
+      --
+      RETURN FALSE; --lv_retval;
+      --
+    END;
+    --
+  BEGIN
+    --
+    nm3flx.get_flx_col_data(pi_ne_id       => pi_ne_id
+                           ,pi_column_name => pi_column_name
+                           ,po_value       => po_value
+                           ,po_meaning     => po_meaning);
+    --
+  EXCEPTION
+    WHEN e_col_mandatory
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'HIG'
+                           ,pi_err_no      => 107
+                           ,pi_err_type    => 'W'
+                           ,pi_prompt_text => pi_prompt_text))
+         THEN
+            RAISE;
+        END IF;
+    WHEN e_val_too_long
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'HIG'
+                           ,pi_err_no      => 108
+                           ,pi_err_type    => 'W'
+                           ,pi_prompt_text => pi_prompt_text))
+         THEN
+            RAISE;
+        END IF;
+    WHEN e_val_invalid_for_domain
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'HIG'
+                           ,pi_err_no      => 109
+                           ,pi_err_type    => 'W'
+                           ,pi_prompt_text => pi_prompt_text))
+         THEN
+            RAISE;
+        END IF;
+    WHEN e_too_many_records
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'NET'
+                           ,pi_err_no      => 47
+                           ,pi_err_type    => 'E'
+                           ,pi_prompt_text => pi_prompt_text))
+         THEN
+            RAISE;
+        END IF;
+    WHEN e_val_invalid_for_format_mask
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'HIG'
+                           ,pi_err_no      => 70
+                           ,pi_err_type    => 'W'
+                           ,pi_prompt_text => pi_prompt_text))
+         THEN
+            RAISE;
+        END IF;
+    WHEN e_too_many_bind_variables
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'NET'
+                           ,pi_err_no      => 48
+                           ,pi_err_type    => 'E'
+                           ,pi_prompt_text => pi_prompt_text))
+         THEN
+            RAISE;
+        END IF;
+    WHEN e_no_bind_variable
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'NET'
+                           ,pi_err_no      => 48
+                           ,pi_err_type    => 'E'
+                           ,pi_prompt_text => pi_prompt_text))
+         THEN
+            RAISE;
+        END IF;
+    WHEN e_error_in_sql
+     THEN
+        IF NOT(handle_error(pi_err_app     => 'HIG'
+                           ,pi_err_no      => 83
+                           ,pi_err_type    => 'E'
+                           ,pi_prompt_text => pi_prompt_text))
+         THEN
+            RAISE;
+        END IF;
+  END get_nt_flx_col_data;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_nt_flx_col_value(pi_ne_id                  IN nm_elements.ne_id%TYPE
+                               ,pi_column_name            IN nm_type_columns.ntc_column_name%TYPE
+                               ,pi_prompt_text            IN nm_type_columns.ntc_prompt%TYPE
+                               ,pi_disp_validation_errors IN BOOLEAN DEFAULT FALSE
+                               ,pi_continue_after_val_err IN BOOLEAN DEFAULT FALSE)
+    RETURN VARCHAR2 IS
+    --
+    lv_value    VARCHAR2(240);
+    lv_meaning  VARCHAR2(240);
+    --
+  BEGIN
+    --
+    get_nt_flx_col_data(pi_ne_id                  => pi_ne_id
+                       ,pi_column_name            => pi_column_name
+                       ,pi_prompt_text            => pi_prompt_text
+                       ,pi_disp_validation_errors => pi_disp_validation_errors
+                       ,pi_continue_after_val_err => pi_continue_after_val_err
+                       ,po_value                  => lv_value
+                       ,po_meaning                => lv_meaning);
+    --
+    RETURN lv_value;
+    --
+  END get_nt_flx_col_value;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_nt_flx_col_meaning(pi_ne_id                  IN nm_elements.ne_id%TYPE
+                                 ,pi_column_name            IN nm_type_columns.ntc_column_name%TYPE
+                                 ,pi_prompt_text            IN nm_type_columns.ntc_prompt%TYPE
+                                 ,pi_disp_validation_errors IN BOOLEAN DEFAULT FALSE
+                                 ,pi_continue_after_val_err IN BOOLEAN DEFAULT FALSE)
+    RETURN VARCHAR2 IS
+    --
+    lv_value    VARCHAR2(240);
+    lv_meaning  VARCHAR2(240);
+    lv_sql      nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    gen_domain_sql(pi_nt_type     => nm3net.get_nt_type(p_ne_id => pi_ne_id)
+                  ,pi_column_name => pi_column_name
+                  ,pi_bind_value  => NULL
+                  ,po_sql         => lv_sql);
+    --
+    lv_sql :=  'SELECT meaning'
+    ||CHR(10)||'  FROM ('||lv_sql||')'
+    ||CHR(10)||' WHERE code = (SELECT '||pi_column_name
+    ||CHR(10)||'                 FROM nm_elements_all'
+    ||CHR(10)||'                WHERE ne_id = :ne_id)'
+    ;
+    --
+    EXECUTE IMMEDIATE lv_sql INTO lv_meaning USING pi_ne_id;
+    --
+    RETURN lv_meaning;
+    --
+  END get_nt_flx_col_meaning;
 
   --
   -----------------------------------------------------------------------------

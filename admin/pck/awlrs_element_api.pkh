@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.11   02 Feb 2017 10:02:16   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.12   23 Feb 2017 15:05:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:16  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   23 Feb 2017 15:05:14  $
+  --       Date fetched Out : $Modtime:   23 Feb 2017 00:52:26  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
   --
   g_db_element   nm_elements_all%ROWTYPE;
   g_old_element  nm_elements_all%ROWTYPE;
@@ -138,6 +138,16 @@ AS
                                ,pi_prompt_text            IN nm_type_columns.ntc_prompt%TYPE
                                ,pi_disp_validation_errors IN BOOLEAN DEFAULT FALSE
                                ,pi_continue_after_val_err IN BOOLEAN DEFAULT FALSE)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_nt_flx_col_meaning(pi_ne_id                  IN nm_elements.ne_id%TYPE
+                                 ,pi_column_name            IN nm_type_columns.ntc_column_name%TYPE
+                                 ,pi_prompt_text            IN nm_type_columns.ntc_prompt%TYPE
+                                 ,pi_disp_validation_errors IN BOOLEAN DEFAULT FALSE
+                                 ,pi_continue_after_val_err IN BOOLEAN DEFAULT FALSE)
     RETURN VARCHAR2;
 
   --
