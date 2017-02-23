@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.11   14 Feb 2017 16:40:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.12   23 Feb 2017 15:00:02   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   14 Feb 2017 16:40:14  $
-  --       Date fetched Out : $Modtime:   14 Feb 2017 16:36:40  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   23 Feb 2017 15:00:02  $
+  --       Date fetched Out : $Modtime:   23 Feb 2017 14:56:40  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -768,7 +768,7 @@ AS
   BEGIN
     --
     lv_retval := invsec.nic_is_updatable_from_module(pi_category => pi_category
-                                                    ,pi_module   => 'AWLRS0001');
+                                                    ,pi_module   => c_awlrs_module);
     --
     RETURN nm3flx.boolean_to_char(p_boolean => lv_retval);
     --
