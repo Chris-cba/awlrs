@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.10   17 Feb 2017 18:19:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.11   23 Feb 2017 15:00:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   17 Feb 2017 18:19:30  $
-  --       Date fetched Out : $Modtime:   14 Feb 2017 21:17:40  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   23 Feb 2017 15:00:04  $
+  --       Date fetched Out : $Modtime:   23 Feb 2017 14:56:40  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -37,6 +37,8 @@ AS
   c_msg_cat_warning       CONSTANT hig_codes.hco_code%TYPE := 'WARNING';
   c_msg_cat_ask_continue  CONSTANT hig_codes.hco_code%TYPE := 'ASK_CONTINUE';
   c_msg_cat_error         CONSTANT hig_codes.hco_code%TYPE := 'ERROR';
+  --
+  c_awlrs_module  CONSTANT hig_modules.hmo_module%TYPE := 'AWLRS0001';
   --
   -----------------------------------------------------------------------------
   --
