@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.2   Feb 02 2017 09:41:40   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.3   Feb 23 2017 13:44:18   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   Feb 02 2017 09:41:40  $
-  --       Date fetched Out : $Modtime:   Feb 02 2017 09:41:12  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   Feb 23 2017 13:44:18  $
+  --       Date fetched Out : $Modtime:   Feb 02 2017 09:42:14  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -155,6 +155,7 @@ AS
                         ,pi_start_date          IN     nm_inv_items_all.iit_start_date%TYPE
                         ,pi_end_date            IN     nm_inv_items_all.iit_end_date%TYPE
                         ,pi_notes               IN     VARCHAR2
+                        ,pi_iit_foreign_key     IN     nm_inv_items_all.iit_foreign_key%TYPE
                         ,pi_attrib_names        IN     attrib_name_tab
                         ,pi_attrib_scrn_texts   IN     attrib_scrn_text_tab
                         ,pi_attrib_char_values  IN     attrib_value_tab
