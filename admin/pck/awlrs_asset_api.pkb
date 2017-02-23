@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.2   Feb 02 2017 09:41:40   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.3   Feb 23 2017 13:45:28   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 02 2017 09:41:40  $
-  --       Date fetched Out : $Modtime:   Feb 02 2017 09:40:50  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   Feb 23 2017 13:45:28  $
+  --       Date fetched Out : $Modtime:   Feb 21 2017 14:55:36  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -82,7 +82,6 @@ AS
     	    THEN
               hig.raise_ner(pi_appl               => 'NET'
                            ,pi_id                 => 15);    
-    		  Nm_Debug.Debug('Validate_Location_Limit - Finished (False)');
     		  RETURN FALSE;
     	    END IF;
     	    --
@@ -97,7 +96,6 @@ AS
     	    IF pi_itemvalue > l_max THEN
               hig.raise_ner(pi_appl               => 'NET'
                            ,pi_id                 => 15);    
-    		  Nm_Debug.Debug('Validate_Location_Limit - Finished (False)');
     		  RETURN FALSE;
     	    END IF;
     	  --
@@ -137,13 +135,16 @@ AS
       lv_pnt_or_cont := 'C';
     END IF;
     --
+
     IF pi_ne_id IS NULL THEN
       RAISE e_item_not_entered;
   	END IF;
-    
+    --
+
     IF lv_pnt_or_cont = 'P' AND pi_begin_mp <> pi_end_mp THEN
       RAISE e_validation_error;
     END IF;
+
     /*
     ||Continuous checks
     */
@@ -632,6 +633,7 @@ AS
                         ,pi_start_date          IN     nm_inv_items_all.iit_start_date%TYPE
                         ,pi_end_date            IN     nm_inv_items_all.iit_end_date%TYPE
                         ,pi_notes               IN     VARCHAR2
+                        ,pi_iit_foreign_key     IN     nm_inv_items_all.iit_foreign_key%TYPE
                         ,pi_attrib_names        IN     attrib_name_tab
                         ,pi_attrib_scrn_texts   IN     attrib_scrn_text_tab
                         ,pi_attrib_char_values  IN     attrib_value_tab        
@@ -643,6 +645,8 @@ AS
     lt_element_attribs  flex_attr_tab;
     lr_iit_rec          nm_inv_items_all%ROWTYPE;    
     --  
+    lv_iit_foreign_key nm_inv_items_all.iit_foreign_key%TYPE;
+    --
     e_invalid_xsp_inv exception;
     PRAGMA EXCEPTION_INIT(e_invalid_xsp_inv, -20506);
   BEGIN
@@ -661,11 +665,19 @@ AS
       RAISE e_invalid_xsp_inv;
     END IF;
     --
+    /*
+    ||hierarchical Asset 
+    */
+    IF pi_iit_foreign_key IS NOT NULL THEN
+      lv_iit_foreign_key := nm3inv.get_inv_primary_key(p_ne_id => pi_iit_foreign_key);
+    END IF;
+    --
     g_iit_rec.iit_start_date := pi_start_date;
     g_iit_rec.iit_admin_unit := pi_admin_unit;
     g_iit_rec.iit_inv_type := pi_asset_type;
     g_iit_rec.iit_descr := pi_description;
     g_iit_rec.iit_x_sect := pi_xsp;
+    g_iit_rec.iit_foreign_key := pi_iit_foreign_key;
     --
     IF pi_attrib_names.COUNT != pi_attrib_scrn_texts.COUNT
      OR pi_attrib_names.COUNT != pi_attrib_char_values.COUNT
@@ -785,7 +797,6 @@ AS
           --Updated by another user
           hig.raise_ner(pi_appl => 'AWLRS'
                        ,pi_id   => 24);
-                       nm_debug.debug_off;
       END IF;
       --
       /*
@@ -853,8 +864,6 @@ AS
           lv_upd := 'Y';
       END IF;
       --
-      nm_debug.debug('old:'||g_old_iit_rec.iit_descr);
-      nm_debug.debug('new:'||g_new_iit_rec.iit_descr);
       IF g_old_iit_rec.iit_descr != g_new_iit_rec.iit_descr
        OR (g_old_iit_rec.iit_descr IS NULL AND g_new_iit_rec.iit_descr IS NOT NULL)
        OR (g_old_iit_rec.iit_descr IS NOT NULL AND g_new_iit_rec.iit_descr IS NULL)          
@@ -866,7 +875,6 @@ AS
           lv_upd_sql := lv_upd_sql||'iit_descr = lr_iit.iit_descr';
           lv_upd := 'Y';
       END IF;
-       nm_debug.debug('lv_upd:'||lv_upd);
       --
       IF g_old_iit_rec.iit_start_date != g_new_iit_rec.iit_start_date
        THEN
@@ -1350,6 +1358,8 @@ AS
     --
     lv_no_overlaps_job_id := nm3extent.remove_overlaps(pi_nte_id => lv_job_id);
     --
+    --nm3inv.set_inv_warning_msg(p_msg => NULL);   
+    --
     nm3homo.homo_update(p_temp_ne_id_in  => lv_no_overlaps_job_id
                        ,p_iit_ne_id      => pi_iit.iit_ne_id
                        ,p_effective_date => TRUNC(pi_startdate) 
@@ -1575,7 +1585,6 @@ AS
   EXCEPTION  
     WHEN OTHERS
   	THEN
-        nm_Debug.debug('exception handling?');
       awlrs_util.handle_exception(po_message_severity => po_message_severity
                                  ,po_cursor           => po_message_cursor);
   
@@ -1585,21 +1594,21 @@ AS
   --
   -------
   --
-  PROCEDURE add_asset_location_off_nw(pi_theme_name IN   nm_themes_all.nth_theme_name%TYPE
-                              ,pi_iit_ne_id         IN   nm_inv_items_all.iit_ne_id%TYPE
-                              ,pi_effective_date    IN   nm_members_all.nm_start_date%TYPE
-                              ,pi_shape_wkt         IN   CLOB
-                              ,po_message_severity  OUT  hig_codes.hco_code%TYPE
-                              ,po_message_cursor    OUT  sys_refcursor)
+  PROCEDURE add_asset_location_off_nw(pi_theme_name        IN   nm_themes_all.nth_theme_name%TYPE
+                                     ,pi_iit_ne_id         IN   nm_inv_items_all.iit_ne_id%TYPE
+                                     ,pi_effective_date    IN   nm_members_all.nm_start_date%TYPE
+                                     ,pi_shape_wkt         IN   CLOB
+                                     ,po_message_severity  OUT  hig_codes.hco_code%TYPE
+                                     ,po_message_cursor    OUT  sys_refcursor)
     IS
-      lv_geom   mdsys.sdo_geometry; 
-      lv_job_id NUMBER;
-      lv_warning_code        VARCHAR2(1000);
-      lv_warning_msg         VARCHAR2(1000);
-      lr_theme       nm_themes_all%ROWTYPE;      
+      lv_geom           mdsys.sdo_geometry; 
+      lv_job_id         NUMBER;
+      lv_warning_code   VARCHAR2(1000);
+      lv_warning_msg    VARCHAR2(1000);
+      lr_theme          nm_themes_all%ROWTYPE;      
   BEGIN
     /*
-    ||locate if shape file. from SM
+    ||Get Theme
     */
     lr_theme := nm3get.get_nth(pi_nth_theme_name => pi_theme_name);
     --
@@ -1620,24 +1629,7 @@ AS
                              ,pi_geom           => lv_geom);       
     END IF;
     --
-   /* nm3extent.create_temp_ne(pi_source_id => pi_iit_ne_id
-                            ,pi_source    => nm3extent.get_route
-                            ,pi_begin_mp  => NULL
-                            ,pi_end_mp    => NULL 
-                            ,po_job_id    => lv_job_id);
-    --
-    IF lv_job_id IS NOT NULL THEN
-    --
-      nm3homo.homo_update(p_temp_ne_id_in  => lv_job_id
-                         ,p_iit_ne_id      => pi_iit_ne_id
-                         ,p_effective_date => pi_effective_date
-                         ,p_warning_code   => lv_warning_code
-                         ,p_warning_msg    => lv_warning_msg);   
-    END IF;*/
-    --
-    /*
-    ||pb to do merge above code with normal asset locating once happy
-    */
+
   END add_asset_location_off_nw;
   --
   -------
@@ -1723,12 +1715,7 @@ AS
 
       END IF;
     END IF;
- 
-    /*
-    ||find any error
-    */
-    --l_inv_warning_msg := nm3inv.get_inv_warning_msg;
-    --pb to do  if warning not null what should i do with it? show in cursor?
+
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1772,51 +1759,6 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END location_enddate;
-  --
-  -----------------------------------------------------------------------------
-  --
-  /*
-  ||to do
-  ||pb to do throughout. ROLLBACK when raising ners. UI to handle commits. get rid of ex
-  ||wrap any ners and only ahve when others handle_exception.
-  ||look at mikes recalibrate and element api for examples.
-  ||to do
-  */
-  /*PROCEDURE asset_enddate(pi_iit_ne_id        IN nm_inv_items_all.iit_ne_id%TYPE
-                         ,pi_asset_type       IN nm_inv_items_all.iit_inv_type%TYPE
-                         ,pi_end_date         IN DATE
-                         ,po_message_severity OUT hig_codes.hco_code%TYPE
-                         ,po_message_cursor   OUT sys_refcursor
-                         ,po_cursor           OUT sys_refcursor)
-    IS
-    --
-    l_nit_rec nm_inv_types%ROWTYPE;
-    --
-  BEGIN
-    --
-    l_nit_rec := nm3get.get_nit(pi_asset_type);	
-    --
-    IF pi_end_date IS NOT NULL AND l_nit_rec.nit_contiguous = 'Y'
-    THEN
-      hig.raise_ner(pi_appl => 'NET'
-                   ,pi_id   => 125);  
-      --
-    END IF;
-    --
-    UPDATE nm_inv_items_all
-       SET iit_end_date = pi_end_date
-     WHERE iit_ne_id = pi_iit_ne_id
-       AND iit_inv_type = pi_asset_type;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-     THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END asset_enddate; */
   --
   -----------------------------------------------------------------------------
   --
