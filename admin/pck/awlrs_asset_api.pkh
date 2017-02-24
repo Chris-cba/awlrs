@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.3   Feb 23 2017 13:44:18   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.4   Feb 24 2017 14:41:08   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   Feb 23 2017 13:44:18  $
-  --       Date fetched Out : $Modtime:   Feb 02 2017 09:42:14  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   Feb 24 2017 14:41:08  $
+  --       Date fetched Out : $Modtime:   Feb 23 2017 15:02:16  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -96,10 +96,7 @@ AS
                      ,po_cursor           OUT sys_refcursor);
   --
   -----------------------------------------------------------------------------
-  --       
-  /*
-  ||pb to finish. UI to call this to find out whether it needs to prompt user with question of append/replace current location.
-  */  
+  --        
   PROCEDURE is_asset_located(pi_asset_type       IN   nm_inv_items_all.iit_inv_type%TYPE
                             ,pi_iit_ne_id        IN   nm_inv_items_all.iit_ne_id%TYPE
                             ,po_located          OUT  VARCHAR2
@@ -188,17 +185,7 @@ AS
                         ,pi_old_attrib_char_values  IN     attrib_value_tab
                         ,pi_new_attrib_char_values  IN     attrib_value_tab
                         ,po_message_severity       OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor         OUT sys_refcursor);                       
-  --
-  -----------------------------------------------------------------------------
-  -- 
-
- /*PROCEDURE asset_enddate(pi_iit_ne_id        IN nm_inv_items_all.iit_ne_id%TYPE
-                        ,pi_asset_type       IN nm_inv_items_all.iit_inv_type%TYPE
-                        ,pi_end_date         IN DATE
-                        ,po_message_severity OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor   OUT sys_refcursor
-                        ,po_cursor           OUT sys_refcursor);          */              
+                        ,po_message_cursor         OUT sys_refcursor);                                  
 --
 -----------------------------------------------------------------------------
 --
@@ -215,8 +202,8 @@ AS
   --
   -----------------------------------------------------------------------------
   -- 
-  PROCEDURE get_locations(pi_iit_ne_id IN  nm_inv_items_all.iit_ne_id%TYPE
-                         ,po_cursor    OUT sys_refcursor);
+ PROCEDURE get_locations(pi_iit_ne_id IN  nm_inv_items_all.iit_ne_id%TYPE
+                        ,po_cursor    OUT sys_refcursor);
   
 END awlrs_asset_api;
 /
