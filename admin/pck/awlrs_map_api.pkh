@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.6   10 Feb 2017 16:01:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.7   Feb 24 2017 15:39:28   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkh  $
-  --       Date into PVCS   : $Date:   10 Feb 2017 16:01:32  $
-  --       Date fetched Out : $Modtime:   10 Feb 2017 16:00:36  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   Feb 24 2017 15:39:28  $
+  --       Date fetched Out : $Modtime:   Feb 24 2017 15:23:26  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
   --
   TYPE theme_types_rec IS RECORD(admin_type                   nm_au_types.nat_admin_type%TYPE
                                 ,network_type                 nm_types.nt_type%TYPE
@@ -25,6 +25,7 @@ AS
                                 ,node_type                    nm_types.nt_node_type%TYPE
                                 ,unit_id                      nm_units.un_unit_id%TYPE
                                 ,asset_type                   nm_inv_types_all.nit_inv_type%TYPE
+                                ,multiple_locs_allowed        nm_inv_types_all.nit_multiple_allowed%TYPE
                                 ,editable                     VARCHAR2(1));
   TYPE theme_types_tab IS TABLE OF theme_types_rec INDEX BY BINARY_INTEGER;
   --
