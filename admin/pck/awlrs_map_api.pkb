@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.9   10 Feb 2017 15:26:42   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.10   Feb 24 2017 15:40:28   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   10 Feb 2017 15:26:42  $
-  --       Date fetched Out : $Modtime:   10 Feb 2017 14:40:42  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   Feb 24 2017 15:40:28  $
+  --       Date fetched Out : $Modtime:   Feb 24 2017 15:35:00  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -118,6 +118,9 @@ AS
           ,nw_themes.node_type
           ,nw_themes.unit_id
           ,nith_nit_id asset_type
+          ,(SELECT nit_multiple_allowed
+              FROM nm_inv_types_all
+             WHERE nit_inv_type = nith_nit_id) multiple_locs_allowed
           ,CASE
              WHEN nw_themes.network_type IS NOT NULL
               THEN
@@ -997,6 +1000,7 @@ AS
     lv_layer_node_type             nm_types.nt_node_type%TYPE;
     lv_layer_node_layer            nm_themes_all.nth_theme_name%TYPE;
     lv_layer_asset_type            nm_inv_types_all.nit_inv_type%TYPE;
+    lv_layer_multiple_locs_allowed nm_inv_types.nit_multiple_allowed%TYPE;
     lv_layer_show_in_map           VARCHAR2(10);
     lv_displayed_on_startup        VARCHAR2(10);
     lv_displayed_in_legend         VARCHAR2(10);
@@ -1147,6 +1151,7 @@ AS
           END IF;
           lv_layer_units := lt_theme_types(1).unit_id;
           lv_layer_asset_type := lt_theme_types(1).asset_type;
+          lv_layer_multiple_locs_allowed := lt_theme_types(1).multiple_locs_allowed;
           lv_layer_editable := NVL(lt_theme_types(1).editable,'N');
       ELSE
           lv_layer_admin_type := NULL;
@@ -1161,6 +1166,7 @@ AS
           lv_layer_node_layer := NULL;
           lv_layer_units := NULL;
           lv_layer_asset_type := NULL;
+          lv_layer_multiple_locs_allowed := NULL;
           lv_layer_editable := 'N';
       END IF;
       /*
@@ -1297,6 +1303,7 @@ AS
               ||CHR(10)||'      "network_node_type"           "'||lv_layer_node_type||'"'
               ||CHR(10)||'      "node_layer_name"             "'||lv_layer_node_layer||'"'
               ||CHR(10)||'      "asset_type"                  "'||lv_layer_asset_type||'"'
+              ||CHR(10)||'      "multiple_locs_allowed"       "'||lv_layer_multiple_locs_allowed||'"'              
               ||CHR(10)||'      "is_editable"                 "'||lv_layer_editable||'"'
               ||CHR(10)||'      "show_in_map"                 "'||lv_layer_show_in_map||'"'
               ||CHR(10)||'      "displayed_at_startup"        "'||lv_displayed_on_startup||'"'
@@ -1398,6 +1405,7 @@ AS
               ||CHR(10)||'      "network_node_type"           "'||lv_layer_node_type||'"'
               ||CHR(10)||'      "node_layer_name"             "'||lv_layer_node_layer||'"'
               ||CHR(10)||'      "asset_type"                  "'||lv_layer_asset_type||'"'
+              ||CHR(10)||'      "multiple_locs_allowed"       "'||lv_layer_multiple_locs_allowed||'"'
               ||CHR(10)||'      "is_editable"                 "'||lv_layer_editable||'"'
               ||CHR(10)||'      "show_in_map"                 "'||lv_layer_show_in_map||'"'
               ||CHR(10)||'      "displayed_at_startup"        "'||lv_displayed_on_startup||'"'
