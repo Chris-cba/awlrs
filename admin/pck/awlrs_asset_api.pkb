@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.3   Feb 23 2017 13:45:28   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.4   Feb 24 2017 14:42:08   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 23 2017 13:45:28  $
-  --       Date fetched Out : $Modtime:   Feb 21 2017 14:55:36  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   Feb 24 2017 14:42:08  $
+  --       Date fetched Out : $Modtime:   Feb 24 2017 13:38:38  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -37,7 +37,6 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-
   PROCEDURE init_asset_globals
     IS
     --
@@ -53,10 +52,10 @@ AS
   --
   -----------------------------------------------------------------------------
   --  
-  FUNCTION validate_location_limit(pi_itemvalue                 IN  NUMBER, --new needs to be passed in to place l_cur_val   NUMBER := Name_In(pi_item);
-    	                           pi_locate_mp            	    IN 	VARCHAR2,
-    	                           pi_ne_id                	    IN 	nm_Elements.ne_id%TYPE) 
-                                   RETURN BOOLEAN
+  FUNCTION validate_location_limit(pi_itemvalue  IN  NUMBER,
+    	                           pi_locate_mp  IN 	VARCHAR2,
+    	                           pi_ne_id      IN 	nm_Elements.ne_id%TYPE) 
+    RETURN BOOLEAN
     IS
       l_ne_rec    nm_elements%ROWTYPE;
       lv_min      NUMBER;
@@ -106,16 +105,16 @@ AS
     --
     RETURN TRUE;
     --
-    END Validate_Location_Limit; 
+  END Validate_Location_Limit; 
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_network_location(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
-                               ,pi_nit_inv_type     IN  nm_inv_types_all.nit_inv_type%TYPE
-                               ,pi_ne_id            IN  nm_elements_all.ne_id%TYPE
-                               ,pi_begin_mp         IN  nm_members_all.nm_begin_mp%TYPE
-                               ,pi_end_mp           IN  nm_members_all.nm_end_mp%TYPE
-                               ,pi_startdate        IN  nm_members_all.nm_start_date%TYPE)
+  FUNCTION get_network_location(pi_iit_ne_id    IN  nm_inv_items_all.iit_ne_id%TYPE
+                               ,pi_nit_inv_type IN  nm_inv_types_all.nit_inv_type%TYPE
+                               ,pi_ne_id        IN  nm_elements_all.ne_id%TYPE
+                               ,pi_begin_mp     IN  nm_members_all.nm_begin_mp%TYPE
+                               ,pi_end_mp       IN  nm_members_all.nm_end_mp%TYPE
+                               ,pi_startdate    IN  nm_members_all.nm_start_date%TYPE)
     RETURN Nm_Nw_Temp_Extents.Nte_Job_Id%Type
     IS
     --
@@ -140,11 +139,9 @@ AS
       RAISE e_item_not_entered;
   	END IF;
     --
-
     IF lv_pnt_or_cont = 'P' AND pi_begin_mp <> pi_end_mp THEN
       RAISE e_validation_error;
     END IF;
-
     /*
     ||Continuous checks
     */
@@ -189,11 +186,9 @@ AS
       hig.raise_ner(pi_appl               => 'AWLRS'
                    ,pi_id                 => 36);                    
   END get_network_location;
-  
   --
   -----------------------------------------------------------------------------
   --  
-  
   FUNCTION is_xsect_allowed (pi_nit_inv_type nm_inv_types.nit_inv_type%TYPE) RETURN BOOLEAN
   IS
     lr_nit nm_inv_types%ROWTYPE;
@@ -279,7 +274,9 @@ AS
     --
     IF lr_retval.iit_inv_type != pi_nit_inv_type
      THEN
-        raise_application_error(-20001,'Invalid Id Supplied.');
+       --invalid Asset ID supplied
+       hig.raise_ner(pi_appl => 'AWLRS'
+                    ,pi_id   => 37);
     END IF;
     --
     RETURN lr_retval;
@@ -298,9 +295,9 @@ AS
    lr_iit nm_inv_items_all%ROWTYPE;
    --
   BEGIN
-    --check asset exist
+    --
     lr_iit := get_asset(pi_iit_ne_id    => pi_iit_ne_id
-                         ,pi_nit_inv_type => pi_iit_inv_type);
+                       ,pi_nit_inv_type => pi_iit_inv_type);
     --                   
     OPEN po_cursor FOR
     SELECT  iit_ne_id
@@ -315,10 +312,10 @@ AS
            ,iit_note
       FROM  nm_inv_items iit
      WHERE  iit.iit_ne_id = pi_iit_ne_id;
-   --
+    --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
-   --
+    --
   EXCEPTION
     WHEN others
      THEN
@@ -332,9 +329,7 @@ AS
 
   PROCEDURE check_xsp_validate (pi_iit_ne_id      IN nm_elements.ne_id%TYPE
                                ,pi_inv_type       IN nm_inv_items.iit_inv_type%TYPE
-                               ,pi_iit_x_sect     IN xsp_restraints.xsr_x_sect_value%TYPE
-                               ,pi_xsp_scl_class  IN xsp_restraints.xsr_scl_class%TYPE
-                               ,pi_nw_type        IN xsp_restraints.xsr_nw_type%TYPE)
+                               ,pi_iit_x_sect     IN xsp_restraints.xsr_x_sect_value%TYPE)
   IS
   --
   CURSOR c1 IS
@@ -376,8 +371,10 @@ AS
     FROM xsp_restraints
    WHERE xsr_x_sect_value = pi_iit_x_sect
      AND xsr_ity_inv_code = pi_inv_type
-     AND xsr_scl_class = NVL (pi_xsp_scl_class, xsr_scl_class)
-     AND xsr_nw_type = NVL (pi_nw_type, xsr_nw_type);
+     AND xsr_scl_class = xsr_scl_class
+     AND xsr_nw_type =xsr_nw_type;     
+     /*AND xsr_scl_class = NVL (pi_xsp_scl_class, xsr_scl_class)
+     AND xsr_nw_type = NVL (pi_nw_type, xsr_nw_type);*/
   --
 	l_row_found   BOOLEAN;
 	l_dummy       PLS_INTEGER;
@@ -424,7 +421,7 @@ AS
     IS
   BEGIN
     --
-  OPEN po_cursor FOR
+    OPEN po_cursor FOR
     SELECT xsr_nw_type, xsr_scl_class, xsr_x_sect_value, xsr_descr
       FROM xsp_restraints
      WHERE xsr_ity_inv_code = pi_inv_type
@@ -555,10 +552,10 @@ AS
         BY seq_no
           ,column_name
          ;
-   --
+    --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
-   --  
+    --  
   END get_flex_attribs;  
   --
   -----------------------------------------------------------------------------
@@ -607,20 +604,21 @@ AS
                              ,po_message_severity    OUT    hig_codes.hco_code%TYPE
                              ,po_message_cursor      OUT    sys_refcursor)
   IS
+    lr_nit nm_inv_types_all%ROWTYPE;
   BEGIN  
     /*
     ||check user can update item
     */
+    lr_nit := nm3get.get_nit(pi_nit_inv_type => pi_asset_type);
+    --
     IF NOT(invsec.is_inv_item_updatable(p_iit_inv_type           => pi_asset_type
   			                           ,p_iit_admin_unit         => pi_admin_unit
   			                           ,pi_unrestricted_override => FALSE))
-                                       
-  	/*AND --pb todo is this going to be a module.. how do we cater for SM? look if module exists?
-      invsec.nic_is_updatable_from_module(pi_category => :iit.nit_category
-                                         ,pi_module   => :system.current_form))*/
+  	AND invsec.nic_is_updatable_from_module(pi_category => lr_nit.nit_category
+                                           ,pi_module   => awlrs_util.c_awlrs_module)
   	THEN
-  	  null;
-      --pb todo THROW NER
+       hig.raise_ner(pi_appl => 'HIG'
+                    ,pi_id   => 86);
     END IF;
     --
   END can_update_asset;
@@ -661,7 +659,7 @@ AS
       g_iit_rec.iit_primary_key := g_iit_rec.iit_ne_id;
     END IF;
     --
-    IF is_xsect_allowed(pi_asset_type) AND pi_xsp IS NOT NULL THEN
+    IF NOT is_xsect_allowed(pi_asset_type) AND pi_xsp IS NOT NULL THEN
       RAISE e_invalid_xsp_inv;
     END IF;
     --
@@ -671,7 +669,7 @@ AS
     IF pi_iit_foreign_key IS NOT NULL THEN
       lv_iit_foreign_key := nm3inv.get_inv_primary_key(p_ne_id => pi_iit_foreign_key);
     END IF;
-    --
+    --   
     g_iit_rec.iit_start_date := pi_start_date;
     g_iit_rec.iit_admin_unit := pi_admin_unit;
     g_iit_rec.iit_inv_type := pi_asset_type;
@@ -702,6 +700,12 @@ AS
     --
     lr_iit_rec := g_iit_rec;
     --
+    IF pi_xsp IS NOT NULL THEN
+      check_xsp_validate (pi_iit_ne_id      => lr_iit_rec.iit_ne_id
+                         ,pi_inv_type       => pi_asset_type
+                         ,pi_iit_x_sect     => pi_xsp);
+    END IF;
+    --                       
     nm3ins.ins_iit_all(p_rec_iit_all => lr_iit_rec);
     po_iit_ne_id := g_iit_rec.iit_ne_id;
     --
@@ -1196,7 +1200,7 @@ AS
 
     --
     e_no_permission EXCEPTION;
-	e_item_not_entered EXCEPTION;
+    e_item_not_entered EXCEPTION;
     e_validation_error EXCEPTION;
     e_extent_not_valid_for_homo EXCEPTION;
     e_nte_edited                EXCEPTION;
