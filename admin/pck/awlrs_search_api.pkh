@@ -1,0 +1,129 @@
+CREATE OR REPLACE PACKAGE awlrs_search_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.0   27 Feb 2017 11:12:14   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_search_api.pkh  $
+  --       Date into PVCS   : $Date:   27 Feb 2017 11:12:14  $
+  --       Date fetched Out : $Modtime:   23 Feb 2017 10:21:38  $
+  --       Version          : $Revision:   1.0  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  --
+  TYPE group_expression_rec IS RECORD(group_operation        VARCHAR2(100)
+                                     ,group_expressions_xml  XMLTYPE
+                                     ,single_expressions_xml XMLTYPE);
+  TYPE group_expression_tab IS TABLE OF group_expression_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE single_expression_rec IS RECORD(field_name       VARCHAR2(500)
+                                      ,filter_function  VARCHAR2(100)
+                                      ,has_value        VARCHAR2(10)
+                                      ,is_single_value  VARCHAR2(10)
+                                      ,is_double_value  VARCHAR2(10)
+                                      ,value1           nm3type.max_varchar2
+                                      ,value2           nm3type.max_varchar2);
+  TYPE single_expression_tab IS TABLE OF single_expression_rec INDEX BY BINARY_INTEGER;
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_search_attributes(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_domain_values(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                             ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_domain_values(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                   ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
+                                   ,pi_filter           IN  VARCHAR2
+                                   ,pi_skip_n_rows      IN  PLS_INTEGER
+                                   ,pi_pagesize         IN  PLS_INTEGER
+                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_quick_search_results(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                    ,pi_search_string    IN  VARCHAR2
+                                    ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                                    ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                                    ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                                    ,pi_max_rows         IN  NUMBER DEFAULT NULL
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_quick_search_results(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                          ,pi_search_string    IN  VARCHAR2
+                                          ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                                          ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                                          ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                                          ,pi_skip_n_rows      IN  PLS_INTEGER
+                                          ,pi_pagesize         IN  PLS_INTEGER
+                                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor   OUT sys_refcursor
+                                          ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_search_results(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                              ,pi_criteria         IN  XMLTYPE
+                              ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                              ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                              ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                              ,pi_max_rows         IN  NUMBER DEFAULT NULL
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_search_results(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                    ,pi_criteria         IN  XMLTYPE
+                                    ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                                    ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                                    ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                                    ,pi_skip_n_rows      IN  PLS_INTEGER
+                                    ,pi_pagesize         IN  PLS_INTEGER
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
+
+END awlrs_search_api;
+/
