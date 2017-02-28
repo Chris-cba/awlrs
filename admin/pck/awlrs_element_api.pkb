@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.19   23 Feb 2017 15:05:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.20   28 Feb 2017 09:44:26   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   23 Feb 2017 15:05:14  $
-  --       Date fetched Out : $Modtime:   23 Feb 2017 10:34:10  $
-  --       Version          : $Revision:   1.19  $
+  --       Date into PVCS   : $Date:   28 Feb 2017 09:44:26  $
+  --       Date fetched Out : $Modtime:   28 Feb 2017 09:43:40  $
+  --       Version          : $Revision:   1.20  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.20  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1763,7 +1763,7 @@ AS
     g_new_element.ne_descr          := pi_description;
     g_new_element.ne_length         := pi_length;
     g_new_element.ne_admin_unit     := pi_admin_unit_id;
-    g_new_element.ne_start_date     := pi_start_date;
+    g_new_element.ne_start_date     := TRUNC(pi_start_date);
     g_new_element.ne_end_date       := pi_end_date;
     g_new_element.ne_gty_group_type := pi_group_type;
     g_new_element.ne_no_start       := pi_start_node_id;
