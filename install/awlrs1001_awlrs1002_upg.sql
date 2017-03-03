@@ -3,16 +3,16 @@
 --
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1001_awlrs1002_upg.sql-arc   1.0   03 Mar 2017 10:33:58   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1001_awlrs1002_upg.sql-arc   1.1   03 Mar 2017 11:49:54   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs1001_awlrs1002_upg.sql  $
---       Date into PVCS   : $Date:   03 Mar 2017 10:33:58  $
---       Date fetched Out : $Modtime:   03 Mar 2017 09:54:58  $
---       Version          : $Revision:   1.0  $
+--       Date into PVCS   : $Date:   03 Mar 2017 11:49:54  $
+--       Date fetched Out : $Modtime:   03 Mar 2017 11:48:08  $
+--       Version          : $Revision:   1.1  $
 --
 --   Product upgrade script
 --
 -----------------------------------------------------------------------------
---	Copyright (c) exor corporation ltd, 2017
+--	Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -----------------------------------------------------------------------------
 SET ECHO OFF
 SET LINESIZE 120
