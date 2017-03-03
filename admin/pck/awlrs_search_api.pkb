@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.0   27 Feb 2017 11:12:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.1   03 Mar 2017 10:46:54   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   27 Feb 2017 11:12:18  $
-  --       Date fetched Out : $Modtime:   24 Feb 2017 15:34:58  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   03 Mar 2017 10:46:54  $
+  --       Date fetched Out : $Modtime:   03 Mar 2017 10:37:52  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -1545,6 +1545,29 @@ AS
   END generate_where_clause;
 
   --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_theme_quick_search_cols(pi_theme_name IN nm_themes_all.nth_theme_name%TYPE)
+    RETURN columns_tab IS
+    --
+    lt_retval columns_tab;
+    --
+  BEGIN
+    --
+    SELECT aqsc_column
+      BULK COLLECT
+      INTO lt_retval
+      FROM awlrs_quick_search_columns
+     WHERE aqsc_theme_name = pi_theme_name
+     ORDER
+        BY aqsc_priority
+         ;
+    --
+    RETURN lt_retval;
+    --
+  END get_theme_quick_search_cols;
+  
+  --
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_asset_attributes_lists(pi_inv_type    IN     nm_inv_types_all.nit_inv_type%TYPE
@@ -1663,16 +1686,18 @@ AS
   --
   FUNCTION get_network_quick_search_sql(pi_alias_list       IN VARCHAR2
                                        ,pi_select_list      IN VARCHAR2
-                                       ,pi_like_cols        IN VARCHAR2
+                                       ,pi_like_cols        IN columns_tab
                                        ,pi_include_enddated IN VARCHAR2 DEFAULT 'N'
                                        ,pi_order_column     IN VARCHAR2 DEFAULT NULL
                                        ,pi_order_asc_desc   IN VARCHAR2 DEFAULT NULL
                                        ,pi_paged            IN BOOLEAN DEFAULT FALSE)
     RETURN VARCHAR2 IS
     --
-    lv_pagecols  VARCHAR2(200);
-    lv_retval    nm3type.max_varchar2;
-    lv_order_by  VARCHAR2(200);
+    lv_pagecols     VARCHAR2(200);
+    lv_like_cols    nm3type.max_varchar2;
+    lv_match_cases  nm3type.max_varchar2;
+    lv_retval       nm3type.max_varchar2;
+    lv_order_by     VARCHAR2(200);
     --
   BEGIN
     --
@@ -1690,6 +1715,21 @@ AS
         lv_order_by := 'match_quality ,unique_';
     END IF;
     --
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_like_cols := lv_like_cols||CASE WHEN i > 1 THEN '||'' ''||' END||pi_like_cols(i);
+      lv_match_cases := lv_match_cases||CHR(10)||'                          WHEN UPPER('||pi_like_cols(i)||') = UPPER(:search_string) THEN '||i;
+      --
+    END LOOP;
+    --
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_match_cases := lv_match_cases||CHR(10)||'                          WHEN UPPER('||pi_like_cols(i)||') LIKE UPPER(:search_string||''%'') THEN '||TO_CHAR(pi_like_cols.COUNT + i);
+      --
+    END LOOP;
+    --
+    lv_match_cases := lv_match_cases||CHR(10)||'                          ELSE '||TO_CHAR((pi_like_cols.COUNT * 2) + 1);
+    --
     lv_retval := 'WITH elements AS(SELECT ne_id result_id'
       ||CHR(10)||'                       ,ne_nt_type network_type'
       ||CHR(10)||'                       ,ne_gty_group_type group_type'
@@ -1704,12 +1744,7 @@ AS
       ||CHR(10)||'                       ,nm3net.get_ne_length(ne_id) length'
       ||CHR(10)||'                       ,nau_name admin_unit'
                ||pi_select_list
-      ||CHR(10)||'                       ,CASE'
-      ||CHR(10)||'                          WHEN UPPER(ne_unique) = UPPER(:search_string) THEN 1'
-      ||CHR(10)||'                          WHEN UPPER(ne_descr) = UPPER(:search_string) THEN 2'
-      ||CHR(10)||'                          WHEN UPPER(ne_unique) LIKE UPPER(:search_string||''%'') THEN 3'
-      ||CHR(10)||'                          WHEN UPPER(ne_descr) LIKE UPPER(:search_string||''%'') THEN 4'
-      ||CHR(10)||'                          ELSE 5'
+      ||CHR(10)||'                       ,CASE'||lv_match_cases
       ||CHR(10)||'                        END match_quality'
       ||CHR(10)||'                   FROM nm_admin_units_all'
       ||CHR(10)||'                       ,nm_elements_all'
@@ -1719,7 +1754,7 @@ AS
           WHEN pi_include_enddated = 'N'
            THEN CHR(10)||'                    AND ne_end_date IS NULL'
         END
-      ||CHR(10)||'                    AND UPPER('||pi_like_cols||') LIKE :like_string'
+      ||CHR(10)||'                    AND UPPER('||NVL(lv_like_cols,'ne_unique||'' ''||ne_descr')||') LIKE :like_string'
       ||CHR(10)||'                    AND ne_admin_unit = nau_admin_unit'
       ||CHR(10)||'                  ORDER BY '||lv_order_by||')'
       ||CHR(10)||'SELECT '||lv_pagecols
@@ -1746,6 +1781,7 @@ AS
   PROCEDURE get_network_quick_search(pi_search_string    IN  VARCHAR2
                                     ,pi_nt_type          IN  nm_elements_all.ne_nt_type%TYPE
                                     ,pi_group_type       IN  nm_elements_all.ne_gty_group_type%TYPE
+                                    ,pi_like_cols        IN  columns_tab
                                     ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
                                     ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
                                     ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
@@ -1754,26 +1790,19 @@ AS
     IS
     --
     lv_sql               nm3type.max_varchar2;
+    lv_query             nm3type.max_varchar2;
+    lv_using             nm3type.max_varchar2;
     lv_alias_list        nm3type.max_varchar2;
     lv_select_list       nm3type.max_varchar2;
     lv_additional_where  nm3type.max_varchar2;
     lv_search_string     nm3type.max_varchar2;
     lv_like_string       nm3type.max_varchar2;
     lv_nvl               VARCHAR2(10) := nm3type.get_nvl;
-    lv_like_cols         nm3type.max_varchar2;
     --
   BEGIN
     --
     lv_search_string := UPPER(pi_search_string);
     lv_like_string := '%'||lv_search_string||'%';
-    --
-    lv_like_cols := 'ne_unique||'' ''||ne_descr';
-    --
---    FOR i IN 1..pi_columns.COUNT LOOP
---      --
---      lv_like_cols := lv_like_cols||'||'' ''||'||pi_columns(i).nqsc_column;
---      --
---    END LOOP;
     --
     IF pi_max_rows IS NOT NULL
      THEN
@@ -1784,42 +1813,56 @@ AS
                                 ,po_alias_list  => lv_alias_list
                                 ,po_select_list => lv_select_list);
     --
-    lv_sql := get_network_quick_search_sql(pi_alias_list       => lv_alias_list
-                                          ,pi_select_list      => lv_select_list
-                                          ,pi_like_cols        => lv_like_cols
-                                          ,pi_include_enddated => pi_include_enddated
-                                          ,pi_order_column     => pi_order_column
-                                          ,pi_order_asc_desc   => pi_order_asc_desc)
-              ||lv_additional_where
+    lv_query := get_network_quick_search_sql(pi_alias_list       => lv_alias_list
+                                            ,pi_select_list      => lv_select_list
+                                            ,pi_like_cols        => pi_like_cols
+                                            ,pi_include_enddated => pi_include_enddated
+                                            ,pi_order_column     => pi_order_column
+                                            ,pi_order_asc_desc   => pi_order_asc_desc)
+                ||lv_additional_where
     ;
     --
-    IF pi_max_rows IS NOT NULL
-     THEN
-        OPEN po_cursor FOR lv_sql
-        USING lv_search_string
-             ,lv_search_string
-             ,lv_search_string
-             ,lv_search_string
-             ,pi_nt_type
-             ,lv_nvl
-             ,pi_group_type
-             ,lv_nvl
-             ,lv_like_string
-             ,pi_max_rows
-        ;
-    ELSE
-        OPEN po_cursor FOR lv_sql
-        USING lv_search_string
-             ,lv_search_string
-             ,lv_search_string
-             ,lv_search_string
-             ,pi_nt_type
-             ,lv_nvl
-             ,pi_group_type
-             ,lv_nvl
-             ,lv_like_string
-        ;
-    END IF;
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_using := lv_using||'lv_search_string'
+         ||CHR(10)||'       ,lv_search_string'
+         ||CHR(10)||'       ,'
+      ;
+      --
+    END LOOP;
+    --
+    lv_sql :=  'DECLARE'
+    ||CHR(10)||'  lv_query          nm3type.max_varchar2 := :query;'
+    ||CHR(10)||'  lv_search_string  nm3type.max_varchar2 := :search_string;'
+    ||CHR(10)||'  lv_max_rows       PLS_INTEGER := :max_rows;'
+    ||CHR(10)||'  lv_nvl            VARCHAR2(10) := nm3type.get_nvl;'
+    ||CHR(10)||'BEGIN'
+    ||CHR(10)||'  OPEN :cursor_out FOR lv_query'
+    ||CHR(10)||'  USING '||lv_using
+                     ||':nt_type'
+    ||CHR(10)||'       ,lv_nvl'
+    ||CHR(10)||'       ,:group_type'
+    ||CHR(10)||'       ,lv_nvl'
+    ||CHR(10)||'       ,:like_string'
+             ||CASE
+                 WHEN pi_max_rows IS NOT NULL
+                  THEN
+                     CHR(10)||'       ,lv_max_rows'
+                 ELSE
+                     NULL
+               END
+    ||CHR(10)||'  ;'
+    ||CHR(10)||'END;'
+    ;
+    --
+    EXECUTE IMMEDIATE lv_sql
+      USING lv_query
+           ,lv_search_string
+           ,pi_max_rows
+           ,IN OUT po_cursor
+           ,pi_nt_type
+           ,pi_group_type
+           ,lv_like_string;
     --
   END get_network_quick_search;
 
@@ -1829,6 +1872,7 @@ AS
   PROCEDURE get_paged_network_quick_search(pi_search_string    IN  VARCHAR2
                                           ,pi_nt_type          IN  nm_elements_all.ne_nt_type%TYPE
                                           ,pi_group_type       IN  nm_elements_all.ne_gty_group_type%TYPE
+                                          ,pi_like_cols        IN  columns_tab
                                           ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
                                           ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
                                           ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
@@ -1838,6 +1882,8 @@ AS
     IS
     --
     lv_sql               nm3type.max_varchar2;
+    lv_query             nm3type.max_varchar2;
+    lv_using             nm3type.max_varchar2;
     lv_alias_list        nm3type.max_varchar2;
     lv_select_list       nm3type.max_varchar2;
     lv_lower_index       PLS_INTEGER;
@@ -1846,20 +1892,12 @@ AS
     lv_search_string     nm3type.max_varchar2;
     lv_like_string       nm3type.max_varchar2;
     lv_nvl               VARCHAR2(10) := nm3type.get_nvl;
-    lv_like_cols         nm3type.max_varchar2;
+    lv_cursor            sys_refcursor;
     --
   BEGIN
     --
     lv_search_string := UPPER(pi_search_string);
     lv_like_string := '%'||lv_search_string||'%';
-    --
-    lv_like_cols := 'ne_unique||'' ''||ne_descr';
-    --
---    FOR i IN 1..pi_columns.COUNT LOOP
---      --
---      lv_like_cols := lv_like_cols||'||'' ''||'||pi_columns(i).nqsc_column;
---      --
---    END LOOP;
     --
     awlrs_util.gen_row_restriction(pi_index_column => 'ind'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
@@ -1872,46 +1910,63 @@ AS
                                 ,po_alias_list  => lv_alias_list
                                 ,po_select_list => lv_select_list);
     --
-    lv_sql := 'SELECT *'
-   ||CHR(10)||'  FROM ('||get_network_quick_search_sql(pi_alias_list       => lv_alias_list
-                                                      ,pi_select_list      => lv_select_list
-                                                      ,pi_like_cols        => lv_like_cols
-                                                      ,pi_include_enddated => pi_include_enddated
-                                                      ,pi_order_column     => pi_order_column
-                                                      ,pi_order_asc_desc   => pi_order_asc_desc
-                                                      ,pi_paged            => TRUE)||')'
-            ||lv_additional_where
+    lv_query := 'SELECT *'
+     ||CHR(10)||'  FROM ('||get_network_quick_search_sql(pi_alias_list       => lv_alias_list
+                                                        ,pi_select_list      => lv_select_list
+                                                        ,pi_like_cols        => pi_like_cols
+                                                        ,pi_include_enddated => pi_include_enddated
+                                                        ,pi_order_column     => pi_order_column
+                                                        ,pi_order_asc_desc   => pi_order_asc_desc
+                                                        ,pi_paged            => TRUE)||')'
+              ||lv_additional_where
     ;
     --
-    IF pi_pagesize IS NOT NULL
-     THEN
-        OPEN po_cursor FOR lv_sql
-        USING lv_search_string
-             ,lv_search_string
-             ,lv_search_string
-             ,lv_search_string
-             ,pi_nt_type
-             ,lv_nvl
-             ,pi_group_type
-             ,lv_nvl
-             ,lv_like_string
-             ,lv_lower_index
-             ,lv_upper_index
-        ;
-    ELSE
-        OPEN po_cursor FOR lv_sql
-        USING lv_search_string
-             ,lv_search_string
-             ,lv_search_string
-             ,lv_search_string
-             ,pi_nt_type
-             ,lv_nvl
-             ,pi_group_type
-             ,lv_nvl
-             ,lv_like_string
-             ,lv_lower_index
-        ;
-    END IF;
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_using := lv_using||'lv_search_string'
+         ||CHR(10)||'       ,lv_search_string'
+         ||CHR(10)||'       ,'
+      ;
+      --
+    END LOOP;
+    --
+    lv_sql :=  'DECLARE'
+    ||CHR(10)||'  lv_query          nm3type.max_varchar2 := :query;'
+    ||CHR(10)||'  lv_search_string  nm3type.max_varchar2 := :search_string;'
+    ||CHR(10)||'  lv_lower_index    PLS_INTEGER := :lower_index;'
+    ||CHR(10)||'  lv_upper_index    PLS_INTEGER := :upper_index;'    
+    ||CHR(10)||'  lv_nvl            VARCHAR2(10) := nm3type.get_nvl;'
+    ||CHR(10)||'BEGIN'
+    ||CHR(10)||'  OPEN :cursor_out FOR lv_query'
+    ||CHR(10)||'  USING '||lv_using
+                     ||':nt_type'
+    ||CHR(10)||'       ,lv_nvl'
+    ||CHR(10)||'       ,:group_type'
+    ||CHR(10)||'       ,lv_nvl'
+    ||CHR(10)||'       ,:like_string'
+    ||CHR(10)||'       ,lv_lower_index'
+             ||CASE
+                 WHEN pi_pagesize IS NOT NULL
+                  THEN
+                     CHR(10)||'       ,lv_upper_index'
+                 ELSE
+                     NULL
+               END
+    ||CHR(10)||'  ;'
+    ||CHR(10)||'END;'
+    ;
+    --
+    EXECUTE IMMEDIATE lv_sql
+      USING lv_query
+           ,lv_search_string
+           ,lv_lower_index
+           ,lv_upper_index
+           ,IN OUT lv_cursor
+           ,pi_nt_type
+           ,pi_group_type
+           ,lv_like_string;
+    --
+    po_cursor := lv_cursor;
     --
   END get_paged_network_quick_search;
 
@@ -1921,16 +1976,18 @@ AS
   FUNCTION get_asset_quick_search_sql(pi_nit_rec          IN nm_inv_types_all%ROWTYPE
                                      ,pi_alias_list       IN VARCHAR2
                                      ,pi_select_list      IN VARCHAR2
-                                     ,pi_like_cols        IN VARCHAR2
+                                     ,pi_like_cols        IN columns_tab
                                      ,pi_include_enddated IN VARCHAR2 DEFAULT 'N'
                                      ,pi_order_column     IN VARCHAR2 DEFAULT NULL
                                      ,pi_order_asc_desc   IN VARCHAR2 DEFAULT NULL
                                      ,pi_paged            IN BOOLEAN DEFAULT FALSE)
     RETURN VARCHAR2 IS
     --
-    lv_pagecols  VARCHAR2(200);
-    lv_retval    nm3type.max_varchar2;
-    lv_order_by  VARCHAR2(200);
+    lv_pagecols     VARCHAR2(200);
+    lv_like_cols    nm3type.max_varchar2;
+    lv_match_cases  nm3type.max_varchar2;
+    lv_retval       nm3type.max_varchar2;
+    lv_order_by     VARCHAR2(200);
     --
   BEGIN
     --
@@ -1952,19 +2009,31 @@ AS
                                                      END;
     END IF;
     --
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_like_cols := lv_like_cols||CASE WHEN i > 1 THEN '||'' ''||' END||pi_like_cols(i);
+      lv_match_cases := lv_match_cases||CHR(10)||'                          WHEN UPPER('||pi_like_cols(i)||') = UPPER(:search_string) THEN '||i;
+      --
+    END LOOP;
+    --
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_match_cases := lv_match_cases||CHR(10)||'                          WHEN UPPER('||pi_like_cols(i)||') LIKE UPPER(:search_string||''%'') THEN '||TO_CHAR(pi_like_cols.COUNT + i);
+      --
+    END LOOP;
+    --
+    lv_match_cases := lv_match_cases||CHR(10)||'                          ELSE '||TO_CHAR((pi_like_cols.COUNT * 2) + 1);
+    --
     IF pi_nit_rec.nit_table_name IS NOT NULL
      THEN
         --
         lv_retval :=  'WITH assets AS(SELECT '||pi_nit_rec.nit_foreign_pk_column||' result_id'
            ||CHR(10)||'                     ,'||pi_nit_rec.nit_foreign_pk_column||' primary_key'
                                               ||pi_select_list
-           ||CHR(10)||'                     ,CASE'
-           ||CHR(10)||'                        WHEN UPPER('||pi_nit_rec.nit_foreign_pk_column||') = UPPER(:search_string) THEN 1'
-           ||CHR(10)||'                        WHEN UPPER('||pi_nit_rec.nit_foreign_pk_column||') LIKE UPPER(:search_string||''%'') THEN 3'
-           ||CHR(10)||'                        ELSE 5'
+           ||CHR(10)||'                     ,CASE'||lv_match_cases
            ||CHR(10)||'                      END match_quality'
            ||CHR(10)||'                 FROM '||pi_nit_rec.nit_table_name||' iit'
-           ||CHR(10)||'                WHERE UPPER('||NVL(pi_like_cols,pi_nit_rec.nit_foreign_pk_column)||') LIKE :like_string'
+           ||CHR(10)||'                WHERE UPPER('||NVL(lv_like_cols,pi_nit_rec.nit_foreign_pk_column)||') LIKE :like_string'
            ||CHR(10)||'                ORDER BY '||lv_order_by||')'
            ||CHR(10)||'SELECT '||lv_pagecols
                            ||'result_id'
@@ -1979,12 +2048,7 @@ AS
            ||CHR(10)||'                     ,iit_descr description'
            ||CHR(10)||'                     ,nau_name admin_unit'
                     ||pi_select_list
-           ||CHR(10)||'                     ,CASE'
-           ||CHR(10)||'                        WHEN UPPER(iit_primary_key) = UPPER(:search_string) THEN 1'
-           ||CHR(10)||'                        WHEN UPPER(iit_descr) = UPPER(:search_string) THEN 2'
-           ||CHR(10)||'                        WHEN UPPER(iit_primary_key) LIKE UPPER(:search_string||''%'') THEN 3'
-           ||CHR(10)||'                        WHEN UPPER(iit_descr) LIKE UPPER(:search_string||''%'') THEN 4'
-           ||CHR(10)||'                        ELSE 5'
+           ||CHR(10)||'                     ,CASE'||lv_match_cases
            ||CHR(10)||'                      END match_quality'
            ||CHR(10)||'                 FROM nm_inv_items_all iit'
            ||CHR(10)||'                     ,nm_admin_units_all nau'
@@ -1993,9 +2057,9 @@ AS
                WHEN pi_include_enddated = 'N'
                 THEN CHR(10)||'                  AND iit.iit_end_date IS NULL'
              END
-           ||CHR(10)||'                  AND UPPER('||NVL(pi_like_cols,'iit.iit_primary_key||'' ''||iit.iit_descr')||') LIKE :like_string'
+           ||CHR(10)||'                  AND UPPER('||NVL(lv_like_cols,'iit.iit_primary_key||'' ''||iit.iit_descr')||') LIKE :like_string'
            ||CHR(10)||'                  AND iit.iit_admin_unit = nau.nau_admin_unit'
-           ||CHR(10)||'                ORDER BY match_quality,iit_primary_key,iit_descr)'
+           ||CHR(10)||'                ORDER BY '||lv_order_by||')'
            ||CHR(10)||'SELECT '||lv_pagecols
                            ||'result_id'
            ||CHR(10)||'      ,primary_key'
@@ -2015,7 +2079,8 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_assets_quick_search(pi_search_string    IN  VARCHAR2
-                                   ,pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                                   ,pi_nit_rec          IN  nm_inv_types_all%ROWTYPE
+                                   ,pi_like_cols        IN  columns_tab
                                    ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
                                    ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
                                    ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
@@ -2024,93 +2089,81 @@ AS
     IS
     --
     lv_sql               nm3type.max_varchar2;
+    lv_query             nm3type.max_varchar2;
+    lv_using             nm3type.max_varchar2;
     lv_alias_list        nm3type.max_varchar2;
     lv_select_list       nm3type.max_varchar2;
     lv_additional_where  nm3type.max_varchar2;
     lv_search_string     nm3type.max_varchar2;
     lv_like_string       nm3type.max_varchar2;
-    lv_like_cols         nm3type.max_varchar2;
-    --
-    lr_nit  nm_inv_types_all%ROWTYPE;
     --
   BEGIN
-    /*
-    ||Get the asset type data.
-    */
-    lr_nit := nm3get.get_nit(pi_inv_type);
     --
     lv_search_string := UPPER(pi_search_string);
     lv_like_string := '%'||lv_search_string||'%';
-    --
---    FOR i IN 1..pi_columns.COUNT LOOP
---      --
---      lv_like_cols := lv_like_cols||'||'' ''||'||pi_columns(i).nqsc_column;
---      --
---    END LOOP;
     --
     IF pi_max_rows IS NOT NULL
      THEN
         lv_additional_where := CHR(10)||' WHERE rownum <= :max_rows';
     END IF;
     --
-    get_asset_attributes_lists(pi_inv_type    => pi_inv_type
+    get_asset_attributes_lists(pi_inv_type    => pi_nit_rec.nit_inv_type
                               ,po_alias_list  => lv_alias_list
                               ,po_select_list => lv_select_list);
     --
-    lv_sql := get_asset_quick_search_sql(pi_nit_rec          => lr_nit
-                                        ,pi_alias_list       => lv_alias_list
-                                        ,pi_select_list      => lv_select_list
-                                        ,pi_like_cols        => lv_like_cols
-                                        ,pi_include_enddated => pi_include_enddated
-                                        ,pi_order_column     => pi_order_column
-                                        ,pi_order_asc_desc   => pi_order_asc_desc)
-              ||lv_additional_where
+    lv_query := get_asset_quick_search_sql(pi_nit_rec          => pi_nit_rec
+                                          ,pi_alias_list       => lv_alias_list
+                                          ,pi_select_list      => lv_select_list
+                                          ,pi_like_cols        => pi_like_cols
+                                          ,pi_include_enddated => pi_include_enddated
+                                          ,pi_order_column     => pi_order_column
+                                          ,pi_order_asc_desc   => pi_order_asc_desc)
+                ||lv_additional_where
     ;
     --
-    IF lr_nit.nit_table_name IS NOT NULL
-     THEN
-        --
-        IF pi_max_rows IS NOT NULL
-         THEN
-            OPEN po_cursor FOR lv_sql
-            USING lv_search_string
-                 ,lv_search_string
-                 ,lv_like_string
-                 ,pi_max_rows
-            ;
-        ELSE
-            OPEN po_cursor FOR lv_sql
-            USING lv_search_string
-                 ,lv_search_string
-                 ,lv_like_string
-            ;
-        END IF;
-        --
-    ELSE
-        --
-        IF pi_max_rows IS NOT NULL
-         THEN
-            OPEN po_cursor FOR lv_sql
-            USING lv_search_string
-                 ,lv_search_string
-                 ,lv_search_string
-                 ,lv_search_string
-                 ,pi_inv_type
-                 ,lv_like_string
-                 ,pi_max_rows
-            ;
-        ELSE
-            OPEN po_cursor FOR lv_sql
-            USING lv_search_string
-                 ,lv_search_string
-                 ,lv_search_string
-                 ,lv_search_string
-                 ,pi_inv_type
-                 ,lv_like_string
-            ;
-        END IF;
-        --
-    END IF;
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_using := lv_using||'lv_search_string'
+         ||CHR(10)||'       ,lv_search_string'
+         ||CHR(10)||'       ,'
+      ;
+      --
+    END LOOP;
+    --
+    lv_sql :=  'DECLARE'
+    ||CHR(10)||'  lv_inv_type       nm_inv_types_all.nit_inv_type%TYPE := :inv_type;'
+    ||CHR(10)||'  lv_query          nm3type.max_varchar2 := :query;'
+    ||CHR(10)||'  lv_search_string  nm3type.max_varchar2 := :search_string;'
+    ||CHR(10)||'  lv_max_rows       PLS_INTEGER := :max_rows;'
+    ||CHR(10)||'BEGIN'
+    ||CHR(10)||'  OPEN :cursor_out FOR lv_query'
+    ||CHR(10)||'  USING '||lv_using
+             ||CASE
+                 WHEN pi_nit_rec.nit_table_name IS NOT NULL
+                  THEN
+                     ':like_string'
+                 ELSE
+                     'lv_inv_type'
+                     ||CHR(10)||'       ,:like_string'
+               END
+             ||CASE
+                 WHEN pi_max_rows IS NOT NULL
+                  THEN
+                     CHR(10)||'       ,lv_max_rows'
+                 ELSE
+                     NULL
+               END
+    ||CHR(10)||'  ;'
+    ||CHR(10)||'END;'
+    ;
+    --
+    EXECUTE IMMEDIATE lv_sql
+      USING pi_nit_rec.nit_inv_type
+           ,lv_query
+           ,lv_search_string
+           ,pi_max_rows
+           ,IN OUT po_cursor
+           ,lv_like_string;
     --
   END get_assets_quick_search;
 
@@ -2118,7 +2171,8 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_paged_assets_quick_search(pi_search_string    IN  VARCHAR2
-                                         ,pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                                         ,pi_nit_rec          IN  nm_inv_types_all%ROWTYPE
+                                         ,pi_like_cols        IN  columns_tab
                                          ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
                                          ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
                                          ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
@@ -2128,6 +2182,8 @@ AS
     IS
     --
     lv_sql               nm3type.max_varchar2;
+    lv_query             nm3type.max_varchar2;
+    lv_using             nm3type.max_varchar2;
     lv_lower_index       PLS_INTEGER;
     lv_upper_index       PLS_INTEGER;
     lv_alias_list        nm3type.max_varchar2;
@@ -2135,24 +2191,11 @@ AS
     lv_additional_where  nm3type.max_varchar2;
     lv_search_string     nm3type.max_varchar2;
     lv_like_string       nm3type.max_varchar2;
-    lv_like_cols         nm3type.max_varchar2;
-    --
-    lr_nit  nm_inv_types_all%ROWTYPE;
     --
   BEGIN
-    /*
-    ||Get the asset type data.
-    */
-    lr_nit := nm3get.get_nit(pi_inv_type);
     --
     lv_search_string := UPPER(pi_search_string);
     lv_like_string := '%'||lv_search_string||'%';
-    --
---    FOR i IN 1..pi_columns.COUNT LOOP
---      --
---      lv_like_cols := lv_like_cols||'||'' ''||'||pi_columns(i).nqsc_column;
---      --
---    END LOOP;
     --
     awlrs_util.gen_row_restriction(pi_index_column => 'ind'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
@@ -2161,72 +2204,68 @@ AS
                                   ,po_upper_index  => lv_upper_index
                                   ,po_statement    => lv_additional_where);
     --
-    get_asset_attributes_lists(pi_inv_type    => pi_inv_type
+    get_asset_attributes_lists(pi_inv_type    => pi_nit_rec.nit_inv_type
                               ,po_alias_list  => lv_alias_list
                               ,po_select_list => lv_select_list);
     --
-    lv_sql := get_asset_quick_search_sql(pi_nit_rec          => lr_nit
-                                        ,pi_alias_list       => lv_alias_list
-                                        ,pi_select_list      => lv_select_list
-                                        ,pi_like_cols        => lv_like_cols
-                                        ,pi_include_enddated => pi_include_enddated
-                                        ,pi_order_column     => pi_order_column
-                                        ,pi_order_asc_desc   => pi_order_asc_desc
-                                        ,pi_paged            => TRUE);
-    --
-    lv_sql := 'SELECT *'
-   ||CHR(10)||'  FROM ('||lv_sql||')'
-            ||lv_additional_where
+    lv_query := 'SELECT *'
+     ||CHR(10)||'  FROM ('||get_asset_quick_search_sql(pi_nit_rec          => pi_nit_rec
+                                                      ,pi_alias_list       => lv_alias_list
+                                                      ,pi_select_list      => lv_select_list
+                                                      ,pi_like_cols        => pi_like_cols
+                                                      ,pi_include_enddated => pi_include_enddated
+                                                      ,pi_order_column     => pi_order_column
+                                                      ,pi_order_asc_desc   => pi_order_asc_desc
+                                                      ,pi_paged            => TRUE)||')'
+              ||lv_additional_where
     ;
     --
-    IF lr_nit.nit_table_name IS NOT NULL
-     THEN
-        --
-        IF pi_pagesize IS NOT NULL
-         THEN
-            OPEN po_cursor FOR lv_sql
-            USING lv_search_string
-                 ,lv_search_string
-                 ,lv_like_string
-                 ,lv_lower_index
-                 ,lv_upper_index
-            ;
-        ELSE
-            OPEN po_cursor FOR lv_sql
-            USING lv_search_string
-                 ,lv_search_string
-                 ,lv_like_string
-                 ,lv_lower_index
-            ;
-        END IF;
-        --
-    ELSE
-       --
-        IF pi_pagesize IS NOT NULL
-         THEN
-            OPEN po_cursor FOR lv_sql
-            USING lv_search_string
-                 ,lv_search_string
-                 ,lv_search_string
-                 ,lv_search_string
-                 ,pi_inv_type
-                 ,lv_like_string
-                 ,lv_lower_index
-                 ,lv_upper_index
-            ;
-        ELSE
-            OPEN po_cursor FOR lv_sql
-            USING lv_search_string
-                 ,lv_search_string
-                 ,lv_search_string
-                 ,lv_search_string
-                 ,pi_inv_type
-                 ,lv_like_string
-                 ,lv_lower_index
-            ;
-        END IF;
-        --
-    END IF;
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_using := lv_using||'lv_search_string'
+         ||CHR(10)||'       ,lv_search_string'
+         ||CHR(10)||'       ,'
+      ;
+      --
+    END LOOP;
+    --
+    lv_sql :=  'DECLARE'
+    ||CHR(10)||'  lv_inv_type       nm_inv_types_all.nit_inv_type%TYPE := :inv_type;'
+    ||CHR(10)||'  lv_query          nm3type.max_varchar2 := :query;'
+    ||CHR(10)||'  lv_search_string  nm3type.max_varchar2 := :search_string;'
+    ||CHR(10)||'  lv_lower_index    PLS_INTEGER := :lower_index;'
+    ||CHR(10)||'  lv_upper_index    PLS_INTEGER := :upper_index;'    
+    ||CHR(10)||'BEGIN'
+    ||CHR(10)||'  OPEN :cursor_out FOR lv_query'
+    ||CHR(10)||'  USING '||lv_using
+             ||CASE
+                 WHEN pi_nit_rec.nit_table_name IS NOT NULL
+                  THEN
+                     ':like_string'
+                 ELSE
+                     'lv_inv_type'
+                     ||CHR(10)||'       ,:like_string'
+               END
+    ||CHR(10)||'       ,lv_lower_index'
+             ||CASE
+                 WHEN pi_pagesize IS NOT NULL
+                  THEN
+                     CHR(10)||'       ,lv_upper_index'
+                 ELSE
+                     NULL
+               END
+    ||CHR(10)||'  ;'
+    ||CHR(10)||'END;'
+    ;
+    --
+    EXECUTE IMMEDIATE lv_sql
+      USING pi_nit_rec.nit_inv_type
+           ,lv_query
+           ,lv_search_string
+           ,lv_lower_index
+           ,lv_upper_index
+           ,IN OUT po_cursor
+           ,lv_like_string;
     --
   END get_paged_assets_quick_search;
 
@@ -2245,7 +2284,9 @@ AS
     IS
     --
     lt_theme_types  awlrs_map_api.theme_types_tab;
-    lv_include_enddated  VARCHAR2(1) := 'N';
+    lt_like_cols    columns_tab;
+    --
+    lr_nit  nm_inv_types_all%ROWTYPE;
     --
   BEGIN
     --
@@ -2260,13 +2301,23 @@ AS
     --
     IF lt_theme_types.COUNT > 0
      THEN
+        --
+        lt_like_cols := get_theme_quick_search_cols(pi_theme_name => pi_theme_name);
+        --
         CASE
           WHEN lt_theme_types(1).network_type IS NOT NULL
            THEN
               --
+              IF lt_like_cols.COUNT = 0
+               THEN
+                  lt_like_cols(1) := 'ne_unique';
+                  lt_like_cols(2) := 'ne_descr';
+              END IF;
+              --
               get_network_quick_search(pi_search_string    => pi_search_string
                                       ,pi_nt_type          => lt_theme_types(1).network_type
                                       ,pi_group_type       => lt_theme_types(1).network_group_type
+                                      ,pi_like_cols        => lt_like_cols
                                       ,pi_include_enddated => pi_include_enddated
                                       ,pi_order_column     => pi_order_column
                                       ,pi_order_asc_desc   => pi_order_asc_desc
@@ -2276,8 +2327,22 @@ AS
           WHEN lt_theme_types(1).asset_type IS NOT NULL
            THEN
               --
+              lr_nit := nm3get.get_nit(lt_theme_types(1).asset_type);
+              --
+              IF lt_like_cols.COUNT = 0
+               THEN
+                  IF lr_nit.nit_table_name IS NOT NULL
+                   THEN
+                      lt_like_cols(1) := lr_nit.nit_foreign_pk_column;
+                  ELSE
+                      lt_like_cols(1) := 'iit_primary_key';
+                      lt_like_cols(2) := 'iit_descr';
+                  END IF;
+              END IF;
+              --
               get_assets_quick_search(pi_search_string    => pi_search_string
-                                     ,pi_inv_type         => lt_theme_types(1).asset_type
+                                     ,pi_nit_rec          => lr_nit
+                                     ,pi_like_cols        => lt_like_cols
                                      ,pi_include_enddated => pi_include_enddated
                                      ,pi_order_column     => pi_order_column
                                      ,pi_order_asc_desc   => pi_order_asc_desc
@@ -2328,9 +2393,11 @@ AS
     lv_lower_index       PLS_INTEGER;
     lv_upper_index       PLS_INTEGER;
     lv_row_restriction   nm3type.max_varchar2;
-    lv_include_enddated  VARCHAR2(1) := 'N';
     --
     lt_theme_types  awlrs_map_api.theme_types_tab;
+    lt_like_cols    columns_tab;
+    --
+    lr_nit  nm_inv_types_all%ROWTYPE;
     --
   BEGIN
     --
@@ -2345,13 +2412,23 @@ AS
     --
     IF lt_theme_types.COUNT > 0
      THEN
+        --
+        lt_like_cols := get_theme_quick_search_cols(pi_theme_name => pi_theme_name);
+        --
         CASE
           WHEN lt_theme_types(1).network_type IS NOT NULL
            THEN
               --
+              IF lt_like_cols.COUNT = 0
+               THEN
+                  lt_like_cols(1) := 'ne_unique';
+                  lt_like_cols(2) := 'ne_descr';
+              END IF;
+              --
               get_paged_network_quick_search(pi_search_string    => pi_search_string
                                             ,pi_nt_type          => lt_theme_types(1).network_type
                                             ,pi_group_type       => lt_theme_types(1).network_group_type
+                                            ,pi_like_cols        => lt_like_cols
                                             ,pi_include_enddated => pi_include_enddated
                                             ,pi_order_column     => pi_order_column
                                             ,pi_order_asc_desc   => pi_order_asc_desc
@@ -2362,8 +2439,22 @@ AS
           WHEN lt_theme_types(1).asset_type IS NOT NULL
            THEN
               --
+              lr_nit := nm3get.get_nit(lt_theme_types(1).asset_type);
+              --
+              IF lt_like_cols.COUNT = 0
+               THEN
+                  IF lr_nit.nit_table_name IS NOT NULL
+                   THEN
+                      lt_like_cols(1) := lr_nit.nit_foreign_pk_column;
+                  ELSE
+                      lt_like_cols(1) := 'iit_primary_key';
+                      lt_like_cols(2) := 'iit_descr';
+                  END IF;
+              END IF;
+              --
               get_paged_assets_quick_search(pi_search_string    => pi_search_string
-                                           ,pi_inv_type         => lt_theme_types(1).asset_type
+                                           ,pi_nit_rec          => lr_nit
+                                           ,pi_like_cols        => lt_like_cols
                                            ,pi_include_enddated => pi_include_enddated
                                            ,pi_order_column     => pi_order_column
                                            ,pi_order_asc_desc   => pi_order_asc_desc
@@ -2568,7 +2659,6 @@ AS
                                                 ,pi_paged            => TRUE)||')'
             ||lv_additional_where
     ;
-dbms_output.put_line(lv_sql);
     --
     IF pi_pagesize IS NOT NULL
      THEN
@@ -2710,7 +2800,6 @@ dbms_output.put_line(lv_sql);
               ||lv_additional_where
     ;
     --
-dbms_output.put_line(lv_sql);
     IF lr_nit.nit_table_name IS NOT NULL
      THEN
         --
@@ -2779,21 +2868,17 @@ dbms_output.put_line(lv_sql);
                               ,po_alias_list  => lv_alias_list
                               ,po_select_list => lv_select_list);
     --
-    lv_sql := get_asset_search_sql(pi_nit_rec          => lr_nit
-                                  ,pi_alias_list       => lv_alias_list
-                                  ,pi_select_list      => lv_select_list
-                                  ,pi_where_clause     => lv_where
-                                  ,pi_include_enddated => pi_include_enddated
-                                  ,pi_order_column     => pi_order_column
-                                  ,pi_order_asc_desc   => pi_order_asc_desc
-                                  ,pi_paged            => TRUE)
-    ;
-    --
     lv_sql := 'SELECT *'
-   ||CHR(10)||'  FROM ('||lv_sql||')'
+   ||CHR(10)||'  FROM ('||get_asset_search_sql(pi_nit_rec          => lr_nit
+                                              ,pi_alias_list       => lv_alias_list
+                                              ,pi_select_list      => lv_select_list
+                                              ,pi_where_clause     => lv_where
+                                              ,pi_include_enddated => pi_include_enddated
+                                              ,pi_order_column     => pi_order_column
+                                              ,pi_order_asc_desc   => pi_order_asc_desc
+                                              ,pi_paged            => TRUE)||')'
             ||lv_additional_where
     ;
-dbms_output.put_line(lv_sql);
     --
     IF lr_nit.nit_table_name IS NOT NULL
      THEN
@@ -2983,5 +3068,3 @@ dbms_output.put_line(lv_sql);
 
 END awlrs_search_api;
 /
-
-show err
