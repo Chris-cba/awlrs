@@ -1,21 +1,29 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.1   02 Feb 2017 10:03:14   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.2   03 Mar 2017 09:46:30   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.con  $
---       Date into PVCS   : $Date:   02 Feb 2017 10:03:14  $
---       Date fetched Out : $Modtime:   02 Feb 2017 09:51:20  $
---       Version          : $Revision:   1.1  $
+--       Date into PVCS   : $Date:   03 Mar 2017 09:46:30  $
+--       Date fetched Out : $Modtime:   03 Mar 2017 09:42:22  $
+--       Version          : $Revision:   1.2  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Mon Sep 26  15:21:21 2016 by Server Generator 10.1.2.9.28
-
+-- Generated for Oracle 10g on Fri Mar 03  09:37:10 2017 by Server Generator 10.1.2.9.28
+  
 PROMPT Creating Primary Key on 'AWLRS_PERSISTENCE'
 ALTER TABLE AWLRS_PERSISTENCE
  ADD (CONSTRAINT AP_PK PRIMARY KEY 
   (AP_ID))
 /
+
+PROMPT Creating Primary Key on 'AWLRS_QUICK_SEARCH_COLUMNS'
+ALTER TABLE AWLRS_QUICK_SEARCH_COLUMNS
+ ADD (CONSTRAINT AQSC_PK PRIMARY KEY 
+  (AQSC_THEME_NAME
+  ,AQSC_COLUMN))
+/
+
 
 PROMPT Creating Unique Key on 'AWLRS_PERSISTENCE'
 ALTER TABLE AWLRS_PERSISTENCE
@@ -25,9 +33,24 @@ ALTER TABLE AWLRS_PERSISTENCE
   ,AP_KEY))
 /
 
+PROMPT Creating Unique Key on 'AWLRS_QUICK_SEARCH_COLUMNS'
+ALTER TABLE AWLRS_QUICK_SEARCH_COLUMNS
+ ADD (CONSTRAINT AQSC_UK UNIQUE 
+  (AQSC_THEME_NAME
+  ,AQSC_PRIORITY))
+/
+
+
 PROMPT Creating Foreign Key on 'AWLRS_PERSISTENCE'
 ALTER TABLE AWLRS_PERSISTENCE ADD (CONSTRAINT
  AP_FK_HUS FOREIGN KEY 
   (AP_USER_ID) REFERENCES HIG_USERS
   (HUS_USER_ID))
+/
+
+PROMPT Creating Foreign Key on 'AWLRS_QUICK_SEARCH_COLUMNS'
+ALTER TABLE AWLRS_QUICK_SEARCH_COLUMNS ADD (CONSTRAINT
+ AQSC_FK_NTH FOREIGN KEY 
+  (AQSC_THEME_NAME) REFERENCES NM_THEMES_ALL
+  (NTH_THEME_NAME) ON DELETE CASCADE)
 /
