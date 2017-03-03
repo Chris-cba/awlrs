@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.0   27 Feb 2017 11:12:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.1   03 Mar 2017 10:46:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkh  $
-  --       Date into PVCS   : $Date:   27 Feb 2017 11:12:14  $
-  --       Date fetched Out : $Modtime:   23 Feb 2017 10:21:38  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   03 Mar 2017 10:46:50  $
+  --       Date fetched Out : $Modtime:   27 Feb 2017 11:38:36  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   --
   TYPE group_expression_rec IS RECORD(group_operation        VARCHAR2(100)
                                      ,group_expressions_xml  XMLTYPE
@@ -28,6 +28,8 @@ AS
                                       ,value1           nm3type.max_varchar2
                                       ,value2           nm3type.max_varchar2);
   TYPE single_expression_tab IS TABLE OF single_expression_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE columns_tab IS TABLE OF awlrs_quick_search_columns.aqsc_column%TYPE INDEX BY BINARY_INTEGER;
   --
   -----------------------------------------------------------------------------
   --
