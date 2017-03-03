@@ -1,16 +1,16 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.4   03 Mar 2017 10:26:48   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.5   Mar 03 2017 11:47:36   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   03 Mar 2017 10:26:48  $
---       Date fetched Out : $Modtime:   03 Mar 2017 10:07:00  $
---       Version          : $Revision:   1.4  $
+--       Date into PVCS   : $Date:   Mar 03 2017 11:47:36  $
+--       Date fetched Out : $Modtime:   Mar 03 2017 11:46:34  $
+--       Version          : $Revision:   1.5  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 03-MAR-2017 10:07
+--       Generation Date  : 03-MAR-2017 11:46
 --
 --   Product metadata script
---   As at Release 1.0.0.2
+--   As at Release 4.7.1.0
 --
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
@@ -226,7 +226,7 @@ INSERT
       (HOV_ID
       ,HOV_VALUE)
 SELECT 'AWLMAPEPSG'
-      ,'<Please set>'
+      ,'<PLEASE SET>'
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_OPTION_VALUES
@@ -248,7 +248,7 @@ INSERT
       (HOV_ID
       ,HOV_VALUE)
 SELECT 'AWLMAPSRID'
-      ,'<Please set>'
+      ,'<PLEASE SET>'
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_OPTION_VALUES
