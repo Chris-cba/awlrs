@@ -1,15 +1,15 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.1   02 Feb 2017 10:03:18   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.2   03 Mar 2017 09:46:28   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.tab  $
---       Date into PVCS   : $Date:   02 Feb 2017 10:03:18  $
---       Date fetched Out : $Modtime:   02 Feb 2017 09:51:20  $
---       Version          : $Revision:   1.1  $
+--       Date into PVCS   : $Date:   03 Mar 2017 09:46:28  $
+--       Date fetched Out : $Modtime:   03 Mar 2017 09:42:44  $
+--       Version          : $Revision:   1.2  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Mon Sep 26  15:21:21 2016 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Fri Mar 03  09:37:10 2017 by Server Generator 10.1.2.9.28
 
 PROMPT Creating Table 'AWLRS_PERSISTENCE'
 CREATE TABLE AWLRS_PERSISTENCE
@@ -18,5 +18,13 @@ CREATE TABLE AWLRS_PERSISTENCE
  ,AP_PRODUCT VARCHAR2(6) NOT NULL
  ,AP_KEY VARCHAR2(200) NOT NULL
  ,AP_DATA CLOB
+ )
+/
+
+PROMPT Creating Table 'AWLRS_QUICK_SEARCH_COLUMNS'
+CREATE TABLE AWLRS_QUICK_SEARCH_COLUMNS
+ (AQSC_THEME_NAME VARCHAR2(30) NOT NULL
+ ,AQSC_COLUMN VARCHAR2(30) NOT NULL
+ ,AQSC_PRIORITY NUMBER(3) NOT NULL
  )
 /
