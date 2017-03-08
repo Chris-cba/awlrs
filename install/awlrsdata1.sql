@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.5   Mar 03 2017 11:47:36   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.6   08 Mar 2017 16:32:38   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   Mar 03 2017 11:47:36  $
---       Date fetched Out : $Modtime:   Mar 03 2017 11:46:34  $
---       Version          : $Revision:   1.5  $
+--       Date into PVCS   : $Date:   08 Mar 2017 16:32:38  $
+--       Date fetched Out : $Modtime:   08 Mar 2017 16:30:32  $
+--       Version          : $Revision:   1.6  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 03-MAR-2017 11:46
+--       Generation Date  : 08-MAR-2017 16:30
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -292,6 +292,22 @@ SELECT 'AWLRS_PERSISTENCE'
                     FROM HIG_SEQUENCE_ASSOCIATIONS
                    WHERE HSA_TABLE_NAME = 'AWLRS_PERSISTENCE'
                      AND HSA_COLUMN_NAME = 'AP_ID');
+--
+INSERT
+  INTO HIG_SEQUENCE_ASSOCIATIONS
+      (HSA_TABLE_NAME
+      ,HSA_COLUMN_NAME
+      ,HSA_SEQUENCE_NAME
+      ,HSA_LAST_REBUILD_DATE)
+SELECT 'AWLRS_SAVED_SEARCH_CRITERIA'
+      ,'ASSC_ID'
+      ,'ASSC_ID_SEQ'
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_SEQUENCE_ASSOCIATIONS
+                   WHERE HSA_TABLE_NAME = 'AWLRS_SAVED_SEARCH_CRITERIA'
+                     AND HSA_COLUMN_NAME = 'ASSC_ID');
 --
 ----------------------------------------------------------------------------------------
 -- HIG_MODULES

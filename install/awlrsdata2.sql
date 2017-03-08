@@ -1,16 +1,16 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.6   03 Mar 2017 10:26:46   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.7   08 Mar 2017 16:32:38   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   03 Mar 2017 10:26:46  $
---       Date fetched Out : $Modtime:   03 Mar 2017 10:07:00  $
---       Version          : $Revision:   1.6  $
+--       Date into PVCS   : $Date:   08 Mar 2017 16:32:38  $
+--       Date fetched Out : $Modtime:   08 Mar 2017 16:30:32  $
+--       Version          : $Revision:   1.7  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 03-MAR-2017 10:07
+--       Generation Date  : 08-MAR-2017 16:30
 --
 --   Product metadata script
---   As at Release 1.0.0.2
+--   As at Release 4.7.1.0
 --
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
@@ -849,6 +849,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 45);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,46
+      ,null
+      ,'A saved search with this name already exists, would you like to overwrite it?'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 46);
 --
 ----------------------------------------------------------------------------------------
 --
