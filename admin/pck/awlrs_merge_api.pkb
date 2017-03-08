@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.9   02 Feb 2017 10:02:26   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.10   08 Mar 2017 12:02:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_merge_api.pkb  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:26  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   08 Mar 2017 12:02:22  $
+  --       Date fetched Out : $Modtime:   08 Mar 2017 11:57:22  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_merge_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -128,12 +128,18 @@ AS
         --
         FOR i IN 1..lt_nti.COUNT LOOP
           --
-          lv_sql := 'BEGIN'
+          lv_sql := 'DECLARE'
+         ||CHR(10)||'  CURSOR get_parent'
+         ||CHR(10)||'      IS'
          ||CHR(10)||'  SELECT ne_id'
-         ||CHR(10)||'    INTO :parent_id'
          ||CHR(10)||'    FROM nm_elements'
          ||CHR(10)||'   WHERE '||lt_nti(i).nti_parent_column||' = awlrs_merge_api.g_element.'||lt_nti(i).nti_child_column
          ||CHR(10)||'       ;'
+         ||CHR(10)||'BEGIN'
+         ||CHR(10)||'  OPEN  get_parent;'
+         ||CHR(10)||'  FETCH get_parent'
+         ||CHR(10)||'   INTO :parent_id;'
+         ||CHR(10)||'  CLOSE get_parent;'
          ||CHR(10)||'EXCEPTION'
          ||CHR(10)||'  WHEN no_data_found'
          ||CHR(10)||'   THEN'
