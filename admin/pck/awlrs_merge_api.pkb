@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.10   08 Mar 2017 12:02:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.11   09 Mar 2017 13:38:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_merge_api.pkb  $
-  --       Date into PVCS   : $Date:   08 Mar 2017 12:02:22  $
-  --       Date fetched Out : $Modtime:   08 Mar 2017 11:57:22  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   09 Mar 2017 13:38:04  $
+  --       Date fetched Out : $Modtime:   09 Mar 2017 12:50:20  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_merge_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -129,14 +129,15 @@ AS
         FOR i IN 1..lt_nti.COUNT LOOP
           --
           lv_sql := 'DECLARE'
-         ||CHR(10)||'  CURSOR get_parent'
+         ||CHR(10)||'  CURSOR get_parent(cp_type IN nm_types.nt_type%TYPE)'
          ||CHR(10)||'      IS'
          ||CHR(10)||'  SELECT ne_id'
          ||CHR(10)||'    FROM nm_elements'
-         ||CHR(10)||'   WHERE '||lt_nti(i).nti_parent_column||' = awlrs_merge_api.g_element.'||lt_nti(i).nti_child_column
+         ||CHR(10)||'   WHERE ne_nt_type = cp_type'
+         ||CHR(10)||'     AND '||lt_nti(i).nti_parent_column||' = awlrs_merge_api.g_element.'||lt_nti(i).nti_child_column
          ||CHR(10)||'       ;'
          ||CHR(10)||'BEGIN'
-         ||CHR(10)||'  OPEN  get_parent;'
+         ||CHR(10)||'  OPEN  get_parent(:nt_type);'
          ||CHR(10)||'  FETCH get_parent'
          ||CHR(10)||'   INTO :parent_id;'
          ||CHR(10)||'  CLOSE get_parent;'
@@ -147,7 +148,7 @@ AS
          ||CHR(10)||'                   ,pi_id   => 28);'
          ||CHR(10)||'END;'
           ;
-          EXECUTE IMMEDIATE lv_sql USING OUT lv_parent_id;
+          EXECUTE IMMEDIATE lv_sql USING lt_nti(i).nti_nw_parent_type, OUT lv_parent_id;
           --
           IF nm3net.is_node_poe(pi_route_id => lv_parent_id
                                ,pi_node_id  => lv_shared_node)
