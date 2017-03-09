@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.14   23 Feb 2017 15:03:08   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.15   09 Mar 2017 12:19:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   23 Feb 2017 15:03:08  $
-  --       Date fetched Out : $Modtime:   15 Feb 2017 18:59:56  $
-  --       Version          : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   09 Mar 2017 12:19:16  $
+  --       Date fetched Out : $Modtime:   09 Mar 2017 11:22:58  $
+  --       Version          : $Revision:   1.15  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -542,7 +542,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE validate_split_at_node(pi_ne_id   IN nm_elements_all.ne_id%TYPE
+  PROCEDURE validate_split_at_node(pi_ne_rec  IN nm_elements_all%ROWTYPE
                                   ,pi_node_id IN nm_nodes.no_node_id%TYPE)
     IS
     --
@@ -560,21 +560,28 @@ AS
   BEGIN
   	IF pi_node_id IS NOT NULL
   	 THEN
-        nm3net_o.set_g_ne_id_to_restrict_on(pi_ne_id => pi_ne_id);
-        --  	  
-        OPEN  chk_node(pi_node_id);
-        FETCH chk_node
-         INTO lv_node_id;
-        --
-        lv_node_found := chk_node%FOUND;        
-        CLOSE chk_node;
-        --
-        IF NOT lv_node_found
+        IF nm3net.is_nt_datum(pi_ne_rec.ne_nt_type) = 'Y'
          THEN
-            hig.raise_ner(pi_appl => 'AWLRS'
-                         ,pi_id   => 38);
-  	    END IF;	
-        --
+            validate_use_existing_node(pi_ne_id   => pi_ne_rec.ne_id
+                                      ,pi_node_id => pi_node_id);
+        ELSE
+            --
+            nm3net_o.set_g_ne_id_to_restrict_on(pi_ne_id => pi_ne_rec.ne_id);
+            --  	  
+            OPEN  chk_node(pi_node_id);
+            FETCH chk_node
+             INTO lv_node_id;
+            --
+            lv_node_found := chk_node%FOUND;        
+            CLOSE chk_node;
+            --
+            IF NOT lv_node_found
+             THEN
+                hig.raise_ner(pi_appl => 'AWLRS'
+                             ,pi_id   => 38);
+  	        END IF;	
+            --
+        END IF;
     END IF;
   END validate_split_at_node;
 
@@ -626,7 +633,7 @@ AS
             po_split_datum_only := 'N';
         END IF;
         --
-        validate_split_at_node(pi_ne_id   => pi_ne_id
+        validate_split_at_node(pi_ne_rec  => lr_ne
                               ,pi_node_id => pi_split_at_node_id);
         --
     ELSE
@@ -696,18 +703,18 @@ AS
     check_element_can_be_split(pi_ne_id            => pi_ne_id
                               ,pi_effective_date   => pi_effective_date
                               ,po_split_datum_only => lv_datum_only);
+    --
+    lr_ne := nm3get.get_ne(pi_ne_id);
     /*
     ||Check that the given node is valid.
     */
     IF pi_split_at_node_id IS NOT NULL
      THEN
-        validate_split_at_node(pi_ne_id   => pi_ne_id
+        validate_split_at_node(pi_ne_rec  => lr_ne
                               ,pi_node_id => pi_split_at_node_id);
     END IF;
     --
     init_element_globals;
-    --
-    lr_ne := nm3get.get_ne(pi_ne_id);
     /*
     ||Make sure the attribute tables have the same number of records.
     */
