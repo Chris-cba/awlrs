@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.2   02 Feb 2017 10:02:48   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.3   10 Mar 2017 17:34:32   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:48  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   10 Mar 2017 17:34:32  $
+  --       Date fetched Out : $Modtime:   10 Mar 2017 17:31:26  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -626,6 +626,88 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                  ,po_cursor           => po_message_cursor);
   END get_point_from_element_offset;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_linear_elements_at_point(pi_x                IN  NUMBER
+                                        ,pi_y                IN  NUMBER
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_map_name  hig_option_values.hov_value%TYPE := hig.get_sysopt('AWLMAPNAME');
+    lv_point     mdsys.sdo_geometry;
+    --
+  BEGIN
+    --
+    lv_point := nm3sdo.get_2d_pt(p_x => pi_x
+                                ,p_y => pi_y);
+    --
+    OPEN po_cursor FOR
+    WITH themes AS(SELECT /*+ index(nm_themes_all nth_uk) */
+                          nth_theme_id
+                         ,nth_tolerance
+                         ,nt_unique
+                         ,un_unit_id
+                         ,un_unit_name
+                     FROM nm_themes_all
+                         ,nm_nw_themes
+                         ,nm_linear_types
+                         ,nm_types
+                         ,nm_units
+                    WHERE nth_theme_name IN(SELECT vnmd_theme_name
+                                              FROM v_nm_msv_map_def
+                                             WHERE vnmd_name = lv_map_name)      
+                      AND EXISTS(SELECT 1
+                                   FROM nm_theme_roles
+                                       ,hig_user_roles
+                                  WHERE nthr_theme_id = nth_theme_id
+                                    AND nthr_role = hur_role
+                                    AND hur_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME')
+                                    AND hur_start_date <= TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY'))
+                      AND nth_theme_id = nnth_nth_theme_id
+                      AND nnth_nlt_id = nlt_id
+                      AND nlt_nt_type = nt_type
+                      AND nt_length_unit = un_unit_id)
+    SELECT /*+ index(nm_elements ne_pk) */
+           element_id
+          ,element_network_type_unique
+          ,element_unique
+          ,ne_descr element_description
+          ,element_offset
+          ,distance_from_point
+          ,element_length_unit_name
+      FROM (SELECT a.ntd_pk_id element_id
+                  ,nt_unique   element_network_type_unique
+                  ,a.ntd_name  element_unique
+                  ,nm3unit.get_formatted_value(a.ntd_measure,un_unit_id) element_offset
+                  ,nm3unit.convert_unit(1,un_unit_id,a.ntd_distance) distance_from_point
+                  ,un_unit_name element_length_unit_name
+              FROM themes
+                  ,TABLE(nm3sdo.get_objects_in_buffer(nth_theme_id
+                                                     ,lv_point
+                                                     ,nth_tolerance
+                                                     ,1
+                                                     ,'TRUE'
+                                                     ,NULL).ntl_theme_list) a)
+          ,nm_elements
+     WHERE element_id = ne_id                                       
+     ORDER
+        BY distance_from_point
+          ,ne_gty_group_type NULLS FIRST
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_linear_elements_at_point;
   
   --
   -----------------------------------------------------------------------------

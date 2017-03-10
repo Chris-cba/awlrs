@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.1   02 Feb 2017 10:02:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.2   10 Mar 2017 17:34:32   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkh  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:50  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   10 Mar 2017 17:34:32  $
+  --       Date fetched Out : $Modtime:   10 Mar 2017 15:05:56  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
   --
   TYPE gtype_rec IS RECORD(theme_id  nm_theme_gtypes.ntg_theme_id%TYPE
                           ,gtype     nm_theme_gtypes.ntg_gtype%TYPE);
@@ -157,6 +157,15 @@ AS
                                          ,pi_offset   IN  NUMBER
                                          ,po_x        OUT NUMBER
                                          ,po_y        OUT NUMBER);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_linear_elements_at_point(pi_x                IN  NUMBER
+                                        ,pi_y                IN  NUMBER
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
