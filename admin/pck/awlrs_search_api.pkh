@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.1   03 Mar 2017 10:46:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.2   10 Mar 2017 18:09:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkh  $
-  --       Date into PVCS   : $Date:   03 Mar 2017 10:46:50  $
-  --       Date fetched Out : $Modtime:   27 Feb 2017 11:38:36  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   10 Mar 2017 18:09:04  $
+  --       Date fetched Out : $Modtime:   06 Mar 2017 14:17:30  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
   --
   TYPE group_expression_rec IS RECORD(group_operation        VARCHAR2(100)
                                      ,group_expressions_xml  XMLTYPE
@@ -126,6 +126,39 @@ AS
                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
                                     ,po_message_cursor   OUT sys_refcursor
                                     ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE save_criteria(pi_theme_name         IN  nm_themes_all.nth_theme_name%TYPE
+                         ,pi_name               IN  awlrs_saved_search_criteria.assc_name%TYPE
+                         ,pi_description        IN  awlrs_saved_search_criteria.assc_description%TYPE
+                         ,pi_criteria           IN  awlrs_saved_search_criteria.assc_criteria%TYPE
+                         ,pi_overwrite_existing IN  VARCHAR2 DEFAULT 'N'
+                         ,po_message_severity   OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor     OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_criteria(pi_assc_id          IN  awlrs_saved_search_criteria.assc_id%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_criteria(pi_assc_id          IN  awlrs_saved_search_criteria.assc_id%TYPE
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor
+                        ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_criteria_list(po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
 
 END awlrs_search_api;
 /

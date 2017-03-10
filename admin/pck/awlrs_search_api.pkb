@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.1   03 Mar 2017 10:46:54   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.2   10 Mar 2017 18:09:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   03 Mar 2017 10:46:54  $
-  --       Date fetched Out : $Modtime:   03 Mar 2017 10:37:52  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   10 Mar 2017 18:09:04  $
+  --       Date fetched Out : $Modtime:   06 Mar 2017 17:05:50  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -1566,7 +1566,7 @@ AS
     RETURN lt_retval;
     --
   END get_theme_quick_search_cols;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -1934,7 +1934,7 @@ AS
     ||CHR(10)||'  lv_query          nm3type.max_varchar2 := :query;'
     ||CHR(10)||'  lv_search_string  nm3type.max_varchar2 := :search_string;'
     ||CHR(10)||'  lv_lower_index    PLS_INTEGER := :lower_index;'
-    ||CHR(10)||'  lv_upper_index    PLS_INTEGER := :upper_index;'    
+    ||CHR(10)||'  lv_upper_index    PLS_INTEGER := :upper_index;'
     ||CHR(10)||'  lv_nvl            VARCHAR2(10) := nm3type.get_nvl;'
     ||CHR(10)||'BEGIN'
     ||CHR(10)||'  OPEN :cursor_out FOR lv_query'
@@ -2234,7 +2234,7 @@ AS
     ||CHR(10)||'  lv_query          nm3type.max_varchar2 := :query;'
     ||CHR(10)||'  lv_search_string  nm3type.max_varchar2 := :search_string;'
     ||CHR(10)||'  lv_lower_index    PLS_INTEGER := :lower_index;'
-    ||CHR(10)||'  lv_upper_index    PLS_INTEGER := :upper_index;'    
+    ||CHR(10)||'  lv_upper_index    PLS_INTEGER := :upper_index;'
     ||CHR(10)||'BEGIN'
     ||CHR(10)||'  OPEN :cursor_out FOR lv_query'
     ||CHR(10)||'  USING '||lv_using
@@ -3065,6 +3065,195 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_paged_search_results;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE save_criteria(pi_theme_name         IN  nm_themes_all.nth_theme_name%TYPE
+                         ,pi_name               IN  awlrs_saved_search_criteria.assc_name%TYPE
+                         ,pi_description        IN  awlrs_saved_search_criteria.assc_description%TYPE
+                         ,pi_criteria           IN  awlrs_saved_search_criteria.assc_criteria%TYPE
+                         ,pi_overwrite_existing IN  VARCHAR2 DEFAULT 'N'
+                         ,po_message_severity   OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor     OUT sys_refcursor)
+    IS
+    --
+    lv_ass_id  awlrs_saved_search_criteria.assc_id%TYPE;
+    --
+    lt_theme_types  awlrs_map_api.theme_types_tab;
+    lt_messages     awlrs_message_tab := awlrs_message_tab();
+    --
+    CURSOR search_exists(cp_name IN awlrs_saved_search_criteria.assc_name%TYPE)
+        IS
+    SELECT assc_id
+      FROM awlrs_saved_search_criteria
+     WHERE assc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
+       AND assc_name = cp_name
+         ;
+    --
+  BEGIN
+    --
+    lt_theme_types := awlrs_map_api.get_theme_types(pi_theme_name => pi_theme_name);
+    --
+    IF lt_theme_types.COUNT > 0
+     THEN
+        IF pi_overwrite_existing = 'N'
+         THEN
+            --
+            OPEN  search_exists(pi_name);
+            FETCH search_exists
+             INTO lv_ass_id;
+            CLOSE search_exists;
+            --
+            IF lv_ass_id IS NOT NULL
+             THEN
+                awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'AWLRS'
+                                                 ,pi_ner_id      => 46
+                                                 ,pi_category    => awlrs_util.c_msg_cat_ask_continue
+                                                 ,po_message_tab => lt_messages);
+            END IF;
+            --
+        END IF;
+        --
+        IF lt_messages.COUNT = 0
+         THEN
+            MERGE
+             INTO awlrs_saved_search_criteria
+            USING (SELECT sys_context('NM3CORE', 'USER_ID') user_id, pi_theme_name theme_name, pi_name name, pi_description descr, pi_criteria criteria FROM DUAL) param
+               ON (assc_name = param.name AND assc_user_id = param.user_id)
+             WHEN MATCHED
+              THEN
+                 UPDATE SET assc_theme_name = param.theme_name
+                           ,assc_description = param.descr
+                           ,assc_criteria = param.criteria
+             WHEN NOT MATCHED
+              THEN
+                 INSERT(assc_id
+                       ,assc_user_id
+                       ,assc_theme_name
+                       ,assc_name
+                       ,assc_description
+                       ,assc_criteria)
+                 VALUES(assc_id_seq.NEXTVAL
+                       ,param.user_id
+                       ,param.theme_name
+                       ,param.name
+                       ,param.descr
+                       ,param.criteria)
+            ;
+        END IF;
+        --
+    ELSE
+        --
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 6
+                     ,pi_supplementary_info => pi_theme_name);
+        --
+    END IF;
+    --
+    IF lt_messages.COUNT > 0
+     THEN
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+    ELSE
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+    END IF;
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END save_criteria;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_criteria(pi_assc_id          IN  awlrs_saved_search_criteria.assc_id%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    DELETE awlrs_saved_search_criteria
+     WHERE assc_id = pi_assc_id
+       AND assc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_criteria;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_criteria(pi_assc_id          IN  awlrs_saved_search_criteria.assc_id%TYPE
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor
+                        ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT assc_id          id
+          ,assc_theme_name  theme_name
+          ,assc_name        name
+          ,assc_description description
+          ,assc_criteria    criteria
+      FROM awlrs_saved_search_criteria
+     WHERE assc_id = pi_assc_id
+       AND assc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_criteria;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_criteria_list(po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT assc_id          id
+          ,assc_theme_name  theme_name
+          ,assc_name        name
+          ,assc_description description
+      FROM awlrs_saved_search_criteria
+     WHERE assc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
+     ORDER
+        BY assc_theme_name
+          ,assc_name
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_criteria_list;
 
 END awlrs_search_api;
 /
