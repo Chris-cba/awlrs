@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.10   14 Feb 2017 16:46:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.11   15 Mar 2017 18:00:54   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   14 Feb 2017 16:46:20  $
-  --       Date fetched Out : $Modtime:   14 Feb 2017 16:43:28  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   15 Mar 2017 18:00:54  $
+  --       Date fetched Out : $Modtime:   15 Mar 2017 17:48:18  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -103,6 +103,40 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_members;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_members_essentials(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor
+                                  ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT nm.nm_ne_id_in group_element_id
+          ,nm.nm_ne_id_of member_element_id
+          ,ne.ne_unique   member_unique
+          ,ne.ne_descr    member_description
+      FROM nm_members nm
+          ,nm_elements ne
+     WHERE nm.nm_ne_id_in = pi_ne_id
+       AND nm.nm_ne_id_of = ne.ne_id
+       AND nm.nm_type = 'G'
+     ORDER
+        BY nm_seq_no
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_members_essentials;
 
   --
   -----------------------------------------------------------------------------
