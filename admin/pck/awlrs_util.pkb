@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.12   23 Feb 2017 15:00:02   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.13   16 Mar 2017 11:14:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   23 Feb 2017 15:00:02  $
-  --       Date fetched Out : $Modtime:   23 Feb 2017 14:56:40  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   16 Mar 2017 11:14:38  $
+  --       Date fetched Out : $Modtime:   16 Mar 2017 09:31:16  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -577,6 +577,7 @@ AS
                      ,c_msg_cat_info
                      ,c_msg_cat_warning
                      ,c_msg_cat_ask_continue
+                     ,c_msg_cat_circular_route
                      ,c_msg_cat_error)
      THEN
         po_message_tab.extend;
@@ -624,18 +625,21 @@ AS
          THEN
             lv_severity := c_msg_cat_error;
             EXIT;
+        WHEN c_msg_cat_circular_route
+         THEN
+            lv_severity := c_msg_cat_circular_route;
         WHEN c_msg_cat_ask_continue
          THEN
             lv_severity := c_msg_cat_ask_continue;
         WHEN c_msg_cat_warning
          THEN
-            IF lv_severity != c_msg_cat_ask_continue
+            IF lv_severity NOT IN(c_msg_cat_circular_route,c_msg_cat_ask_continue)
              THEN
                 lv_severity := c_msg_cat_warning;
             END IF;
         WHEN c_msg_cat_info
          THEN
-            IF lv_severity NOT IN (c_msg_cat_ask_continue,c_msg_cat_warning)
+            IF lv_severity NOT IN (c_msg_cat_circular_route,c_msg_cat_ask_continue,c_msg_cat_warning)
              THEN
                 lv_severity := c_msg_cat_info;
             END IF;
