@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.3   10 Mar 2017 17:34:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.4   16 Mar 2017 11:13:24   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   10 Mar 2017 17:34:32  $
-  --       Date fetched Out : $Modtime:   10 Mar 2017 17:31:26  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   16 Mar 2017 11:13:24  $
+  --       Date fetched Out : $Modtime:   16 Mar 2017 11:12:50  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -226,9 +226,6 @@ AS
         lv_shape := sdo_util.from_wktgeometry(pi_shape);
         IF lv_lrs
          THEN
-            /*
-            ||TODO - Should we be passing in the Length specified by the user?
-            */
             lv_shape := sdo_lrs.convert_to_lrs_geom(lv_shape); --,0,lr_ne.ne_length);
         END IF;
         --
