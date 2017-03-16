@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.12   16 Mar 2017 11:15:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.13   16 Mar 2017 11:22:54   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   16 Mar 2017 11:15:20  $
-  --       Date fetched Out : $Modtime:   16 Mar 2017 10:36:40  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   16 Mar 2017 11:22:54  $
+  --       Date fetched Out : $Modtime:   16 Mar 2017 11:22:10  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -611,17 +611,33 @@ AS
                      ,pi_id   => 39);
     END IF;
     --
-    /*
-    ||TODO - Raise Individual Errors for the parameters being checked.
-    */
     IF pi_start_node_id IS NULL
-     OR pi_end_node_id IS NULL
-     OR pi_length IS NULL
-     OR pi_start_date IS NULL
      THEN
         -- Field must be entered
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 22);
+        hig.raise_ner(pi_appl               => 'HIG'
+                     ,pi_id                 => 22
+                     ,pi_supplementary_info => 'Start Node');
+        --
+    ELSIF pi_end_node_id IS NULL
+     THEN
+        -- Field must be entered
+        hig.raise_ner(pi_appl               => 'HIG'
+                     ,pi_id                 => 22
+                     ,pi_supplementary_info => 'End Node');
+        --
+    ELSIF pi_length IS NULL
+     THEN
+        -- Field must be entered
+        hig.raise_ner(pi_appl               => 'HIG'
+                     ,pi_id                 => 22
+                     ,pi_supplementary_info => 'Length');
+        --
+    ELSIF pi_start_date IS NULL
+     THEN
+        -- Field must be entered
+        hig.raise_ner(pi_appl               => 'HIG'
+                     ,pi_id                 => 22
+                     ,pi_supplementary_info => 'Start Date');
         --
     ELSIF pi_start_node_id = pi_end_node_id
      THEN
