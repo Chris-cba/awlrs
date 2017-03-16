@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.20   28 Feb 2017 09:44:26   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.21   16 Mar 2017 11:49:26   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   28 Feb 2017 09:44:26  $
-  --       Date fetched Out : $Modtime:   28 Feb 2017 09:43:40  $
-  --       Version          : $Revision:   1.20  $
+  --       Date into PVCS   : $Date:   16 Mar 2017 11:49:26  $
+  --       Date fetched Out : $Modtime:   16 Mar 2017 11:45:32  $
+  --       Version          : $Revision:   1.21  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.20  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -309,13 +309,9 @@ AS
                                ,pi_column_name            IN  nm_type_columns.ntc_column_name%TYPE
                                ,pi_prompt_text            IN  nm_type_columns.ntc_prompt%TYPE
                                ,pi_disp_validation_errors IN  BOOLEAN DEFAULT FALSE
-                               ,pi_continue_after_val_err IN  BOOLEAN DEFAULT FALSE
                                ,po_value                  OUT VARCHAR2
                                ,po_meaning                OUT VARCHAR2)
     IS
-    --
---    lv_value    VARCHAR2(240);
---    lv_meaning  VARCHAR2(240);
     --
     e_col_mandatory EXCEPTION;
     PRAGMA EXCEPTION_INIT(e_col_mandatory, -20602);
@@ -341,14 +337,10 @@ AS
     e_error_in_sql EXCEPTION;
     PRAGMA EXCEPTION_INIT(e_error_in_sql, -20611);
     --
-    FUNCTION handle_error(pi_err_app     IN varchar2
-                         ,pi_err_no      IN varchar2
-                         ,pi_err_type    IN varchar2 DEFAULT 'E'
-                         ,pi_prompt_text IN nm_type_columns.ntc_prompt%TYPE)
-      RETURN BOOLEAN IS
-      --
-      lv_retval BOOLEAN := TRUE;
-      --
+    PROCEDURE handle_error(pi_err_app     IN varchar2
+                          ,pi_err_no      IN varchar2
+                          ,pi_prompt_text IN nm_type_columns.ntc_prompt%TYPE)
+      IS
     BEGIN
       --
       IF pi_disp_validation_errors
@@ -357,16 +349,6 @@ AS
                        ,pi_id                 => pi_err_no
                        ,pi_supplementary_info => CHR(10)||CHR(10)||pi_prompt_text);
       END IF;
-      /*
-      ||TODO - Forms app can continue after an error is displayed to the user
-      ||obviously this API can't raise an exception and continue.
-      */
-      --IF NOT(pi_continue_after_val_err)
-      -- THEN
-      --    lv_retval := FALSE;
-      --END IF;
-      --
-      RETURN FALSE; --lv_retval;
       --
     END;
     --
@@ -380,76 +362,44 @@ AS
   EXCEPTION
     WHEN e_col_mandatory
      THEN
-        IF NOT(handle_error(pi_err_app     => 'HIG'
-                           ,pi_err_no      => 107
-                           ,pi_err_type    => 'W'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
+        handle_error(pi_err_app     => 'HIG'
+                    ,pi_err_no      => 107
+                    ,pi_prompt_text => pi_prompt_text);
     WHEN e_val_too_long
      THEN
-        IF NOT(handle_error(pi_err_app     => 'HIG'
-                           ,pi_err_no      => 108
-                           ,pi_err_type    => 'W'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
+        handle_error(pi_err_app     => 'HIG'
+                    ,pi_err_no      => 108
+                    ,pi_prompt_text => pi_prompt_text);
     WHEN e_val_invalid_for_domain
      THEN
-        IF NOT(handle_error(pi_err_app     => 'HIG'
-                           ,pi_err_no      => 109
-                           ,pi_err_type    => 'W'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
+        handle_error(pi_err_app     => 'HIG'
+                    ,pi_err_no      => 109
+                    ,pi_prompt_text => pi_prompt_text);
     WHEN e_too_many_records
      THEN
-        IF NOT(handle_error(pi_err_app     => 'NET'
-                           ,pi_err_no      => 47
-                           ,pi_err_type    => 'E'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
+        handle_error(pi_err_app     => 'NET'
+                    ,pi_err_no      => 47
+                    ,pi_prompt_text => pi_prompt_text);
     WHEN e_val_invalid_for_format_mask
      THEN
-        IF NOT(handle_error(pi_err_app     => 'HIG'
-                           ,pi_err_no      => 70
-                           ,pi_err_type    => 'W'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
+        handle_error(pi_err_app     => 'HIG'
+                    ,pi_err_no      => 70
+                    ,pi_prompt_text => pi_prompt_text);
     WHEN e_too_many_bind_variables
      THEN
-        IF NOT(handle_error(pi_err_app     => 'NET'
-                           ,pi_err_no      => 48
-                           ,pi_err_type    => 'E'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
+        handle_error(pi_err_app     => 'NET'
+                    ,pi_err_no      => 48
+                    ,pi_prompt_text => pi_prompt_text);
     WHEN e_no_bind_variable
      THEN
-        IF NOT(handle_error(pi_err_app     => 'NET'
-                           ,pi_err_no      => 48
-                           ,pi_err_type    => 'E'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
+        handle_error(pi_err_app     => 'NET'
+                    ,pi_err_no      => 48
+                    ,pi_prompt_text => pi_prompt_text);
     WHEN e_error_in_sql
      THEN
-        IF NOT(handle_error(pi_err_app     => 'HIG'
-                           ,pi_err_no      => 83
-                           ,pi_err_type    => 'E'
-                           ,pi_prompt_text => pi_prompt_text))
-         THEN
-            RAISE;
-        END IF;
+        handle_error(pi_err_app     => 'HIG'
+                    ,pi_err_no      => 83
+                    ,pi_prompt_text => pi_prompt_text);
   END get_nt_flx_col_data;
 
   --
@@ -458,8 +408,7 @@ AS
   FUNCTION get_nt_flx_col_value(pi_ne_id                  IN nm_elements.ne_id%TYPE
                                ,pi_column_name            IN nm_type_columns.ntc_column_name%TYPE
                                ,pi_prompt_text            IN nm_type_columns.ntc_prompt%TYPE
-                               ,pi_disp_validation_errors IN BOOLEAN DEFAULT FALSE
-                               ,pi_continue_after_val_err IN BOOLEAN DEFAULT FALSE)
+                               ,pi_disp_validation_errors IN BOOLEAN DEFAULT FALSE)
     RETURN VARCHAR2 IS
     --
     lv_value    VARCHAR2(240);
@@ -471,7 +420,6 @@ AS
                        ,pi_column_name            => pi_column_name
                        ,pi_prompt_text            => pi_prompt_text
                        ,pi_disp_validation_errors => pi_disp_validation_errors
-                       ,pi_continue_after_val_err => pi_continue_after_val_err
                        ,po_value                  => lv_value
                        ,po_meaning                => lv_meaning);
     --
@@ -482,11 +430,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_nt_flx_col_meaning(pi_ne_id                  IN nm_elements.ne_id%TYPE
-                                 ,pi_column_name            IN nm_type_columns.ntc_column_name%TYPE
-                                 ,pi_prompt_text            IN nm_type_columns.ntc_prompt%TYPE
-                                 ,pi_disp_validation_errors IN BOOLEAN DEFAULT FALSE
-                                 ,pi_continue_after_val_err IN BOOLEAN DEFAULT FALSE)
+  FUNCTION get_nt_flx_col_meaning(pi_ne_id       IN nm_elements.ne_id%TYPE
+                                 ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE
+                                 ,pi_prompt_text IN nm_type_columns.ntc_prompt%TYPE)
     RETURN VARCHAR2 IS
     --
     lv_value    VARCHAR2(240);
