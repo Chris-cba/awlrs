@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.11   15 Mar 2017 18:00:54   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.12   16 Mar 2017 11:15:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   15 Mar 2017 18:00:54  $
-  --       Date fetched Out : $Modtime:   15 Mar 2017 17:48:18  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   16 Mar 2017 11:15:20  $
+  --       Date fetched Out : $Modtime:   16 Mar 2017 10:36:40  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -724,17 +724,7 @@ AS
     PRAGMA EXCEPTION_INIT(e_cannot_find_length, -20205);
     --
   BEGIN
-    /*
-    ||Set a save point.
-    */
-    SAVEPOINT rescale_route_sp;
-    /*
-    ||TODO - Need to catch the circular group exception
-    ||and tell the UI to ask the user for the start member
-    ||once the UI has a dialog to do this.
-    ||Until then the circular group exception will be treated
-    ||as an error.
-    */
+    --
     nm3rsc.rescale_route(pi_ne_id          => pi_ne_id
                         ,pi_effective_date => TRUNC(pi_effective_date)
                         ,pi_offset_st      => pi_offset_st
@@ -785,12 +775,15 @@ AS
                          ,po_message_cursor   OUT sys_refcursor)
     IS
     --
-    e_member_dates_out_of_range EXCEPTION;
-	  PRAGMA EXCEPTION_INIT(e_member_dates_out_of_range, -20206);
-    --
     lv_severity  hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
     --
     lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
+    e_member_dates_out_of_range EXCEPTION;
+	  PRAGMA EXCEPTION_INIT(e_member_dates_out_of_range, -20206);
+    --
+    e_rescale_loop exception;
+    PRAGMA EXCEPTION_INIT(e_rescale_loop, -20207);
     --
   BEGIN
     /*
@@ -807,6 +800,15 @@ AS
                    ,pi_use_history    => pi_use_history);
       --
     EXCEPTION
+      WHEN e_rescale_loop
+		   THEN
+          /*
+          ||Ask the user to select a Datum to start from.
+          */
+          awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'AWLRS'
+                                           ,pi_ner_id      => 47
+                                           ,pi_category    => awlrs_util.c_msg_cat_circular_route
+                                           ,po_message_tab => lt_messages);
       WHEN e_member_dates_out_of_range
 		   THEN
           /*
@@ -821,10 +823,6 @@ AS
     --
     IF lt_messages.COUNT = 0
      THEN
-        /*
-        ||The Ask Continue message has not been raied so check
-        ||the route and return a warning if it is ill formed.
-        */
         warn_if_route_ill_formed(po_message_severity => lv_severity
                                 ,po_message_tab      => lt_messages);
     END IF;
@@ -857,27 +855,24 @@ AS
     --
     e_route_locked exception;
     PRAGMA EXCEPTION_INIT(e_route_locked, -54);
+    --
     e_segment_number_error exception;
     PRAGMA EXCEPTION_INIT(e_segment_number_error, -20201);
+    --
     e_sequence_number_error exception;
     PRAGMA EXCEPTION_INIT(e_sequence_number_error, -20202);
+    --
     e_true_distance_error exception;
     PRAGMA EXCEPTION_INIT(e_true_distance_error, -20203);
+    --
     e_cannot_find_slk exception;
     PRAGMA EXCEPTION_INIT(e_cannot_find_slk, -20204);
+    --
     e_cannot_find_length exception;
     PRAGMA EXCEPTION_INIT(e_cannot_find_length, -20205);
-    --  e_rescale_loop exception;
-    --  PRAGMA EXCEPTION_INIT(e_rescale_loop, -20207);
     --
   BEGIN
-    /*
-    ||TODO - Need to catch the circular group exception
-    ||and tell the UI to ask the user for the start member
-    ||once the UI has a dialog to do this.
-    ||Until then the circular group exception will be treated
-    ||as an error.
-    */
+    --
     nm3rsc.reseq_route(pi_ne_id    => pi_ne_id
                       ,pi_ne_start => pi_start_ne_id);
     --
@@ -906,6 +901,9 @@ AS
      THEN
         hig.raise_ner(pi_appl => 'NET'
                      ,pi_id   => 69);
+    WHEN others
+     THEN
+        RAISE;
   END resequence_route;
 
   --
@@ -921,6 +919,9 @@ AS
     --
     lt_messages  awlrs_message_tab := awlrs_message_tab();
     --
+    e_rescale_loop exception;
+    PRAGMA EXCEPTION_INIT(e_rescale_loop, -20207);
+    --
   BEGIN
     /*
     ||Set a save point.
@@ -929,13 +930,28 @@ AS
     /*
     ||do resequence
     */
-    resequence_route(pi_ne_id       => pi_ne_id
-                    ,pi_start_ne_id => pi_start_ne_id);
+    BEGIN
+      resequence_route(pi_ne_id       => pi_ne_id
+                      ,pi_start_ne_id => pi_start_ne_id);
+    EXCEPTION
+      WHEN e_rescale_loop
+		   THEN
+          /*
+          ||Ask the user to select a Datum to start from.
+          */
+          awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'AWLRS'
+                                           ,pi_ner_id      => 47
+                                           ,pi_category    => awlrs_util.c_msg_cat_circular_route
+                                           ,po_message_tab => lt_messages);
+    END;
     /*
     ||Return a warning if the route is ill formed.
     */
-    warn_if_route_ill_formed(po_message_severity => lv_severity
-                            ,po_message_tab      => lt_messages);
+    IF lt_messages.COUNT = 0
+     THEN
+        warn_if_route_ill_formed(po_message_severity => lv_severity
+                                ,po_message_tab      => lt_messages);
+    END IF;
     --
     IF lt_messages.COUNT > 0
      THEN
@@ -1395,29 +1411,38 @@ AS
     --
     lt_messages  awlrs_message_tab := awlrs_message_tab();
     --
-    --e_circular_route exception;
-    --PRAGMA EXCEPTION_INIT(e_circular_route, -20207);
+    e_rescale_loop exception;
+    PRAGMA EXCEPTION_INIT(e_rescale_loop, -20207);
     --
   BEGIN
     /*
     ||Set a save point.
     */
     SAVEPOINT resize_route_sp;
-    /*
-    ||TODO - Need to catch the circular group exception
-    ||and tell the UI to ask the user for the start member
-    ||once the UI has a dialog to do this.
-    ||Until then the circular group exception will be treated
-    ||as an error.
-    */
-    nm3rsc.resize_route(pi_ne_id    => pi_ne_id
-                       ,pi_new_size => pi_new_length
-                       ,pi_ne_start => pi_start_ne_id);
+    --
+    BEGIN
+      nm3rsc.resize_route(pi_ne_id    => pi_ne_id
+                         ,pi_new_size => pi_new_length
+                         ,pi_ne_start => pi_start_ne_id);
+    EXCEPTION
+      WHEN e_rescale_loop
+		   THEN
+          /*
+          ||Ask the user to select a Datum to start from.
+          */
+          awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'AWLRS'
+                                           ,pi_ner_id      => 47
+                                           ,pi_category    => awlrs_util.c_msg_cat_circular_route
+                                           ,po_message_tab => lt_messages);
+    END;
     /*
     ||Return a warning if the route is ill formed.
     */
-    warn_if_route_ill_formed(po_message_severity => lv_severity
-                            ,po_message_tab      => lt_messages);
+    IF lt_messages.COUNT = 0
+     THEN
+        warn_if_route_ill_formed(po_message_severity => lv_severity
+                                ,po_message_tab      => lt_messages);
+    END IF;
     --
     IF lt_messages.COUNT > 0
      THEN
