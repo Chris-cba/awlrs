@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.21   16 Mar 2017 11:49:26   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.22   17 Mar 2017 10:22:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   16 Mar 2017 11:49:26  $
-  --       Date fetched Out : $Modtime:   16 Mar 2017 11:45:32  $
-  --       Version          : $Revision:   1.21  $
+  --       Date into PVCS   : $Date:   17 Mar 2017 10:22:36  $
+  --       Date fetched Out : $Modtime:   17 Mar 2017 10:11:56  $
+  --       Version          : $Revision:   1.22  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1252,24 +1252,31 @@ AS
           ,noe.no_descr      end_node_descr
           ,npe.np_grid_east  end_node_x
           ,npe.np_grid_north end_node_y
-     FROM nm_elements_all
-         ,nm_types
-         ,nm_admin_units_all
-         ,nm_group_types_all
-         ,nm_nodes_all nos
-         ,nm_points nps
-         ,nm_nodes_all noe
-         ,nm_points npe
-         ,(SELECT * FROM nm_units WHERE un_unit_id = Sys_Context('NM3CORE','USER_LENGTH_UNITS')) user_units
-    WHERE ne_nt_type = nt_type
-      AND ne_admin_unit = nau_admin_unit
-      AND ne_gty_group_type = ngt_group_type(+)
-      AND ne_no_start = nos.no_node_id(+)
-      AND nos.no_np_id = nps.np_id(+)
-      AND ne_no_end = noe.no_node_id(+)
-      AND noe.no_np_id = npe.np_id(+)
-      AND ne_id IN(SELECT ne_id FROM TABLE(CAST(lt_ids AS nm_ne_id_array)))
-        ;
+          ,CASE nm3sdo.element_has_shape(p_ne_id => ne_id)
+             WHEN 'TRUE'
+              THEN
+                 'Y'
+             ELSE
+                 'N'
+           END element_has_shape
+      FROM nm_elements_all
+          ,nm_types
+          ,nm_admin_units_all
+          ,nm_group_types_all
+          ,nm_nodes_all nos
+          ,nm_points nps
+          ,nm_nodes_all noe
+          ,nm_points npe
+          ,(SELECT * FROM nm_units WHERE un_unit_id = Sys_Context('NM3CORE','USER_LENGTH_UNITS')) user_units
+     WHERE ne_nt_type = nt_type
+       AND ne_admin_unit = nau_admin_unit
+       AND ne_gty_group_type = ngt_group_type(+)
+       AND ne_no_start = nos.no_node_id(+)
+       AND nos.no_np_id = nps.np_id(+)
+       AND ne_no_end = noe.no_node_id(+)
+       AND noe.no_np_id = npe.np_id(+)
+       AND ne_id IN(SELECT ne_id FROM TABLE(CAST(lt_ids AS nm_ne_id_array)))
+         ;
     --
   END get_elements;
 

@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.14   16 Mar 2017 11:49:24   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.15   17 Mar 2017 10:22:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   16 Mar 2017 11:49:24  $
-  --       Date fetched Out : $Modtime:   16 Mar 2017 11:45:32  $
-  --       Version          : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   17 Mar 2017 10:22:36  $
+  --       Date fetched Out : $Modtime:   17 Mar 2017 10:11:56  $
+  --       Version          : $Revision:   1.15  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
   --
   g_db_element   nm_elements_all%ROWTYPE;
   g_old_element  nm_elements_all%ROWTYPE;
@@ -52,7 +52,8 @@ AS
                             ,end_node_name               nm_nodes_all.no_node_name%TYPE
                             ,end_node_descr              nm_nodes_all.no_descr%TYPE
                             ,end_node_x                  nm_points.np_grid_east%TYPE
-                            ,end_node_y                  nm_points.np_grid_north%TYPE);
+                            ,end_node_y                  nm_points.np_grid_north%TYPE
+                            ,element_has_shape           VARCHAR2(1));
   --
   TYPE element_tab IS TABLE OF element_rec INDEX BY BINARY_INTEGER;
   --
