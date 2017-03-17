@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.22   17 Mar 2017 10:22:36   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.23   17 Mar 2017 18:08:00   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   17 Mar 2017 10:22:36  $
-  --       Date fetched Out : $Modtime:   17 Mar 2017 10:11:56  $
-  --       Version          : $Revision:   1.22  $
+  --       Date into PVCS   : $Date:   17 Mar 2017 18:08:00  $
+  --       Date fetched Out : $Modtime:   17 Mar 2017 13:25:48  $
+  --       Version          : $Revision:   1.23  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.23  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -219,6 +219,7 @@ AS
   PROCEDURE gen_domain_sql(pi_nt_type     IN  nm_types.nt_type%TYPE
                           ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
                           ,pi_bind_value  IN  VARCHAR2 DEFAULT NULL
+                          ,pi_ordered     IN  BOOLEAN DEFAULT TRUE
                           ,po_sql         OUT VARCHAR2)
     IS
     --
@@ -248,9 +249,10 @@ AS
             --
             lv_retval := lv_retval
                   ||CHR(10)||'UNION ALL'
-                  ||CHR(10)||'SELECT sql.*,rownum lov_seq FROM('||lv_lov_sql
+                  ||CHR(10)||'SELECT sql.*,'||CASE WHEN pi_ordered THEN 'rownum' ELSE '1' END||' lov_seq FROM('||lv_lov_sql
                            ||CASE
                                WHEN lv_lov_sql LIKE '%ORDER BY%'
+                                OR NOT pi_ordered
                                 THEN
                                    ') sql'
                                ELSE
@@ -285,7 +287,7 @@ AS
               ||CHR(10)||'                               AND nad_inv_type = ita_inv_type'
               ||CHR(10)||'                               AND ita_attrib_name = :pi_column_name'
               ||CHR(10)||'                               AND ita_id_domain IS NOT NULL)'
-              ||CHR(10)||'        ORDER BY ial_seq))'
+                       ||CASE WHEN pi_ordered THEN CHR(10)||'        ORDER BY ial_seq' ELSE NULL END||'))'
         ;
         --
     ELSE
