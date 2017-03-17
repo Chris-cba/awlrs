@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.2   10 Mar 2017 18:09:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.3   17 Mar 2017 18:10:52   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   10 Mar 2017 18:09:04  $
-  --       Date fetched Out : $Modtime:   06 Mar 2017 17:05:50  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   17 Mar 2017 18:10:52  $
+  --       Date fetched Out : $Modtime:   17 Mar 2017 13:19:36  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -330,7 +330,38 @@ AS
   ||CHR(10)||'                                                                 ,pi_column_name => ntc_column_name) domain_sql'
   ||CHR(10)||'                  FROM nm_type_columns ntc'
   ||CHR(10)||'                 WHERE ntc_nt_type = :pi_nt_type'
-  ||CHR(10)||'                   AND ntc_displayed = ''Y''))'
+  ||CHR(10)||'                   AND ntc_displayed = ''Y'')'
+  ||CHR(10)||'        UNION ALL'
+  ||CHR(10)||'        SELECT ita_attrib_name   column_name'
+  ||CHR(10)||'              ,ita_scrn_text     prompt'
+  ||CHR(10)||'              ,ita_format        datatype'
+  ||CHR(10)||'              ,CASE'
+  ||CHR(10)||'                 WHEN ita_format = ''DATE'''
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     NVL(ita_format_mask,''DD-MON-YYYY'')'
+  ||CHR(10)||'                 ELSE'
+  ||CHR(10)||'                     ita_format_mask'
+  ||CHR(10)||'               END format_mask'
+  ||CHR(10)||'              ,CASE'
+  ||CHR(10)||'                 WHEN ita_format = ''DATE'''
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     LENGTH(REPLACE(ita_format_mask,''24'',''''))'
+  ||CHR(10)||'                 ELSE'
+  ||CHR(10)||'                     ita_fld_length'
+  ||CHR(10)||'               END field_length'
+  ||CHR(10)||'              ,ita_dec_places    decimal_places'
+  ||CHR(10)||'              ,ita_min           min_value'
+  ||CHR(10)||'              ,ita_max           max_value'
+  ||CHR(10)||'              ,ita_case          field_case'
+  ||CHR(10)||'              ,ita_id_domain     domain_id'
+  ||CHR(10)||'              ,''N''               sql_based_domain'
+  ||CHR(10)||'              ,ita_disp_seq_no+1000 seq_no'
+  ||CHR(10)||'          FROM nm_inv_type_attribs'
+  ||CHR(10)||'              ,nm_nw_ad_types adt'
+  ||CHR(10)||'         WHERE adt.nad_nt_type = :pi_nt_type'
+  ||CHR(10)||'           AND NVL(adt.nad_gty_type,''~~~~~'') = NVL(:pi_group_type,''~~~~~'')'
+  ||CHR(10)||'           AND adt.nad_primary_ad = ''Y'''
+  ||CHR(10)||'           AND adt.nad_inv_type = ita_inv_type)'
     ;
     --
   END gen_network_attributes_sql;
@@ -338,12 +369,15 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_network_attributes(pi_nt_type IN  nm_types.nt_type%TYPE
-                                  ,po_cursor  OUT sys_refcursor)
+  PROCEDURE get_network_attributes(pi_nt_type    IN  nm_types.nt_type%TYPE
+                                  ,pi_group_type IN  nm_group_types_all.ngt_group_type%TYPE
+                                  ,po_cursor     OUT sys_refcursor)
     IS
   BEGIN
     OPEN po_cursor FOR gen_network_attributes_sql||' ORDER BY display_sequence'
-    USING pi_nt_type;
+    USING pi_nt_type
+         ,pi_nt_type
+         ,pi_group_type;
   END get_network_attributes;
 
   --
@@ -367,8 +401,9 @@ AS
           WHEN lt_theme_types(1).network_type IS NOT NULL
            THEN
               --
-              get_network_attributes(pi_nt_type => lt_theme_types(1).network_type
-                                    ,po_cursor  => po_cursor);
+              get_network_attributes(pi_nt_type    => lt_theme_types(1).network_type
+                                    ,pi_group_type => lt_theme_types(1).network_group_type
+                                    ,po_cursor     => po_cursor);
               --
           WHEN lt_theme_types(1).asset_type IS NOT NULL
            THEN
@@ -1389,7 +1424,7 @@ AS
           --
       ELSE
           --
-          EXECUTE IMMEDIATE lv_sql INTO po_format, po_format_mask USING pi_theme_types.network_type,pi_attrib_name;
+          EXECUTE IMMEDIATE lv_sql INTO po_format, po_format_mask USING pi_theme_types.network_type,pi_theme_types.network_type,pi_theme_types.network_group_type,pi_attrib_name;
           --
       END IF;
       --
@@ -1664,6 +1699,7 @@ AS
           awlrs_element_api.gen_domain_sql(pi_nt_type     => pi_nt_type
                                           ,pi_column_name => lt_ntc(i).ntc_column_name
                                           ,pi_bind_value  => NULL
+                                          ,pi_ordered     => FALSE
                                           ,po_sql         => lv_sql);
           lv_sql := '(SELECT meaning FROM ('||lv_sql||') WHERE code = '||lt_ntc(i).ntc_column_name||')';
           --
@@ -2523,10 +2559,11 @@ AS
       ||CHR(10)||'                       ,ne_start_date start_date'
       ||CHR(10)||'                       ,ne_end_date end_date'
       ||CHR(10)||'                       ,nm3net.get_ne_length(ne_id) length'
-      ||CHR(10)||'                       ,nau_name admin_unit'
+      ||CHR(10)||'                       ,(SELECT nau_name FROM nm_admin_units_all WHERE nau_admin_unit = ne_admin_unit) admin_unit'
                ||pi_select_list
-      ||CHR(10)||'                   FROM nm_admin_units_all'
-      ||CHR(10)||'                       ,nm_elements_all'
+      ||CHR(10)||'                   FROM nm_elements_all'
+      ||CHR(10)||'                       ,nm_nw_ad_link'
+      ||CHR(10)||'                       ,nm_inv_items'
       ||CHR(10)||'                  WHERE ne_nt_type = :nt_type'
       ||CHR(10)||'                    AND NVL(ne_gty_group_type,:nvl) = NVL(:group_type,:nvl)'
       ||CASE
@@ -2535,7 +2572,9 @@ AS
               CHR(10)||'                    AND ne_end_date IS NULL'
         END
       ||CHR(10)||'                    AND ('||pi_where_clause||')'
-      ||CHR(10)||'                    AND ne_admin_unit = nau_admin_unit'
+      ||CHR(10)||'                    AND ne_id = nad_ne_id(+)'
+      ||CHR(10)||'                    AND nad_primary_ad(+) = ''Y'''
+      ||CHR(10)||'                    AND nad_iit_ne_id = iit_ne_id(+)'
       ||CHR(10)||'         ORDER BY '||NVL(LOWER(pi_order_column),'unique_')||' '
                                      ||NVL(LOWER(pi_order_asc_desc),'asc')||')'
       ||CHR(10)||'SELECT '||lv_pagecols
