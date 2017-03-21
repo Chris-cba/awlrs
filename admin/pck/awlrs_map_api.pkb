@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.10   Feb 24 2017 15:40:28   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.11   21 Mar 2017 10:54:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 24 2017 15:40:28  $
-  --       Date fetched Out : $Modtime:   Feb 24 2017 15:35:00  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   21 Mar 2017 10:54:56  $
+  --       Date fetched Out : $Modtime:   21 Mar 2017 10:36:12  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -966,6 +966,43 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION get_asset_loc_types(pi_inv_type IN nm_inv_types_all.nit_inv_type%TYPE)
+    RETURN VARCHAR2 IS
+    --
+    lt_types   nm3type.tab_varchar30;
+    lv_retval  nm3type.max_varchar2;
+    --
+    CURSOR get_nw_types(cp_inv_type nm_inv_types_all.nit_inv_type%TYPE)
+        IS
+    SELECT nin_nw_type
+      FROM nm_inv_nw_all
+     WHERE nin_nit_inv_code = cp_inv_type
+         ;
+    --
+  BEGIN
+    --
+    IF pi_inv_type IS NOT NULL
+     THEN
+        OPEN  get_nw_types(pi_inv_type);
+        FETCH get_nw_types
+         BULK COLLECT
+         INTO lt_types;
+        CLOSE get_nw_types;
+    END IF;
+    --
+    FOR i IN 1..lt_types.COUNT LOOP
+      --
+      lv_retval := lv_retval||CASE WHEN i > 1 THEN ',' ELSE NULL END||lt_types(i);
+      --
+    END LOOP;
+    --
+    RETURN lv_retval;
+    --
+  END get_asset_loc_types;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   FUNCTION generate_layers(pi_definition IN CLOB)
     RETURN clob_tab IS
     --
@@ -1000,6 +1037,7 @@ AS
     lv_layer_node_type             nm_types.nt_node_type%TYPE;
     lv_layer_node_layer            nm_themes_all.nth_theme_name%TYPE;
     lv_layer_asset_type            nm_inv_types_all.nit_inv_type%TYPE;
+    lv_layer_asset_loc_types       nm3type.max_varchar2;
     lv_layer_multiple_locs_allowed nm_inv_types.nit_multiple_allowed%TYPE;
     lv_layer_show_in_map           VARCHAR2(10);
     lv_displayed_on_startup        VARCHAR2(10);
@@ -1152,6 +1190,7 @@ AS
           lv_layer_units := lt_theme_types(1).unit_id;
           lv_layer_asset_type := lt_theme_types(1).asset_type;
           lv_layer_multiple_locs_allowed := lt_theme_types(1).multiple_locs_allowed;
+          lv_layer_asset_loc_types := get_asset_loc_types(pi_inv_type => lt_theme_types(1).asset_type);
           lv_layer_editable := NVL(lt_theme_types(1).editable,'N');
       ELSE
           lv_layer_admin_type := NULL;
@@ -1167,6 +1206,7 @@ AS
           lv_layer_units := NULL;
           lv_layer_asset_type := NULL;
           lv_layer_multiple_locs_allowed := NULL;
+          lv_layer_asset_loc_types := NULL;
           lv_layer_editable := 'N';
       END IF;
       /*
@@ -1303,6 +1343,7 @@ AS
               ||CHR(10)||'      "network_node_type"           "'||lv_layer_node_type||'"'
               ||CHR(10)||'      "node_layer_name"             "'||lv_layer_node_layer||'"'
               ||CHR(10)||'      "asset_type"                  "'||lv_layer_asset_type||'"'
+              ||CHR(10)||'      "asset_loc_types"             "'||lv_layer_asset_loc_types||'"'
               ||CHR(10)||'      "multiple_locs_allowed"       "'||lv_layer_multiple_locs_allowed||'"'              
               ||CHR(10)||'      "is_editable"                 "'||lv_layer_editable||'"'
               ||CHR(10)||'      "show_in_map"                 "'||lv_layer_show_in_map||'"'
@@ -1405,6 +1446,7 @@ AS
               ||CHR(10)||'      "network_node_type"           "'||lv_layer_node_type||'"'
               ||CHR(10)||'      "node_layer_name"             "'||lv_layer_node_layer||'"'
               ||CHR(10)||'      "asset_type"                  "'||lv_layer_asset_type||'"'
+              ||CHR(10)||'      "asset_loc_types"             "'||lv_layer_asset_loc_types||'"'
               ||CHR(10)||'      "multiple_locs_allowed"       "'||lv_layer_multiple_locs_allowed||'"'
               ||CHR(10)||'      "is_editable"                 "'||lv_layer_editable||'"'
               ||CHR(10)||'      "show_in_map"                 "'||lv_layer_show_in_map||'"'
