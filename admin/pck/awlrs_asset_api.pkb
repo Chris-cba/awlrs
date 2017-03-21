@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.4   Feb 24 2017 14:42:08   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.5   Mar 21 2017 12:00:30   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 24 2017 14:42:08  $
-  --       Date fetched Out : $Modtime:   Feb 24 2017 13:38:38  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   Mar 21 2017 12:00:30  $
+  --       Date fetched Out : $Modtime:   Mar 21 2017 11:34:52  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -413,7 +413,7 @@ AS
   END check_xsp_validate;
   --
   PROCEDURE get_xsps(pi_inv_type          IN xsp_restraints.xsr_ity_inv_code%TYPE
-                    ,pi_scl_class         IN xsp_restraints.xsr_scl_class%TYPE
+                    ,pi_scl_class         IN xsp_restraints.xsr_scl_class%TYPE DEFAULT NULL
                     ,pi_nw_type           IN xsp_restraints.xsr_nw_type%TYPE
                     ,po_message_severity OUT hig_codes.hco_code%TYPE
                     ,po_message_cursor   OUT sys_refcursor
@@ -1781,5 +1781,82 @@ AS
          ;
     --
   END get_locations;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  --NB. If the value of pi_run_checks passed in is not 'Y' then the calling code
+  --should have already called the procedure with the value as 'Y' and handled any
+  --errors or prompts for user confirmation.  
+  PROCEDURE asset_close(pi_asset_type       IN  nm_inv_items_all.iit_inv_type%TYPE
+                       ,pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                       ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                       ,pi_run_checks       IN  VARCHAR2 DEFAULT 'Y'
+                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    lr_nit nm_inv_types%ROWTYPE;
+    lt_messages  awlrs_message_tab := awlrs_message_tab();    
+  BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT asset_close_sp;
+    --
+    DECLARE
+      e_record_locked EXCEPTION;
+	  PRAGMA exception_init(e_record_locked, -54);
+    BEGIN
+      --
+      lr_nit := nm3get.get_nit(pi_asset_type);	      
+      --
+      IF pi_run_checks = 'Y'
+      THEN
+        IF lr_nit.nit_contiguous = 'Y'
+        THEN
+          --
+          awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'NET'
+                                           ,pi_ner_id      => 125
+                                           ,pi_category    => awlrs_util.c_msg_cat_ask_continue
+                                           ,po_message_tab => lt_messages);                     
+          --
+        END IF;  
+      END IF;
+      --
+      IF lt_messages.COUNT > 0
+       THEN
+         awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                      ,po_cursor      => po_message_cursor);
+         --                                    
+         awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                        ,po_message_severity => po_message_severity);
+      ELSE
+        --
+         UPDATE nm_inv_items_all
+            SET iit_end_date = pi_effective_date
+          WHERE iit_inv_type = pi_asset_type
+            AND iit_ne_id = pi_iit_ne_id
+              ;
+          --
+          awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                               ,po_cursor           => po_message_cursor);
+      END IF;
+      
+    EXCEPTION
+      WHEN e_record_locked
+       THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 33); 
+    END;
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        ROLLBACK TO asset_close_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END asset_close;  
+  
 END awlrs_asset_api;
 /
