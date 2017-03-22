@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.5   Mar 21 2017 12:00:28   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.6   Mar 22 2017 08:16:30   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   Mar 21 2017 12:00:28  $
-  --       Date fetched Out : $Modtime:   Mar 21 2017 11:34:54  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   Mar 22 2017 08:16:30  $
+  --       Date fetched Out : $Modtime:   Mar 22 2017 08:14:24  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -82,7 +82,7 @@ AS
   --                              
   PROCEDURE get_xsps(pi_inv_type          IN xsp_restraints.xsr_ity_inv_code%TYPE
                     ,pi_scl_class         IN xsp_restraints.xsr_scl_class%TYPE DEFAULT NULL
-                    ,pi_nw_type           IN xsp_restraints.xsr_nw_type%TYPE
+                    ,pi_nw_type           IN xsp_restraints.xsr_nw_type%TYPE DEFAULT NULL
                     ,po_message_severity OUT    hig_codes.hco_code%TYPE
                     ,po_message_cursor   OUT sys_refcursor
                     ,po_cursor           OUT sys_refcursor);                            
