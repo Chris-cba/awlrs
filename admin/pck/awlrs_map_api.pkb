@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.11   21 Mar 2017 10:54:56   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.12   22 Mar 2017 18:37:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   21 Mar 2017 10:54:56  $
-  --       Date fetched Out : $Modtime:   21 Mar 2017 10:36:12  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   22 Mar 2017 18:37:20  $
+  --       Date fetched Out : $Modtime:   22 Mar 2017 18:31:14  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -493,7 +493,6 @@ AS
           hig.raise_ner(pi_appl               => 'AWLRS'
                        ,pi_id                 => 9
                        ,pi_supplementary_info => pi_layer_type);
-
     END CASE;
     --
     RETURN lv_retval;
@@ -720,7 +719,7 @@ AS
                                    ,scale_mode VARCHAR2(100) path '@scale_mode') a) map_themes
           ,v_nm_wms_themes
      WHERE map_themes.name = nwt_name
-     ORDER 
+     ORDER
         BY display_seq
          ;
     --
@@ -780,16 +779,8 @@ AS
             ||CHR(10)||'      "wms_title"                "'||lt_wms_themes(i).nwt_name||'"'
             ||CHR(10)||'      "wms_enable_request"       "*"'
             /* Application sepcific metadata. */
-            ||CHR(10)||'      "network_type"             ""'
-            ||CHR(10)||'      "network_element_type"     ""'
             ||CHR(10)||'      "network_is_linear"        "N"'
-            ||CHR(10)||'      "network_group_type"       ""'
-            ||CHR(10)||'      "network_group_memb_types" ""'
             ||CHR(10)||'      "network_partial_members"  "N"'
-            ||CHR(10)||'      "network_units"            ""'
-            ||CHR(10)||'      "network_node_type"        ""'
-            ||CHR(10)||'      "node_layer_name"          ""'
-            ||CHR(10)||'      "asset_type"               ""'
             ||CHR(10)||'      "is_editable"              "N"'
             ||CHR(10)||'      "show_in_map"              "N"'
             ||CHR(10)||'      "displayed_at_startup"     "'||lv_displayed_on_startup||'"'
@@ -810,7 +801,7 @@ AS
             ||CHR(10)||'    END'
             ||CHR(10)||'    DEBUG 5'
             ||CHR(10)||'    TYPE RASTER'
-            ||CHR(10)||'    STATUS ON'
+            ||CHR(10)||'    STATUS OFF'
             ||CHR(10)||'    CONNECTIONTYPE WMS'
             ||CHR(10)||'    CONNECTION "'||lt_wms_themes(i).service_url||'"'
             ||CHR(10)||'  END #layer'
@@ -950,7 +941,7 @@ AS
         FETCH get_group_types
          BULK COLLECT
          INTO lt_types;
-        CLOSE get_group_types;   
+        CLOSE get_group_types;
     END IF;
     --
     FOR i IN 1..lt_types.COUNT LOOP
@@ -1325,26 +1316,90 @@ AS
               ||CHR(10)||'      "wfs_title"                   "'||lv_title||'"'
               ||CHR(10)||'      "wfs_featureid"               "'||lv_wfs_featureid||'"'
               ||CHR(10)||'      "wfs_enable_request"          "*"'
-              ||CHR(10)||'      "wfs_getfeature_formatlist"	  "SHAPEZIP,CSV,JSON"'
+              ||CHR(10)||'      "wfs_getfeature_formatlist"   "SHAPEZIP,CSV,JSON"'
               ||CHR(10)||'      "gml_featureid"               "'||lt_themes(i).nth_feature_pk_column||'"'
               ||CHR(10)||'      "gml_include_items"           "all"'
               ||CHR(10)||'      "gml_geometries"              "msGeometry"'
               ||CHR(10)||'      "gml_msGeometry_type"         "'||lv_gml_msGeometry_type||'"'
-              ||CHR(10)||'      "layer_group_name"            "'||lv_group_name||'"'
-              ||CHR(10)||'      "admin_type"                  "'||lv_layer_admin_type||'"'
-              ||CHR(10)||'      "network_type"                "'||lv_layer_network_type||'"'
-              ||CHR(10)||'      "network_element_type"        "'||lv_layer_network_element_type||'"'
-              ||CHR(10)||'      "network_is_linear"           "'||lv_layer_is_linear||'"'
-              ||CHR(10)||'      "network_is_incl_parent_type" "'||lv_layer_is_incl_parent_type||'"'
-              ||CHR(10)||'      "network_group_type"          "'||lv_layer_group_type||'"'
-              ||CHR(10)||'      "network_group_memb_types"    "'||lv_group_memb_types||'"'
-              ||CHR(10)||'      "network_partial_members"     "'||lv_layer_group_partial||'"'
-              ||CHR(10)||'      "network_units"               "'||lv_layer_units||'"'
-              ||CHR(10)||'      "network_node_type"           "'||lv_layer_node_type||'"'
-              ||CHR(10)||'      "node_layer_name"             "'||lv_layer_node_layer||'"'
-              ||CHR(10)||'      "asset_type"                  "'||lv_layer_asset_type||'"'
-              ||CHR(10)||'      "asset_loc_types"             "'||lv_layer_asset_loc_types||'"'
-              ||CHR(10)||'      "multiple_locs_allowed"       "'||lv_layer_multiple_locs_allowed||'"'              
+        ;
+        --
+        IF lv_group_name IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "layer_group_name"            "'||lv_group_name||'"';
+        END IF;
+        --
+        IF lv_layer_admin_type IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "admin_type"                  "'||lv_layer_admin_type||'"';
+        END IF;
+        --
+        IF lv_layer_network_type IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "network_type"                "'||lv_layer_network_type||'"';
+        END IF;
+        --
+        IF lv_layer_network_element_type IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "network_element_type"        "'||lv_layer_network_element_type||'"';
+        END IF;
+        --
+        IF lv_layer_is_linear IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "network_is_linear"           "'||lv_layer_is_linear||'"';
+        END IF;
+        --
+        IF lv_layer_is_incl_parent_type IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "network_is_incl_parent_type" "'||lv_layer_is_incl_parent_type||'"';
+        END IF;
+        --
+        IF lv_layer_group_type IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "network_group_type"          "'||lv_layer_group_type||'"';
+        END IF;
+        --
+        IF lv_group_memb_types IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "network_group_memb_types"    "'||lv_group_memb_types||'"';
+        END IF;
+        --
+        IF lv_layer_group_partial IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "network_partial_members"     "'||lv_layer_group_partial||'"';
+        END IF;
+        --
+        IF lv_layer_units IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "network_units"               "'||lv_layer_units||'"';
+        END IF;
+        --
+        IF lv_layer_node_type IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "network_node_type"           "'||lv_layer_node_type||'"';
+        END IF;
+        --
+        IF lv_layer_node_layer IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "node_layer_name"             "'||lv_layer_node_layer||'"';
+        END IF;
+        --
+        IF lv_layer_asset_type IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "asset_type"                  "'||lv_layer_asset_type||'"';
+        END IF;
+        --
+        IF lv_layer_asset_loc_types IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "asset_loc_types"             "'||lv_layer_asset_loc_types||'"';
+        END IF;
+        --
+        IF lv_layer_multiple_locs_allowed IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "multiple_locs_allowed"       "'||lv_layer_multiple_locs_allowed||'"';
+        END IF;
+        --
+        lv_layer_text := lv_layer_text
+
               ||CHR(10)||'      "is_editable"                 "'||lv_layer_editable||'"'
               ||CHR(10)||'      "show_in_map"                 "'||lv_layer_show_in_map||'"'
               ||CHR(10)||'      "displayed_at_startup"        "'||lv_displayed_on_startup||'"'
@@ -1353,7 +1408,7 @@ AS
               ||CHR(10)||'    END'
               ||CHR(10)||'    DEBUG 5'
               ||CHR(10)||'    TYPE '||lv_layer_type
-              ||CHR(10)||'    STATUS ON'
+              ||CHR(10)||'    STATUS OFF'
               ||CHR(10)||'    CONNECTIONTYPE PLUGIN'
               ||CHR(10)||'    PROCESSING "CLOSE_CONNECTION=DEFER"'
               ||CHR(10)||'    PLUGIN "msplugin_oracle.dll"'
@@ -1415,79 +1470,6 @@ AS
               ||CHR(10)||'    PROCESSING "LABEL_NO_CLIP=on"'
               ||CHR(10)||'  END #layer'
               ||CHR(10)||''
-              ||CHR(10)||'  LAYER'
-              ||CHR(10)||'    NAME "'||lv_name||'WFS"'
-        ;
-        IF lv_group IS NOT NULL
-         THEN
-            lv_layer_text := lv_layer_text||'    GROUP "'||lv_group||'WFS"';
-        END IF;
-        --
-        lv_layer_text := lv_layer_text
-              ||CHR(10)||'    METADATA'
-              ||CHR(10)||'      "wms_title"                   "'||lv_title||'"'
-              ||CHR(10)||'      "wms_enable_request"          "*"'
-              ||CHR(10)||'      "wfs_title"                   "'||lv_title||'"'
-              ||CHR(10)||'      "wfs_featureid"               "'||lv_wfs_featureid||'"'
-              ||CHR(10)||'      "wfs_enable_request"          "*"'
-              ||CHR(10)||'      "wfs_getfeature_formatlist"	  "SHAPEZIP,CSV,JSON"'
-              ||CHR(10)||'      "gml_featureid"               "'||lt_themes(i).nth_feature_pk_column||'"'
-              ||CHR(10)||'      "gml_include_items"           "all"'
-              ||CHR(10)||'      "layer_group_name"            "'||lv_group_name||'"'
-              ||CHR(10)||'      "admin_type"                  "'||lv_layer_admin_type||'"'
-              ||CHR(10)||'      "network_type"                "'||lv_layer_network_type||'"'
-              ||CHR(10)||'      "network_element_type"        "'||lv_layer_network_element_type||'"'
-              ||CHR(10)||'      "network_is_linear"           "'||lv_layer_is_linear||'"'
-              ||CHR(10)||'      "network_is_incl_parent_type" "'||lv_layer_is_incl_parent_type||'"'
-              ||CHR(10)||'      "network_group_type"          "'||lv_layer_group_type||'"'
-              ||CHR(10)||'      "network_group_memb_types"    "'||lv_group_memb_types||'"'
-              ||CHR(10)||'      "network_partial_members"     "'||lv_layer_group_partial||'"'
-              ||CHR(10)||'      "network_units"               "'||lv_layer_units||'"'
-              ||CHR(10)||'      "network_node_type"           "'||lv_layer_node_type||'"'
-              ||CHR(10)||'      "node_layer_name"             "'||lv_layer_node_layer||'"'
-              ||CHR(10)||'      "asset_type"                  "'||lv_layer_asset_type||'"'
-              ||CHR(10)||'      "asset_loc_types"             "'||lv_layer_asset_loc_types||'"'
-              ||CHR(10)||'      "multiple_locs_allowed"       "'||lv_layer_multiple_locs_allowed||'"'
-              ||CHR(10)||'      "is_editable"                 "'||lv_layer_editable||'"'
-              ||CHR(10)||'      "show_in_map"                 "'||lv_layer_show_in_map||'"'
-              ||CHR(10)||'      "displayed_at_startup"        "'||lv_displayed_on_startup||'"'
-              ||CHR(10)||'      "displayed_in_legend"         "'||lv_displayed_in_legend||'"'
-              ||CHR(10)||'      "legend_group"                "'||lv_legend_group||'"'
-              ||CHR(10)||'    END'
-              ||CHR(10)||'    DEBUG 5'
-              ||CHR(10)||'    TYPE '||lv_layer_type
-              ||CHR(10)||'    STATUS ON'
-              ||CHR(10)||'    CONNECTIONTYPE PLUGIN'
-              ||CHR(10)||'    PLUGIN "msplugin_oracle.dll"'
-              ||CHR(10)||'    PROCESSING "CLOSE_CONNECTION=DEFER"'
-              ||CHR(10)||'    CONNECTION "%user%/%pwd%@%dbhost%"'
-              ||CHR(10)||'    DATA "'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM (SELECT '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_pk_column)
-        ;
-        --
-        IF lv_theme_extra_cols IS NOT NULL
-         THEN
-            lv_layer_text := lv_layer_text||lv_theme_extra_cols;
-        END IF;
-        --
-        IF lv_layer_network_element_type = 'S'
-         THEN
-            lv_layer_text := lv_layer_text||', datum_lookup.ne_no_start start_node, datum_lookup.ne_no_end end_node';
-        END IF;
-        --
-        lv_layer_text := lv_layer_text||', '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM '||LOWER(lt_themes(i).nth_feature_table)||' '||LOWER(lt_themes(i).nth_feature_table)
-                       ||CASE
-                           WHEN lv_layer_network_element_type = 'S'
-                            THEN
-                               ' , nm_elements_all datum_lookup WHERE datum_lookup.ne_id = '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_pk_column)||CASE WHEN lv_gtype_restriction IS NOT NULL THEN ' AND '||lv_gtype_restriction ELSE NULL END
-                           ELSE
-                               CASE WHEN lv_gtype_restriction IS NOT NULL THEN ' WHERE '||lv_gtype_restriction ELSE NULL END
-                         END
-                       ||') USING UNIQUE '||lt_themes(i).nth_feature_pk_column||' NONE"'
-              ||CHR(10)||'    PROJECTION'
-              ||CHR(10)||'      "init=epsg:'||lv_epsg||'"'
-              ||CHR(10)||'    END'
-              ||CHR(10)||'  END #layer'
-              ||CHR(10)
         ;
         --
         lt_layer_text(lt_layer_text.COUNT + 1) := lv_layer_text;
@@ -1519,10 +1501,6 @@ AS
     --
   BEGIN
     /*
-    ||Add the output projection to the epsg list.
-    */
-    add_map_epsg(pi_epsg => lv_output_epsg);
-    /*
     ||Get the map details;
     */
     lr_usm := get_usm(pi_map_name => pi_map_name);
@@ -1534,23 +1512,33 @@ AS
     /*
     ||Create the wms_srs text.
     */
+    IF gt_epsg.COUNT = 0
+     THEN
+        gt_epsg(1) := lv_output_epsg;
+    END IF;
+    --
     FOR i IN 1..gt_epsg.COUNT LOOP
       --
       lv_wms_srs := lv_wms_srs||'EPSG:'||gt_epsg(i)||' ';
       --
     END LOOP;
     /*
+    ||Add the output projection to the epsg list if needed.
+    */
+    IF gt_epsg.COUNT < 2
+     OR gt_epsg(gt_epsg.COUNT) != lv_output_epsg
+     THEN
+        lv_wms_srs := lv_wms_srs||'EPSG:'||lv_output_epsg||' ';
+    END IF;
+    /*
     ||Write the map file.
     */
     lv_retval := 'MAP'
       ||CHR(10)||'  NAME "'||lr_usm.name||'"'
-      ||CHR(10)||'  STATUS ON'
-      ||CHR(10)||'  SIZE 800 800'
       ||CHR(10)||'  EXTENT '||g_min_x||' '||g_min_y||' '||g_max_x||' '||g_max_y
       ||CHR(10)||'  UNITS DD'
       ||CHR(10)||'  IMAGECOLOR 255 255 255'
       ||CHR(10)||'  FONTSET "fonts.list"'
-      ||CHR(10)||''
     ;
     IF NVL(hig.get_sysopt('AWLMAPDBUG'),'N') = 'Y'
      THEN
@@ -1561,9 +1549,6 @@ AS
     END IF;
     --
     lv_retval := lv_retval
-      ||CHR(10)||'  #'
-      ||CHR(10)||'  # Start of web interface definition'
-      ||CHR(10)||'  #'
       ||CHR(10)||'  WEB'
       ||CHR(10)||'    METADATA'
       ||CHR(10)||'      "ows_enable_request"          "*"'
@@ -1571,8 +1556,8 @@ AS
       ||CHR(10)||'      "wfs_onlineresource"          "http://localhost/cgi-bin/mapserv"'
       ||CHR(10)||'      "wms_title"                   "WMS '||NVL(lr_usm.description,lr_usm.name)||'"'
       ||CHR(10)||'      "wfs_title"                   "WFS '||NVL(lr_usm.description,lr_usm.name)||'"'
-      ||CHR(10)||'      "wms_srs"                     "'||lv_wms_srs||'EPSG:3857"'
-      ||CHR(10)||'      "wfs_srs"                     "'||lv_wms_srs||'EPSG:3857"'
+      ||CHR(10)||'      "wms_srs"                     "'||lv_wms_srs||'"'
+      ||CHR(10)||'      "wfs_srs"                     "'||lv_wms_srs||'"'
       ||CHR(10)||'      "wfs_abstract"                "Bentley AWLRS Service."'
       ||CHR(10)||'      "wfs_request_method"          "GET"'
       ||CHR(10)||'      "wfs_enable_request"          "*"'
@@ -1605,7 +1590,7 @@ AS
       ||CHR(10)||'    FORMATOPTION "STORAGE=memory"'
       ||CHR(10)||'    FORMATOPTION "FORM=simple"'
       ||CHR(10)||'    FORMATOPTION "LCO:COORDINATE_PRECISION=4"'
-      ||CHR(10)||'  END # OUTPUTFORMAT'
+      ||CHR(10)||'  END'
       ||CHR(10)||''
       ||CHR(10)||'  OUTPUTFORMAT'
       ||CHR(10)||'    NAME "CSV"'
@@ -1618,7 +1603,7 @@ AS
       ||CHR(10)||'    FORMATOPTION "FORM=simple"'
       ||CHR(10)||'    FORMATOPTION "LCO:COORDINATE_PRECISION=4"'
       ||CHR(10)||'    FORMATOPTION "FILENAME=result.csv"'
-      ||CHR(10)||'  END # OUTPUTFORMAT'
+      ||CHR(10)||'  END'
       ||CHR(10)||''
       ||CHR(10)||'  OUTPUTFORMAT'
       ||CHR(10)||'    NAME "SHAPEZIP"'
@@ -1629,7 +1614,7 @@ AS
       ||CHR(10)||'    FORMATOPTION "FORM=zip"'
       ||CHR(10)||'    FORMATOPTION "LCO:COORDINATE_PRECISION=4"'
       ||CHR(10)||'    FORMATOPTION "FILENAME=result.zip"'
-      ||CHR(10)||'  END # OUTPUTFORMAT '
+      ||CHR(10)||'  END'
       ||CHR(10)||''
       ||CHR(10)||'  LEGEND'
       ||CHR(10)||'    KEYSIZE 22 12'
@@ -1640,11 +1625,8 @@ AS
       ||CHR(10)||'      TYPE TRUETYPE'
       ||CHR(10)||'    END # LABEL'
       ||CHR(10)||'    STATUS OFF'
-      ||CHR(10)||'  END # LEGEND'
+      ||CHR(10)||'  END'
       ||CHR(10)||''
-      ||CHR(10)||'  #'
-      ||CHR(10)||'  # Start of layer definitions'
-      ||CHR(10)||'  #'
     ;
     /*
     ||Add the layers.
@@ -2085,7 +2067,7 @@ AS
       END CASE;
       --
       RETURN lv_retval;
-      --      
+      --
     END get_default_symboliser;
     --
     FUNCTION get_line_symboliser(pi_class      IN VARCHAR2
