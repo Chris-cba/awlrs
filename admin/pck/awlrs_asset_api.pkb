@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.5   Mar 21 2017 12:00:30   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.6   Mar 22 2017 08:16:28   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 21 2017 12:00:30  $
-  --       Date fetched Out : $Modtime:   Mar 21 2017 11:34:52  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   Mar 22 2017 08:16:28  $
+  --       Date fetched Out : $Modtime:   Mar 22 2017 08:14:44  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -414,7 +414,7 @@ AS
   --
   PROCEDURE get_xsps(pi_inv_type          IN xsp_restraints.xsr_ity_inv_code%TYPE
                     ,pi_scl_class         IN xsp_restraints.xsr_scl_class%TYPE DEFAULT NULL
-                    ,pi_nw_type           IN xsp_restraints.xsr_nw_type%TYPE
+                    ,pi_nw_type           IN xsp_restraints.xsr_nw_type%TYPE DEFAULT NULL
                     ,po_message_severity OUT hig_codes.hco_code%TYPE
                     ,po_message_cursor   OUT sys_refcursor
                     ,po_cursor           OUT sys_refcursor)  
