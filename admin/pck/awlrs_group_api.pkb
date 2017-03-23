@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.15   23 Mar 2017 11:55:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.16   23 Mar 2017 15:51:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   23 Mar 2017 11:55:14  $
-  --       Date fetched Out : $Modtime:   23 Mar 2017 11:52:54  $
-  --       Version          : $Revision:   1.15  $
+  --       Date into PVCS   : $Date:   23 Mar 2017 15:51:20  $
+  --       Date fetched Out : $Modtime:   23 Mar 2017 15:47:22  $
+  --       Version          : $Revision:   1.16  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -826,6 +826,8 @@ AS
           /*
           ||Ask the user to select a Datum to start from.
           */
+          ROLLBACK TO rescale_route_sp;
+          SAVEPOINT rescale_route_sp;
           awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'AWLRS'
                                            ,pi_ner_id      => 47
                                            ,pi_category    => awlrs_util.c_msg_cat_circular_route
@@ -836,6 +838,8 @@ AS
           ||Ask the user if they wish to continue without
           ||maintaining history.
           */
+          ROLLBACK TO rescale_route_sp;
+          SAVEPOINT rescale_route_sp;
           awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'NET'
                                            ,pi_ner_id      => 63
                                            ,pi_category    => awlrs_util.c_msg_cat_ask_continue
@@ -960,6 +964,8 @@ AS
           /*
           ||Ask the user to select a Datum to start from.
           */
+          ROLLBACK TO reseq_route_sp;
+          SAVEPOINT rescale_route_sp;
           awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'AWLRS'
                                            ,pi_ner_id      => 47
                                            ,pi_category    => awlrs_util.c_msg_cat_circular_route
@@ -1451,6 +1457,8 @@ AS
           /*
           ||Ask the user to select a Datum to start from.
           */
+          ROLLBACK TO resize_route_sp;
+          SAVEPOINT rescale_route_sp;
           awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'AWLRS'
                                            ,pi_ner_id      => 47
                                            ,pi_category    => awlrs_util.c_msg_cat_circular_route
