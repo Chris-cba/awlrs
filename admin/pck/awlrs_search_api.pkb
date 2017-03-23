@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.3   17 Mar 2017 18:10:52   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.4   23 Mar 2017 14:48:00   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   17 Mar 2017 18:10:52  $
-  --       Date fetched Out : $Modtime:   17 Mar 2017 13:19:36  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   23 Mar 2017 14:48:00  $
+  --       Date fetched Out : $Modtime:   23 Mar 2017 14:45:02  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -933,7 +933,8 @@ AS
     --
   BEGIN
     --
-    SELECT EXTRACTVALUE(VALUE(x),'SingleExpression/FieldName') field_name
+    SELECT EXTRACTVALUE(VALUE(x),'SingleExpression/Operation') operation
+          ,EXTRACTVALUE(VALUE(x),'SingleExpression/FieldName') field_name
           ,EXTRACTVALUE(VALUE(x),'SingleExpression/FilterFunction') filter_function
           ,EXTRACTVALUE(VALUE(x),'SingleExpression/HasValue') has_value
           ,EXTRACTVALUE(VALUE(x),'SingleExpression/IsSingleValue') is_single_value
@@ -1070,11 +1071,11 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_clause(pi_datatype        IN     VARCHAR2
-                      ,pi_format_mask     IN     VARCHAR2
-                      ,pi_group_operation IN     VARCHAR2
-                      ,pi_expression      IN     single_expression_rec
-                      ,po_sql             IN OUT nm3type.max_varchar2)
+  PROCEDURE get_clause(pi_datatype    IN     VARCHAR2
+                      ,pi_format_mask IN     VARCHAR2
+                      ,pi_operation   IN     VARCHAR2
+                      ,pi_expression  IN     single_expression_rec
+                      ,po_sql         IN OUT nm3type.max_varchar2)
     IS
     --
     lv_expression  single_expression_rec;
@@ -1095,7 +1096,7 @@ AS
                            ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
           END IF;
           --
-          po_sql := po_sql||' '||pi_group_operation||' UPPER('||lv_expression.field_name||') LIKE ''%'||UPPER(lv_expression.value1)||'%''';
+          po_sql := po_sql||' '||pi_operation||' UPPER('||lv_expression.field_name||') LIKE ''%'||UPPER(lv_expression.value1)||'%''';
           --
       WHEN lv_expression.filter_function = 'DoesNotContain'
        THEN
@@ -1108,7 +1109,7 @@ AS
                            ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
           END IF;
           --
-          po_sql := po_sql||' '||pi_group_operation||' UPPER('||lv_expression.field_name||') NOT LIKE ''%'||UPPER(lv_expression.value1)||'%''';
+          po_sql := po_sql||' '||pi_operation||' UPPER('||lv_expression.field_name||') NOT LIKE ''%'||UPPER(lv_expression.value1)||'%''';
           --
       WHEN lv_expression.filter_function = 'StartsWith'
        THEN
@@ -1121,7 +1122,7 @@ AS
                            ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
           END IF;
           --
-          po_sql := po_sql||' '||pi_group_operation||' UPPER('||lv_expression.field_name||') LIKE '''||UPPER(lv_expression.value1)||'%''';
+          po_sql := po_sql||' '||pi_operation||' UPPER('||lv_expression.field_name||') LIKE '''||UPPER(lv_expression.value1)||'%''';
           --
       WHEN lv_expression.filter_function = 'EndsWith'
        THEN
@@ -1133,23 +1134,23 @@ AS
                            ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
           END IF;
           --
-          po_sql := po_sql||' '||pi_group_operation||' UPPER('||lv_expression.field_name||') LIKE ''%'||UPPER(lv_expression.value1)||'''';
+          po_sql := po_sql||' '||pi_operation||' UPPER('||lv_expression.field_name||') LIKE ''%'||UPPER(lv_expression.value1)||'''';
           --
       WHEN lv_expression.filter_function = 'EqualTo'
        THEN
           IF pi_datatype = 'VARCHAR2'
            THEN
               --
-              po_sql := po_sql||' '||pi_group_operation||' UPPER('||lv_expression.field_name||')';
+              po_sql := po_sql||' '||pi_operation||' UPPER('||lv_expression.field_name||')';
               --
           ELSIF pi_datatype = 'DATE'
            THEN
               --
-              po_sql := po_sql||' '||pi_group_operation||' TRUNC('||lv_expression.field_name||')';
+              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
               --
           ELSE
               --
-              po_sql := po_sql||' '||pi_group_operation||' '||lv_expression.field_name;
+              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
               --
           END IF;
           --
@@ -1162,16 +1163,16 @@ AS
           IF pi_datatype = 'VARCHAR2'
            THEN
               --
-              po_sql := po_sql||' '||pi_group_operation||' UPPER('||lv_expression.field_name||')';
+              po_sql := po_sql||' '||pi_operation||' UPPER('||lv_expression.field_name||')';
               --
           ELSIF pi_datatype = 'DATE'
            THEN
               --
-              po_sql := po_sql||' '||pi_group_operation||' TRUNC('||lv_expression.field_name||')';
+              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
               --
           ELSE
               --
-              po_sql := po_sql||' '||pi_group_operation||' '||lv_expression.field_name;
+              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
               --
           END IF;
           --
@@ -1192,11 +1193,11 @@ AS
           ELSIF pi_datatype = 'DATE'
            THEN
               --
-              po_sql := po_sql||' '||pi_group_operation||' TRUNC('||lv_expression.field_name||')';
+              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
               --
           ELSE
               --
-              po_sql := po_sql||' '||pi_group_operation||' '||lv_expression.field_name;
+              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
               --
           END IF;
           --
@@ -1217,11 +1218,11 @@ AS
           ELSIF pi_datatype = 'DATE'
            THEN
               --
-              po_sql := po_sql||' '||pi_group_operation||' TRUNC('||lv_expression.field_name||')';
+              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
               --
           ELSE
               --
-              po_sql := po_sql||' '||pi_group_operation||' '||lv_expression.field_name;
+              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
               --
           END IF;
           --
@@ -1242,11 +1243,11 @@ AS
           ELSIF pi_datatype = 'DATE'
            THEN
               --
-              po_sql := po_sql||' '||pi_group_operation||' TRUNC('||lv_expression.field_name||')';
+              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
               --
           ELSE
               --
-              po_sql := po_sql||' '||pi_group_operation||' '||lv_expression.field_name;
+              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
               --
           END IF;
           --
@@ -1267,11 +1268,11 @@ AS
           ELSIF pi_datatype = 'DATE'
            THEN
               --
-              po_sql := po_sql||' '||pi_group_operation||' TRUNC('||lv_expression.field_name||')';
+              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
               --
           ELSE
               --
-              po_sql := po_sql||' '||pi_group_operation||' '||lv_expression.field_name;
+              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
               --
           END IF;
           --
@@ -1300,11 +1301,11 @@ AS
           ELSIF pi_datatype = 'DATE'
            THEN
               --
-              po_sql := po_sql||' '||pi_group_operation||' TRUNC('||lv_expression.field_name||')';
+              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
               --
           ELSE
               --
-              po_sql := po_sql||' '||pi_group_operation||' '||lv_expression.field_name;
+              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
               --
           END IF;
           --
@@ -1336,11 +1337,11 @@ AS
           ELSIF pi_datatype = 'DATE'
            THEN
               --
-              po_sql := po_sql||' '||pi_group_operation||' TRUNC('||lv_expression.field_name||')';
+              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
               --
           ELSE
               --
-              po_sql := po_sql||' '||pi_group_operation||' '||lv_expression.field_name;
+              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
               --
           END IF;
           --
@@ -1355,13 +1356,13 @@ AS
        OR lv_expression.filter_function = 'IsNull'
        THEN
           --
-          po_sql := po_sql||' '||pi_group_operation||' '||lv_expression.field_name||' IS NULL';
+          po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name||' IS NULL';
           --
       WHEN lv_expression.filter_function = 'NotIsEmpty'
        OR lv_expression.filter_function = 'NotIsNull'
        THEN
           --
-          po_sql := po_sql||' '||pi_group_operation||' '||lv_expression.field_name||' IS NOT NULL';
+          po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name||' IS NOT NULL';
           --
       ELSE
           --Invalid filter function
@@ -1382,7 +1383,7 @@ AS
     --
     lv_datatype     VARCHAR2(106);
     lv_format_mask  VARCHAR2(80);
-    lv_expression   single_expression_rec;
+    lv_operation    VARCHAR2(10);
     lv_subquery     nm3type.max_varchar2;
     --
     PROCEDURE get_format(pi_theme_types IN  awlrs_map_api.theme_types_rec
@@ -1442,6 +1443,14 @@ AS
     --
   BEGIN
     --
+    lv_operation := CASE
+                      WHEN pi_group_operation IS NULL
+                       THEN
+                          NULL
+                      ELSE
+                          UPPER(NVL(pi_expression.operation,pi_group_operation))
+                    END;
+    --
     get_format(pi_theme_types => pi_theme_types
               ,pi_attrib_name => pi_expression.field_name
               ,po_format      => lv_datatype
@@ -1452,7 +1461,7 @@ AS
      THEN
         --
         BEGIN
-          po_sql := po_sql||' '||pi_group_operation||' iit_ne_id IN(SELECT ngqi_item_id FROM nm_gaz_query_item_list WHERE ngqi_job_id = '
+          po_sql := po_sql||' '||lv_operation||' iit_ne_id IN(SELECT ngqi_item_id FROM nm_gaz_query_item_list WHERE ngqi_job_id = '
                     ||execute_gaz_query(pi_ne_id    => awlrs_element_api.get_ne_id(pi_element_name => pi_expression.value1)
                                        ,pi_inv_type => pi_theme_types.asset_type)
                     ||')';
@@ -1460,11 +1469,11 @@ AS
         --
     ELSE
         --
-        get_clause(pi_datatype        => lv_datatype
-                  ,pi_format_mask     => lv_format_mask
-                  ,pi_group_operation => pi_group_operation
-                  ,pi_expression      => pi_expression
-                  ,po_sql             => po_sql);
+        get_clause(pi_datatype    => lv_datatype
+                  ,pi_format_mask => lv_format_mask
+                  ,pi_operation   => lv_operation
+                  ,pi_expression  => pi_expression
+                  ,po_sql         => po_sql);
         --
     END IF;
     --
@@ -1525,12 +1534,11 @@ AS
               --
               IF (lt_child_single_expression.COUNT > 0
                   OR lt_single_expression.COUNT > 0)
-               AND po_sql IS NOT NULL
                AND po_sql NOT LIKE '%AND ('
                AND po_sql NOT LIKE '%OR ('
                THEN
                   --
-                  po_sql := po_sql||' '||UPPER(pi_expression.group_operation)||' ';
+                  po_sql := po_sql||' '||UPPER(lt_group_expression(i).group_operation)||' ';
                   lv_open_bracket := '(';
                   lv_close_bracket := ')';
                   --
