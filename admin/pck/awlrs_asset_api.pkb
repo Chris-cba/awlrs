@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.6   Mar 22 2017 08:16:28   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.7   Mar 24 2017 14:02:30   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 22 2017 08:16:28  $
-  --       Date fetched Out : $Modtime:   Mar 22 2017 08:14:44  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   Mar 24 2017 14:02:30  $
+  --       Date fetched Out : $Modtime:   Mar 23 2017 14:04:54  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -304,6 +304,7 @@ AS
            ,iit_inv_type
            ,iit_primary_key
            ,iit_x_sect
+           ,iit_descr
 		   ,nm3user.get_username(iit_peo_invent_by_id)
            ,iit_admin_unit
            ,nm3inv.get_nit_descr(iit_inv_type)
@@ -419,15 +420,18 @@ AS
                     ,po_message_cursor   OUT sys_refcursor
                     ,po_cursor           OUT sys_refcursor)  
     IS
+    --
   BEGIN
     --
-    OPEN po_cursor FOR
-    SELECT xsr_nw_type, xsr_scl_class, xsr_x_sect_value, xsr_descr
-      FROM xsp_restraints
-     WHERE xsr_ity_inv_code = pi_inv_type
-       AND xsr_scl_class = NVL (pi_scl_class, xsr_scl_class)
-       AND xsr_nw_type = NVL (pi_nw_type, xsr_nw_type)
-     ORDER BY xsr_nw_type, xsr_scl_class, xsr_x_sect_value;
+    IF is_xsect_allowed (pi_inv_type) THEN
+      OPEN po_cursor FOR
+      SELECT xsr_nw_type, xsr_scl_class, xsr_x_sect_value, xsr_descr
+        FROM xsp_restraints
+       WHERE xsr_ity_inv_code = pi_inv_type
+         AND xsr_scl_class = NVL (pi_scl_class, xsr_scl_class)
+         AND xsr_nw_type = NVL (pi_nw_type, xsr_nw_type)
+       ORDER BY xsr_nw_type, xsr_scl_class, xsr_x_sect_value;
+    END IF;
   -- 
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1782,6 +1786,105 @@ AS
     --
   END get_locations;
 
+  --
+  -----------------------------------------------------------------------------
+  -- 
+                        
+  PROCEDURE get_locations(pi_iit_ne_id         IN  nm_inv_items_all.iit_ne_id%TYPE
+                         ,pi_nwtype            IN  nm_elements.ne_nt_type%TYPE
+                         ,pi_grouptype         IN  nm_elements.ne_gty_group_type%TYPE
+                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor
+                         ,po_cursor           OUT sys_refcursor)   
+    IS
+    --
+    lt_group_types  nm_code_tbl;
+    lt_datum_types  nm_code_tbl;
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT *
+      FROM(SELECT asset_id
+                 ,ne.ne_id         element_id
+                 ,ne.ne_nt_type    element_type
+                 ,CASE ne.ne_nt_type
+                    WHEN 'ESU' THEN ne.ne_name_1
+                    WHEN 'NSGN' THEN ne.ne_number
+                    ELSE ne.ne_unique
+                  END              element_unique
+                 ,ne.ne_descr      element_descr
+                 ,TO_NUMBER(nm3unit.get_formatted_value(locs.from_offset, un_unit_id)) from_offset
+                 ,TO_NUMBER(nm3unit.get_formatted_value(locs.to_offset, un_unit_id))   to_offset
+                 ,TO_NUMBER(nm3unit.get_formatted_value(CASE
+                                                         WHEN locs.to_offset > locs.from_offset
+                                                          THEN
+                                                             locs.to_offset - locs.from_offset
+                                                         ELSE
+                                                             locs.from_offset - locs.to_offset
+                                                        END
+                                                       ,un_unit_id)) offset_length
+                 ,nm3net.get_ne_length(ne.ne_id) element_length
+                 ,un_unit_id       element_unit_id
+                 ,un_unit_name     element_unit_name
+                 ,nau_name         element_admin_unit
+                 ,ne_start_date    element_start_date
+                 ,member_start_date member_start_date
+             FROM (SELECT im.nm_ne_id_in asset_id
+                         ,rm.nm_ne_id_in  ne_id
+                         ,pl.pl_start     from_offset
+                         ,pl.pl_end       to_offset
+                         ,rm.nm_start_date member_start_date
+                     FROM nm_members rm
+                         ,nm_members im
+                         ,TABLE(nm3pla.get_connected_chunks(im.nm_ne_id_in,rm.nm_ne_id_in).npa_placement_array) pl
+                    WHERE im.nm_ne_id_in = pi_iit_ne_id
+                      AND im.nm_ne_id_of = rm.nm_ne_id_of
+                      AND rm.nm_obj_type = pi_grouptype
+                    GROUP
+                       BY im.nm_ne_id_in
+                         ,rm.nm_ne_id_in
+                         ,pl.pl_start
+                         ,pl.pl_end
+                         ,rm.nm_start_date
+                   UNION ALL
+                   SELECT nm_ne_id_in   asset_id
+                         ,ne.ne_id      ne_id
+                         ,nm_begin_mp   from_offset
+                         ,nm_end_mp     to_offset
+                         ,nm_start_date member_start_date
+                     FROM nm_members
+                         ,nm_elements_all ne
+                    WHERE ne_nt_type = pi_nwtype
+                      AND ne_id = nm_ne_id_of
+                      AND nm_ne_id_in = pi_iit_ne_id
+                      AND nm_type = 'I') locs
+                 ,nm_admin_units_all
+                 ,nm_elements_all ne
+                 ,nm_types
+                 ,nm_units
+                 ,nm_unit_domains
+            WHERE ud_domain_name(+) = 'LENGTH'
+              AND ud_domain_id(+) = un_domain_id
+              AND un_unit_id(+) = nt_length_unit
+              AND nt_type = ne_nt_type
+              AND ne.ne_admin_unit = nau_admin_unit
+              AND ne.ne_id = locs.ne_id)
+     ORDER
+        BY element_type
+          ,element_unique
+         ;
+    --     
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);    
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);  
+    --
+  END get_locations;
+ 
   --
   -----------------------------------------------------------------------------
   --
