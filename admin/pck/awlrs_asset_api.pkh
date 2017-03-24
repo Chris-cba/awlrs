@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.6   Mar 22 2017 08:16:30   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.7   Mar 24 2017 14:02:34   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   Mar 22 2017 08:16:30  $
-  --       Date fetched Out : $Modtime:   Mar 22 2017 08:14:24  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   Mar 24 2017 14:02:34  $
+  --       Date fetched Out : $Modtime:   Mar 23 2017 08:18:26  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -204,6 +204,16 @@ AS
   -- 
  PROCEDURE get_locations(pi_iit_ne_id IN  nm_inv_items_all.iit_ne_id%TYPE
                         ,po_cursor    OUT sys_refcursor);
+                        
+  --
+  -----------------------------------------------------------------------------
+  -- 
+ PROCEDURE get_locations(pi_iit_ne_id IN  nm_inv_items_all.iit_ne_id%TYPE
+                        ,pi_nwtype    IN  nm_elements.ne_nt_type%TYPE
+                        ,pi_grouptype IN  nm_elements.ne_gty_group_type%TYPE
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor
+                        ,po_cursor           OUT sys_refcursor);                        
   --
   -----------------------------------------------------------------------------
   -- 
