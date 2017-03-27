@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.4   23 Mar 2017 14:48:00   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.5   27 Mar 2017 10:14:10   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   23 Mar 2017 14:48:00  $
-  --       Date fetched Out : $Modtime:   23 Mar 2017 14:45:02  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   27 Mar 2017 10:14:10  $
+  --       Date fetched Out : $Modtime:   27 Mar 2017 10:09:48  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -738,6 +738,9 @@ AS
                                                       ,po_message_cursor   => lv_message_cursor
                                                       ,po_cursor           => po_cursor);
                   --
+                  po_message_severity := lv_message_severity;
+                  po_message_cursor := lv_message_cursor;
+                  --
               END IF;
               --
           WHEN lt_theme_types(1).asset_type IS NOT NULL
@@ -773,9 +776,6 @@ AS
                      ,pi_supplementary_info => pi_theme_name);
         --
     END IF;
-    --
-    po_message_severity := lv_message_severity;
-    po_message_cursor := lv_message_cursor;
     --
   EXCEPTION
     WHEN others
