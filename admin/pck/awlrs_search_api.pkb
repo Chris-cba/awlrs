@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.5   27 Mar 2017 10:14:10   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.6   27 Mar 2017 10:44:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   27 Mar 2017 10:14:10  $
-  --       Date fetched Out : $Modtime:   27 Mar 2017 10:09:48  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   27 Mar 2017 10:44:30  $
+  --       Date fetched Out : $Modtime:   27 Mar 2017 10:42:30  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -444,7 +444,7 @@ AS
     RETURN VARCHAR2 IS
   BEGIN
     --
-    RETURN   'SELECT distinct nag.nag_child_admin_unit code'
+    RETURN   'SELECT distinct TO_CHAR(nag.nag_child_admin_unit) code'
   ||CHR(10)||'      ,nau.nau_name meaning'
   ||CHR(10)||'  FROM nm_admin_units nau'
   ||CHR(10)||'      ,nm_admin_groups nag'
