@@ -3,23 +3,25 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.12   22 Mar 2017 18:37:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.13   04 Apr 2017 21:06:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   22 Mar 2017 18:37:20  $
-  --       Date fetched Out : $Modtime:   22 Mar 2017 18:31:14  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   04 Apr 2017 21:06:30  $
+  --       Date fetched Out : $Modtime:   04 Apr 2017 20:59:34  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
   g_min_y  NUMBER;
   g_max_x  NUMBER;
   g_max_y  NUMBER;
+  --
+  g_debug  hig_option_values.hov_value%TYPE;
   --
   gt_epsg  nm3type.tab_number;
   --
@@ -799,7 +801,7 @@ AS
             ||CHR(10)||'      "wms_auth_username"        "'||lt_wms_themes(i).auth_user||'"'
             ||CHR(10)||'      "wms_auth_password"        "'||lt_wms_themes(i).auth_password||'"'
             ||CHR(10)||'    END'
-            ||CHR(10)||'    DEBUG 5'
+            ||CASE g_debug WHEN 'Y' THEN CHR(10)||'    DEBUG 5' ELSE NULL END
             ||CHR(10)||'    TYPE RASTER'
             ||CHR(10)||'    STATUS OFF'
             ||CHR(10)||'    CONNECTIONTYPE WMS'
@@ -1406,7 +1408,7 @@ AS
               ||CHR(10)||'      "displayed_in_legend"         "'||lv_displayed_in_legend||'"'
               ||CHR(10)||'      "legend_group"                "'||lv_legend_group||'"'
               ||CHR(10)||'    END'
-              ||CHR(10)||'    DEBUG 5'
+              ||CASE g_debug WHEN 'Y' THEN CHR(10)||'    DEBUG 5' ELSE NULL END
               ||CHR(10)||'    TYPE '||lv_layer_type
               ||CHR(10)||'    STATUS OFF'
               ||CHR(10)||'    CONNECTIONTYPE PLUGIN'
@@ -1505,6 +1507,10 @@ AS
     */
     lr_usm := get_usm(pi_map_name => pi_map_name);
     /*
+    ||Set the debug global.
+    */
+    g_debug := NVL(hig.get_sysopt('AWLMAPDBUG'),'N');
+    /*
     ||Get the layer details.
     */
     lt_wms_layers := generate_wms_layers(pi_definition => lr_usm.definition);
@@ -1540,7 +1546,7 @@ AS
       ||CHR(10)||'  IMAGECOLOR 255 255 255'
       ||CHR(10)||'  FONTSET "fonts.list"'
     ;
-    IF NVL(hig.get_sysopt('AWLMAPDBUG'),'N') = 'Y'
+    IF g_debug = 'Y'
      THEN
         lv_retval := lv_retval||CHR(10)||'  CONFIG "MS_ERRORFILE" "%user%.log"'
                               ||CHR(10)||'  DEBUG 5'
