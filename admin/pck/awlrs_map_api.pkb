@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.13   04 Apr 2017 21:06:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.14   04 Apr 2017 23:45:34   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   04 Apr 2017 21:06:30  $
-  --       Date fetched Out : $Modtime:   04 Apr 2017 20:59:34  $
-  --       Version          : $Revision:   1.13  $
+  --       Date into PVCS   : $Date:   04 Apr 2017 23:45:34  $
+  --       Date fetched Out : $Modtime:   04 Apr 2017 23:43:12  $
+  --       Version          : $Revision:   1.14  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -1437,7 +1437,7 @@ AS
                                CASE WHEN lv_gtype_restriction IS NOT NULL THEN ' WHERE '||lv_gtype_restriction ELSE NULL END
                          END
                        ||') USING UNIQUE '||lt_themes(i).nth_feature_pk_column||lv_using_srid||'"'
-              ||CHR(10)||'    FILTER "%featurekey%=%featurekeyvalue%"'
+              ||CHR(10)||'    FILTER (%featurekey%=%featurekeyvalue%)'
               ||CHR(10)||'    VALIDATION'
               ||CHR(10)||'      "user"                    "^.*"'
               ||CHR(10)||'      "pwd"                     "^.*"'
