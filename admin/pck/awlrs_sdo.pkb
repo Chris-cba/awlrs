@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.4   16 Mar 2017 11:13:24   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.5   05 Apr 2017 15:09:06   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   16 Mar 2017 11:13:24  $
-  --       Date fetched Out : $Modtime:   16 Mar 2017 11:12:50  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   05 Apr 2017 15:09:06  $
+  --       Date fetched Out : $Modtime:   05 Apr 2017 15:06:40  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -646,6 +646,7 @@ AS
     WITH themes AS(SELECT /*+ index(nm_themes_all nth_uk) */
                           nth_theme_id
                          ,nth_tolerance
+                         ,nt_type
                          ,nt_unique
                          ,un_unit_id
                          ,un_unit_name
@@ -670,6 +671,7 @@ AS
                       AND nt_length_unit = un_unit_id)
     SELECT /*+ index(nm_elements ne_pk) */
            element_id
+          ,element_network_type
           ,element_network_type_unique
           ,element_unique
           ,ne_descr element_description
@@ -677,6 +679,7 @@ AS
           ,distance_from_point
           ,element_length_unit_name
       FROM (SELECT a.ntd_pk_id element_id
+                  ,nt_type     element_network_type
                   ,nt_unique   element_network_type_unique
                   ,a.ntd_name  element_unique
                   ,nm3unit.get_formatted_value(a.ntd_measure,un_unit_id) element_offset
