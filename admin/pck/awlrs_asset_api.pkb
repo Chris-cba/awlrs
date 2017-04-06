@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.8   05 Apr 2017 19:02:54   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.9   06 Apr 2017 14:43:26   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   05 Apr 2017 19:02:54  $
-  --       Date fetched Out : $Modtime:   05 Apr 2017 18:02:58  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   06 Apr 2017 14:43:26  $
+  --       Date fetched Out : $Modtime:   06 Apr 2017 14:40:18  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -1747,7 +1747,7 @@ AS
             --unknown warning
             hig.raise_ner(pi_appl => 'NET'
                          ,pi_id   => 94
-                         ,pi_supplementary_info => l_warning_code);
+                         ,pi_supplementary_info => lv_warning_code);
         END IF;
     END IF;
     --
