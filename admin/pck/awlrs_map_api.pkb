@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.14   04 Apr 2017 23:45:34   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.15   10 Apr 2017 18:31:46   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   04 Apr 2017 23:45:34  $
-  --       Date fetched Out : $Modtime:   04 Apr 2017 23:43:12  $
-  --       Version          : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   10 Apr 2017 18:31:46  $
+  --       Date fetched Out : $Modtime:   10 Apr 2017 18:00:48  $
+  --       Version          : $Revision:   1.15  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -905,6 +905,17 @@ AS
   END get_node_layer;
 
   --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION is_node_layer(pi_feature_table IN nm_themes_all.nth_feature_table%TYPE)
+    RETURN BOOLEAN IS
+  BEGIN
+    --
+    RETURN (pi_feature_table LIKE 'V_NM_NO_%_SDO');
+    --
+  END is_node_layer;
+  
+  --
   -----------------------------------------------------------------------------
   --
   FUNCTION get_group_member_types(pi_ne_type    IN nm_elements_all.ne_type%TYPE
@@ -1043,7 +1054,8 @@ AS
     ---------------------------------------------------------------------------
     --
     FUNCTION get_theme_rule_cols(pi_theme_name IN VARCHAR2
-                                ,pi_pk_column  IN VARCHAR2)
+                                ,pi_pk_column  IN VARCHAR2
+                                ,pi_alias      IN VARCHAR2)
       RETURN VARCHAR2 IS
       --
       lt_columns nm3type.tab_varchar30;
@@ -1051,7 +1063,7 @@ AS
       --
     BEGIN
       --
-      SELECT DISTINCT theme_styles.label_column
+      SELECT DISTINCT pi_alias||theme_styles.label_column
         BULK COLLECT
         INTO lt_columns
         FROM user_sdo_themes themes
@@ -1084,14 +1096,15 @@ AS
     ---------------------------------------------------------------------------
     --
     FUNCTION get_theme_label_col(pi_theme_name IN VARCHAR2
-                                ,pi_pk_column  IN VARCHAR2)
+                                ,pi_pk_column  IN VARCHAR2
+                                ,pi_alias      IN VARCHAR2)
       RETURN VARCHAR2 IS
       --
       lv_retval VARCHAR2(100);
       --
     BEGIN
       --
-      SELECT theme_styles.label_column
+      SELECT pi_alias||theme_styles.label_column
         INTO lv_retval
         FROM user_sdo_themes themes
             ,XMLTABLE('/styling_rules/rule/label'
@@ -1224,9 +1237,23 @@ AS
       ||Get the style data from user_sdo_themes and user_sdo_styles.
       */
       lv_theme_extra_cols := get_theme_label_col(pi_theme_name => lt_themes(i).name
-                                                ,pi_pk_column  => lt_themes(i).nth_feature_pk_column)
+                                                ,pi_pk_column  => lt_themes(i).nth_feature_pk_column
+                                                ,pi_alias      => CASE lv_layer_network_element_type
+                                                                    WHEN 'S'
+                                                                     THEN
+                                                                        LOWER(lt_themes(i).nth_feature_table)||'.'
+                                                                    ELSE
+                                                                        NULL
+                                                                  END)
                            ||get_theme_rule_cols(pi_theme_name => lt_themes(i).name
-                                                ,pi_pk_column  => lt_themes(i).nth_feature_pk_column);
+                                                ,pi_pk_column  => lt_themes(i).nth_feature_pk_column
+                                                ,pi_alias      => CASE lv_layer_network_element_type
+                                                                    WHEN 'S'
+                                                                     THEN
+                                                                        LOWER(lt_themes(i).nth_feature_table)||'.'
+                                                                    ELSE
+                                                                        NULL
+                                                                  END);
       /*
       ||Determine whether a tooltip template is defined.
       */
