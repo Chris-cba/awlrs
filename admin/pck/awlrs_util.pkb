@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.13   16 Mar 2017 11:14:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.14   10 Apr 2017 18:30:32   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   16 Mar 2017 11:14:38  $
-  --       Date fetched Out : $Modtime:   16 Mar 2017 09:31:16  $
-  --       Version          : $Revision:   1.13  $
+  --       Date into PVCS   : $Date:   10 Apr 2017 18:30:32  $
+  --       Date fetched Out : $Modtime:   10 Apr 2017 18:29:58  $
+  --       Version          : $Revision:   1.14  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -492,6 +492,30 @@ AS
                         ,po_cursor           => po_message_cursor);
   END get_hig_option_values;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_preferred_lrm(po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT CAST(SYS_CONTEXT('NM3CORE','PREFERRED_LRM') AS VARCHAR2(10)) plrm
+      FROM dual
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_preferred_lrm;
+  
   --
   -----------------------------------------------------------------------------
   --

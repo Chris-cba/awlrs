@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.12   16 Mar 2017 11:14:34   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.13   10 Apr 2017 18:30:32   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   16 Mar 2017 11:14:34  $
-  --       Date fetched Out : $Modtime:   16 Mar 2017 09:31:16  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   10 Apr 2017 18:30:32  $
+  --       Date fetched Out : $Modtime:   10 Apr 2017 18:00:48  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -125,6 +125,13 @@ AS
                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
                                  ,po_message_cursor   OUT sys_refcursor
                                  ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_preferred_lrm(po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
