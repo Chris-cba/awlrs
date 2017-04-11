@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.7   08 Mar 2017 16:32:38   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.8   Apr 11 2017 07:52:34   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   08 Mar 2017 16:32:38  $
---       Date fetched Out : $Modtime:   08 Mar 2017 16:30:32  $
---       Version          : $Revision:   1.7  $
+--       Date into PVCS   : $Date:   Apr 11 2017 07:52:34  $
+--       Date fetched Out : $Modtime:   Apr 11 2017 07:50:48  $
+--       Version          : $Revision:   1.8  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 08-MAR-2017 16:30
+--       Generation Date  : 11-APR-2017 07:50
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -867,6 +867,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 46);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,47
+      ,null
+      ,'Group is circular, please select a start point'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 47);
 --
 ----------------------------------------------------------------------------------------
 --
