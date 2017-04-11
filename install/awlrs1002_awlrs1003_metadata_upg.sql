@@ -7,11 +7,11 @@
 --
 --  PVCS Identifiers :-
 --
---      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1002_awlrs1003_metadata_upg.sql-arc   1.0   08 Mar 2017 16:18:54   Mike.Huitson  $
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1002_awlrs1003_metadata_upg.sql-arc   1.1   Apr 11 2017 08:00:54   Peter.Bibby  $
 --      Module Name      : $Workfile:   awlrs1002_awlrs1003_metadata_upg.sql  $
---      Date into PVCS   : $Date:   08 Mar 2017 16:18:54  $
---      Date fetched Out : $Modtime:   08 Mar 2017 15:28:38  $
---      Version          : $Revision:   1.0  $
+--      Date into PVCS   : $Date:   Apr 11 2017 08:00:54  $
+--      Date fetched Out : $Modtime:   Apr 11 2017 07:58:54  $
+--      Version          : $Revision:   1.1  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
@@ -76,6 +76,29 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 46)
+/
+
+------------------------------------------------------------------
+SET TERM ON
+PROMPT Circular Start Error
+SET TERM OFF
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,47
+      ,null
+      ,'Group is circular, please select a start point'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 47)
 /
 
 ------------------------------------------------------------------
