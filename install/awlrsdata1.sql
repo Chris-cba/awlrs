@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.6   08 Mar 2017 16:32:38   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.7   Apr 11 2017 13:36:30   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   08 Mar 2017 16:32:38  $
---       Date fetched Out : $Modtime:   08 Mar 2017 16:30:32  $
---       Version          : $Revision:   1.6  $
+--       Date into PVCS   : $Date:   Apr 11 2017 13:36:30  $
+--       Date fetched Out : $Modtime:   Apr 11 2017 13:34:40  $
+--       Version          : $Revision:   1.7  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 08-MAR-2017 16:30
+--       Generation Date  : 11-APR-2017 13:34
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -56,7 +56,7 @@ SELECT 'AWLRS'
       ,'AW ALIM Linear Referencing Services'
       ,'1.0.0.0'
       ,''
-      ,null
+      ,65
       ,null
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
