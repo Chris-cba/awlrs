@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.16   23 Mar 2017 15:51:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.17   21 Apr 2017 13:16:18   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   23 Mar 2017 15:51:20  $
-  --       Date fetched Out : $Modtime:   23 Mar 2017 15:47:22  $
-  --       Version          : $Revision:   1.16  $
+  --       Date into PVCS   : $Date:   21 Apr 2017 13:16:18  $
+  --       Date fetched Out : $Modtime:   21 Apr 2017 13:11:16  $
+  --       Version          : $Revision:   1.17  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -273,19 +273,6 @@ AS
               ,pi_mem_begin_mp => pi_mem_begin_mp
               ,pi_mem_end_mp   => pi_mem_end_mp
               ,pi_start_date   => pi_start_date);
-    /*
-    ||If the Group Type is linear then update the shape so that there is
-    ||something to see in the map.
-    ||The user will need to execute resequence or rescale to be sure
-    ||that the shape is correct, this is just so that there is something
-    ||to see.
-    */
-    IF nm3net.is_gty_linear(p_gty => lr_group_ne.ne_gty_group_type) = 'Y'
-     THEN
-        nm3sdm.reshape_route(pi_ne_id          => pi_group_ne_id
-                            ,pi_effective_date => pi_start_date
-                            ,pi_use_history    => 'Y');
-    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -340,19 +327,6 @@ AS
                 ,pi_mem_end_mp   => pi_mem_end_mps(i)
                 ,pi_start_date   => pi_start_date);
     END LOOP;
-    /*
-    ||If the Group Type is linear then update the shape so that there is
-    ||something to see in the map.
-    ||The user will need to execute resequence or rescale to be sure
-    ||that the shape is correct, this is just so that there is something
-    ||to see.
-    */
-    IF nm3net.is_gty_linear(p_gty => lr_group_ne.ne_gty_group_type) = 'Y'
-     THEN
-        nm3sdm.reshape_route(pi_ne_id          => pi_group_ne_id
-                            ,pi_effective_date => pi_start_date
-                            ,pi_use_history    => 'Y');
-    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -474,19 +448,6 @@ AS
        AND nm_begin_mp = pi_old_mem_begin_mp
        AND nm_start_date = pi_mem_start_date
          ;
-    /*
-    ||If the Group Type is linear then update the shape so that there is
-    ||something to see in the map.
-    ||The user will need to execute resequence or rescale to be sure
-    ||that the shape is correct, this is just so that there is something
-    ||to see.
-    */
-    IF nm3net.is_gty_linear(p_gty => lr_group_ne.ne_gty_group_type) = 'Y'
-     THEN
-        nm3sdm.reshape_route(pi_ne_id          => pi_group_ne_id
-                            ,pi_effective_date => TRUNC(pi_effective_date)
-                            ,pi_use_history    => 'Y');
-    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -548,19 +509,6 @@ AS
      WHERE ne_id = pi_mem_ne_id
        AND ne_type = 'D'
          ;
-    /*
-    ||If the Group Type is linear then update the shape so that there is
-    ||something to see in the map.
-    ||The user will need to execute resequence or rescale to be sure
-    ||that the shape is correct, this is just so that there is something
-    ||to see.
-    */
-    IF nm3net.is_gty_linear(p_gty => lr_group_ne.ne_gty_group_type) = 'Y'
-     THEN
-        nm3sdm.reshape_route(pi_ne_id          => pi_group_ne_id
-                            ,pi_effective_date => TRUNC(pi_effective_date)
-                            ,pi_use_history    => 'Y');
-    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
