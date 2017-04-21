@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.23   17 Mar 2017 18:08:00   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.24   21 Apr 2017 13:08:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   17 Mar 2017 18:08:00  $
-  --       Date fetched Out : $Modtime:   17 Mar 2017 13:25:48  $
-  --       Version          : $Revision:   1.23  $
+  --       Date into PVCS   : $Date:   21 Apr 2017 13:08:38  $
+  --       Date fetched Out : $Modtime:   21 Apr 2017 11:53:00  $
+  --       Version          : $Revision:   1.24  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.23  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.24  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -307,13 +307,19 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_nt_flx_col_data(pi_ne_id                  IN  nm_elements.ne_id%TYPE
-                               ,pi_column_name            IN  nm_type_columns.ntc_column_name%TYPE
+  PROCEDURE get_nt_flx_col_data(pi_ne_id                  IN  nm_elements_all.ne_id%TYPE
+                               ,pi_column_name            IN  VARCHAR2
                                ,pi_prompt_text            IN  nm_type_columns.ntc_prompt%TYPE
                                ,pi_disp_validation_errors IN  BOOLEAN DEFAULT FALSE
                                ,po_value                  OUT VARCHAR2
                                ,po_meaning                OUT VARCHAR2)
     IS
+    --
+    lv_query_txt VARCHAR2(100) := 'SELECT '|| pi_column_name || ', ne_nt_type FROM nm_elements_all WHERE ne_id = :ne_id';
+    --
+    lv_nt_type  nm_types.nt_type%TYPE;
+    lv_ne_id    nm_elements_all.ne_id%TYPE;
+    --
     --
     e_col_mandatory EXCEPTION;
     PRAGMA EXCEPTION_INIT(e_col_mandatory, -20602);
@@ -356,10 +362,14 @@ AS
     --
   BEGIN
     --
-    nm3flx.get_flx_col_data(pi_ne_id       => pi_ne_id
-                           ,pi_column_name => pi_column_name
-                           ,po_value       => po_value
-                           ,po_meaning     => po_meaning);
+    EXECUTE IMMEDIATE lv_query_txt INTO po_value, lv_nt_type USING pi_ne_id;
+    --
+    po_meaning := po_value;
+    --
+    nm3flx.validate_flex_column(pi_nt_type     => lv_nt_type
+                               ,pi_column_name => pi_column_name
+                               ,po_value       => po_meaning
+                               ,po_ne_id       => lv_ne_id);
     --
   EXCEPTION
     WHEN e_col_mandatory
