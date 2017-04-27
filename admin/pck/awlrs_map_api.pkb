@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.15   10 Apr 2017 18:31:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.16   Apr 27 2017 11:18:40   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   10 Apr 2017 18:31:46  $
-  --       Date fetched Out : $Modtime:   10 Apr 2017 18:00:48  $
-  --       Version          : $Revision:   1.15  $
+  --       Date into PVCS   : $Date:   Apr 27 2017 11:18:40  $
+  --       Date fetched Out : $Modtime:   Apr 21 2017 13:19:26  $
+  --       Version          : $Revision:   1.16  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -123,6 +123,12 @@ AS
           ,(SELECT nit_multiple_allowed
               FROM nm_inv_types_all
              WHERE nit_inv_type = nith_nit_id) multiple_locs_allowed
+          ,(SELECT nit_top
+              FROM nm_inv_types_all
+             WHERE nit_inv_type = nith_nit_id) top_of_hierarchy
+          ,(SELECT itg_relation
+              FROM nm_inv_type_groupings
+             WHERE itg_inv_type = nith_nit_id) hierarchy_relation              
           ,CASE
              WHEN nw_themes.network_type IS NOT NULL
               THEN
@@ -966,7 +972,62 @@ AS
     RETURN lv_retval;
     --
   END get_group_member_types;
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_child_inv_types(pi_inv_type    IN nm_inv_items_all.iit_inv_type%TYPE)
+    RETURN VARCHAR2 IS
+    --
+    lt_types  nm3type.tab_varchar30;
+    lv_retval  nm3type.max_varchar2;
+    --
+    CURSOR get_child_inv_types
+        IS
+    SELECT nit_inv_type
+      FROM nm_inv_types
+     WHERE nit_table_name IS NULL
+       AND nit_update_allowed = 'Y'
+       AND EXISTS (SELECT 1
+                     FROM hig_user_roles ur
+                         ,nm_inv_type_roles ir
+                         ,nm_user_aus usr
+                         ,nm_admin_units au
+                         ,nm_admin_groups nag
+                         ,hig_users hus
+                    WHERE hus.hus_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME')
+                      AND ur.hur_role = ir.itr_hro_role
+                      AND ur.hur_username = hus.hus_username
+                      AND ir.itr_inv_type = nit_inv_type
+                      AND usr.nua_admin_unit = au.nau_admin_unit
+                      AND au.nau_admin_unit = nag_child_admin_unit
+                      AND au.nau_admin_type = nit_admin_type
+                      AND usr.nua_admin_unit = nag_parent_admin_unit
+                      AND usr.nua_user_id = hus.hus_user_id)
+       AND nit_inv_type IN (SELECT itg_inv_type
+                              FROM nm_inv_type_groupings
+                             WHERE itg_parent_inv_type = pi_inv_type
+                               AND itg_inv_type != pi_inv_type)                      
+     ORDER BY nit_inv_type
+         ;
 
+    --
+  BEGIN
+    --
+    OPEN  get_child_inv_types;
+    FETCH get_child_inv_types
+     BULK COLLECT
+     INTO lt_types;
+    CLOSE get_child_inv_types;
+    --
+    FOR i IN 1..lt_types.COUNT LOOP
+      --
+      lv_retval := lv_retval||CASE WHEN i > 1 THEN ',' ELSE NULL END||lt_types(i);
+      --
+    END LOOP;
+    --
+    RETURN lv_retval;
+    --
+  END get_child_inv_types;
   --
   -----------------------------------------------------------------------------
   --
@@ -1043,6 +1104,9 @@ AS
     lv_layer_asset_type            nm_inv_types_all.nit_inv_type%TYPE;
     lv_layer_asset_loc_types       nm3type.max_varchar2;
     lv_layer_multiple_locs_allowed nm_inv_types.nit_multiple_allowed%TYPE;
+    lv_layer_top_of_hierarchy      nm_inv_types.nit_top%TYPE;
+    lv_layer_hierarchy_relation    nm_inv_type_groupings.itg_relation%TYPE;
+    lv_layer_child_inv_types       nm3type.max_varchar2;
     lv_layer_show_in_map           VARCHAR2(10);
     lv_displayed_on_startup        VARCHAR2(10);
     lv_displayed_in_legend         VARCHAR2(10);
@@ -1196,6 +1260,9 @@ AS
           lv_layer_units := lt_theme_types(1).unit_id;
           lv_layer_asset_type := lt_theme_types(1).asset_type;
           lv_layer_multiple_locs_allowed := lt_theme_types(1).multiple_locs_allowed;
+          lv_layer_top_of_hierarchy := lt_theme_types(1).top_of_hierarchy;
+          lv_layer_hierarchy_relation := lt_theme_types(1).hierarchy_relation;
+          lv_layer_child_inv_types := get_child_inv_types(pi_inv_type => lt_theme_types(1).asset_type);
           lv_layer_asset_loc_types := get_asset_loc_types(pi_inv_type => lt_theme_types(1).asset_type);
           lv_layer_editable := NVL(lt_theme_types(1).editable,'N');
       ELSE
@@ -1212,6 +1279,9 @@ AS
           lv_layer_units := NULL;
           lv_layer_asset_type := NULL;
           lv_layer_multiple_locs_allowed := NULL;
+          lv_layer_top_of_hierarchy := NULL;
+          lv_layer_hierarchy_relation := NULL;
+          lv_layer_child_inv_types := NULL;
           lv_layer_asset_loc_types := NULL;
           lv_layer_editable := 'N';
       END IF;
@@ -1426,6 +1496,21 @@ AS
          THEN
             lv_layer_text := lv_layer_text||CHR(10)||'      "multiple_locs_allowed"       "'||lv_layer_multiple_locs_allowed||'"';
         END IF;
+        --
+        IF lv_layer_top_of_hierarchy IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "top_of_hierarchy"            "'||lv_layer_top_of_hierarchy||'"';
+        END IF;    
+        --
+        IF lv_layer_hierarchy_relation IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "hierarchy_relation"          "'||lv_layer_hierarchy_relation||'"';
+        END IF;    
+        --
+        IF lv_layer_child_inv_types IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "child_inv_types"             "'||lv_layer_child_inv_types||'"';
+        END IF;          
         --
         lv_layer_text := lv_layer_text
 
