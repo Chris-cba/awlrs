@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.9   06 Apr 2017 14:43:26   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.10   Apr 27 2017 11:21:30   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   06 Apr 2017 14:43:26  $
-  --       Date fetched Out : $Modtime:   06 Apr 2017 14:40:18  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   Apr 27 2017 11:21:30  $
+  --       Date fetched Out : $Modtime:   Apr 26 2017 15:52:06  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -261,6 +261,88 @@ AS
                                          ,po_cursor           => po_message_cursor);
     --
   END get_asset_types;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_child_asset_types(pi_parent_type      IN  nm_inv_types_all.nit_inv_type%TYPE
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT nit_inv_type
+          ,nit_descr
+          ,nit_x_sect_allow_flag
+          ,nit_admin_type
+          ,nit_contiguous
+          ,nit_update_allowed
+          ,nit_top
+          ,nit_category
+      FROM nm_inv_types
+     WHERE nit_table_name IS NULL
+       AND nit_update_allowed = 'Y'
+       AND EXISTS (SELECT 1
+                     FROM hig_user_roles ur
+                         ,nm_inv_type_roles ir
+                         ,nm_user_aus usr
+                         ,nm_admin_units au
+                         ,nm_admin_groups nag
+                         ,hig_users hus
+                    WHERE hus.hus_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME')
+                      AND ur.hur_role = ir.itr_hro_role
+                      AND ur.hur_username = hus.hus_username
+                      AND ir.itr_inv_type = nit_inv_type
+                      AND usr.nua_admin_unit = au.nau_admin_unit
+                      AND au.nau_admin_unit = nag_child_admin_unit
+                      AND au.nau_admin_type = nit_admin_type
+                      AND usr.nua_admin_unit = nag_parent_admin_unit
+                      AND usr.nua_user_id = hus.hus_user_id)
+       AND nit_inv_type IN (SELECT itg_inv_type
+                              FROM nm_inv_type_groupings
+                             WHERE itg_parent_inv_type = pi_parent_type
+                               AND itg_inv_type != pi_parent_type)                      
+     ORDER BY nit_inv_type
+         ;
+     --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  END get_child_asset_types;  
+  --
+  -----------------------------------------------------------------------------
+  --  
+  FUNCTION get_attrib_value(pi_inv_type IN nm_inv_items.iit_inv_type%TYPE
+                           ,pi_ne_id IN NM_INV_ITEMS.iit_ne_id%TYPE
+                           ,pi_attrib_name IN NM_INV_TYPE_ATTRIBS.ita_attrib_name%TYPE)
+    RETURN VARCHAR2 IS
+    --
+    lr_nit    nm_inv_types_all%ROWTYPE;
+    lv_sql    nm3type.max_varchar2;
+    lv_value  nm3type.max_varchar2;        
+    --
+  BEGIN
+    --
+    lr_nit := nm3get.get_nit(pi_inv_type);
+    --
+    IF lr_nit.nit_table_name IS NOT NULL
+     THEN
+       lv_sql := 'SELECT ' ||pi_attrib_name||' '
+              ||CHR(10)||'  FROM  '||lr_nit.nit_table_name
+              ||CHR(10)||'  WHERE '||lr_nit.nit_foreign_pk_column||' = :p1'
+       ;
+       --       
+       EXECUTE IMMEDIATE lv_sql INTO lv_value USING pi_ne_id;
+       --
+    ELSE
+       lv_value := nm3inv.get_attrib_value(p_ne_id       => pi_ne_id
+                                          ,p_attrib_name => pi_attrib_name);    
+    END IF;
+    --
+    RETURN lv_value;
+    --
+  END get_attrib_value;  
 
   --
   -----------------------------------------------------------------------------
@@ -301,27 +383,57 @@ AS
     IS
     --
     lr_iit nm_inv_items_all%ROWTYPE;
+    lr_nit  nm_inv_types_all%ROWTYPE;
+    lv_sql    nm3type.max_varchar2;  
     --
   BEGIN
     --
-    lr_iit := get_asset(pi_iit_ne_id    => pi_iit_ne_id
-                       ,pi_nit_inv_type => pi_iit_inv_type);
-    --
-    OPEN po_cursor FOR
-    SELECT iit_ne_id
-          ,iit_inv_type
-          ,iit_primary_key
-          ,iit_x_sect
-          ,iit_descr
-          ,nm3user.get_username(iit_peo_invent_by_id)
-          ,iit_admin_unit
-          ,nm3inv.get_nit_descr(iit_inv_type)
-          ,iit_start_date
-          ,iit_end_date
-          ,iit_note
-      FROM nm_inv_items iit
-     WHERE iit.iit_ne_id = pi_iit_ne_id
-         ;
+    /*
+    ||Get the asset type data.
+    */
+    lr_nit := nm3get.get_nit(pi_iit_inv_type);
+    -- 
+    IF lr_nit.nit_table_name IS NOT NULL
+     THEN
+        lv_sql := 'SELECT '||lr_nit.nit_foreign_pk_column||' ne_id,'
+       ||CHR(10)||'       '||nm3flx.string(lr_nit.nit_inv_type)||' inv_type,'
+       ||CHR(10)||'       '||lr_nit.nit_foreign_pk_column||' primary_key,'
+       ||CHR(10)||'       NULL xsp,'
+       ||CHR(10)||'       NULL description,'
+       ||CHR(10)||'       NULL identified_by,'
+       ||CHR(10)||'       NULL admin_unit,'
+       ||CHR(10)||'       nm3inv.get_nit_descr(:p1)  asset_type_description,'
+       ||CHR(10)||'       NULL start_date,'
+       ||CHR(10)||'       NULL end_date,'
+       ||CHR(10)||'       NULL note'
+       ||CHR(10)||'  FROM  '||lr_nit.nit_table_name
+       ||CHR(10)||'  WHERE '||lr_nit.nit_foreign_pk_column||' = :p2'
+        ;
+        --
+        OPEN po_cursor FOR lv_sql USING lr_nit.nit_inv_type, pi_iit_ne_id;
+        --
+    ELSE
+       --
+       lr_iit := get_asset(pi_iit_ne_id    => pi_iit_ne_id
+                          ,pi_nit_inv_type => pi_iit_inv_type);
+       --
+       OPEN po_cursor FOR
+       SELECT iit_ne_id                                     ne_id
+             ,iit_inv_type                                  inv_type
+             ,iit_primary_key                               primary_key
+             ,iit_x_sect                                    xsp
+             ,iit_descr                                     description
+             ,nm3user.get_username(iit_peo_invent_by_id)    identified_by
+             ,iit_admin_unit                                admin_unit
+             ,nm3inv.get_nit_descr(iit_inv_type)            asset_type_description
+             ,iit_start_date                                start_date
+             ,iit_end_date                                  end_date
+             ,iit_note                                      note
+         FROM nm_inv_items iit
+        WHERE iit.iit_ne_id = pi_iit_ne_id
+            ;
+       --
+    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -547,7 +659,7 @@ AS
           ,field_case
           ,CAST(domain_id AS VARCHAR2(40)) domain_id
           ,CAST(domain_bind_column AS VARCHAR2(30)) domain_bind_column
-          ,CAST(char_value AS VARCHAR2(240)) char_value
+          ,CAST(char_value AS VARCHAR2(240)) char_value          
           ,required
           ,updateable
       FROM (SELECT ita_attrib_name   column_name
@@ -574,8 +686,9 @@ AS
                   ,ita_case          field_case
                   ,ita_id_domain     domain_id
                   ,NULL              domain_bind_column
-                  ,nm3inv.get_attrib_value(p_ne_id       => pi_iit_ne_id
-                                          ,p_attrib_name => ita_attrib_name) char_value
+                  ,awlrs_asset_api.get_attrib_value(pi_inv_type    => pi_inv_type
+                                                   ,pi_ne_id       => pi_iit_ne_id
+                                                   ,pi_attrib_name => ita_attrib_name) char_value                                          
                   ,ita_mandatory_yn  required
                   ,'Y'               updateable
                   ,ita_disp_seq_no   seq_no
@@ -1986,5 +2099,52 @@ AS
                                    ,po_cursor           => po_message_cursor);
   END asset_close;
   --
+  -----------------------------------------------------------------------------
+  --
+  
+  FUNCTION is_child_asset_type	(pi_inv_type IN nm_inv_types.nit_inv_type%TYPE) 
+   RETURN BOOLEAN IS
+    --
+  BEGIN
+    --
+    RETURN pi_inv_type <> nm3inv.get_top_item_type(pi_inv_type) AND nm3inv.get_itg(pi_inv_type => pi_inv_type).itg_relation <> 'DERIVED';
+    --
+  END is_child_asset_type;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_groupings(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor
+                         ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT iig_top_id    toplevelid
+            ,nm3inv.get_inv_type(iig_top_id)||' '||iig_top_id  toplevellabel
+            ,iig_item_id   itemid
+            ,nm3inv.get_inv_type(iig_item_id)||' '||iig_item_id  itemlevellabel
+            ,iig_parent_id parentid 
+            ,nm3inv.get_inv_type(iig_parent_id)||' '||iig_parent_id  parentlevellabel
+        FROM nm_inv_item_groupings
+       WHERE iig_top_id = nm3inv.get_top_item_id(pi_iit_ne_id) 
+         AND TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+             >= NVL(iig_start_date,TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY'))
+         AND TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+             <= NVL(iig_end_date,TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY'));
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_groupings;
+  
 END awlrs_asset_api;
 /
