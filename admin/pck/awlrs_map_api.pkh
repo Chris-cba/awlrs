@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.7   Feb 24 2017 15:39:28   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.8   Apr 27 2017 11:18:38   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkh  $
-  --       Date into PVCS   : $Date:   Feb 24 2017 15:39:28  $
-  --       Date fetched Out : $Modtime:   Feb 24 2017 15:23:26  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   Apr 27 2017 11:18:38  $
+  --       Date fetched Out : $Modtime:   Apr 21 2017 09:26:32  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
   --
   TYPE theme_types_rec IS RECORD(admin_type                   nm_au_types.nat_admin_type%TYPE
                                 ,network_type                 nm_types.nt_type%TYPE
@@ -26,6 +26,8 @@ AS
                                 ,unit_id                      nm_units.un_unit_id%TYPE
                                 ,asset_type                   nm_inv_types_all.nit_inv_type%TYPE
                                 ,multiple_locs_allowed        nm_inv_types_all.nit_multiple_allowed%TYPE
+                                ,top_of_hierarchy             nm_inv_types_all.nit_top%TYPE
+                                ,hierarchy_relation           nm_inv_type_groupings.itg_relation%TYPE
                                 ,editable                     VARCHAR2(1));
   TYPE theme_types_tab IS TABLE OF theme_types_rec INDEX BY BINARY_INTEGER;
   --
