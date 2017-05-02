@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.16   Apr 27 2017 11:18:40   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.17   02 May 2017 18:57:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Apr 27 2017 11:18:40  $
-  --       Date fetched Out : $Modtime:   Apr 21 2017 13:19:26  $
-  --       Version          : $Revision:   1.16  $
+  --       Date into PVCS   : $Date:   02 May 2017 18:57:22  $
+  --       Date fetched Out : $Modtime:   02 May 2017 18:02:30  $
+  --       Version          : $Revision:   1.17  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -1068,7 +1068,8 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION generate_layers(pi_definition IN CLOB)
+  FUNCTION generate_layers(pi_definition     IN CLOB
+                          ,pi_effective_date IN DATE DEFAULT NULL)
     RETURN clob_tab IS
     --
     lt_layer_text clob_tab;
@@ -1114,6 +1115,7 @@ AS
     lv_tooltip_template_defined    BOOLEAN;
     lv_tooltip_columns             nm3type.max_varchar2;
     lv_gtype_restriction           VARCHAR2(100);
+    lv_where_and                   VARCHAR2(10) := ' WHERE ';
     --
     ---------------------------------------------------------------------------
     --
@@ -1400,6 +1402,8 @@ AS
             lv_gtype_restriction := NULL;
         END IF;
         --
+        lv_where_and := ' WHERE ';
+        --
         lv_layer_text := '  LAYER'
               ||CHR(10)||'    NAME "'||lv_name||'"'
         ;
@@ -1513,7 +1517,6 @@ AS
         END IF;          
         --
         lv_layer_text := lv_layer_text
-
               ||CHR(10)||'      "is_editable"                 "'||lv_layer_editable||'"'
               ||CHR(10)||'      "show_in_map"                 "'||lv_layer_show_in_map||'"'
               ||CHR(10)||'      "displayed_at_startup"        "'||lv_displayed_on_startup||'"'
@@ -1540,15 +1543,27 @@ AS
             lv_layer_text := lv_layer_text||', datum_lookup.ne_no_start start_node, datum_lookup.ne_no_end end_node';
         END IF;
         --
-        lv_layer_text := lv_layer_text||', '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM '||LOWER(lt_themes(i).nth_feature_table)||' '||LOWER(lt_themes(i).nth_feature_table)
-                       ||CASE
-                           WHEN lv_layer_network_element_type = 'S'
-                            THEN
-                               ' , nm_elements_all datum_lookup WHERE datum_lookup.ne_id = '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_pk_column)||CASE WHEN lv_gtype_restriction IS NOT NULL THEN ' AND '||lv_gtype_restriction ELSE NULL END
-                           ELSE
-                               CASE WHEN lv_gtype_restriction IS NOT NULL THEN ' WHERE '||lv_gtype_restriction ELSE NULL END
-                         END
-                       ||') USING UNIQUE '||lt_themes(i).nth_feature_pk_column||lv_using_srid||'"'
+        lv_layer_text := lv_layer_text||', '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM '||LOWER(lt_themes(i).nth_feature_table)||' '||LOWER(lt_themes(i).nth_feature_table);
+        --
+        IF lv_layer_network_element_type = 'S'
+         THEN
+            lv_layer_text := lv_layer_text||', nm_elements_all datum_lookup WHERE datum_lookup.ne_id = '||LOWER(lt_themes(i).nth_feature_table)||'.'||LOWER(lt_themes(i).nth_feature_pk_column);
+            lv_where_and := ' AND ';
+        END IF;
+        --
+        IF lv_gtype_restriction IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||lv_where_and||lv_gtype_restriction;
+            lv_where_and := ' AND ';
+        END IF;
+        --
+        IF pi_effective_date IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||lv_where_and||'awlrs_util.set_effective_date(TO_DATE('''||TO_CHAR(TRUNC(pi_effective_date),'DD-MM-YYYY')||''',''DD-MM-YYYY'')) = 1';
+            lv_where_and := ' AND ';
+        END IF;
+        --
+        lv_layer_text := lv_layer_text||') USING UNIQUE '||lt_themes(i).nth_feature_pk_column||lv_using_srid||'"'
               ||CHR(10)||'    FILTER (%featurekey%=%featurekeyvalue%)'
               ||CHR(10)||'    VALIDATION'
               ||CHR(10)||'      "user"                    "^.*"'
@@ -1599,8 +1614,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION generate_map_file(pi_map_name IN  VARCHAR2
-                            ,pi_proj_lib IN VARCHAR2)
+  FUNCTION generate_map_file(pi_map_name       IN VARCHAR2
+                            ,pi_proj_lib       IN VARCHAR2
+                            ,pi_effective_date IN DATE DEFAULT NULL)
     RETURN CLOB IS
     --
     lv_retval  CLOB;
@@ -1626,7 +1642,8 @@ AS
     ||Get the layer details.
     */
     lt_wms_layers := generate_wms_layers(pi_definition => lr_usm.definition);
-    lt_layers := generate_layers(pi_definition => lr_usm.definition);
+    lt_layers := generate_layers(pi_definition     => lr_usm.definition
+                                ,pi_effective_date => pi_effective_date);
     /*
     ||Create the wms_srs text.
     */
@@ -1776,6 +1793,7 @@ AS
   --
   PROCEDURE get_map_file(pi_map_name         IN  VARCHAR2
                         ,pi_proj_lib         IN  VARCHAR2
+                        ,pi_effective_date   IN  DATE DEFAULT NULL
                         ,po_message_severity OUT hig_codes.hco_code%TYPE
                         ,po_message_cursor   OUT sys_refcursor
                         ,po_cursor           OUT sys_refcursor)
@@ -1784,8 +1802,9 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT awlrs_map_api.generate_map_file(pi_map_name => pi_map_name
-                                        ,pi_proj_lib => pi_proj_lib)
+    SELECT awlrs_map_api.generate_map_file(pi_map_name       => pi_map_name
+                                          ,pi_proj_lib       => pi_proj_lib
+                                          ,pi_effective_date => pi_effective_date)
       FROM dual
          ;
     --

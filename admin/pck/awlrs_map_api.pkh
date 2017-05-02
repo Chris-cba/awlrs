@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.8   Apr 27 2017 11:18:38   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.9   02 May 2017 18:57:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkh  $
-  --       Date into PVCS   : $Date:   Apr 27 2017 11:18:38  $
-  --       Date fetched Out : $Modtime:   Apr 21 2017 09:26:32  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   02 May 2017 18:57:22  $
+  --       Date fetched Out : $Modtime:   02 May 2017 17:36:18  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
   --
   TYPE theme_types_rec IS RECORD(admin_type                   nm_au_types.nat_admin_type%TYPE
                                 ,network_type                 nm_types.nt_type%TYPE
@@ -113,8 +113,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION generate_map_file(pi_map_name IN VARCHAR2
-                            ,pi_proj_lib IN VARCHAR2)
+  FUNCTION generate_map_file(pi_map_name       IN VARCHAR2
+                            ,pi_proj_lib       IN VARCHAR2
+                            ,pi_effective_date IN DATE DEFAULT NULL)
     RETURN CLOB;
 
   --
@@ -122,6 +123,7 @@ AS
   --
   PROCEDURE get_map_file(pi_map_name         IN  VARCHAR2
                         ,pi_proj_lib         IN  VARCHAR2
+                        ,pi_effective_date   IN  DATE DEFAULT NULL
                         ,po_message_severity OUT hig_codes.hco_code%TYPE
                         ,po_message_cursor   OUT sys_refcursor
                         ,po_cursor           OUT sys_refcursor);
