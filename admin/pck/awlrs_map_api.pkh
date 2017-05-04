@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.9   02 May 2017 18:57:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.10   04 May 2017 13:41:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkh  $
-  --       Date into PVCS   : $Date:   02 May 2017 18:57:22  $
-  --       Date fetched Out : $Modtime:   02 May 2017 17:36:18  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   04 May 2017 13:41:50  $
+  --       Date fetched Out : $Modtime:   04 May 2017 10:15:56  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
   --
   TYPE theme_types_rec IS RECORD(admin_type                   nm_au_types.nat_admin_type%TYPE
                                 ,network_type                 nm_types.nt_type%TYPE
@@ -25,6 +25,7 @@ AS
                                 ,node_type                    nm_types.nt_node_type%TYPE
                                 ,unit_id                      nm_units.un_unit_id%TYPE
                                 ,asset_type                   nm_inv_types_all.nit_inv_type%TYPE
+                                ,ft_asset_type                VARCHAR2(1)
                                 ,multiple_locs_allowed        nm_inv_types_all.nit_multiple_allowed%TYPE
                                 ,top_of_hierarchy             nm_inv_types_all.nit_top%TYPE
                                 ,hierarchy_relation           nm_inv_type_groupings.itg_relation%TYPE
@@ -157,6 +158,63 @@ AS
                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
                                  ,po_message_cursor   OUT sys_refcursor
                                  ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE save_map_config(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                           ,pi_name             IN  awlrs_saved_map_configs.asmc_name%TYPE
+                           ,pi_data             IN  awlrs_saved_map_configs.asmc_data%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_map_config(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                             ,pi_name             IN  awlrs_saved_map_configs.asmc_name%TYPE
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_map_config(pi_id               IN  awlrs_saved_map_configs.asmc_id%TYPE
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_map_config_data(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                               ,pi_name             IN  awlrs_saved_map_configs.asmc_name%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_map_config_data(pi_id               IN  awlrs_saved_map_configs.asmc_id%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_map_configs(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_map_configs_with_data(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor);
 
 --
 -----------------------------------------------------------------------------
