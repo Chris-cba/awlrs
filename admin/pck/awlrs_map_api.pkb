@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.17   02 May 2017 18:57:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.18   04 May 2017 13:41:42   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   02 May 2017 18:57:22  $
-  --       Date fetched Out : $Modtime:   02 May 2017 18:02:30  $
-  --       Version          : $Revision:   1.17  $
+  --       Date into PVCS   : $Date:   04 May 2017 13:41:42  $
+  --       Date fetched Out : $Modtime:   04 May 2017 10:47:56  $
+  --       Version          : $Revision:   1.18  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -105,9 +105,7 @@ AS
                  nw_themes.admin_type
              WHEN nith_nit_id IS NOT NULL
               THEN
-                 (SELECT nit_admin_type
-                    FROM nm_inv_types_all
-                   WHERE nit_inv_type = nith_nit_id)
+                 nit_admin_type
              ELSE
                  NULL
            END admin_type
@@ -120,12 +118,9 @@ AS
           ,nw_themes.node_type
           ,nw_themes.unit_id
           ,nith_nit_id asset_type
-          ,(SELECT nit_multiple_allowed
-              FROM nm_inv_types_all
-             WHERE nit_inv_type = nith_nit_id) multiple_locs_allowed
-          ,(SELECT nit_top
-              FROM nm_inv_types_all
-             WHERE nit_inv_type = nith_nit_id) top_of_hierarchy
+          ,CASE WHEN nit_table_name IS NOT NULL THEN 'Y' ELSE 'N' END ft_asset_type
+          ,nit_multiple_allowed multiple_locs_allowed
+          ,nit_top top_of_hierarchy
           ,(SELECT itg_relation
               FROM nm_inv_type_groupings
              WHERE itg_inv_type = nith_nit_id) hierarchy_relation              
@@ -152,7 +147,7 @@ AS
              WHEN nith_nit_id IS NOT NULL
               THEN
                  (SELECT 'Y' editable
-                    FROM nm_inv_types_all
+                    FROM dual
                    WHERE nit_inv_type = nith_nit_id
                      AND nit_update_allowed = 'Y'
                      AND nit_table_name IS NULL
@@ -181,7 +176,9 @@ AS
              ELSE
                  NULL
            END is_editable
-      FROM nm_inv_themes
+      FROM nm_themes_all
+          ,nm_inv_themes
+          ,nm_inv_types_all
           ,(SELECT nt_admin_type     admin_type
                   ,nlt_nt_type       network_type
                   ,CASE
@@ -249,10 +246,10 @@ AS
                AND nt_type = nti_nw_parent_type(+)
                AND nt_length_unit = un_unit_id(+)
                AND nat_gty_group_type = ngt_group_type) nw_themes
-          ,nm_themes_all
      WHERE nth_theme_name = pi_theme_name
        AND nth_theme_id = nw_themes.theme_id(+)
        AND nth_theme_id = nith_nth_theme_id(+)
+       AND nith_nit_id = nit_inv_type(+)
          ;
     --
   END get_theme_types;
@@ -1103,6 +1100,7 @@ AS
     lv_layer_node_type             nm_types.nt_node_type%TYPE;
     lv_layer_node_layer            nm_themes_all.nth_theme_name%TYPE;
     lv_layer_asset_type            nm_inv_types_all.nit_inv_type%TYPE;
+    lv_layer_ft_asset_type         VARCHAR2(1);
     lv_layer_asset_loc_types       nm3type.max_varchar2;
     lv_layer_multiple_locs_allowed nm_inv_types.nit_multiple_allowed%TYPE;
     lv_layer_top_of_hierarchy      nm_inv_types.nit_top%TYPE;
@@ -1261,6 +1259,7 @@ AS
           END IF;
           lv_layer_units := lt_theme_types(1).unit_id;
           lv_layer_asset_type := lt_theme_types(1).asset_type;
+          lv_layer_ft_asset_type := lt_theme_types(1).ft_asset_type;
           lv_layer_multiple_locs_allowed := lt_theme_types(1).multiple_locs_allowed;
           lv_layer_top_of_hierarchy := lt_theme_types(1).top_of_hierarchy;
           lv_layer_hierarchy_relation := lt_theme_types(1).hierarchy_relation;
@@ -1280,6 +1279,7 @@ AS
           lv_layer_node_layer := NULL;
           lv_layer_units := NULL;
           lv_layer_asset_type := NULL;
+          lv_layer_ft_asset_type := NULL;
           lv_layer_multiple_locs_allowed := NULL;
           lv_layer_top_of_hierarchy := NULL;
           lv_layer_hierarchy_relation := NULL;
@@ -1489,6 +1489,11 @@ AS
         IF lv_layer_asset_type IS NOT NULL
          THEN
             lv_layer_text := lv_layer_text||CHR(10)||'      "asset_type"                  "'||lv_layer_asset_type||'"';
+        END IF;
+        --
+        IF lv_layer_asset_type IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "ft_asset_type"               "'||lv_layer_ft_asset_type||'"';
         END IF;
         --
         IF lv_layer_asset_loc_types IS NOT NULL
@@ -2993,6 +2998,220 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_tooltip_templates;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE save_map_config(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                           ,pi_name             IN  awlrs_saved_map_configs.asmc_name%TYPE
+                           ,pi_data             IN  awlrs_saved_map_configs.asmc_data%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    MERGE INTO awlrs_saved_map_configs asmc
+      USING (SELECT SYS_CONTEXT('NM3CORE', 'USER_ID') user_id
+                   ,pi_product param_product
+                   ,pi_name param_name
+                   ,pi_data param_data
+               FROM dual) param
+         ON (asmc.asmc_product = param.param_product
+             AND asmc.asmc_name = param.param_name
+             AND asmc.asmc_user_id = param.user_id)
+      WHEN MATCHED
+       THEN
+          UPDATE SET asmc.asmc_data = param.param_data
+      WHEN NOT MATCHED
+       THEN
+          INSERT(asmc_id
+                ,asmc_user_id
+                ,asmc_product
+                ,asmc_name
+                ,asmc_data)
+          VALUES(asmc_id_seq.NEXTVAL
+                ,param.user_id
+                ,param.param_product
+                ,param.param_name
+                ,param.param_data)
+    ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        ROLLBACK;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END save_map_config;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_map_config(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                             ,pi_name             IN  awlrs_saved_map_configs.asmc_name%TYPE
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    DELETE awlrs_saved_map_configs
+     WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
+       AND asmc_product = pi_product
+       AND asmc_name = pi_name
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        ROLLBACK;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_map_config;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_map_config(pi_id               IN  awlrs_saved_map_configs.asmc_id%TYPE
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    DELETE awlrs_saved_map_configs
+     WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
+       AND asmc_id = pi_id
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        ROLLBACK;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_map_config;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_map_config_data(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                               ,pi_name             IN  awlrs_saved_map_configs.asmc_name%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT asmc_data
+      FROM awlrs_saved_map_configs
+     WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
+       AND asmc_product = pi_product
+       AND asmc_name = pi_name
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_map_config_data;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_map_config_data(pi_id               IN  awlrs_saved_map_configs.asmc_id%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT asmc_data
+      FROM awlrs_saved_map_configs
+     WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
+       AND asmc_id = pi_id
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_map_config_data;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_map_configs(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT asmc_id
+          ,asmc_name
+      FROM awlrs_saved_map_configs
+     WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
+       AND asmc_product = pi_product
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_map_configs;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_map_configs_with_data(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT asmc_id
+          ,asmc_name
+          ,asmc_data
+      FROM awlrs_saved_map_configs
+     WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
+       AND asmc_product = pi_product
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_map_configs_with_data;
+
 --
 -----------------------------------------------------------------------------
 --
