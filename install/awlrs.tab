@@ -1,15 +1,15 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.4   04 May 2017 11:24:12   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.5   04 May 2017 12:24:04   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.tab  $
---       Date into PVCS   : $Date:   04 May 2017 11:24:12  $
---       Date fetched Out : $Modtime:   04 May 2017 11:21:02  $
---       Version          : $Revision:   1.4  $
+--       Date into PVCS   : $Date:   04 May 2017 12:24:04  $
+--       Date fetched Out : $Modtime:   04 May 2017 12:22:28  $
+--       Version          : $Revision:   1.5  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Thu May 04  11:01:23 2017 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Thu May 04  12:19:37 2017 by Server Generator 10.1.2.9.28
 
 PROMPT Creating Table 'AWLRS_PERSISTENCE'
 CREATE TABLE AWLRS_PERSISTENCE
@@ -35,7 +35,7 @@ CREATE TABLE AWLRS_SAVED_MAP_CONFIGS
  ,ASMC_USER_ID NUMBER(9) NOT NULL
  ,ASMC_PRODUCT VARCHAR2(6) NOT NULL
  ,ASMC_NAME VARCHAR2(200) NOT NULL
- ,ASMC_DATA CLOB
+ ,ASMC_DATA CLOB NOT NULL
  )
 /
 
