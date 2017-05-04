@@ -1,15 +1,15 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.ind-arc   1.3   08 Mar 2017 15:39:44   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.ind-arc   1.4   04 May 2017 11:24:06   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.ind  $
---       Date into PVCS   : $Date:   08 Mar 2017 15:39:44  $
---       Date fetched Out : $Modtime:   08 Mar 2017 15:33:02  $
---       Version          : $Revision:   1.3  $
+--       Date into PVCS   : $Date:   04 May 2017 11:24:06  $
+--       Date fetched Out : $Modtime:   04 May 2017 11:21:28  $
+--       Version          : $Revision:   1.4  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Wed Mar 08  14:31:52 2017 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Thu May 04  11:01:23 2017 by Server Generator 10.1.2.9.28
 
 PROMPT Creating Index 'AP_FK_HUS_IND'
 CREATE INDEX AP_FK_HUS_IND ON AWLRS_PERSISTENCE
@@ -19,6 +19,11 @@ CREATE INDEX AP_FK_HUS_IND ON AWLRS_PERSISTENCE
 PROMPT Creating Index 'AQSC_FK_NTH_IND'
 CREATE INDEX AQSC_FK_NTH_IND ON AWLRS_QUICK_SEARCH_COLUMNS
  (AQSC_THEME_NAME)
+/
+
+PROMPT Creating Index 'ASMC_FK_HUS_IND'
+CREATE INDEX ASMC_FK_HUS_IND ON AWLRS_SAVED_MAP_CONFIGS
+ (ASMC_USER_ID)
 /
 
 PROMPT Creating Index 'ASSC_FK_HUS_IND'
