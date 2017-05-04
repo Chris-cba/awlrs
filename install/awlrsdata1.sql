@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.7   Apr 11 2017 13:36:30   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.8   04 May 2017 11:44:44   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   Apr 11 2017 13:36:30  $
---       Date fetched Out : $Modtime:   Apr 11 2017 13:34:40  $
---       Version          : $Revision:   1.7  $
+--       Date into PVCS   : $Date:   04 May 2017 11:44:44  $
+--       Date fetched Out : $Modtime:   04 May 2017 11:42:34  $
+--       Version          : $Revision:   1.8  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 11-APR-2017 13:34
+--       Generation Date  : 04-MAY-2017 11:42
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -292,6 +292,22 @@ SELECT 'AWLRS_PERSISTENCE'
                     FROM HIG_SEQUENCE_ASSOCIATIONS
                    WHERE HSA_TABLE_NAME = 'AWLRS_PERSISTENCE'
                      AND HSA_COLUMN_NAME = 'AP_ID');
+--
+INSERT
+  INTO HIG_SEQUENCE_ASSOCIATIONS
+      (HSA_TABLE_NAME
+      ,HSA_COLUMN_NAME
+      ,HSA_SEQUENCE_NAME
+      ,HSA_LAST_REBUILD_DATE)
+SELECT 'AWLRS_SAVED_MAP_CONFIGS'
+      ,'ASMC_ID'
+      ,'ASMC_ID_SEQ'
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_SEQUENCE_ASSOCIATIONS
+                   WHERE HSA_TABLE_NAME = 'AWLRS_SAVED_MAP_CONFIGS'
+                     AND HSA_COLUMN_NAME = 'ASMC_ID');
 --
 INSERT
   INTO HIG_SEQUENCE_ASSOCIATIONS
