@@ -7,11 +7,11 @@
 --
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1003_awlrs1004_ddl_upg.sql-arc   1.0   04 May 2017 13:56:18   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1003_awlrs1004_ddl_upg.sql-arc   1.1   10 May 2017 19:43:12   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs1003_awlrs1004_ddl_upg.sql  $
---       Date into PVCS   : $Date:   04 May 2017 13:56:18  $
---       Date fetched Out : $Modtime:   04 May 2017 13:52:56  $
---       Version          : $Revision:   1.0  $
+--       Date into PVCS   : $Date:   10 May 2017 19:43:12  $
+--       Date fetched Out : $Modtime:   10 May 2017 19:41:16  $
+--       Version          : $Revision:   1.1  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
@@ -56,11 +56,12 @@ DECLARE
   PRAGMA exception_init(obj_exists, -955);
 BEGIN
   EXECUTE IMMEDIATE 'CREATE TABLE AWLRS_SAVED_MAP_CONFIGS'
-                  ||' (ASMC_ID      NUMBER(38) NOT NULL'
-                  ||' ,ASMC_USER_ID NUMBER(9) NOT NULL'
-                  ||' ,ASMC_PRODUCT VARCHAR2(6) NOT NULL'
-                  ||' ,ASMC_NAME    VARCHAR2(200) NOT NULL'
-                  ||' ,ASMC_DATA    CLOB NOT NULL)'
+                  ||' (ASMC_ID          NUMBER(38) NOT NULL'
+                  ||' ,ASMC_USER_ID     NUMBER(9) NOT NULL'
+                  ||' ,ASMC_PRODUCT     VARCHAR2(6) NOT NULL'
+                  ||' ,ASMC_NAME        VARCHAR2(200) NOT NULL' 
+                  ||' ,ASMC_HOME_EXTENT VARCHAR2(1) NOT NULL'
+                  ||' ,ASMC_DATA        CLOB NOT NULL)'
   ;
 EXCEPTION
   WHEN obj_exists THEN
