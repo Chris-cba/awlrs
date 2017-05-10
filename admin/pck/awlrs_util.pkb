@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.14   10 Apr 2017 18:30:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.15   10 May 2017 19:24:06   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   10 Apr 2017 18:30:32  $
-  --       Date fetched Out : $Modtime:   10 Apr 2017 18:29:58  $
-  --       Version          : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   10 May 2017 19:24:06  $
+  --       Date fetched Out : $Modtime:   10 May 2017 19:21:28  $
+  --       Version          : $Revision:   1.15  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -44,7 +44,7 @@ AS
     --
   BEGIN
     --
-    nm3user.set_effective_date(p_date => pi_date);
+    nm3user.set_effective_date(p_date => TRUNC(pi_date));
     --
     RETURN lv_retval;
     --
