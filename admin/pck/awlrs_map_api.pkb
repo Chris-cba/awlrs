@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.18   04 May 2017 13:41:42   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.19   10 May 2017 20:15:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   04 May 2017 13:41:42  $
-  --       Date fetched Out : $Modtime:   04 May 2017 10:47:56  $
-  --       Version          : $Revision:   1.18  $
+  --       Date into PVCS   : $Date:   10 May 2017 20:15:50  $
+  --       Date fetched Out : $Modtime:   10 May 2017 19:23:14  $
+  --       Version          : $Revision:   1.19  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -1025,20 +1025,29 @@ AS
     RETURN lv_retval;
     --
   END get_child_inv_types;
+
   --
   -----------------------------------------------------------------------------
   --
   FUNCTION get_asset_loc_types(pi_inv_type IN nm_inv_types_all.nit_inv_type%TYPE)
     RETURN VARCHAR2 IS
     --
-    lt_types   nm3type.tab_varchar30;
+    TYPE type_rec IS RECORD(nt_type   nm_types.nt_type%TYPE
+                           ,nt_datum  nm_types.nt_datum%TYPE);
+    TYPE type_tab IS TABLE OF type_rec;
+    lt_types  type_tab;
+    --
+    lv_type    nm_types.nt_type%TYPE;
     lv_retval  nm3type.max_varchar2;
     --
     CURSOR get_nw_types(cp_inv_type nm_inv_types_all.nit_inv_type%TYPE)
         IS
     SELECT nin_nw_type
+          ,nt_datum
       FROM nm_inv_nw_all
+          ,nm_types
      WHERE nin_nit_inv_code = cp_inv_type
+       AND nin_nw_type = nt_type
          ;
     --
   BEGIN
@@ -1050,13 +1059,42 @@ AS
          BULK COLLECT
          INTO lt_types;
         CLOSE get_nw_types;
+        --
+        FOR i IN 1..lt_types.COUNT LOOP
+          --
+          DECLARE
+            /*
+            ||nm3net.get_datum_nt may raise an exception if the
+            ||given group type has no underlying datum type
+            ||for this purpose we don't want to raise it.
+            */
+            no_datum_type EXCEPTION;
+            PRAGMA EXCEPTION_INIT(no_datum_type, -20030);
+            --
+          BEGIN
+            --
+            IF lt_types(i).nt_datum = 'Y'
+             THEN
+                lv_type := lt_types(i).nt_type;
+            ELSE
+                lv_type := nm3net.get_datum_nt(pi_gty => lt_types(i).nt_type);
+            END IF;
+            --
+            IF (lv_retval IS NULL
+                OR INSTR(lv_retval,lv_type) = 0)
+             AND lv_type IS NOT NULL
+             THEN
+                lv_retval := lv_retval||CASE WHEN lv_retval IS NULL THEN NULL ELSE ',' END||lv_type;
+            END IF;
+            --
+          EXCEPTION
+            WHEN no_datum_type
+             THEN
+                NULL;
+          END;
+        END LOOP;
+        --
     END IF;
-    --
-    FOR i IN 1..lt_types.COUNT LOOP
-      --
-      lv_retval := lv_retval||CASE WHEN i > 1 THEN ',' ELSE NULL END||lt_types(i);
-      --
-    END LOOP;
     --
     RETURN lv_retval;
     --
@@ -1565,6 +1603,9 @@ AS
         IF pi_effective_date IS NOT NULL
          THEN
             lv_layer_text := lv_layer_text||lv_where_and||'awlrs_util.set_effective_date(TO_DATE('''||TO_CHAR(TRUNC(pi_effective_date),'DD-MM-YYYY')||''',''DD-MM-YYYY'')) = 1';
+            lv_where_and := ' AND ';
+        ELSE
+            lv_layer_text := lv_layer_text||lv_where_and||'awlrs_util.set_effective_date(SYSDATE) = 1';
             lv_where_and := ' AND ';
         END IF;
         --
@@ -2998,7 +3039,86 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_tooltip_templates;
-  
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE save_home_extent(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                            ,pi_data             IN  awlrs_saved_map_configs.asmc_data%TYPE
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    MERGE INTO awlrs_saved_map_configs asmc
+      USING (SELECT SYS_CONTEXT('NM3CORE', 'USER_ID') user_id
+                   ,pi_product param_product
+                   ,pi_product||' HOME EXTENT' param_name
+                   ,'Y' param_home_extent
+                   ,pi_data param_data
+               FROM dual) param
+         ON (asmc.asmc_home_extent = param_home_extent
+             AND asmc.asmc_product = param.param_product
+             AND asmc.asmc_name = param.param_name
+             AND asmc.asmc_user_id = param.user_id)
+      WHEN MATCHED
+       THEN
+          UPDATE SET asmc.asmc_data = param.param_data
+      WHEN NOT MATCHED
+       THEN
+          INSERT(asmc_id
+                ,asmc_user_id
+                ,asmc_product
+                ,asmc_name
+                ,asmc_home_extent
+                ,asmc_data)
+          VALUES(asmc_id_seq.NEXTVAL
+                ,param.user_id
+                ,param.param_product
+                ,param.param_name
+                ,'Y'
+                ,param.param_data)
+    ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        ROLLBACK;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END save_home_extent;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_home_extent_data(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT asmc_data
+      FROM awlrs_saved_map_configs
+     WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
+       AND asmc_product = pi_product
+       AND asmc_home_extent = 'Y'
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_home_extent_data;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -3028,11 +3148,13 @@ AS
                 ,asmc_user_id
                 ,asmc_product
                 ,asmc_name
+                ,asmc_home_extent
                 ,asmc_data)
           VALUES(asmc_id_seq.NEXTVAL
                 ,param.user_id
                 ,param.param_product
                 ,param.param_name
+                ,'N'
                 ,param.param_data)
     ;
     --
@@ -3116,6 +3238,7 @@ AS
      WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
        AND asmc_product = pi_product
        AND asmc_name = pi_name
+       AND asmc_home_extent = 'N'
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -3143,6 +3266,7 @@ AS
       FROM awlrs_saved_map_configs
      WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
        AND asmc_id = pi_id
+       AND asmc_home_extent = 'N'
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -3171,6 +3295,7 @@ AS
       FROM awlrs_saved_map_configs
      WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
        AND asmc_product = pi_product
+       AND asmc_home_extent = 'N'
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -3200,6 +3325,7 @@ AS
       FROM awlrs_saved_map_configs
      WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
        AND asmc_product = pi_product
+       AND asmc_home_extent = 'N'
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
