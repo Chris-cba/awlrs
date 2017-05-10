@@ -1,15 +1,15 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.6   10 May 2017 19:56:32   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.7   10 May 2017 20:05:48   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.con  $
---       Date into PVCS   : $Date:   10 May 2017 19:56:32  $
---       Date fetched Out : $Modtime:   10 May 2017 19:55:02  $
---       Version          : $Revision:   1.6  $
+--       Date into PVCS   : $Date:   10 May 2017 20:05:48  $
+--       Date fetched Out : $Modtime:   10 May 2017 20:04:30  $
+--       Version          : $Revision:   1.7  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Wed May 10  19:49:42 2017 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Wed May 10  20:02:46 2017 by Server Generator 10.1.2.9.28
 
 PROMPT Creating Primary Key on 'AWLRS_PERSISTENCE'
 ALTER TABLE AWLRS_PERSISTENCE
@@ -87,7 +87,7 @@ PROMPT Creating Foreign Key on 'AWLRS_SAVED_MAP_CONFIGS'
 ALTER TABLE AWLRS_SAVED_MAP_CONFIGS ADD (CONSTRAINT
  ASMC_FK_HUS FOREIGN KEY 
   (ASMC_USER_ID) REFERENCES HIG_USERS
-  (HUS_USER_ID))
+  (HUS_USER_ID) ON DELETE CASCADE)
 /
 
 PROMPT Creating Foreign Key on 'AWLRS_SAVED_SEARCH_CRITERIA'
