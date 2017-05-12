@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.5   05 Apr 2017 15:09:06   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.6   12 May 2017 14:45:26   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   05 Apr 2017 15:09:06  $
-  --       Date fetched Out : $Modtime:   05 Apr 2017 15:06:40  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   12 May 2017 14:45:26  $
+  --       Date fetched Out : $Modtime:   09 May 2017 00:05:02  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -623,6 +623,46 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                  ,po_cursor           => po_message_cursor);
   END get_point_from_element_offset;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE get_element_vertices(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                ,pi_element_id       IN  nm_elements_all.ne_id%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lr_theme  nm_themes_all%ROWTYPE;
+    --
+  BEGIN
+    --
+    lr_theme := nm3get.get_nth(pi_nth_theme_name => pi_theme_name);
+    --
+    OPEN po_cursor FOR 'WITH element_shape AS(SELECT '||lr_theme.nth_feature_shape_column||' geom'
+            ||CHR(10)||'                        FROM '||lr_theme.nth_feature_table
+            ||CHR(10)||'                       WHERE '||lr_theme.nth_pk_column||' = :pi_ne_id)'
+            ||CHR(10)||'SELECT a.id'
+            ||CHR(10)||'      ,a.x'
+            ||CHR(10)||'      ,a.y'
+            ||CHR(10)||'      ,a.z m'
+            ||CHR(10)||'  FROM element_shape'
+            ||CHR(10)||'      ,TABLE(sdo_util.getvertices(geom)) a'
+            ||CHR(10)||' ORDER'
+            ||CHR(10)||'    BY a.id'
+    USING pi_element_id
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                       ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                 ,po_cursor           => po_message_cursor);
+  END get_element_vertices;
 
   --
   -----------------------------------------------------------------------------
