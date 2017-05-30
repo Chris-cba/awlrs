@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.12   15 May 2017 15:32:42   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.13   May 30 2017 14:41:46   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   15 May 2017 15:32:42  $
-  --       Date fetched Out : $Modtime:   05 May 2017 17:58:44  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   May 30 2017 14:41:46  $
+  --       Date fetched Out : $Modtime:   May 24 2017 14:45:06  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -1782,6 +1782,14 @@ AS
                                ,pi_geom           => lv_geom);
     END IF;
     --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
   END add_asset_location_off_nw;
 
   --
