@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkh-arc   1.8   23 Feb 2017 15:03:08   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkh-arc   1.9   31 May 2017 14:38:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkh  $
-  --       Date into PVCS   : $Date:   23 Feb 2017 15:03:08  $
-  --       Date fetched Out : $Modtime:   15 Feb 2017 17:42:30  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   31 May 2017 14:38:58  $
+  --       Date fetched Out : $Modtime:   31 May 2017 14:37:36  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
   --
   g_new_element_1  nm_elements_all%ROWTYPE;
   g_new_element_2  nm_elements_all%ROWTYPE;
@@ -101,6 +101,8 @@ AS
                     ,pi_split_at_node_id     IN     nm_nodes.no_node_id%TYPE
                     ,pi_split_datum_id       IN     nm_elements_all.ne_id%TYPE DEFAULT NULL
                     ,pi_split_datum_offset   IN     NUMBER DEFAULT NULL
+                    ,pi_new_node_x           IN     nm_points.np_grid_east%TYPE DEFAULT NULL
+                    ,pi_new_node_y           IN     nm_points.np_grid_north%TYPE DEFAULT NULL
                     ,pi_reason               IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                     ,pi_new_element1_attribs IN     awlrs_element_api.flex_attr_tab
                     ,pi_new_element2_attribs IN     awlrs_element_api.flex_attr_tab
@@ -117,6 +119,8 @@ AS
                     ,pi_split_at_node_id          IN     nm_nodes.no_node_id%TYPE
                     ,pi_split_datum_id            IN     nm_elements_all.ne_id%TYPE DEFAULT NULL
                     ,pi_split_datum_offset        IN     NUMBER DEFAULT NULL
+                    ,pi_new_node_x                IN     nm_points.np_grid_east%TYPE DEFAULT NULL
+                    ,pi_new_node_y                IN     nm_points.np_grid_north%TYPE DEFAULT NULL
                     ,pi_reason                    IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                     ,pi_new_element1_column_names IN     awlrs_element_api.attrib_column_name_tab
                     ,pi_new_element1_prompts      IN     awlrs_element_api.attrib_prompt_tab

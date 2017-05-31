@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.15   09 Mar 2017 12:19:16   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.16   31 May 2017 14:38:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   09 Mar 2017 12:19:16  $
-  --       Date fetched Out : $Modtime:   09 Mar 2017 11:22:58  $
-  --       Version          : $Revision:   1.15  $
+  --       Date into PVCS   : $Date:   31 May 2017 14:38:58  $
+  --       Date fetched Out : $Modtime:   31 May 2017 14:20:08  $
+  --       Version          : $Revision:   1.16  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -674,6 +674,8 @@ AS
                     ,pi_split_at_node_id     IN     nm_nodes.no_node_id%TYPE
                     ,pi_split_datum_id       IN     nm_elements_all.ne_id%TYPE DEFAULT NULL
                     ,pi_split_datum_offset   IN     NUMBER DEFAULT NULL
+                    ,pi_new_node_x           IN     nm_points.np_grid_east%TYPE DEFAULT NULL
+                    ,pi_new_node_y           IN     nm_points.np_grid_north%TYPE DEFAULT NULL
                     ,pi_reason               IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                     ,pi_new_element1_attribs IN     awlrs_element_api.flex_attr_tab
                     ,pi_new_element2_attribs IN     awlrs_element_api.flex_attr_tab
@@ -763,8 +765,8 @@ AS
                                     ,pi_no_node_name           => NULL --:split.cre_node_name
                                     ,pi_no_descr               => NULL --:split.cre_node_descr
                                     ,pi_no_purpose             => NULL --:split.cre_node_purpose
-                                    ,pi_np_grid_east           => NULL --:split.cre_node_grid_east
-                                    ,pi_np_grid_north          => NULL --:split.cre_node_grid_north
+                                    ,pi_np_grid_east           => pi_new_node_x
+                                    ,pi_np_grid_north          => pi_new_node_y
                                     ,pi_no_np_id               => lv_new_np_id
                                     ,pi_ne_unique_1            => g_new_element_1.ne_unique
                                     ,pi_ne_owner_1             => g_new_element_1.ne_owner
@@ -810,6 +812,8 @@ AS
                     ,pi_split_at_node_id          IN     nm_nodes.no_node_id%TYPE
                     ,pi_split_datum_id            IN     nm_elements_all.ne_id%TYPE DEFAULT NULL
                     ,pi_split_datum_offset        IN     NUMBER DEFAULT NULL
+                    ,pi_new_node_x                IN     nm_points.np_grid_east%TYPE DEFAULT NULL
+                    ,pi_new_node_y                IN     nm_points.np_grid_north%TYPE DEFAULT NULL
                     ,pi_reason                    IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                     ,pi_new_element1_column_names IN     awlrs_element_api.attrib_column_name_tab
                     ,pi_new_element1_prompts      IN     awlrs_element_api.attrib_prompt_tab
@@ -862,6 +866,8 @@ AS
             ,pi_split_at_node_id     => pi_split_at_node_id
             ,pi_split_datum_id       => pi_split_datum_id
             ,pi_split_datum_offset   => pi_split_datum_offset
+            ,pi_new_node_x           => pi_new_node_x
+            ,pi_new_node_y           => pi_new_node_y
             ,pi_reason               => pi_reason
             ,pi_new_element1_attribs => lt_new_element1_attribs
             ,pi_new_element2_attribs => lt_new_element2_attribs
