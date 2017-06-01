@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkb-arc   1.6   02 Feb 2017 10:02:56   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkb-arc   1.7   01 Jun 2017 11:42:24   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_undo_api.pkb  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:56  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   01 Jun 2017 11:42:24  $
+  --       Date fetched Out : $Modtime:   01 Jun 2017 10:58:04  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_undo_api';
   --
   --
@@ -96,8 +96,8 @@ AS
     lv_new_ne_id2      nm_elements_all.ne_id%TYPE;
     lv_old_ne_id1      nm_elements_all.ne_id%TYPE;
     lv_old_ne_id2      nm_elements_all.ne_id%TYPE;
-    --
-    lv_message  nm3type.max_varchar2;
+    lv_element_type    VARCHAR2(10);
+    lv_message         nm3type.max_varchar2;
     --
   BEGIN
     --
@@ -116,11 +116,18 @@ AS
 	                      ,pi_hco_code    => lv_operation
 	                      ,po_hco_meaning => lv_operation_type);
         --
+        IF nm3net.get_gty_type(lv_old_ne_id1) IS NOT NULL
+         THEN
+            lv_element_type := 'Group';
+        ELSE
+            lv_element_type := 'Datum';
+        END IF;
+        --
         CASE
           WHEN lv_operation = 'S'
            THEN
-              lv_message := 'This datum is the result of a '||lv_operation_type||' operation.'
-                 ||CHR(10)||'Datum:'
+              lv_message := 'This '||lv_element_type||' is the result of a '||lv_operation_type||' operation.'
+                 ||CHR(10)||lv_element_type||':'
                  ||CHR(10)||nm3net.get_ne_unique(p_ne_id => lv_old_ne_id1)
                  ||CHR(10)||'was split resulting in:'
                  ||CHR(10)||nm3net.get_ne_unique(p_ne_id => lv_new_ne_id1)
@@ -129,8 +136,8 @@ AS
               ;
           WHEN lv_operation = 'M'
            THEN
-              lv_message := 'This datum is the result of a '||lv_operation_type||' operation.'
-                 ||CHR(10)||'Datums:'
+              lv_message := 'This '||lv_element_type||' is the result of a '||lv_operation_type||' operation.'
+                 ||CHR(10)||lv_element_type||'s:'
                  ||CHR(10)||nm3net.get_ne_unique(p_ne_id => lv_old_ne_id1)
                  ||CHR(10)||'and:'
                  ||CHR(10)||nm3net.get_ne_unique(p_ne_id => lv_old_ne_id2)
@@ -139,15 +146,15 @@ AS
               ;
           WHEN lv_operation = 'R'
            THEN
-              lv_message := 'This datum is the result of a '||lv_operation_type||' operation.'
-                 ||CHR(10)||'Datum:'
+              lv_message := 'This '||lv_element_type||' is the result of a '||lv_operation_type||' operation.'
+                 ||CHR(10)||lv_element_type||':'
                  ||CHR(10)||nm3net.get_ne_unique(p_ne_id => lv_old_ne_id1)
                  ||CHR(10)||'was replaced resulting in:'
                  ||CHR(10)||nm3net.get_ne_unique(p_ne_id => lv_new_ne_id1)
               ;
           WHEN lv_operation = 'C'
            THEN
-              lv_message := 'This datum was closed.';
+              lv_message := 'This '||lv_element_type||' was closed.';
           ELSE
               lv_message := 'No suitable operations to undo.';
               lv_operation_type := NULL;
