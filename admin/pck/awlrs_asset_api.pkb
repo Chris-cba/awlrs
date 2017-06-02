@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.14   Jun 02 2017 09:59:02   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.15   Jun 02 2017 10:09:34   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 02 2017 09:59:02  $
-  --       Date fetched Out : $Modtime:   Jun 01 2017 14:50:36  $
-  --       Version          : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   Jun 02 2017 10:09:34  $
+  --       Date fetched Out : $Modtime:   Jun 02 2017 10:07:46  $
+  --       Version          : $Revision:   1.15  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.14  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.15  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -911,7 +911,7 @@ AS
       --
       SELECT *
         INTO g_db_iit_rec
-        FROM nm_inv_items_all
+        FROM nm_inv_items
        WHERE iit_ne_id = pi_iit_ne_id
          FOR UPDATE NOWAIT
            ;
