@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.10   May 05 2017 15:41:46   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.11   Jun 02 2017 09:59:02   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   May 05 2017 15:41:46  $
-  --       Date fetched Out : $Modtime:   May 03 2017 16:06:36  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   Jun 02 2017 09:59:02  $
+  --       Date fetched Out : $Modtime:   May 31 2017 15:06:36  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -236,6 +236,13 @@ AS
                        ,pi_run_checks       IN  VARCHAR2 DEFAULT 'Y'
                        ,po_message_severity OUT hig_codes.hco_code%TYPE
                        ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE asset_reopen(pi_asset_type       IN  nm_inv_items_all.iit_inv_type%TYPE
+                        ,pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor);                       
   --
   -----------------------------------------------------------------------------
   --

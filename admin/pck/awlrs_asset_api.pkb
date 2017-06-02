@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.13   May 30 2017 14:41:46   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.14   Jun 02 2017 09:59:02   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   May 30 2017 14:41:46  $
-  --       Date fetched Out : $Modtime:   May 24 2017 14:45:06  $
-  --       Version          : $Revision:   1.13  $
+  --       Date into PVCS   : $Date:   Jun 02 2017 09:59:02  $
+  --       Date fetched Out : $Modtime:   Jun 01 2017 14:50:36  $
+  --       Version          : $Revision:   1.14  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.14  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -429,7 +429,7 @@ AS
              ,iit_start_date                                start_date
              ,iit_end_date                                  end_date
              ,iit_note                                      note
-         FROM nm_inv_items iit
+         FROM nm_inv_items_all iit
         WHERE iit.iit_ne_id = pi_iit_ne_id
             ;
        --
@@ -1735,7 +1735,7 @@ AS
                                          ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
-    WHEN OTHERS
+    WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
@@ -1786,7 +1786,7 @@ AS
                                          ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
-    WHEN OTHERS
+    WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
@@ -2234,7 +2234,44 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE asset_reopen(pi_asset_type       IN  nm_inv_items_all.iit_inv_type%TYPE
+                        ,pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    lr_nit nm_inv_types%ROWTYPE;
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
+  BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT asset_reopen_sp;
+    --
+    UPDATE nm_inv_items_all
+       SET iit_end_date = null
+     WHERE iit_inv_type = pi_asset_type
+       AND iit_ne_id = pi_iit_ne_id
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        ROLLBACK TO asset_reopen_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END asset_reopen;
+  --
+  -----------------------------------------------------------------------------
+  --  
   FUNCTION is_child_asset_type	(pi_inv_type IN nm_inv_types.nit_inv_type%TYPE) 
    RETURN BOOLEAN IS
     --
@@ -2262,7 +2299,7 @@ AS
             ,nm3inv.get_inv_type(iig_item_id)||' '||iig_item_id  itemlevellabel
             ,iig_parent_id parentid 
             ,nm3inv.get_inv_type(iig_parent_id)||' '||iig_parent_id  parentlevellabel
-        FROM nm_inv_item_groupings
+        FROM nm_inv_item_groupings_all
        WHERE iig_top_id = nm3inv.get_top_item_id(pi_iit_ne_id) 
          AND TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
              >= NVL(iig_start_date,TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY'))
