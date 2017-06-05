@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.24   21 Apr 2017 13:08:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.25   05 Jun 2017 15:05:10   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   21 Apr 2017 13:08:38  $
-  --       Date fetched Out : $Modtime:   21 Apr 2017 11:53:00  $
-  --       Version          : $Revision:   1.24  $
+  --       Date into PVCS   : $Date:   05 Jun 2017 15:05:10  $
+  --       Date fetched Out : $Modtime:   05 Jun 2017 14:20:26  $
+  --       Version          : $Revision:   1.25  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.24  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.25  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -216,6 +216,35 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION is_inclusion_child(pi_nt_type     IN  nm_types.nt_type%TYPE
+                             ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE)
+    RETURN BOOLEAN IS
+    --
+    CURSOR get_nti(p_child_nt_type IN nm_type_inclusion.nti_nw_child_type%TYPE
+                  ,p_child_column  IN nm_type_inclusion.nti_child_column%TYPE)
+        IS
+    SELECT nti_nw_parent_type
+      FROM nm_type_inclusion
+     WHERE nti_nw_child_type = p_child_nt_type
+       AND nti_child_column  = p_child_column
+         ;
+    --
+    lv_parent  nm_type_inclusion.nti_nw_parent_type%TYPE;
+    --
+  BEGIN
+    OPEN  get_nti(pi_nt_type
+                 ,pi_column_name);
+    FETCH get_nti
+     INTO lv_parent;
+    CLOSE get_nti;
+    --
+    RETURN (lv_parent IS NOT NULL);
+    --
+  END is_inclusion_child;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE gen_domain_sql(pi_nt_type     IN  nm_types.nt_type%TYPE
                           ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
                           ,pi_bind_value  IN  VARCHAR2 DEFAULT NULL
@@ -233,6 +262,21 @@ AS
     --
     IF SUBSTR(pi_column_name,1,3) = 'NE_'
      THEN
+        /*
+        ||If the column is a child involved in type inclusion
+        ||then concatenate the code and the meaning so that
+        ||both the NE_UNIQUE and NE_DESCR are visible to the User.
+        */
+        IF is_inclusion_child(pi_nt_type     => pi_nt_type
+                             ,pi_column_name => pi_column_name)
+         THEN
+            lv_retval := 'SELECT NVL(lov_value,lov_code) code'
+              ||CHR(10)||'      ,NVL(lov_value,lov_code)||'' - ''||lov_meaning meaning'
+              ||CHR(10)||'      ,lov_seq seq'
+              ||CHR(10)||'  FROM (SELECT NULL lov_code, NULL lov_meaning, NULL lov_value, 1 lov_seq FROM DUAL WHERE 1=2'
+            ;     
+        END IF;
+        --
         lv_lov_sql := get_domain_sql_with_bind(pi_nt_type     => pi_nt_type
                                               ,pi_column_name => pi_column_name);
         --
@@ -611,7 +655,15 @@ AS
     --
     IF pi_filter IS NOT NULL
      THEN
-        lv_filter := ' WHERE UPPER(lov_meaning) LIKE UPPER(''%''||:filter||''%'')';
+        --
+        IF is_inclusion_child(pi_nt_type     => pi_nt_type
+                             ,pi_column_name => pi_column_name)
+         THEN
+            lv_filter := ' WHERE UPPER(NVL(lov_value,lov_code)||'' - ''||lov_meaning) LIKE UPPER(''%''||:filter||''%'')';
+        ELSE
+            lv_filter := ' WHERE UPPER(lov_meaning) LIKE UPPER(''%''||:filter||''%'')';
+        END IF;
+        --
     END IF;
     /*
     ||Get the page parameters.
