@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.25   05 Jun 2017 15:05:10   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.26   05 Jun 2017 18:13:46   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   05 Jun 2017 15:05:10  $
-  --       Date fetched Out : $Modtime:   05 Jun 2017 14:20:26  $
-  --       Version          : $Revision:   1.25  $
+  --       Date into PVCS   : $Date:   05 Jun 2017 18:13:46  $
+  --       Date fetched Out : $Modtime:   05 Jun 2017 18:10:34  $
+  --       Version          : $Revision:   1.26  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.25  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.26  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1039,6 +1039,10 @@ AS
                       THEN
                          CASE
                            WHEN ntc_domain IS NOT NULL
+                            AND NOT EXISTS(SELECT 'x'
+                                             FROM nm_type_inclusion
+                                            WHERE nti_nw_child_type = ntc_nt_type
+                                              AND nti_child_column = ntc_column_name)
                             THEN
                                ntc_domain
                            ELSE
@@ -1048,7 +1052,12 @@ AS
                    END domain_id
                   ,CASE
                      WHEN ntc_query IS NOT NULL
-                      OR (domain_sql IS NOT NULL AND ntc_domain IS NULL)
+                      OR (domain_sql IS NOT NULL
+                          AND(ntc_domain IS NULL
+                              OR EXISTS(SELECT 'x'
+                                          FROM nm_type_inclusion
+                                         WHERE nti_nw_child_type = ntc_nt_type
+                                           AND nti_child_column = ntc_column_name)))
                       THEN
                          'Y'
                      ELSE
