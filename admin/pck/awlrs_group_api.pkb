@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.17   21 Apr 2017 13:16:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.18   06 Jun 2017 18:01:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   21 Apr 2017 13:16:18  $
-  --       Date fetched Out : $Modtime:   21 Apr 2017 13:11:16  $
-  --       Version          : $Revision:   1.17  $
+  --       Date into PVCS   : $Date:   06 Jun 2017 18:01:30  $
+  --       Date fetched Out : $Modtime:   06 Jun 2017 16:31:02  $
+  --       Version          : $Revision:   1.18  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -49,6 +49,7 @@ AS
           ,member_element_id
           ,member_seq_no
           ,member_network_type
+          ,member_network_type_descr
           ,member_unique
           ,member_description
           ,member_length
@@ -65,6 +66,7 @@ AS
           ,member_end_date
       FROM (SELECT nm_seq_no member_seq_no
                   ,ne.ne_nt_type member_network_type
+                  ,nt.nt_descr member_network_type_descr
                   ,ne.ne_unique member_unique
                   ,ne.ne_descr member_description
                   ,nm3net.get_ne_length(ne.ne_id) member_length
@@ -91,9 +93,11 @@ AS
                   ,nm.nm_ne_id_of member_element_id
               FROM nm_members nm
                   ,nm_elements ne
+                  ,nm_types nt
              WHERE nm.nm_ne_id_in = pi_ne_id
+               AND nm.nm_type = 'G'
                AND nm.nm_ne_id_of = ne.ne_id
-               AND nm.nm_type = 'G')
+               AND ne.ne_nt_type = nt.nt_type)
      ORDER
         BY member_seq_no
          ;
