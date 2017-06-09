@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.16   31 May 2017 14:38:58   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.17   09 Jun 2017 18:43:12   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   31 May 2017 14:38:58  $
-  --       Date fetched Out : $Modtime:   31 May 2017 14:20:08  $
-  --       Version          : $Revision:   1.16  $
+  --       Date into PVCS   : $Date:   09 Jun 2017 18:43:12  $
+  --       Date fetched Out : $Modtime:   09 Jun 2017 18:27:18  $
+  --       Version          : $Revision:   1.17  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -477,7 +477,7 @@ AS
     --
   BEGIN
     --
-    NM3CTX.SET_CONTEXT('PROX_NE_ID', TO_CHAR(pi_ne_id));
+    nm3ctx.set_context('PROX_NE_ID', TO_CHAR(pi_ne_id));
     --
     OPEN po_cursor FOR
     SELECT no_node_id
@@ -521,7 +521,7 @@ AS
   	IF pi_node_id IS NOT NULL
   	 THEN
         --
-        NM3CTX.SET_CONTEXT('PROX_NE_ID', TO_CHAR(pi_ne_id));
+        nm3ctx.set_context('PROX_NE_ID', TO_CHAR(pi_ne_id));
         --  	  
         OPEN  chk_node(pi_node_id);
         FETCH chk_node
@@ -687,12 +687,25 @@ AS
     --
     lr_ne  nm_elements_all%ROWTYPE;
     --
-    lv_new_node_id  nm_elements.ne_no_start%TYPE;
-    lv_new_np_id    nm_nodes.no_np_id%TYPE;
-    lv_create_node  BOOLEAN := TRUE;
-    lv_datum_only   VARCHAR2(1) := 'Y';
+    lv_x             NUMBER;
+    lv_y             NUMBER;
+    lv_split_offset  NUMBER;
+    lv_new_node_id   nm_elements.ne_no_start%TYPE;
+    lv_new_np_id     nm_nodes.no_np_id%TYPE;
+    lv_create_node   BOOLEAN := TRUE;
+    lv_datum_only    VARCHAR2(1) := 'Y';
     --
     lv_new_elements_cursor  sys_refcursor;
+    --
+    CURSOR get_node_x_y(cp_node_id IN nm_nodes.no_node_id%TYPE)
+        IS
+    SELECT np_grid_east
+          ,np_grid_north
+      FROM nm_points
+          ,nm_nodes
+     WHERE no_node_id = cp_node_id
+       AND no_np_id = np_id
+         ;
     --
   BEGIN
     /*
@@ -714,6 +727,30 @@ AS
      THEN
         validate_split_at_node(pi_ne_rec  => lr_ne
                               ,pi_node_id => pi_split_at_node_id);
+    END IF;
+    IF pi_split_offset IS NOT NULL
+     THEN
+        lv_split_offset := pi_split_offset;
+    ELSE
+        /*
+        ||If this is split at node generate the measure to split at.
+        */
+        IF pi_split_at_node_id IS NOT NULL
+         THEN
+            OPEN  get_node_x_y(pi_split_at_node_id);
+            FETCH get_node_x_y
+             INTO lv_x
+                 ,lv_y;
+            CLOSE get_node_x_y;
+            --
+            lv_split_offset := TO_NUMBER(nm3unit.get_formatted_value(p_value => nm3Sdo.get_measure(p_layer => nm3sdm.get_nt_theme(p_nt => lr_ne.ne_nt_type
+                                                                                                                                 ,p_gt => lr_ne.ne_gty_group_type)
+                                                                                                  ,p_ne_id => pi_ne_id
+                                                                                                  ,p_x     => lv_x
+                                                                                                  ,p_y     => lv_y).lr_offset
+                                                                    ,p_unit_id => nm3net.get_nt_units_from_ne(p_ne_id => pi_ne_id)));
+            --
+        END IF;
     END IF;
     --
     init_element_globals;
@@ -752,19 +789,15 @@ AS
                                     ,pi_ne_id_1                => po_new_ne_ids(1)
                                     ,pi_ne_id_2                => po_new_ne_ids(2)
                                     ,pi_effective_date         => pi_effective_date
-                                    ,pi_split_offset           => pi_split_offset
+                                    ,pi_split_offset           => lv_split_offset
                                     ,pi_non_ambig_ne_id        => pi_split_datum_id
                                     ,pi_non_ambig_split_offset => pi_split_datum_offset
                                     ,pi_split_at_node_id       => pi_split_at_node_id
                                     ,pi_create_node            => lv_create_node
-                                    /*
-                                    ||SM always creates a new node when splitting at measure
-                                    ||and allows the core api to generate the detail.
-                                    */
                                     ,pi_node_id                => lv_new_node_id
-                                    ,pi_no_node_name           => NULL --:split.cre_node_name
-                                    ,pi_no_descr               => NULL --:split.cre_node_descr
-                                    ,pi_no_purpose             => NULL --:split.cre_node_purpose
+                                    ,pi_no_node_name           => NULL
+                                    ,pi_no_descr               => NULL
+                                    ,pi_no_purpose             => NULL
                                     ,pi_np_grid_east           => pi_new_node_x
                                     ,pi_np_grid_north          => pi_new_node_y
                                     ,pi_no_np_id               => lv_new_np_id
