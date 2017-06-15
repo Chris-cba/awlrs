@@ -7,11 +7,11 @@
 --
 --  PVCS Identifiers :-
 --
---      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1004_awlrs1005_metadata_upg.sql-arc   1.0   15 Jun 2017 19:26:42   Mike.Huitson  $
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1004_awlrs1005_metadata_upg.sql-arc   1.1   15 Jun 2017 21:51:48   Mike.Huitson  $
 --      Module Name      : $Workfile:   awlrs1004_awlrs1005_metadata_upg.sql  $
---      Date into PVCS   : $Date:   15 Jun 2017 19:26:42  $
---      Date fetched Out : $Modtime:   15 Jun 2017 19:24:00  $
---      Version          : $Revision:   1.0  $
+--      Date into PVCS   : $Date:   15 Jun 2017 21:51:48  $
+--      Date fetched Out : $Modtime:   15 Jun 2017 21:49:12  $
+--      Version          : $Revision:   1.1  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
@@ -60,6 +60,45 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 48);
+------------------------------------------------------------------
+SET TERM ON
+PROMPT Product Option AWLRECALHS
+SET TERM OFF
+INSERT
+  INTO HIG_OPTION_LIST
+      (HOL_ID
+      ,HOL_PRODUCT
+      ,HOL_NAME
+      ,HOL_REMARKS
+      ,HOL_DOMAIN
+      ,HOL_DATATYPE
+      ,HOL_MIXED_CASE
+      ,HOL_USER_OPTION
+      ,HOL_MAX_LENGTH)
+SELECT 'AWLRECALHS'
+      ,'AWLRS'
+      ,'AWLRS Recalibrate With History'
+      ,'When recaibrating a Datum in AWLRS the user has the option to maintain history, this option defines the default position of the switch when the dialog is displayed, when set to Y the switch will default to On otherwise it will default to Off.'
+      ,'Y_OR_N'
+      ,'VARCHAR2'
+      ,'N'
+      ,'N'
+      ,1
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_LIST
+                   WHERE HOL_ID = 'AWLRECALHS');
+--
+INSERT
+  INTO HIG_OPTION_VALUES
+      (HOV_ID
+      ,HOV_VALUE)
+SELECT 'AWLRECALHS'
+      ,'Y'
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_VALUES
+                   WHERE HOV_ID = 'AWLRECALHS');
 ------------------------------------------------------------------
 Commit;
 
