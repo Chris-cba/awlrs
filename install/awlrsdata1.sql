@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.8   04 May 2017 11:44:44   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.9   15 Jun 2017 21:45:48   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   04 May 2017 11:44:44  $
---       Date fetched Out : $Modtime:   04 May 2017 11:42:34  $
---       Version          : $Revision:   1.8  $
+--       Date into PVCS   : $Date:   15 Jun 2017 21:45:48  $
+--       Date fetched Out : $Modtime:   15 Jun 2017 21:42:50  $
+--       Version          : $Revision:   1.9  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 04-MAY-2017 11:42
+--       Generation Date  : 15-JUN-2017 21:42
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -185,6 +185,31 @@ INSERT
       ,HOL_MIXED_CASE
       ,HOL_USER_OPTION
       ,HOL_MAX_LENGTH)
+SELECT 'AWLRECALHS'
+      ,'AWLRS'
+      ,'AWLRS Recalibrate With History'
+      ,'When recaibrating a Datum in AWLRS the user has the option to maintain history, this option defines the default position of the switch when the dialog is displayed, when set to Y the switch will default to On otherwise it will default to Off.'
+      ,'Y_OR_N'
+      ,'VARCHAR2'
+      ,'N'
+      ,'N'
+      ,1
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_LIST
+                   WHERE HOL_ID = 'AWLRECALHS');
+--
+INSERT
+  INTO HIG_OPTION_LIST
+      (HOL_ID
+      ,HOL_PRODUCT
+      ,HOL_NAME
+      ,HOL_REMARKS
+      ,HOL_DOMAIN
+      ,HOL_DATATYPE
+      ,HOL_MIXED_CASE
+      ,HOL_USER_OPTION
+      ,HOL_MAX_LENGTH)
 SELECT 'AWLUIDBUG'
       ,'AWLRS'
       ,'UI Debug'
@@ -253,6 +278,17 @@ SELECT 'AWLMAPSRID'
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_OPTION_VALUES
                    WHERE HOV_ID = 'AWLMAPSRID');
+--
+INSERT
+  INTO HIG_OPTION_VALUES
+      (HOV_ID
+      ,HOV_VALUE)
+SELECT 'AWLRECALHS'
+      ,'Y'
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_VALUES
+                   WHERE HOV_ID = 'AWLRECALHS');
 --
 INSERT
   INTO HIG_OPTION_VALUES
