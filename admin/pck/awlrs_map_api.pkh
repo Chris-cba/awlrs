@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.10   04 May 2017 13:41:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.11   15 Jun 2017 16:34:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkh  $
-  --       Date into PVCS   : $Date:   04 May 2017 13:41:50  $
-  --       Date fetched Out : $Modtime:   04 May 2017 10:15:56  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   15 Jun 2017 16:34:22  $
+  --       Date fetched Out : $Modtime:   06 Jun 2017 08:50:02  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
   --
   TYPE theme_types_rec IS RECORD(admin_type                   nm_au_types.nat_admin_type%TYPE
                                 ,network_type                 nm_types.nt_type%TYPE
@@ -29,6 +29,7 @@ AS
                                 ,multiple_locs_allowed        nm_inv_types_all.nit_multiple_allowed%TYPE
                                 ,top_of_hierarchy             nm_inv_types_all.nit_top%TYPE
                                 ,hierarchy_relation           nm_inv_type_groupings.itg_relation%TYPE
+                                ,dependent_geometry           nm_themes_all.nth_dependency%TYPE
                                 ,editable                     VARCHAR2(1));
   TYPE theme_types_tab IS TABLE OF theme_types_rec INDEX BY BINARY_INTEGER;
   --
@@ -64,7 +65,10 @@ AS
                            ,nth_feature_shape_column  nm_themes_all.nth_feature_shape_column%TYPE
                            ,nth_feature_table         nm_themes_all.nth_feature_table%TYPE
                            ,nth_label_column          nm_themes_all.nth_label_column%TYPE
-                           ,styling_rules             CLOB);
+                           ,label_min_scale           VARCHAR2(100)
+                           ,label_max_scale           VARCHAR2(100)
+                           ,styling_rules             CLOB
+                           ,geometry_column           VARCHAR2(30));
   TYPE themes_tab IS TABLE OF themes_rec INDEX BY BINARY_INTEGER;
   --
   TYPE theme_styling_rules_rec IS RECORD(name             VARCHAR2(32)
@@ -103,6 +107,13 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION get_style_value(pi_style IN VARCHAR2
+                          ,pi_field IN VARCHAR2)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_feature_details(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
                                ,pi_feature_ids      IN  nm3type.tab_number
                                ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
@@ -116,6 +127,7 @@ AS
   --
   FUNCTION generate_map_file(pi_map_name       IN VARCHAR2
                             ,pi_proj_lib       IN VARCHAR2
+                            ,pi_all_ft_cols    IN VARCHAR2 DEFAULT 'N'
                             ,pi_effective_date IN DATE DEFAULT NULL)
     RETURN CLOB;
 
@@ -124,6 +136,7 @@ AS
   --
   PROCEDURE get_map_file(pi_map_name         IN  VARCHAR2
                         ,pi_proj_lib         IN  VARCHAR2
+                        ,pi_all_ft_cols      IN  VARCHAR2 DEFAULT 'N'
                         ,pi_effective_date   IN  DATE DEFAULT NULL
                         ,po_message_severity OUT hig_codes.hco_code%TYPE
                         ,po_message_cursor   OUT sys_refcursor
