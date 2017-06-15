@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.8   Apr 11 2017 07:52:34   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.9   15 Jun 2017 19:25:30   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Apr 11 2017 07:52:34  $
---       Date fetched Out : $Modtime:   Apr 11 2017 07:50:48  $
---       Version          : $Revision:   1.8  $
+--       Date into PVCS   : $Date:   15 Jun 2017 19:25:30  $
+--       Date fetched Out : $Modtime:   15 Jun 2017 19:09:36  $
+--       Version          : $Revision:   1.9  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 11-APR-2017 07:50
+--       Generation Date  : 15-JUN-2017 19:09
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -885,6 +885,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 47);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,48
+      ,null
+      ,'Update of Start and/or End of a Member is not allowed for an Inclusion Parent Group'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 48);
 --
 ----------------------------------------------------------------------------------------
 --
