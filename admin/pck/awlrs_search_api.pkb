@@ -3,19 +3,22 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.6   27 Mar 2017 10:44:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.7   15 Jun 2017 16:32:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   27 Mar 2017 10:44:30  $
-  --       Date fetched Out : $Modtime:   27 Mar 2017 10:42:30  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   15 Jun 2017 16:32:50  $
+  --       Date fetched Out : $Modtime:   15 Jun 2017 16:32:10  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
+  --
+  g_default_date_format      VARCHAR2(100);
+  g_default_datetime_format  VARCHAR2(100);
   --
   --
   -----------------------------------------------------------------------------
@@ -36,6 +39,30 @@ AS
   BEGIN
     RETURN g_body_sccsid;
   END get_body_version;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE set_date_formats
+    IS
+    --
+    CURSOR get_format
+        IS
+    SELECT value
+      FROM v$nls_parameters
+     WHERE parameter ='NLS_DATE_FORMAT'
+         ;
+    --
+  BEGIN
+    --
+    OPEN  get_format;
+    FETCH get_format
+     INTO g_default_date_format;
+    CLOSE get_format;
+    --
+    g_default_datetime_format := g_default_date_format||' HH24:MI';
+    --
+  END set_date_formats;
 
   --
   -----------------------------------------------------------------------------
@@ -142,28 +169,86 @@ AS
        ||CHR(10)||'      ,CAST(sql_based_domain AS VARCHAR2(1)) sql_based_domain'
        ||CHR(10)||'      ,display_sequence'
        ||CHR(10)||'  FROM (SELECT column_name column_name'
-       ||CHR(10)||'              ,DECODE(column_name,''IIT_PRIMARY_KEY'',''Primary Key'',''IIT_DESCR'',''Description'',''IIT_ADMIN_UNIT'',''Admin Unit'') prompt'
-       ||CHR(10)||'              ,DECODE(column_name,''IIT_ADMIN_UNIT'',''VARCHAR2'',data_type) datatype'
-       ||CHR(10)||'              ,NULL format_mask'
-       ||CHR(10)||'              ,NVL (data_precision, data_length) field_length'
+       ||CHR(10)||'              ,CASE column_name'
+       ||CHR(10)||'                 WHEN ''IIT_PRIMARY_KEY''   THEN ''Primary Key'''
+       ||CHR(10)||'                 WHEN ''IIT_DESCR''         THEN ''Description'''
+       ||CHR(10)||'                 WHEN ''IIT_X_SECT''        THEN ''XSP'''
+       ||CHR(10)||'                 WHEN ''IIT_ADMIN_UNIT''    THEN ''Admin Unit'''
+       ||CHR(10)||'                 WHEN ''IIT_NOTE''          THEN ''Notes'''
+       ||CHR(10)||'                 WHEN ''IIT_START_DATE''    THEN ''Start Date'''
+       ||CHR(10)||'                 WHEN ''IIT_END_DATE''      THEN ''End Date'''
+       ||CHR(10)||'                 WHEN ''IIT_DATE_CREATED''  THEN ''Date Created'''
+       ||CHR(10)||'                 WHEN ''IIT_CREATED_BY''    THEN ''Created By'''
+       ||CHR(10)||'                 WHEN ''IIT_DATE_MODIFIED'' THEN ''Date Last Modified'''
+       ||CHR(10)||'                 WHEN ''IIT_MODIFIED_BY''   THEN ''Last Modified By'''
+       ||CHR(10)||'               END prompt'
+       ||CHR(10)||'              ,CASE column_name'
+       ||CHR(10)||'                 WHEN ''IIT_ADMIN_UNIT'' THEN ''VARCHAR2'''
+       ||CHR(10)||'                 ELSE data_type'
+       ||CHR(10)||'               END datatype'
+       ||CHR(10)||'              ,CASE'
+       ||CHR(10)||'                 WHEN column_name IN(''IIT_START_DATE'',''IIT_END_DATE'')'
+       ||CHR(10)||'                  THEN'
+       ||CHR(10)||'                     :default_date_format'
+       ||CHR(10)||'                 WHEN column_name IN(''IIT_DATE_CREATED'',''IIT_DATE_MODIFIED'')'
+       ||CHR(10)||'                  THEN'
+       ||CHR(10)||'                     :default_datetime_format'
+       ||CHR(10)||'                 ELSE'
+       ||CHR(10)||'                     NULL '
+       ||CHR(10)||'               END format_mask'
+       ||CHR(10)||'              ,CASE'
+       ||CHR(10)||'                 WHEN column_name IN(''IIT_START_DATE'',''IIT_END_DATE'')'
+       ||CHR(10)||'                  THEN'
+       ||CHR(10)||'                     LENGTH(:default_date_format)'
+       ||CHR(10)||'                 WHEN column_name IN(''IIT_DATE_CREATED'',''IIT_DATE_MODIFIED'')'
+       ||CHR(10)||'                  THEN'
+       ||CHR(10)||'                     LENGTH(REPLACE(:default_datetime_format,''24'',''''))'
+       ||CHR(10)||'                 ELSE'
+       ||CHR(10)||'                     NVL(data_precision, data_length)'
+       ||CHR(10)||'               END field_length'
        ||CHR(10)||'              ,data_scale decimal_places'
        ||CHR(10)||'              ,NULL min_value'
        ||CHR(10)||'              ,NULL max_value'
-       ||CHR(10)||'              ,DECODE(data_type,''VARCHAR2'',DECODE(column_name,''IIT_PRIMARY_KEY'',''UPPER'',''MIXED''),''UPPER'') field_case'
-       ||CHR(10)||'              ,DECODE(column_name,''IIT_ADMIN_UNIT'',''IIT_ADMIN_UNIT'',NULL) domain_id'
+       ||CHR(10)||'              ,CASE data_type'
+       ||CHR(10)||'                 WHEN ''VARCHAR2'' THEN CASE column_name'
+       ||CHR(10)||'                                          WHEN ''IIT_PRIMARY_KEY'' THEN ''UPPER'''
+       ||CHR(10)||'                                          ELSE ''MIXED'''
+       ||CHR(10)||'                                        END'
+       ||CHR(10)||'                 ELSE ''UPPER'''
+       ||CHR(10)||'               END field_case'
+       ||CHR(10)||'              ,CASE column_name WHEN ''IIT_ADMIN_UNIT'' THEN ''IIT_ADMIN_UNIT'' ELSE NULL END domain_id'
        ||CHR(10)||'              ,''N'' sql_based_domain'
-       ||CHR(10)||'              ,column_id display_sequence'
+       ||CHR(10)||'              ,CASE column_name'
+       ||CHR(10)||'                 WHEN ''IIT_PRIMARY_KEY''   THEN 1'
+       ||CHR(10)||'                 WHEN ''IIT_DESCR''         THEN 2'
+       ||CHR(10)||'                 WHEN ''IIT_X_SECT''        THEN 3'
+       ||CHR(10)||'                 WHEN ''IIT_ADMIN_UNIT''    THEN 4'
+       ||CHR(10)||'                 WHEN ''IIT_NOTE''          THEN 5'
+       ||CHR(10)||'                 WHEN ''IIT_START_DATE''    THEN 6'
+       ||CHR(10)||'                 WHEN ''IIT_END_DATE''      THEN 7'
+       ||CHR(10)||'                 WHEN ''IIT_DATE_CREATED''  THEN 8'
+       ||CHR(10)||'                 WHEN ''IIT_CREATED_BY''    THEN 9'
+       ||CHR(10)||'                 WHEN ''IIT_DATE_MODIFIED'' THEN 10'
+       ||CHR(10)||'                 WHEN ''IIT_MODIFIED_BY''   THEN 11'
+       ||CHR(10)||'               END display_sequence'
        ||CHR(10)||'          FROM all_tab_columns'
        ||CHR(10)||'         WHERE owner = SYS_CONTEXT (''NM3CORE'',''APPLICATION_OWNER'')'
        ||CHR(10)||'           AND table_name = ''NM_INV_ITEMS_ALL'''
-       ||CHR(10)||'           AND column_name IN (''IIT_PRIMARY_KEY'',''IIT_DESCR'',''IIT_ADMIN_UNIT'')'
+       ||CHR(10)||'           AND column_name IN(''IIT_PRIMARY_KEY'',''IIT_DESCR'',''IIT_X_SECT'',''IIT_ADMIN_UNIT'',''IIT_NOTE'',''IIT_START_DATE'''
+       ||CHR(10)||'                             ,''IIT_END_DATE'',''IIT_CREATED_BY'',''IIT_DATE_CREATED'',''IIT_MODIFIED_BY'',''IIT_DATE_MODIFIED'')'
        ||CHR(10)||'        UNION ALL'
        ||CHR(10)||'        SELECT ita_attrib_name column_name'
-       ||CHR(10)||'              ,DECODE(ita_scrn_text, ''Primary Key'', ''Primary Key (attribute)'', ''Description'', ''Description (attribute)'', ''Network Location'', ''Network Location (attribute)'', ''Admin Unit'', ''Admin Unit (attribute)'', ita_scrn_text) prompt'
+       ||CHR(10)||'              ,CASE'
+       ||CHR(10)||'                 WHEN ita_scrn_text IN(''Primary Key'',''Description'',''XSP'',''Admin Unit'',''Notes'',''Start Date'''
+       ||CHR(10)||'                                      ,''End Date'',''Date Created'',''Created By'',''Date Last Modified'',''Last Modified By'')'
+       ||CHR(10)||'                  THEN'
+       ||CHR(10)||'                     ita_scrn_text||'' (attribute)'''
+       ||CHR(10)||'                 ELSE'
+       ||CHR(10)||'                     ita_scrn_text'
+       ||CHR(10)||'               END prompt'
        ||CHR(10)||'              ,ita_format datatype'
        ||CHR(10)||'              ,ita_format_mask format_mask'
-       ||CHR(10)||'              ,DECODE(ita_format,''DATE'',LENGTH(REPLACE(ita_format_mask,''24'',''''))'
-       ||CHR(10)||'                                         ,ita_fld_length) field_length'
+       ||CHR(10)||'              ,CASE ita_format WHEN ''DATE'' THEN LENGTH(REPLACE(ita_format_mask,''24'','''')) ELSE ita_fld_length END field_length'
        ||CHR(10)||'              ,ita_dec_places decimal_places'
        ||CHR(10)||'              ,ita_min min_value'
        ||CHR(10)||'              ,ita_max max_value'
@@ -221,7 +306,11 @@ AS
   BEGIN
     OPEN po_cursor FOR gen_asset_type_attributes_sql(pi_inv_type => pi_inv_type)
                        ||' ORDER BY display_sequence'
-      USING pi_inv_type;
+      USING g_default_date_format
+           ,g_default_datetime_format
+           ,g_default_date_format
+           ,g_default_datetime_format
+           ,pi_inv_type;
   END get_asset_type_attributes;
 
   --
@@ -248,57 +337,108 @@ AS
   ||CHR(10)||'      ,CAST(domain_id AS VARCHAR2(40)) domain_id'
   ||CHR(10)||'      ,CAST(sql_based_domain AS VARCHAR2(1)) sql_based_domain'
   ||CHR(10)||'      ,display_sequence'
-  ||CHR(10)||'  FROM (SELECT DECODE(column_name, ''NE_NAME_1'', ''NE_UNIQUE'', column_name) column_name'
-  ||CHR(10)||'              ,DECODE(column_name'
-  ||CHR(10)||'                     ,''NE_ID'', ''Element Id'''
-  ||CHR(10)||'                     ,''NE_NAME_1'', ''Unique'''
-  ||CHR(10)||'                     ,''NE_ADMIN_UNIT'', ''Admin Unit'''
-  ||CHR(10)||'                     ,''NE_NT_TYPE'', ''Network Type'''
-  ||CHR(10)||'                     ,''NE_DESCR'', ''Description'''
-  ||CHR(10)||'                     ,''NE_GTY_GROUP_TYPE'', ''Group Type'') prompt'
-  ||CHR(10)||'              ,DECODE(column_name, ''NE_ADMIN_UNIT'', ''VARCHAR2'', data_type) datatype'
-  ||CHR(10)||'              ,NULL format_mask'
-  ||CHR(10)||'              ,NVL(data_precision, data_length) field_length'
-  ||CHR(10)||'              ,data_scale decimal_places'
+  ||CHR(10)||'  FROM (SELECT CASE column_name WHEN ''NE_NAME_1'' THEN ''NE_UNIQUE'' ELSE column_name END column_name'
+  ||CHR(10)||'              ,CASE column_name'
+  ||CHR(10)||'                 WHEN ''NE_ID''             THEN ''Element Id'''
+  ||CHR(10)||'                 WHEN ''NE_NAME_1''         THEN ''Unique'''
+  ||CHR(10)||'                 WHEN ''NE_ADMIN_UNIT''     THEN ''Admin Unit'''
+  ||CHR(10)||'                 WHEN ''NE_NT_TYPE''        THEN ''Network Type'''
+  ||CHR(10)||'                 WHEN ''NE_DESCR''          THEN ''Description'''
+  ||CHR(10)||'                 WHEN ''NE_GTY_GROUP_TYPE'' THEN ''Group Type'''
+  ||CHR(10)||'                 WHEN ''NE_START_DATE''     THEN ''Start Date'''
+  ||CHR(10)||'                 WHEN ''NE_END_DATE''       THEN ''End Date'''
+  ||CHR(10)||'                 WHEN ''NE_NO_START''       THEN ''Start Node'''
+  ||CHR(10)||'                 WHEN ''NE_NO_END''         THEN ''End Node'''
+  ||CHR(10)||'                 WHEN ''NE_LENGTH''         THEN ''Length'''
+  ||CHR(10)||'                 WHEN ''NE_DATE_CREATED''   THEN ''Date Created'''
+  ||CHR(10)||'                 WHEN ''NE_CREATED_BY''     THEN ''Created By'''
+  ||CHR(10)||'                 WHEN ''NE_DATE_MODIFIED''  THEN ''Date Last Modified'''
+  ||CHR(10)||'                 WHEN ''NE_MODIFIED_BY''    THEN ''Last Modified By'''
+  ||CHR(10)||'               END prompt'
+  ||CHR(10)||'              ,CASE  WHEN column_name IN(''NE_ADMIN_UNIT'',''NE_NO_START'',''NE_NO_END'') THEN ''VARCHAR2'' ELSE data_type END datatype'
+  ||CHR(10)||'              ,CASE'
+  ||CHR(10)||'                 WHEN column_name IN(''NE_START_DATE'',''NE_END_DATE'')'
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     :default_date_format'
+  ||CHR(10)||'                 WHEN column_name IN(''NE_DATE_CREATED'',''NE_DATE_MODIFIED'')'
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     :default_datetime_format'
+  ||CHR(10)||'                 WHEN column_name = ''NE_LENGTH'''
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     nm3unit.get_unit_mask(:unit_id)'
+  ||CHR(10)||'                 ELSE'
+  ||CHR(10)||'                     NULL'
+  ||CHR(10)||'               END format_mask'
+  ||CHR(10)||'              ,CASE'
+  ||CHR(10)||'                 WHEN column_name IN(''NE_START_DATE'',''NE_END_DATE'')'
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     LENGTH(:default_date_format)'
+  ||CHR(10)||'                 WHEN column_name IN(''NE_DATE_CREATED'',''NE_DATE_MODIFIED'')'
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     LENGTH(REPLACE(:default_datetime_format,''24'',''''))'
+  ||CHR(10)||'                 ELSE'
+  ||CHR(10)||'                     NVL(data_precision, data_length)'
+  ||CHR(10)||'               END field_length'
+  ||CHR(10)||'              ,CASE'
+  ||CHR(10)||'                 WHEN column_name = ''NE_LENGTH'''
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     (SELECT LENGTH(SUBSTR(mask,INSTR(mask,(SELECT SUBSTR(value,1,1) FROM nls_database_parameters WHERE parameter = ''NLS_NUMERIC_CHARACTERS''),1)+ 1))'
+  ||CHR(10)||'                        FROM (SELECT nm3unit.get_unit_mask(:unit_id) mask FROM DUAL))'
+  ||CHR(10)||'                 ELSE'
+  ||CHR(10)||'                     data_scale'
+  ||CHR(10)||'               END decimal_places'
   ||CHR(10)||'              ,NULL min_value'
   ||CHR(10)||'              ,NULL max_value'
-  ||CHR(10)||'              ,DECODE(data_type, ''VARCHAR2'', DECODE(column_name, ''NE_NAME_1'', ''UPPER'', ''NE_NT_TYPE'', ''UPPER'', ''NE_GTY_GROUP_TYPE'', ''UPPER'', ''MIXED''), ''UPPER'') field_case'
-  ||CHR(10)||'              ,DECODE(column_name, ''NE_ADMIN_UNIT'', ''NE_ADMIN_UNIT'', NULL) domain_id'
-  ||CHR(10)||'              ,''N'' sql_based_domain'
+  ||CHR(10)||'              ,CASE data_type'
+  ||CHR(10)||'                 WHEN ''VARCHAR2'''
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     CASE WHEN column_name = ''NE_DESCR'' THEN ''MIXED'' ELSE ''UPPER'' END'
+  ||CHR(10)||'                 ELSE'
+  ||CHR(10)||'                     ''UPPER'''
+  ||CHR(10)||'               END field_case'
+  ||CHR(10)||'              ,CASE'
+  ||CHR(10)||'                 WHEN column_name = ''NE_ADMIN_UNIT'' THEN ''NE_ADMIN_UNIT'''
+  ||CHR(10)||'                 WHEN column_name IN(''NE_NO_START'',''NE_NO_END'') THEN ''NE_NODE'''
+  ||CHR(10)||'                 ELSE NULL'
+  ||CHR(10)||'               END domain_id'
+  ||CHR(10)||'              ,CASE WHEN column_name IN(''NE_NO_START'',''NE_NO_END'') THEN ''Y'' ELSE ''N'' END sql_based_domain'
   ||CHR(10)||'              ,CASE column_name'
-  ||CHR(10)||'                 WHEN ''NE_NAME_1'' THEN 1'
-  ||CHR(10)||'                 WHEN ''NE_DESCR'' THEN 2'
-  ||CHR(10)||'                 WHEN ''NE_NT_TYPE'' THEN 3'
+  ||CHR(10)||'                 WHEN ''NE_NAME_1''         THEN 1'
+  ||CHR(10)||'                 WHEN ''NE_DESCR''          THEN 2'
+  ||CHR(10)||'                 WHEN ''NE_NT_TYPE''        THEN 3'
   ||CHR(10)||'                 WHEN ''NE_GTY_GROUP_TYPE'' THEN 4'
-  ||CHR(10)||'                 WHEN ''NE_ADMIN_UNIT'' THEN 5'
-  ||CHR(10)||'                 WHEN ''NE_ID'' THEN 10000'
+  ||CHR(10)||'                 WHEN ''NE_ADMIN_UNIT''     THEN 5'
+  ||CHR(10)||'                 WHEN ''NE_START_DATE''     THEN 6'
+  ||CHR(10)||'                 WHEN ''NE_END_DATE''       THEN 7'
+  ||CHR(10)||'                 WHEN ''NE_NO_START''       THEN 8'
+  ||CHR(10)||'                 WHEN ''NE_NO_END''         THEN 9'
+  ||CHR(10)||'                 WHEN ''NE_LENGTH''         THEN 10'
+  ||CHR(10)||'                 WHEN ''NE_DATE_CREATED''   THEN 11'
+  ||CHR(10)||'                 WHEN ''NE_CREATED_BY''     THEN 12'
+  ||CHR(10)||'                 WHEN ''NE_DATE_MODIFIED''  THEN 13'
+  ||CHR(10)||'                 WHEN ''NE_MODIFIED_BY''    THEN 14'
+  ||CHR(10)||'                 WHEN ''NE_ID''             THEN 10000'
   ||CHR(10)||'               END display_sequence'
   ||CHR(10)||'          FROM all_tab_columns'
   ||CHR(10)||'         WHERE owner = SYS_CONTEXT(''NM3CORE'',''APPLICATION_OWNER'')'
   ||CHR(10)||'           AND table_name = ''NM_ELEMENTS_ALL'''
-  ||CHR(10)||'           AND column_name IN (''NE_ID'''
-  ||CHR(10)||'                              ,''NE_NAME_1'''
-  ||CHR(10)||'                              ,''NE_ADMIN_UNIT'''
-  ||CHR(10)||'                              ,''NE_NT_TYPE'''
-  ||CHR(10)||'                              ,''NE_DESCR'''
-  ||CHR(10)||'                              ,''NE_GTY_GROUP_TYPE'')'
+  ||CHR(10)||'           AND (column_name IN (''NE_ID'',''NE_NAME_1'',''NE_ADMIN_UNIT'',''NE_NT_TYPE'',''NE_DESCR'''
+  ||CHR(10)||'                              ,''NE_START_DATE'',''NE_END_DATE'',''NE_DATE_CREATED'''
+  ||CHR(10)||'                              ,''NE_CREATED_BY'',''NE_DATE_MODIFIED'',''NE_MODIFIED_BY'')'
+  ||CHR(10)||'                OR (nm3net.is_nt_datum(:pi_nt_type) = ''Y'' AND column_name IN(''NE_NO_START'',''NE_NO_END''))'
+  ||CHR(10)||'                OR (nm3net.is_nt_datum(:pi_nt_type) = ''N'' AND column_name = ''NE_GTY_GROUP_TYPE'')'
+  ||CHR(10)||'                OR (nm3net.is_nt_linear(:pi_nt_type) = ''Y'' AND column_name = ''NE_LENGTH''))'
   ||CHR(10)||'        UNION ALL'
   ||CHR(10)||'        SELECT ntc_column_name    column_name'
   ||CHR(10)||'              ,ntc_prompt         prompt'
   ||CHR(10)||'              ,ntc_column_type    datatype'
   ||CHR(10)||'              ,CASE'
-  ||CHR(10)||'                 WHEN ntc_column_type = ''DATE'''
-  ||CHR(10)||'                  THEN'
-  ||CHR(10)||'                     NVL(ntc_format,''DD-MON-YYYY'')'
-  ||CHR(10)||'                 ELSE'
-  ||CHR(10)||'                     ntc_format'
+  ||CHR(10)||'                 WHEN ntc_column_type = ''DATE'' THEN NVL(ntc_format,''DD-MON-YYYY'')'
+  ||CHR(10)||'                 ELSE ntc_format'
   ||CHR(10)||'               END format_mask'
   ||CHR(10)||'              ,CASE'
-  ||CHR(10)||'                 WHEN ntc_column_type = ''DATE'''
-  ||CHR(10)||'                  THEN'
-  ||CHR(10)||'                     LENGTH(REPLACE(ntc_format,''24'',''''))'
-  ||CHR(10)||'                 ELSE'
-  ||CHR(10)||'                     ntc_str_length'
+  ||CHR(10)||'                 WHEN ntc_column_type = ''DATE'' THEN LENGTH(REPLACE(NVL(ntc_format,''DD-MON-YYYY''),''24'',''''))'
+  ||CHR(10)||'                 ELSE ntc_str_length'
   ||CHR(10)||'               END field_length'
   ||CHR(10)||'              ,NULL               decimal_places'
   ||CHR(10)||'              ,NULL               min_value'
@@ -336,25 +476,19 @@ AS
   ||CHR(10)||'              ,ita_scrn_text     prompt'
   ||CHR(10)||'              ,ita_format        datatype'
   ||CHR(10)||'              ,CASE'
-  ||CHR(10)||'                 WHEN ita_format = ''DATE'''
-  ||CHR(10)||'                  THEN'
-  ||CHR(10)||'                     NVL(ita_format_mask,''DD-MON-YYYY'')'
-  ||CHR(10)||'                 ELSE'
-  ||CHR(10)||'                     ita_format_mask'
+  ||CHR(10)||'                 WHEN ita_format = ''DATE'' THEN NVL(ita_format_mask,''DD-MON-YYYY'')'
+  ||CHR(10)||'                 ELSE ita_format_mask'
   ||CHR(10)||'               END format_mask'
   ||CHR(10)||'              ,CASE'
-  ||CHR(10)||'                 WHEN ita_format = ''DATE'''
-  ||CHR(10)||'                  THEN'
-  ||CHR(10)||'                     LENGTH(REPLACE(ita_format_mask,''24'',''''))'
-  ||CHR(10)||'                 ELSE'
-  ||CHR(10)||'                     ita_fld_length'
+  ||CHR(10)||'                 WHEN ita_format = ''DATE'' THEN LENGTH(REPLACE(ita_format_mask,''24'',''''))'
+  ||CHR(10)||'                 ELSE ita_fld_length'
   ||CHR(10)||'               END field_length'
   ||CHR(10)||'              ,ita_dec_places    decimal_places'
   ||CHR(10)||'              ,ita_min           min_value'
   ||CHR(10)||'              ,ita_max           max_value'
   ||CHR(10)||'              ,ita_case          field_case'
   ||CHR(10)||'              ,ita_id_domain     domain_id'
-  ||CHR(10)||'              ,''N''               sql_based_domain'
+  ||CHR(10)||'              ,''N''             sql_based_domain'
   ||CHR(10)||'              ,ita_disp_seq_no+1000 seq_no'
   ||CHR(10)||'          FROM nm_inv_type_attribs'
   ||CHR(10)||'              ,nm_nw_ad_types adt'
@@ -371,11 +505,21 @@ AS
   --
   PROCEDURE get_network_attributes(pi_nt_type    IN  nm_types.nt_type%TYPE
                                   ,pi_group_type IN  nm_group_types_all.ngt_group_type%TYPE
+                                  ,pi_unit_id    IN  nm_units.un_unit_id%TYPE
                                   ,po_cursor     OUT sys_refcursor)
     IS
   BEGIN
     OPEN po_cursor FOR gen_network_attributes_sql||' ORDER BY display_sequence'
-    USING pi_nt_type
+    USING g_default_date_format
+         ,g_default_datetime_format
+         ,pi_unit_id
+         ,g_default_date_format
+         ,g_default_datetime_format
+         ,pi_unit_id
+         ,pi_nt_type
+         ,pi_nt_type
+         ,pi_nt_type
+         ,pi_nt_type
          ,pi_nt_type
          ,pi_group_type;
   END get_network_attributes;
@@ -403,6 +547,7 @@ AS
               --
               get_network_attributes(pi_nt_type    => lt_theme_types(1).network_type
                                     ,pi_group_type => lt_theme_types(1).network_group_type
+                                    ,pi_unit_id    => lt_theme_types(1).unit_id
                                     ,po_cursor     => po_cursor);
               --
           WHEN lt_theme_types(1).asset_type IS NOT NULL
@@ -565,6 +710,126 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION get_nodes_sql
+    RETURN VARCHAR2 IS
+  BEGIN
+    --
+    RETURN   'SELECT TO_CHAR(no_node_id) code'
+  ||CHR(10)||'      ,no_node_name meaning'
+  ||CHR(10)||'  FROM nm_nodes'
+  ||CHR(10)||' WHERE no_node_type = :node_type'
+    ;
+    --
+  END get_nodes_sql;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nodes(pi_node_type IN  nm_nodes.no_node_type%TYPE
+                     ,po_cursor    OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR get_nodes_sql||' ORDER BY meaning' USING pi_node_type;
+    --
+  END get_nodes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_nodes(pi_node_type   IN  nm_nodes.no_node_type%TYPE
+                           ,pi_filter      IN  VARCHAR2
+                           ,pi_skip_n_rows IN  PLS_INTEGER
+                           ,pi_pagesize    IN  PLS_INTEGER
+                           ,po_cursor      OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index       PLS_INTEGER;
+    lv_upper_index       PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    lv_cursor_sql       nm3type.max_varchar2 := 'SELECT code'
+                                     ||CHR(10)||'      ,meaning'
+                                     ||CHR(10)||'      ,row_count'
+                                     ||CHR(10)||'  FROM (SELECT rownum ind'
+                                     ||CHR(10)||'              ,code'
+                                     ||CHR(10)||'              ,meaning'
+                                     ||CHR(10)||'              ,CASE'
+                                     ||CHR(10)||'                 WHEN UPPER(meaning) = UPPER(:filter) THEN 1'
+                                     ||CHR(10)||'                 WHEN UPPER(meaning) LIKE UPPER(:filter)||''%'' THEN 2'
+                                     ||CHR(10)||'                 ELSE 3'
+                                     ||CHR(10)||'               END match_quality'
+                                     ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                     ||CHR(10)||'          FROM ('
+    ;
+    --
+  BEGIN
+    --
+    IF pi_filter IS NOT NULL
+     THEN
+        lv_filter := ' AND UPPER(no_node_name) LIKE UPPER(''%''||:filter||''%'')';
+    END IF;
+    --
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||get_nodes_sql
+                     ||lv_filter
+                     ||') ORDER BY match_quality,meaning)'
+                     ||CHR(10)||lv_row_restriction
+    ;
+    --
+    IF pi_filter IS NOT NULL
+     THEN
+        IF pi_pagesize IS NOT NULL
+         THEN
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,pi_filter
+                 ,pi_node_type
+                 ,pi_filter
+                 ,lv_lower_index
+                 ,lv_upper_index
+            ;
+        ELSE
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,pi_filter
+                 ,pi_node_type
+                 ,pi_filter
+                 ,lv_lower_index
+            ;
+        END IF;
+    ELSE
+        IF pi_pagesize IS NOT NULL
+         THEN
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,pi_filter
+                 ,pi_node_type
+                 ,lv_lower_index
+                 ,lv_upper_index
+            ;
+        ELSE
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,pi_filter
+                 ,pi_node_type
+                 ,lv_lower_index
+            ;
+        END IF;
+    END IF;
+    --
+  END get_paged_nodes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   FUNCTION get_asset_domain_sql
     RETURN VARCHAR2 IS
   BEGIN
@@ -720,28 +985,38 @@ AS
           WHEN lt_theme_types(1).network_type IS NOT NULL
            THEN
               --
-              IF pi_column_name = 'NE_ADMIN_UNIT'
-               THEN
-                  --
-                  get_admin_units(pi_admin_type  => lt_theme_types(1).admin_type
-                                 ,po_cursor      => po_cursor);
-                  --
-                  awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                                       ,po_cursor           => po_message_cursor);
-                  --
-              ELSE
-                  --
-                  awlrs_element_api.get_nt_flex_domain(pi_nt_type          => lt_theme_types(1).network_type
-                                                      ,pi_group_type       => lt_theme_types(1).network_group_type
-                                                      ,pi_column_name      => pi_column_name
-                                                      ,po_message_severity => lv_message_severity
-                                                      ,po_message_cursor   => lv_message_cursor
-                                                      ,po_cursor           => po_cursor);
-                  --
-                  po_message_severity := lv_message_severity;
-                  po_message_cursor := lv_message_cursor;
-                  --
-              END IF;
+              CASE
+                WHEN pi_column_name = 'NE_ADMIN_UNIT'
+                 THEN
+                    --
+                    get_admin_units(pi_admin_type  => lt_theme_types(1).admin_type
+                                   ,po_cursor      => po_cursor);
+                    --
+                    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                                         ,po_cursor           => po_message_cursor);
+                    --
+                WHEN pi_column_name IN('NE_NO_START','NE_NO_END')
+                 THEN
+                    --
+                    get_nodes(pi_node_type => lt_theme_types(1).node_type
+                             ,po_cursor    => po_cursor);
+                    --
+                    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                                         ,po_cursor           => po_message_cursor);
+                    --
+                ELSE
+                    --
+                    awlrs_element_api.get_nt_flex_domain(pi_nt_type          => lt_theme_types(1).network_type
+                                                        ,pi_group_type       => lt_theme_types(1).network_group_type
+                                                        ,pi_column_name      => pi_column_name
+                                                        ,po_message_severity => lv_message_severity
+                                                        ,po_message_cursor   => lv_message_cursor
+                                                        ,po_cursor           => po_cursor);
+                    --
+                    po_message_severity := lv_message_severity;
+                    po_message_cursor := lv_message_cursor;
+                    --
+              END CASE;
               --
           WHEN lt_theme_types(1).asset_type IS NOT NULL
            THEN
@@ -812,34 +1087,47 @@ AS
           WHEN lt_theme_types(1).network_type IS NOT NULL
            THEN
               --
-              IF pi_column_name = 'NE_ADMIN_UNIT'
-               THEN
-                  --
-                  get_paged_admin_units(pi_admin_type  => lt_theme_types(1).admin_type
-                                       ,pi_filter      => pi_filter
-                                       ,pi_skip_n_rows => pi_skip_n_rows
-                                       ,pi_pagesize    => pi_pagesize
-                                       ,po_cursor      => po_cursor);
-                  --
-                  awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                                       ,po_cursor           => po_message_cursor);
-                  --
-              ELSE
-                  --
-                  awlrs_element_api.get_paged_nt_flex_domain(pi_nt_type          => lt_theme_types(1).network_type
-                                                            ,pi_group_type       => lt_theme_types(1).network_group_type
-                                                            ,pi_column_name      => pi_column_name
-                                                            ,pi_filter           => pi_filter
-                                                            ,pi_skip_n_rows      => pi_skip_n_rows
-                                                            ,pi_pagesize         => pi_pagesize
-                                                            ,po_message_severity => lv_message_severity
-                                                            ,po_message_cursor   => lv_message_cursor
-                                                            ,po_cursor           => po_cursor);
-                  --
-                  po_message_severity := lv_message_severity;
-                  po_message_cursor := lv_message_cursor;
-                  --
-              END IF;
+              CASE
+                WHEN pi_column_name = 'NE_ADMIN_UNIT'
+                 THEN
+                    --
+                    get_paged_admin_units(pi_admin_type  => lt_theme_types(1).admin_type
+                                         ,pi_filter      => pi_filter
+                                         ,pi_skip_n_rows => pi_skip_n_rows
+                                         ,pi_pagesize    => pi_pagesize
+                                         ,po_cursor      => po_cursor);
+                    --
+                    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                                         ,po_cursor           => po_message_cursor);
+                    --
+                WHEN pi_column_name IN('NE_NO_START','NE_NO_END')
+                 THEN
+                    --
+                    get_paged_nodes(pi_node_type   => lt_theme_types(1).node_type
+                                   ,pi_filter      => pi_filter
+                                   ,pi_skip_n_rows => pi_skip_n_rows
+                                   ,pi_pagesize    => pi_pagesize
+                                   ,po_cursor      => po_cursor);
+                    --
+                    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                                         ,po_cursor           => po_message_cursor);
+                    --
+                ELSE
+                    --
+                    awlrs_element_api.get_paged_nt_flex_domain(pi_nt_type          => lt_theme_types(1).network_type
+                                                              ,pi_group_type       => lt_theme_types(1).network_group_type
+                                                              ,pi_column_name      => pi_column_name
+                                                              ,pi_filter           => pi_filter
+                                                              ,pi_skip_n_rows      => pi_skip_n_rows
+                                                              ,pi_pagesize         => pi_pagesize
+                                                              ,po_message_severity => lv_message_severity
+                                                              ,po_message_cursor   => lv_message_cursor
+                                                              ,po_cursor           => po_cursor);
+                    --
+                    po_message_severity := lv_message_severity;
+                    po_message_cursor := lv_message_cursor;
+                    --
+              END CASE;
               --
           WHEN lt_theme_types(1).asset_type IS NOT NULL
            THEN
@@ -1385,6 +1673,7 @@ AS
     lv_format_mask  VARCHAR2(80);
     lv_operation    VARCHAR2(10);
     lv_subquery     nm3type.max_varchar2;
+    lv_expression   single_expression_rec;
     --
     PROCEDURE get_format(pi_theme_types IN  awlrs_map_api.theme_types_rec
                         ,pi_attrib_name IN  nm_inv_type_attribs_all.ita_attrib_name%TYPE
@@ -1421,11 +1710,34 @@ AS
       IF pi_theme_types.asset_type IS NOT NULL
        THEN
           --
-          EXECUTE IMMEDIATE lv_sql INTO po_format, po_format_mask USING pi_theme_types.asset_type, pi_attrib_name;
+          EXECUTE IMMEDIATE lv_sql
+             INTO po_format
+                 ,po_format_mask
+            USING g_default_date_format
+                 ,g_default_datetime_format
+                 ,g_default_date_format
+                 ,g_default_datetime_format
+                 ,pi_theme_types.asset_type
+                 ,pi_attrib_name;
           --
       ELSE
           --
-          EXECUTE IMMEDIATE lv_sql INTO po_format, po_format_mask USING pi_theme_types.network_type,pi_theme_types.network_type,pi_theme_types.network_group_type,pi_attrib_name;
+          EXECUTE IMMEDIATE lv_sql
+             INTO po_format
+                 ,po_format_mask
+            USING g_default_date_format
+                 ,g_default_datetime_format
+                 ,pi_theme_types.unit_id
+                 ,g_default_date_format
+                 ,g_default_datetime_format
+                 ,pi_theme_types.unit_id
+                 ,pi_theme_types.network_type
+                 ,pi_theme_types.network_type
+                 ,pi_theme_types.network_type
+                 ,pi_theme_types.network_type
+                 ,pi_theme_types.network_type
+                 ,pi_theme_types.network_group_type
+                 ,pi_attrib_name;
           --
       END IF;
       --
@@ -1456,26 +1768,33 @@ AS
               ,po_format      => lv_datatype
               ,po_format_mask => lv_format_mask);
     --
-    IF pi_theme_types.asset_type IS NOT NULL
-     AND pi_expression.field_name = 'NetworkLocation'
-     THEN
-        --
-        BEGIN
+    CASE
+      WHEN pi_theme_types.asset_type IS NOT NULL
+       AND pi_expression.field_name = 'NetworkLocation'
+       THEN
+          --
           po_sql := po_sql||' '||lv_operation||' iit_ne_id IN(SELECT ngqi_item_id FROM nm_gaz_query_item_list WHERE ngqi_job_id = '
                     ||execute_gaz_query(pi_ne_id    => awlrs_element_api.get_ne_id(pi_element_name => pi_expression.value1)
                                        ,pi_inv_type => pi_theme_types.asset_type)
                     ||')';
-        END;
-        --
-    ELSE
-        --
-        get_clause(pi_datatype    => lv_datatype
-                  ,pi_format_mask => lv_format_mask
-                  ,pi_operation   => lv_operation
-                  ,pi_expression  => pi_expression
-                  ,po_sql         => po_sql);
-        --
-    END IF;
+          --
+      ELSE
+          --
+          lv_expression := pi_expression;
+          --
+          IF pi_theme_types.network_group_type IS NOT NULL
+           AND lv_expression.field_name = 'NE_LENGTH'
+           THEN
+              lv_expression.field_name := 'nm3net.get_ne_length(ne_id)';
+          END IF;
+          --
+          get_clause(pi_datatype    => lv_datatype
+                    ,pi_format_mask => lv_format_mask
+                    ,pi_operation   => lv_operation
+                    ,pi_expression  => lv_expression
+                    ,po_sql         => po_sql);
+          --
+    END CASE;
     --
   END process_single_expression;
 
@@ -1583,7 +1902,7 @@ AS
                               ,po_sql         => lv_sql);
     END LOOP;
     --
-    RETURN LTRIM(lv_sql);
+    RETURN NVL(LTRIM(lv_sql),'1=1');
     --
   END generate_where_clause;
 
@@ -3302,5 +3621,10 @@ AS
                                    ,po_cursor           => po_message_cursor);
   END get_criteria_list;
 
+--
+-----------------------------------------------------------------------------
+--
+BEGIN
+  set_date_formats;
 END awlrs_search_api;
 /
