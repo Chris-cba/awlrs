@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkh-arc   1.5   15 Mar 2017 18:00:54   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkh-arc   1.6   15 Jun 2017 21:10:06   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkh  $
-  --       Date into PVCS   : $Date:   15 Mar 2017 18:00:54  $
-  --       Date fetched Out : $Modtime:   15 Mar 2017 17:48:16  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   15 Jun 2017 21:10:06  $
+  --       Date fetched Out : $Modtime:   15 Jun 2017 20:48:32  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -81,8 +81,10 @@ AS
                          ,pi_mem_start_date   IN  nm_members.nm_start_date%TYPE
                          ,pi_old_mem_begin_mp IN  nm_members.nm_begin_mp%TYPE
                          ,pi_old_mem_end_mp   IN  nm_members.nm_end_mp%TYPE
+--                         ,pi_old_cardinality  IN  nm_members.nm_cardinality%TYPE
                          ,pi_new_mem_begin_mp IN  nm_members.nm_begin_mp%TYPE
                          ,pi_new_mem_end_mp   IN  nm_members.nm_end_mp%TYPE
+--                         ,pi_new_cardinality  IN  nm_members.nm_cardinality%TYPE
                          ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                          ,po_message_severity OUT hig_codes.hco_code%TYPE
                          ,po_message_cursor   OUT sys_refcursor);
