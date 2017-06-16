@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.19   15 Jun 2017 21:10:08   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.20   16 Jun 2017 16:36:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   15 Jun 2017 21:10:08  $
-  --       Date fetched Out : $Modtime:   15 Jun 2017 20:49:18  $
-  --       Version          : $Revision:   1.19  $
+  --       Date into PVCS   : $Date:   16 Jun 2017 16:36:58  $
+  --       Date fetched Out : $Modtime:   16 Jun 2017 16:31:04  $
+  --       Version          : $Revision:   1.20  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.20  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -48,6 +48,7 @@ AS
     SELECT group_element_id
           ,member_element_id
           ,member_seq_no
+          ,member_element_type
           ,member_network_type
           ,member_network_type_descr
           ,member_unique
@@ -65,6 +66,7 @@ AS
           ,member_start_date
           ,member_end_date
       FROM (SELECT nm_seq_no member_seq_no
+                  ,ne.ne_type member_element_type
                   ,ne.ne_nt_type member_network_type
                   ,nt.nt_descr member_network_type_descr
                   ,ne.ne_unique member_unique
