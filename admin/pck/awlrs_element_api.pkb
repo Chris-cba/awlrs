@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.26   05 Jun 2017 18:13:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.27   19 Jun 2017 10:17:18   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   05 Jun 2017 18:13:46  $
-  --       Date fetched Out : $Modtime:   05 Jun 2017 18:10:34  $
-  --       Version          : $Revision:   1.26  $
+  --       Date into PVCS   : $Date:   19 Jun 2017 10:17:18  $
+  --       Date fetched Out : $Modtime:   19 Jun 2017 10:15:52  $
+  --       Version          : $Revision:   1.27  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.26  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.27  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -964,7 +964,18 @@ AS
     lv_disp_primary_ad VARCHAR2(1) := CASE WHEN pi_disp_primary_ad THEN 'Y' ELSE 'N' END;
     lt_columns  nm3flx.tab_type_columns;
     --
+    lv_ne_type  nm_elements_all.ne_type%TYPE;
+    --
   BEGIN
+    /*
+    ||Need to return no rows for Distance Breaks.
+    */
+    IF pi_ne_id IS NOT NULL
+     THEN
+        lv_ne_type := nm3get.get_ne_all(pi_ne_id => pi_ne_id).ne_type;
+    ELSE
+        lv_ne_type := 'X';
+    END IF;
     --
     OPEN po_cursor FOR
     SELECT column_name
@@ -1124,6 +1135,7 @@ AS
                AND adt.nad_inv_type = ita_inv_type
                AND adt.nad_id = adlink.nad_id(+)
                AND adlink.nad_ne_id(+) = pi_ne_id)
+     WHERE lv_ne_type != 'D'
      ORDER
         BY seq_no
           ,column_name
