@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.7   15 Jun 2017 16:32:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.8   19 Jun 2017 10:14:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   15 Jun 2017 16:32:50  $
-  --       Date fetched Out : $Modtime:   15 Jun 2017 16:32:10  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   19 Jun 2017 10:14:20  $
+  --       Date fetched Out : $Modtime:   16 Jun 2017 18:52:28  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -2111,7 +2111,8 @@ AS
       ||CHR(10)||'                        END match_quality'
       ||CHR(10)||'                   FROM nm_admin_units_all'
       ||CHR(10)||'                       ,nm_elements_all'
-      ||CHR(10)||'                  WHERE ne_nt_type = :nt_type'
+      ||CHR(10)||'                  WHERE ne_type != ''D'''
+      ||CHR(10)||'                    AND ne_nt_type = :nt_type'
       ||CHR(10)||'                    AND NVL(ne_gty_group_type,:nvl) = NVL(:group_type,:nvl)'
       ||CASE
           WHEN pi_include_enddated = 'N'
@@ -2891,7 +2892,8 @@ AS
       ||CHR(10)||'                   FROM nm_elements_all'
       ||CHR(10)||'                       ,nm_nw_ad_link'
       ||CHR(10)||'                       ,nm_inv_items'
-      ||CHR(10)||'                  WHERE ne_nt_type = :nt_type'
+      ||CHR(10)||'                  WHERE ne_type != ''D'''
+      ||CHR(10)||'                    AND ne_nt_type = :nt_type'
       ||CHR(10)||'                    AND NVL(ne_gty_group_type,:nvl) = NVL(:group_type,:nvl)'
       ||CASE
           WHEN pi_include_enddated = 'N'
