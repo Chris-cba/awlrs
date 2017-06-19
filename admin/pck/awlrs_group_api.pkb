@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.20   16 Jun 2017 16:36:58   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.21   19 Jun 2017 10:20:24   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   16 Jun 2017 16:36:58  $
-  --       Date fetched Out : $Modtime:   16 Jun 2017 16:31:04  $
-  --       Version          : $Revision:   1.20  $
+  --       Date into PVCS   : $Date:   19 Jun 2017 10:20:24  $
+  --       Date fetched Out : $Modtime:   16 Jun 2017 17:06:18  $
+  --       Version          : $Revision:   1.21  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.20  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -532,7 +532,7 @@ AS
     /*
     ||If the member is a distance break then end date it as well as its membership.
     */
-    IF lr_memb_ne.ne_type != 'D'
+    IF lr_memb_ne.ne_type = 'D'
      THEN
         UPDATE nm_elements_all
            SET ne_end_date = TRUNC(pi_effective_date)
