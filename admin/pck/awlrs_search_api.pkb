@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.8   19 Jun 2017 10:14:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.9   20 Jun 2017 17:14:00   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   19 Jun 2017 10:14:20  $
-  --       Date fetched Out : $Modtime:   16 Jun 2017 18:52:28  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   20 Jun 2017 17:14:00  $
+  --       Date fetched Out : $Modtime:   20 Jun 2017 10:51:52  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -48,17 +48,22 @@ AS
     --
     CURSOR get_format
         IS
-    SELECT value
+    SELECT REPLACE(value,'R','Y')
       FROM v$nls_parameters
      WHERE parameter ='NLS_DATE_FORMAT'
          ;
     --
   BEGIN
     --
-    OPEN  get_format;
-    FETCH get_format
-     INTO g_default_date_format;
-    CLOSE get_format;
+    g_default_date_format := REPLACE(hig.get_sysopt('GRIDATE'),'R','Y');
+    --
+    IF g_default_date_format IS NULL
+     THEN
+        OPEN  get_format;
+        FETCH get_format
+         INTO g_default_date_format;
+        CLOSE get_format;
+    END IF;
     --
     g_default_datetime_format := g_default_date_format||' HH24:MI';
     --
@@ -120,9 +125,8 @@ AS
        ||CHR(10)||'        SELECT ita_attrib_name column_name'
        ||CHR(10)||'              ,DECODE(ita_scrn_text, ''Primary Key'', ''Primary Key (attribute)'', ''Network Location'', ''Network Location (attribute)'', ita_scrn_text) prompt'
        ||CHR(10)||'              ,ita_format datatype'
-       ||CHR(10)||'              ,ita_format_mask format_mask'
-       ||CHR(10)||'              ,DECODE(ita_format,''DATE'',LENGTH(REPLACE(ita_format_mask,''24'',''''))'
-       ||CHR(10)||'                                         ,ita_fld_length) field_length'
+       ||CHR(10)||'              ,CASE ita_format WHEN ''DATE'' THEN REPLACE(NVL(ita_format_mask,:default_date_format),''R'',''Y'') ELSE ita_format_mask END format_mask'
+       ||CHR(10)||'              ,CASE ita_format WHEN ''DATE'' THEN LENGTH(REPLACE(NVL(ita_format_mask,:default_date_format),''24'','''')) ELSE ita_fld_length END field_length'
        ||CHR(10)||'              ,ita_dec_places decimal_places'
        ||CHR(10)||'              ,ita_min min_value'
        ||CHR(10)||'              ,ita_max max_value'
@@ -247,8 +251,8 @@ AS
        ||CHR(10)||'                     ita_scrn_text'
        ||CHR(10)||'               END prompt'
        ||CHR(10)||'              ,ita_format datatype'
-       ||CHR(10)||'              ,ita_format_mask format_mask'
-       ||CHR(10)||'              ,CASE ita_format WHEN ''DATE'' THEN LENGTH(REPLACE(ita_format_mask,''24'','''')) ELSE ita_fld_length END field_length'
+       ||CHR(10)||'              ,CASE ita_format WHEN ''DATE'' THEN REPLACE(NVL(ita_format_mask,:default_date_format),''R'',''Y'') ELSE ita_format_mask END format_mask'
+       ||CHR(10)||'              ,CASE ita_format WHEN ''DATE'' THEN LENGTH(REPLACE(NVL(ita_format_mask,:default_date_format),''24'','''')) ELSE ita_fld_length END field_length'
        ||CHR(10)||'              ,ita_dec_places decimal_places'
        ||CHR(10)||'              ,ita_min min_value'
        ||CHR(10)||'              ,ita_max max_value'
@@ -300,17 +304,31 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_asset_type_attributes(pi_inv_type IN  nm_inv_types_all.nit_inv_type%TYPE
-                                   ,po_cursor   OUT sys_refcursor)
+  PROCEDURE get_asset_type_attributes(pi_inv_type      IN  nm_inv_types_all.nit_inv_type%TYPE
+                                     ,pi_ft_asset_type IN  VARCHAR2
+                                     ,po_cursor        OUT sys_refcursor)
     IS
   BEGIN
-    OPEN po_cursor FOR gen_asset_type_attributes_sql(pi_inv_type => pi_inv_type)
-                       ||' ORDER BY display_sequence'
-      USING g_default_date_format
-           ,g_default_datetime_format
-           ,g_default_date_format
-           ,g_default_datetime_format
-           ,pi_inv_type;
+    --
+    IF pi_ft_asset_type = 'Y'
+     THEN
+        OPEN po_cursor FOR gen_asset_type_attributes_sql(pi_inv_type => pi_inv_type)
+                           ||' ORDER BY display_sequence'
+          USING pi_inv_type
+               ,g_default_date_format
+               ,g_default_date_format;
+    ELSE
+        OPEN po_cursor FOR gen_asset_type_attributes_sql(pi_inv_type => pi_inv_type)
+                           ||' ORDER BY display_sequence'
+          USING g_default_date_format
+               ,g_default_datetime_format
+               ,g_default_date_format
+               ,g_default_datetime_format
+               ,g_default_date_format
+               ,g_default_date_format
+               ,pi_inv_type;
+    END IF;
+    --
   END get_asset_type_attributes;
 
   --
@@ -432,14 +450,8 @@ AS
   ||CHR(10)||'        SELECT ntc_column_name    column_name'
   ||CHR(10)||'              ,ntc_prompt         prompt'
   ||CHR(10)||'              ,ntc_column_type    datatype'
-  ||CHR(10)||'              ,CASE'
-  ||CHR(10)||'                 WHEN ntc_column_type = ''DATE'' THEN NVL(ntc_format,''DD-MON-YYYY'')'
-  ||CHR(10)||'                 ELSE ntc_format'
-  ||CHR(10)||'               END format_mask'
-  ||CHR(10)||'              ,CASE'
-  ||CHR(10)||'                 WHEN ntc_column_type = ''DATE'' THEN LENGTH(REPLACE(NVL(ntc_format,''DD-MON-YYYY''),''24'',''''))'
-  ||CHR(10)||'                 ELSE ntc_str_length'
-  ||CHR(10)||'               END field_length'
+  ||CHR(10)||'              ,CASE ntc_column_type WHEN ''DATE'' THEN REPLACE(NVL(ntc_format,:default_date_format),''R'',''Y'') ELSE ntc_format END format_mask'
+  ||CHR(10)||'              ,CASE ntc_column_type WHEN ''DATE'' THEN LENGTH(REPLACE(NVL(ntc_format,:default_date_format),''24'','''')) ELSE ntc_str_length END field_length'
   ||CHR(10)||'              ,NULL               decimal_places'
   ||CHR(10)||'              ,NULL               min_value'
   ||CHR(10)||'              ,NULL               max_value'
@@ -475,14 +487,8 @@ AS
   ||CHR(10)||'        SELECT ita_attrib_name   column_name'
   ||CHR(10)||'              ,ita_scrn_text     prompt'
   ||CHR(10)||'              ,ita_format        datatype'
-  ||CHR(10)||'              ,CASE'
-  ||CHR(10)||'                 WHEN ita_format = ''DATE'' THEN NVL(ita_format_mask,''DD-MON-YYYY'')'
-  ||CHR(10)||'                 ELSE ita_format_mask'
-  ||CHR(10)||'               END format_mask'
-  ||CHR(10)||'              ,CASE'
-  ||CHR(10)||'                 WHEN ita_format = ''DATE'' THEN LENGTH(REPLACE(ita_format_mask,''24'',''''))'
-  ||CHR(10)||'                 ELSE ita_fld_length'
-  ||CHR(10)||'               END field_length'
+  ||CHR(10)||'              ,CASE ita_format WHEN ''DATE'' THEN REPLACE(NVL(ita_format_mask,:default_date_format),''R'',''Y'') ELSE ita_format_mask END format_mask'
+  ||CHR(10)||'              ,CASE ita_format WHEN ''DATE'' THEN LENGTH(REPLACE(NVL(ita_format_mask,:default_date_format),''24'','''')) ELSE ita_fld_length END field_length'
   ||CHR(10)||'              ,ita_dec_places    decimal_places'
   ||CHR(10)||'              ,ita_min           min_value'
   ||CHR(10)||'              ,ita_max           max_value'
@@ -519,7 +525,11 @@ AS
          ,pi_nt_type
          ,pi_nt_type
          ,pi_nt_type
+         ,g_default_date_format
+         ,g_default_date_format
          ,pi_nt_type
+         ,g_default_date_format
+         ,g_default_date_format
          ,pi_nt_type
          ,pi_group_type;
   END get_network_attributes;
@@ -553,8 +563,9 @@ AS
           WHEN lt_theme_types(1).asset_type IS NOT NULL
            THEN
               --
-              get_asset_type_attributes(pi_inv_type => lt_theme_types(1).asset_type
-                                       ,po_cursor   => po_cursor);
+              get_asset_type_attributes(pi_inv_type      => lt_theme_types(1).asset_type
+                                       ,pi_ft_asset_type => lt_theme_types(1).ft_asset_type
+                                       ,po_cursor        => po_cursor);
               --
           ELSE
               --
@@ -1710,15 +1721,32 @@ AS
       IF pi_theme_types.asset_type IS NOT NULL
        THEN
           --
-          EXECUTE IMMEDIATE lv_sql
-             INTO po_format
-                 ,po_format_mask
-            USING g_default_date_format
-                 ,g_default_datetime_format
-                 ,g_default_date_format
-                 ,g_default_datetime_format
-                 ,pi_theme_types.asset_type
-                 ,pi_attrib_name;
+          IF pi_theme_types.ft_asset_type = 'Y'
+           THEN
+              --
+              EXECUTE IMMEDIATE lv_sql
+                 INTO po_format
+                     ,po_format_mask
+                USING pi_theme_types.asset_type
+                     ,g_default_date_format
+                     ,g_default_date_format
+                     ,pi_attrib_name;
+              --
+          ELSE
+              --
+              EXECUTE IMMEDIATE lv_sql
+                 INTO po_format
+                     ,po_format_mask
+                USING g_default_date_format
+                     ,g_default_datetime_format
+                     ,g_default_date_format
+                     ,g_default_datetime_format
+                     ,g_default_date_format
+                     ,g_default_date_format
+                     ,pi_theme_types.asset_type
+                     ,pi_attrib_name;
+              --
+          END IF;
           --
       ELSE
           --
@@ -1734,7 +1762,11 @@ AS
                  ,pi_theme_types.network_type
                  ,pi_theme_types.network_type
                  ,pi_theme_types.network_type
+                 ,g_default_date_format
+                 ,g_default_date_format
                  ,pi_theme_types.network_type
+                 ,g_default_date_format
+                 ,g_default_date_format
                  ,pi_theme_types.network_type
                  ,pi_theme_types.network_group_type
                  ,pi_attrib_name;
