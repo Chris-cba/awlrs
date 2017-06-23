@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.21   23 Jun 2017 10:42:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.22   23 Jun 2017 13:34:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   23 Jun 2017 10:42:38  $
-  --       Date fetched Out : $Modtime:   21 Jun 2017 14:12:58  $
-  --       Version          : $Revision:   1.21  $
+  --       Date into PVCS   : $Date:   23 Jun 2017 13:34:56  $
+  --       Date fetched Out : $Modtime:   23 Jun 2017 12:14:32  $
+  --       Version          : $Revision:   1.22  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -2666,16 +2666,16 @@ AS
         END IF;
         --
         lv_layer_text := lv_layer_text||') USING UNIQUE '||lt_themes(i).nth_feature_pk_column||lv_using_srid||'"'
-              ||CHR(10)||'    FILTER (%featurekey%=%featurekeyvalue%)'
+              ||CHR(10)||'    FILTER (%featurekey% in (%featurekeyvalues%))'
               ||CHR(10)||'    VALIDATION'
-              ||CHR(10)||'      "user"                    "^.*"'
-              ||CHR(10)||'      "pwd"                     "^.*"'
-              ||CHR(10)||'      "featurekey"              "^.*"'
-              ||CHR(10)||'      "featurekeyvalue"         "^.*"'
-              ||CHR(10)||'      "spatialfilter"           "^.*"'
-              ||CHR(10)||'      "default_featurekey"      "1"'
-              ||CHR(10)||'      "default_featurekeyvalue" "1"'
-              ||CHR(10)||'      "default_spatialfilter"   ""'
+              ||CHR(10)||'      "user"                     "^.*"'
+              ||CHR(10)||'      "pwd"                      "^.*"'
+              ||CHR(10)||'      "featurekey"               "^.*"'
+              ||CHR(10)||'      "featurekeyvalues"         "^.*"'
+              ||CHR(10)||'      "spatialfilter"            "^.*"'
+              ||CHR(10)||'      "default_featurekey"       "1"'
+              ||CHR(10)||'      "default_featurekeyvalues" "1"'
+              ||CHR(10)||'      "default_spatialfilter"    ""'
               ||CHR(10)||'    END'
         ;
         --
