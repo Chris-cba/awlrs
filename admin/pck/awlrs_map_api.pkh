@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.11   15 Jun 2017 16:34:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.12   23 Jun 2017 10:42:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkh  $
-  --       Date into PVCS   : $Date:   15 Jun 2017 16:34:22  $
-  --       Date fetched Out : $Modtime:   06 Jun 2017 08:50:02  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   23 Jun 2017 10:42:38  $
+  --       Date fetched Out : $Modtime:   20 Jun 2017 16:58:06  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
   --
   TYPE theme_types_rec IS RECORD(admin_type                   nm_au_types.nat_admin_type%TYPE
                                 ,network_type                 nm_types.nt_type%TYPE
@@ -145,20 +145,6 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION generate_sld_file(pi_map_name IN VARCHAR2)
-    RETURN CLOB;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_sld_file(pi_map_name         IN  VARCHAR2
-                        ,po_message_severity OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor   OUT sys_refcursor
-                        ,po_cursor           OUT sys_refcursor);
-
-  --
-  -----------------------------------------------------------------------------
-  --
   PROCEDURE get_marker_files(pi_map_name         IN  VARCHAR2
                             ,po_message_severity OUT hig_codes.hco_code%TYPE
                             ,po_message_cursor   OUT sys_refcursor
@@ -171,6 +157,22 @@ AS
                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
                                  ,po_message_cursor   OUT sys_refcursor
                                  ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE save_home_extent(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                            ,pi_data             IN  awlrs_saved_map_configs.asmc_data%TYPE
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_home_extent_data(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------

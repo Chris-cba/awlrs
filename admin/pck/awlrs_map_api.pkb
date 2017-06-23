@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.20   15 Jun 2017 16:34:26   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.21   23 Jun 2017 10:42:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   15 Jun 2017 16:34:26  $
-  --       Date fetched Out : $Modtime:   06 Jun 2017 10:09:24  $
-  --       Version          : $Revision:   1.20  $
+  --       Date into PVCS   : $Date:   23 Jun 2017 10:42:38  $
+  --       Date fetched Out : $Modtime:   21 Jun 2017 14:12:58  $
+  --       Version          : $Revision:   1.21  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.20  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -1173,6 +1173,436 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION get_default_style(pi_geom_column  IN VARCHAR2
+                            ,pi_layer_type   IN VARCHAR2
+                            ,pi_style        IN VARCHAR2)
+    RETURN VARCHAR2 IS
+    --
+    lv_fill            nm3type.max_varchar2;
+    lv_stroke          nm3type.max_varchar2;
+    lv_stroke_width    nm3type.max_varchar2;
+    lv_default_colour  VARCHAR2(7) := '#FF0000';
+    --
+    lv_retval nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    lv_fill := get_style_value(pi_style => pi_style
+                              ,pi_field => 'fill:');
+    --
+    lv_stroke := get_style_value(pi_style => pi_style
+                                ,pi_field => 'stroke:');
+    --
+    lv_stroke_width := NVL(get_style_value(pi_style => pi_style
+                                          ,pi_field => 'stroke-width:'),'3.0');
+    --
+    CASE pi_layer_type
+      WHEN 'POINT'
+       THEN
+          lv_retval := '      STYLE'
+            ||CHR(10)||'        COLOR "'||NVL(NVL(lv_fill,lv_stroke),lv_default_colour)||'"'
+            ||CHR(10)||'        OUTLINECOLOR "'||NVL(NVL(lv_stroke,lv_fill),lv_default_colour)||'"'
+            ||CHR(10)||'        OUTLINEWIDTH '||lv_stroke_width
+            ||CHR(10)||'        SIZE '||lv_stroke_width
+            ||CHR(10)||'        SYMBOL "circle_filled"'
+            ||CHR(10)||'      END #STYLE'
+          ;
+      WHEN 'POLYGON'
+       THEN
+          lv_retval := '      STYLE'
+            ||CHR(10)||'        COLOR "'||NVL(NVL(lv_fill,lv_stroke),lv_default_colour)||'"'
+            ||CHR(10)||'        OUTLINECOLOR "'||NVL(NVL(lv_stroke,lv_fill),lv_default_colour)||'"'
+            ||CHR(10)||'        OUTLINEWIDTH '||lv_stroke_width
+            ||CHR(10)||'      END #STYLE'
+          ;
+      WHEN 'LINE'
+       THEN
+          lv_retval := '      STYLE'
+            ||CHR(10)||'        COLOR "'||NVL(NVL(lv_stroke,lv_fill),lv_default_colour)||'"'
+            ||CHR(10)||'        WIDTH '||lv_stroke_width
+            ||CHR(10)||'      END #STYLE'
+          ;
+      ELSE
+          --Unsuported Layer Type
+          hig.raise_ner(pi_appl               => 'AWLRS'
+                       ,pi_id                 => 9
+                       ,pi_supplementary_info => pi_layer_type||' provided to function get_default_style');
+    END CASE;
+    --
+    RETURN lv_retval;
+    --
+  END get_default_style;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_line_style(pi_class         IN VARCHAR2
+                         ,pi_style         IN VARCHAR2
+                         ,pi_dash          IN VARCHAR2
+                         ,pi_base_linecap  IN VARCHAR2 DEFAULT NULL
+                         ,pi_base_linejoin IN VARCHAR2 DEFAULT NULL
+                         ,pi_base_width    IN VARCHAR2 DEFAULT NULL)
+    RETURN VARCHAR2 IS
+    --
+    lv_fill             nm3type.max_varchar2;
+    lv_fill_opacity     nm3type.max_varchar2;
+    lv_stroke_width     nm3type.max_varchar2;
+    lv_stroke_linecap   nm3type.max_varchar2;
+    lv_stroke_linejoin  nm3type.max_varchar2;
+    --
+    lv_retval nm3type.max_varchar2;
+    --
+  BEGIN
+    /*
+    ||Get data from the style attribute.
+    ||NB. Mapserver does not support End Caps or Hatched\Fenced lines
+    ||so this information, where present, is ignored.
+    */
+    lv_fill := get_style_value(pi_style => pi_style
+                              ,pi_field => 'fill:');
+    --
+    lv_stroke_width := get_style_value(pi_style => pi_style
+                                      ,pi_field => 'stroke-width:');
+    --
+    lv_stroke_linecap := NVL(pi_base_linecap,get_style_value(pi_style => pi_style
+                                                            ,pi_field => 'stroke-linecap:'));
+    --
+    lv_stroke_linejoin := NVL(pi_base_linejoin,get_style_value(pi_style => pi_style
+                                                              ,pi_field => 'stroke-linejoin:'));
+    /*
+    ||If dealing with a Wing Line recalculate the width.
+    */
+    IF pi_base_width IS NOT NULL
+     AND pi_class = 'parallel'
+     THEN
+        lv_stroke_width := pi_base_width + (lv_stroke_width * 2);
+        --
+        lv_retval := '      STYLE'
+          ||CHR(10)||'        COLOR "'||lv_fill||'"'
+          ||CHR(10)||'        WIDTH '||lv_stroke_width
+          ||CHR(10)||'        LINECAP '||NVL(lv_stroke_linecap,'ROUND')
+          ||CHR(10)||'        LINEJOIN '||NVL(lv_stroke_linejoin,'ROUND')
+          ||CHR(10)||'      END #STYLE'
+        ;
+        /*
+        ||The following does not work with mapserver 6.4.1 but would work
+        ||once we upgrade to 7.0.4
+        */
+        --lv_retval := '      STYLE'
+        --  ||CHR(10)||'        OUTLINECOLOR "'||lv_fill||'"'
+        --  ||CHR(10)||'        WIDTH '||(lv_stroke_width * 2)
+        --  ||CHR(10)||'        GEOMTRANSFORM (buffer([shape],'||((pi_base_width/2)+1)||'))'
+        --  ||CHR(10)||'      END #STYLE'
+        --;
+    ELSE
+        --
+        lv_fill_opacity := get_style_value(pi_style => pi_style
+                                          ,pi_field => 'fill-opacity:');
+        --
+        lv_retval := '      STYLE'
+          ||CHR(10)||'        COLOR "'||lv_fill||'"'
+          ||CHR(10)||'        WIDTH '||NVL(lv_stroke_width,'1.0')
+          ||CHR(10)||'        LINECAP '||NVL(lv_stroke_linecap,'ROUND')
+          ||CHR(10)||'        LINEJOIN '||NVL(lv_stroke_linejoin,'ROUND')
+        ;
+        IF lv_fill_opacity IS NOT NULL
+         THEN
+            lv_retval := lv_retval
+              ||CHR(10)||'        OPACITY '||alpha_to_decimal(TO_NUMBER(lv_fill_opacity))
+            ;
+        END IF;
+        --
+        IF pi_dash IS NOT NULL
+         THEN
+            IF pi_class = 'hashmark'
+             THEN
+                lv_retval := lv_retval
+                  ||CHR(10)||'        SYMBOL "vert_line"'
+                  ||CHR(10)||'        SIZE '||(TO_NUMBER(SUBSTR(pi_dash,INSTR(pi_dash,',')+1,LENGTH(pi_dash))) * 2)
+                  ||CHR(10)||'         GAP -'||SUBSTR(pi_dash,1,INSTR(pi_dash,',')-1)
+                ;
+            ELSE
+                lv_retval := lv_retval
+                  ||CHR(10)||'        PATTERN'
+                  ||CHR(10)||'         '||REPLACE(pi_dash,',',' ')
+                  ||CHR(10)||'        END #PATTERN'
+                ;
+            END IF;
+        END IF;
+        --
+        lv_retval := lv_retval
+          ||CHR(10)||'      END #STYLE'
+        ;
+        --
+    END IF;
+    --
+    RETURN lv_retval;
+    --
+  END get_line_style;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_marker_style(pi_style_name IN VARCHAR2
+                           ,pi_style_def  IN XMLTYPE
+                           ,pi_style      IN VARCHAR2)
+    RETURN VARCHAR2 IS
+    --
+    lv_retval               nm3type.max_varchar2;
+    lv_marker_fill          nm3type.max_varchar2;
+    lv_marker_stroke        nm3type.max_varchar2;
+    lv_marker_stroke_width  nm3type.max_varchar2;
+    lv_marker_width         nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    lv_marker_fill := get_style_value(pi_style => pi_style
+                                     ,pi_field => ';fill:');
+    lv_marker_stroke := get_style_value(pi_style => pi_style
+                                       ,pi_field => 'stroke:');
+    lv_marker_stroke_width := get_style_value(pi_style => pi_style
+                                             ,pi_field => 'stroke-width:');
+    lv_marker_width := get_style_value(pi_style => pi_style
+                                      ,pi_field => ';width:');
+    --
+    lv_retval := '      STYLE';
+    --
+    IF pi_style_def.existsnode('/svg/g/image') = 1
+     THEN
+        lv_retval := lv_retval
+          ||CHR(10)||'        SYMBOL "%fileprefix%'||get_marker_filename(pi_style_name => pi_style_name)||'"'
+        ;
+    ELSE
+        IF lv_marker_fill IS NOT NULL
+         THEN
+            lv_retval := lv_retval
+              ||CHR(10)||'        COLOR "'||lv_marker_fill||'"'
+            ;
+        END IF;
+        --
+        IF lv_marker_stroke IS NOT NULL
+         THEN
+            /*
+            ||Note. WIDTH is used here rather than OUTLINEWIDTH as mapserver seems to draw
+            ||an addition outline in the fill colour if OUTLINEWIDTH is used.
+            */
+            lv_retval := lv_retval
+              ||CHR(10)||'        OUTLINECOLOR "'||lv_marker_stroke||'"'
+              ||CHR(10)||'        WIDTH '||NVL(lv_marker_stroke_width,'1.0')
+            ;
+        END IF;
+        --
+        IF pi_style_def.existsnode('/svg/g/circle') = 1
+         THEN
+            lv_retval := lv_retval
+              ||CHR(10)||'        SYMBOL "circle_filled"'
+            ;
+        ELSIF pi_style_def.existsnode('/svg/g/rect') = 1
+         THEN
+            lv_retval := lv_retval
+              ||CHR(10)||'        SYMBOL "square_filled"'
+            ;
+        ELSIF pi_style_def.existsnode('/svg/g/polyline') = 1
+         OR pi_style_def.existsnode('/svg/g/polygon') = 1
+         THEN
+            lv_retval := lv_retval
+              ||CHR(10)||'        SYMBOL "'||pi_style_name||'"'
+            ;
+        END IF;
+        --
+    END IF;
+    --
+    IF lv_marker_width IS NOT NULL
+     THEN
+        lv_retval := lv_retval
+          ||CHR(10)||'        SIZE '||lv_marker_width
+        ;
+    END IF;
+    --
+    lv_retval := lv_retval
+          ||CHR(10)||'      END #STYLE'
+    ;
+    --
+    RETURN lv_retval;
+    --
+  END get_marker_style;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_line_marker_style(pi_style IN VARCHAR2)
+    RETURN VARCHAR2 IS
+    --
+    lv_marker_name          nm3type.max_varchar2;
+    lv_marker_pos           nm3type.max_varchar2;
+    lv_marker_fill          nm3type.max_varchar2;
+    lv_marker_stroke        nm3type.max_varchar2;
+    lv_marker_stroke_width  nm3type.max_varchar2;
+    lv_marker_size          nm3type.max_varchar2;
+    lv_multi_marker         nm3type.max_varchar2;
+    --
+    lv_marker_style_def  XMLTYPE;
+    --
+    lv_retval nm3type.max_varchar2;
+    --
+    CURSOR get_uss(cp_style_name IN VARCHAR2)
+        IS
+    SELECT definition
+      FROM user_sdo_styles
+     WHERE name = cp_style_name
+         ;
+    --
+    lr_marker_uss       get_uss%ROWTYPE;
+    --
+    CURSOR get_svg_data(cp_xml IN XMLTYPE)
+        IS
+    SELECT EXTRACTVALUE(cp_xml,'/svg/g/@style') g_style
+      FROM dual
+         ;
+    --
+    lr_marker_svg_data  get_svg_data%ROWTYPE;
+    --
+  BEGIN
+    /*
+    ||Get data from the style attribute.
+    ||NB. Mapserver does not support End Caps or Hatched\Fenced lines
+    ||so this information, where present, is ignored.
+    */
+    lv_marker_name := get_style_value(pi_style => pi_style
+                                     ,pi_field => 'marker-name:');
+    IF lv_marker_name IS NOT NULL
+     THEN
+        --
+        OPEN  get_uss(lv_marker_name);
+        FETCH get_uss
+         INTO lr_marker_uss;
+        CLOSE get_uss;
+        --
+        lv_marker_style_def := XMLTYPE(lr_marker_uss.definition);
+        --
+        OPEN  get_svg_data(lv_marker_style_def);
+        FETCH get_svg_data
+         INTO lr_marker_svg_data;
+        CLOSE get_svg_data;
+        --
+        lv_marker_fill := get_style_value(pi_style => lr_marker_svg_data.g_style
+                                         ,pi_field => 'fill:');
+        --
+        lv_marker_stroke := get_style_value(pi_style => lr_marker_svg_data.g_style
+                                           ,pi_field => 'stroke:');
+        --
+        lv_marker_stroke_width := get_style_value(pi_style => lr_marker_svg_data.g_style
+                                                 ,pi_field => 'stroke-width:');
+        --
+        lv_marker_pos := get_style_value(pi_style => pi_style
+                                        ,pi_field => 'marker-position:');
+        --
+        lv_marker_size := get_style_value(pi_style => pi_style
+                                         ,pi_field => 'marker-size:');
+        --
+        lv_multi_marker := get_style_value(pi_style => pi_style
+                                          ,pi_field => 'multiple-marker:');
+        --
+        lv_retval := '      STYLE'
+          ||CHR(10)||'        ANGLE AUTO'
+          ||CHR(10)||'        SIZE '||lv_marker_size
+        ;
+        IF lv_marker_pos = 'all_points'
+         THEN
+            lv_retval := lv_retval
+              ||CHR(10)||'        GEOMTRANSFORM "vertices"'
+            ;
+        ELSIF lv_marker_pos = 'end_points'
+         THEN
+            lv_retval := lv_retval
+              ||CHR(10)||'        GEOMTRANSFORM "start"'
+            ;
+        ELSIF lv_multi_marker IS NOT NULL
+         THEN
+            lv_retval := lv_retval
+              ||CHR(10)||'        GAP -'||(lv_marker_size*10)
+              ||CHR(10)||'        INITIALGAP '||(lv_marker_size+1)
+            ;                     
+        ELSE
+            lv_retval := lv_retval
+              ||CHR(10)||'        GEOMTRANSFORM "labelpnt"'
+            ;          
+        END IF;
+        --
+        IF lv_marker_style_def.existsnode('/svg/g/image') = 1
+         THEN
+            lv_retval := lv_retval
+              ||CHR(10)||'        COLOR 0 0 0'
+              ||CHR(10)||'        SYMBOL "%fileprefix%'||get_marker_filename(pi_style_name => lv_marker_name)||'"'
+            ;
+        ELSE
+            IF lv_marker_fill IS NOT NULL
+             THEN
+                lv_retval := lv_retval
+                  ||CHR(10)||'        COLOR "'||lv_marker_fill||'"'
+                ;
+            END IF;
+            --
+            IF lv_marker_stroke IS NOT NULL
+             THEN
+                /*
+                ||Note. WIDTH is used here rather than OUTLINEWIDTH as mapserver seems to draw
+                ||an addition outline in the fill colour if OUTLINEWIDTH is used.
+                */
+                lv_retval := lv_retval
+                  ||CHR(10)||'        OUTLINECOLOR "'||lv_marker_stroke||'"'
+                  ||CHR(10)||'        WIDTH '||NVL(lv_marker_stroke_width,'1.0')
+                ;
+            END IF;
+            --
+            IF lv_marker_style_def.existsnode('/svg/g/circle') = 1
+             THEN
+                lv_retval := lv_retval
+                  ||CHR(10)||'        SYMBOL "circle_filled"'
+                ;
+            ELSIF lv_marker_style_def.existsnode('/svg/g/rect') = 1
+             THEN
+                lv_retval := lv_retval
+                  ||CHR(10)||'        SYMBOL "square_filled"'
+                ;
+            ELSIF lv_marker_style_def.existsnode('/svg/g/polyline') = 1
+             OR lv_marker_style_def.existsnode('/svg/g/polygon') = 1
+             THEN
+                lv_retval := lv_retval
+                  ||CHR(10)||'        SYMBOL "'||CASE lv_marker_pos
+                                                   WHEN 'end_points'
+                                                    THEN
+                                                       lv_marker_name||'_START'
+                                                   ELSE
+                                                       lv_marker_name
+                                                 END||'"'
+                ;
+            END IF;
+            --
+        END IF;
+        --
+        lv_retval := lv_retval
+          ||CHR(10)||'      END #STYLE'
+        ;
+        --
+        IF lv_marker_pos = 'end_points'
+         THEN
+            lv_retval := lv_retval||CHR(10)||REPLACE(REPLACE(lv_retval
+                                                            ,'GEOMTRANSFORM "start"'
+                                                            ,'GEOMTRANSFORM "end"')
+                                                    ,lv_marker_name||'_START'
+                                                    ,lv_marker_name||'_END');
+        END IF;
+        --
+    END IF;
+    --
+    RETURN lv_retval;
+    --
+  END get_line_marker_style;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   FUNCTION get_label_style(pi_style_name   IN VARCHAR2
                           ,pi_text_column  IN VARCHAR2
                           ,pi_min_scale    IN VARCHAR2
@@ -1391,413 +1821,6 @@ AS
     --
     TYPE adv_style_data_tab IS TABLE OF get_adv_style_data%ROWTYPE INDEX BY BINARY_INTEGER;
     lt_adv_style_data adv_style_data_tab;
-    --
-    ---------------------------------------------------------------------------
-    --
-    FUNCTION get_default_style(pi_geom_column  IN VARCHAR2
-                              ,pi_layer_type   IN VARCHAR2
-                              ,pi_style        IN VARCHAR2)
-      RETURN VARCHAR2 IS
-      --
-      lv_fill            nm3type.max_varchar2;
-      lv_stroke          nm3type.max_varchar2;
-      lv_stroke_width    nm3type.max_varchar2;
-      lv_default_colour  VARCHAR2(7) := '#FF0000';
-      --
-      lv_retval nm3type.max_varchar2;
-      --
-    BEGIN
-      --
-      lv_fill := get_style_value(pi_style => pi_style
-                                ,pi_field => 'fill:');
-      --
-      lv_stroke := get_style_value(pi_style => pi_style
-                                  ,pi_field => 'stroke:');
-      --
-      lv_stroke_width := NVL(get_style_value(pi_style => pi_style
-                                            ,pi_field => 'stroke-width:'),'3.0');
-      --
-      CASE pi_layer_type
-        WHEN 'POINT'
-         THEN
-            lv_retval := '      STYLE'
-              ||CHR(10)||'        COLOR "'||NVL(NVL(lv_fill,lv_stroke),lv_default_colour)||'"'
-              ||CHR(10)||'        OUTLINECOLOR "'||NVL(NVL(lv_stroke,lv_fill),lv_default_colour)||'"'
-              ||CHR(10)||'        OUTLINEWIDTH '||lv_stroke_width
-              ||CHR(10)||'        SIZE '||lv_stroke_width
-              ||CHR(10)||'        SYMBOL "circle_filled"'
-              ||CHR(10)||'      END #STYLE'
-            ;
-        WHEN 'POLYGON'
-         THEN
-            lv_retval := '      STYLE'
-              ||CHR(10)||'        COLOR "'||NVL(NVL(lv_fill,lv_stroke),lv_default_colour)||'"'
-              ||CHR(10)||'        OUTLINECOLOR "'||NVL(NVL(lv_stroke,lv_fill),lv_default_colour)||'"'
-              ||CHR(10)||'        OUTLINEWIDTH '||lv_stroke_width
-              ||CHR(10)||'      END #STYLE'
-            ;
-        WHEN 'LINE'
-         THEN
-            lv_retval := '      STYLE'
-              ||CHR(10)||'        COLOR "'||NVL(NVL(lv_stroke,lv_fill),lv_default_colour)||'"'
-              ||CHR(10)||'        WIDTH '||lv_stroke_width
-              ||CHR(10)||'      END #STYLE'
-            ;
-        ELSE
-            --Unsuported Layer Type
-            hig.raise_ner(pi_appl               => 'AWLRS'
-                         ,pi_id                 => 9
-                         ,pi_supplementary_info => pi_layer_type||' provided to function get_default_style');
-      END CASE;
-      --
-      RETURN lv_retval;
-      --
-    END get_default_style;
-    --
-    ---------------------------------------------------------------------------
-    --
-    FUNCTION get_line_style(pi_class         IN VARCHAR2
-                           ,pi_style         IN VARCHAR2
-                           ,pi_dash          IN VARCHAR2
-                           ,pi_base_linecap  IN VARCHAR2 DEFAULT NULL
-                           ,pi_base_linejoin IN VARCHAR2 DEFAULT NULL
-                           ,pi_base_width    IN VARCHAR2 DEFAULT NULL)
-      RETURN VARCHAR2 IS
-      --
-      lv_fill             nm3type.max_varchar2;
-      lv_fill_opacity     nm3type.max_varchar2;
-      lv_stroke_width     nm3type.max_varchar2;
-      lv_stroke_linecap   nm3type.max_varchar2;
-      lv_stroke_linejoin  nm3type.max_varchar2;
-      --
-      lv_retval nm3type.max_varchar2;
-      --
-    BEGIN
-      /*
-      ||Get data from the style attribute.
-      ||NB. Mapserver does not support End Caps or Hatched\Fenced lines
-      ||so this information, where present, is ignored.
-      */
-      lv_fill := get_style_value(pi_style => pi_style
-                                ,pi_field => 'fill:');
-      --
-      lv_stroke_width := get_style_value(pi_style => pi_style
-                                        ,pi_field => 'stroke-width:');
-      --
-      lv_stroke_linecap := NVL(pi_base_linecap,get_style_value(pi_style => pi_style
-                                                              ,pi_field => 'stroke-linecap:'));
-      --
-      lv_stroke_linejoin := NVL(pi_base_linejoin,get_style_value(pi_style => pi_style
-                                                                ,pi_field => 'stroke-linejoin:'));
-      /*
-      ||If dealing with a Wing Line recalculate the width.
-      */
-      IF pi_base_width IS NOT NULL
-       AND pi_class = 'parallel'
-       THEN
-          lv_stroke_width := pi_base_width + (lv_stroke_width * 2);
-          --
-          lv_retval := '      STYLE'
-            ||CHR(10)||'        COLOR "'||lv_fill||'"'
-            ||CHR(10)||'        WIDTH '||lv_stroke_width
-            ||CHR(10)||'        LINECAP '||NVL(lv_stroke_linecap,'ROUND')
-            ||CHR(10)||'        LINEJOIN '||NVL(lv_stroke_linejoin,'ROUND')
-            ||CHR(10)||'      END #STYLE'
-          ;
-          --lv_retval := '      STYLE'
-          --  ||CHR(10)||'        OUTLINECOLOR "'||lv_fill||'"'
-          --  ||CHR(10)||'        WIDTH '||(lv_stroke_width * 2)
-          --  ||CHR(10)||'        GEOMTRANSFORM (buffer([shape],'||((pi_base_width/2)+1)||'))'
-          --  ||CHR(10)||'      END #STYLE'
-          --;
-      ELSE
-          --
-          lv_fill_opacity := get_style_value(pi_style => pi_style
-                                            ,pi_field => 'fill-opacity:');
-          --
-          lv_retval := '      STYLE'
-            ||CHR(10)||'        COLOR "'||lv_fill||'"'
-            ||CHR(10)||'        WIDTH '||NVL(lv_stroke_width,'1.0')
-            ||CHR(10)||'        LINECAP '||NVL(lv_stroke_linecap,'ROUND')
-            ||CHR(10)||'        LINEJOIN '||NVL(lv_stroke_linejoin,'ROUND')
-          ;
-          IF lv_fill_opacity IS NOT NULL
-           THEN
-              lv_retval := lv_retval
-                ||CHR(10)||'        OPACITY '||alpha_to_decimal(TO_NUMBER(lv_fill_opacity))
-              ;
-          END IF;
-          --
-          IF pi_dash IS NOT NULL
-           THEN
-              IF pi_class = 'hashmark'
-               THEN
-                  lv_retval := lv_retval
-                    ||CHR(10)||'        SYMBOL "vert_line"'
-                    ||CHR(10)||'        SIZE '||(TO_NUMBER(SUBSTR(pi_dash,INSTR(pi_dash,',')+1,LENGTH(pi_dash))) * 2)
-                    ||CHR(10)||'         GAP -'||SUBSTR(pi_dash,1,INSTR(pi_dash,',')-1)
-                  ;
-              ELSE
-                  lv_retval := lv_retval
-                    ||CHR(10)||'        PATTERN'
-                    ||CHR(10)||'         '||REPLACE(pi_dash,',',' ')
-                    ||CHR(10)||'        END #PATTERN'
-                  ;
-              END IF;
-          END IF;
-          --
-          lv_retval := lv_retval
-            ||CHR(10)||'      END #STYLE'
-          ;
-          --
-      END IF;
-      --
-      RETURN lv_retval;
-      --
-    END get_line_style;
-    --
-    ---------------------------------------------------------------------------
-    --
-    FUNCTION get_marker_style(pi_style_name IN VARCHAR2
-                             ,pi_style_def  IN XMLTYPE
-                             ,pi_style      IN VARCHAR2)
-      RETURN VARCHAR2 IS
-      --
-      lv_marker_fill          nm3type.max_varchar2;
-      lv_marker_stroke        nm3type.max_varchar2;
-      lv_marker_stroke_width  nm3type.max_varchar2;
-      lv_marker_width         nm3type.max_varchar2;
-      --
-    BEGIN
-      --
-      lv_marker_fill := get_style_value(pi_style => pi_style
-                                       ,pi_field => ';fill:');
-      lv_marker_stroke := get_style_value(pi_style => pi_style
-                                         ,pi_field => 'stroke:');
-      lv_marker_stroke_width := get_style_value(pi_style => pi_style
-                                               ,pi_field => 'stroke-width:');
-      lv_marker_width := get_style_value(pi_style => pi_style
-                                        ,pi_field => ';width:');
-      --
-      lv_retval := '      STYLE';
-      --
-      IF pi_style_def.existsnode('/svg/g/image') = 1
-       THEN
-          lv_retval := lv_retval
-            ||CHR(10)||'        SYMBOL "'||get_marker_filename(pi_style_name => pi_style_name)||'"'
-          ;
-      ELSE
-          IF lv_marker_fill IS NOT NULL
-           THEN
-              lv_retval := lv_retval
-                ||CHR(10)||'        COLOR "'||lv_marker_fill||'"'
-              ;
-          END IF;
-          --
-          IF lv_marker_stroke IS NOT NULL
-           THEN
-              /*
-              ||Note. WIDTH is used here rather than OUTLINEWIDTH as mapserver seems to draw
-              ||an addition outline in the fill colour if OUTLINEWIDTH is used.
-              */
-              lv_retval := lv_retval
-                ||CHR(10)||'        OUTLINECOLOR "'||lv_marker_stroke||'"'
-                ||CHR(10)||'        WIDTH '||NVL(lv_marker_stroke_width,'1.0')
-              ;
-          END IF;
-          --
-          IF pi_style_def.existsnode('/svg/g/circle') = 1
-           THEN
-              lv_retval := lv_retval
-                ||CHR(10)||'        SYMBOL "circle_filled"'
-              ;
-          ELSIF pi_style_def.existsnode('/svg/g/rect') = 1
-           THEN
-              lv_retval := lv_retval
-                ||CHR(10)||'        SYMBOL "square_filled"'
-              ;
-          ELSIF pi_style_def.existsnode('/svg/g/polyline') = 1
-           OR pi_style_def.existsnode('/svg/g/polygon') = 1
-           THEN
-              lv_retval := lv_retval
-                ||CHR(10)||'        SYMBOL "'||pi_style_name||'"'
-              ;
-          END IF;
-          --
-      END IF;
-      --
-      IF lv_marker_width IS NOT NULL
-       THEN
-          lv_retval := lv_retval
-            ||CHR(10)||'        SIZE '||lv_marker_width
-          ;
-      END IF;
-      --
-      lv_retval := lv_retval
-            ||CHR(10)||'      END #STYLE'
-      ;
-      --
-      RETURN lv_retval;
-      --
-    END get_marker_style;
-    --
-    ---------------------------------------------------------------------------
-    --
-    FUNCTION get_line_marker_style(pi_style IN VARCHAR2)
-      RETURN VARCHAR2 IS
-      --
-      lv_marker_name          nm3type.max_varchar2;
-      lv_marker_pos           nm3type.max_varchar2;
-      lv_marker_fill          nm3type.max_varchar2;
-      lv_marker_stroke        nm3type.max_varchar2;
-      lv_marker_stroke_width  nm3type.max_varchar2;
-      lv_marker_size          nm3type.max_varchar2;
-      lv_multi_marker         nm3type.max_varchar2;
-      --
-      lv_marker_style_def  XMLTYPE;
-      --
-      lv_retval nm3type.max_varchar2;
-      --
-      lr_marker_uss       get_uss%ROWTYPE;
-      lr_marker_svg_data  get_svg_data%ROWTYPE;
-      --
-    BEGIN
-      /*
-      ||Get data from the style attribute.
-      ||NB. Mapserver does not support End Caps or Hatched\Fenced lines
-      ||so this information, where present, is ignored.
-      */
-      lv_marker_name := get_style_value(pi_style => pi_style
-                                       ,pi_field => 'marker-name:');
-      IF lv_marker_name IS NOT NULL
-       THEN
-          --
-          OPEN  get_uss(lv_marker_name);
-          FETCH get_uss
-           INTO lr_marker_uss;
-          CLOSE get_uss;
-          --
-          lv_marker_style_def := XMLTYPE(lr_marker_uss.definition);
-          --
-          OPEN  get_svg_data(lv_marker_style_def);
-          FETCH get_svg_data
-           INTO lr_marker_svg_data;
-          CLOSE get_svg_data;
-          --
-          lv_marker_fill := get_style_value(pi_style => lr_marker_svg_data.g_style
-                                           ,pi_field => 'fill:');
-          --
-          lv_marker_stroke := get_style_value(pi_style => lr_marker_svg_data.g_style
-                                             ,pi_field => 'stroke:');
-          --
-          lv_marker_stroke_width := get_style_value(pi_style => lr_marker_svg_data.g_style
-                                                   ,pi_field => 'stroke-width:');
-          --
-          lv_marker_pos := get_style_value(pi_style => pi_style
-                                          ,pi_field => 'marker-position:');
-          --
-          lv_marker_size := get_style_value(pi_style => pi_style
-                                           ,pi_field => 'marker-size:');
-          --
-          lv_multi_marker := get_style_value(pi_style => pi_style
-                                            ,pi_field => 'multiple-marker:');
-          --
-          lv_retval := '      STYLE'
-            ||CHR(10)||'        ANGLE AUTO'
-            ||CHR(10)||'        SIZE '||lv_marker_size
-          ;
-          IF lv_marker_pos = 'all_points'
-           THEN
-              lv_retval := lv_retval
-                ||CHR(10)||'        GEOMTRANSFORM "vertices"'
-              ;
-          ELSIF lv_marker_pos = 'end_points'
-           THEN
-              lv_retval := lv_retval
-                ||CHR(10)||'        GEOMTRANSFORM "start"'
-              ;
-          ELSIF lv_multi_marker IS NOT NULL
-           THEN
-              lv_retval := lv_retval
-                ||CHR(10)||'        GAP -'||(lv_marker_size*10)
-                ||CHR(10)||'        INITIALGAP '||(lv_marker_size+1)
-              ;                     
-          ELSE
-              lv_retval := lv_retval
-                ||CHR(10)||'        GEOMTRANSFORM "labelpnt"'
-              ;          
-          END IF;
-          --
-          IF lv_marker_style_def.existsnode('/svg/g/image') = 1
-           THEN
-              lv_retval := lv_retval
-                ||CHR(10)||'        COLOR 0 0 0'
-                ||CHR(10)||'        SYMBOL "'||get_marker_filename(pi_style_name => lv_marker_name)||'"'
-              ;
-          ELSE
-              IF lv_marker_fill IS NOT NULL
-               THEN
-                  lv_retval := lv_retval
-                    ||CHR(10)||'        COLOR "'||lv_marker_fill||'"'
-                  ;
-              END IF;
-              --
-              IF lv_marker_stroke IS NOT NULL
-               THEN
-                  /*
-                  ||Note. WIDTH is used here rather than OUTLINEWIDTH as mapserver seems to draw
-                  ||an addition outline in the fill colour if OUTLINEWIDTH is used.
-                  */
-                  lv_retval := lv_retval
-                    ||CHR(10)||'        OUTLINECOLOR "'||lv_marker_stroke||'"'
-                    ||CHR(10)||'        WIDTH '||NVL(lv_marker_stroke_width,'1.0')
-                  ;
-              END IF;
-              --
-              IF lv_marker_style_def.existsnode('/svg/g/circle') = 1
-               THEN
-                  lv_retval := lv_retval
-                    ||CHR(10)||'        SYMBOL "circle_filled"'
-                  ;
-              ELSIF lv_marker_style_def.existsnode('/svg/g/rect') = 1
-               THEN
-                  lv_retval := lv_retval
-                    ||CHR(10)||'        SYMBOL "square_filled"'
-                  ;
-              ELSIF lv_marker_style_def.existsnode('/svg/g/polyline') = 1
-               OR lv_marker_style_def.existsnode('/svg/g/polygon') = 1
-               THEN
-                  lv_retval := lv_retval
-                    ||CHR(10)||'        SYMBOL "'||CASE lv_marker_pos
-                                                     WHEN 'end_points'
-                                                      THEN
-                                                         lv_marker_name||'_START'
-                                                     ELSE
-                                                         lv_marker_name
-                                                   END||'"'
-                  ;
-              END IF;
-              --
-          END IF;
-          --
-          lv_retval := lv_retval
-            ||CHR(10)||'      END #STYLE'
-          ;
-          --
-          IF lv_marker_pos = 'end_points'
-           THEN
-              lv_retval := lv_retval||CHR(10)||REPLACE(REPLACE(lv_retval
-                                                              ,'GEOMTRANSFORM "start"'
-                                                              ,'GEOMTRANSFORM "end"')
-                                                      ,lv_marker_name||'_START'
-                                                      ,lv_marker_name||'_END');
-          END IF;
-          --
-      END IF;
-      --
-      RETURN lv_retval;
-      --
-    END get_line_marker_style;
     --
   BEGIN
     /*
@@ -2951,7 +2974,7 @@ AS
       --
     END LOOP;
     /*
-    ||Get markers used by themes in the given map.
+    ||Get line markers used by themes in the given map.
     */
     OPEN  get_line_markers(pi_map_name);
     FETCH get_line_markers
@@ -3249,981 +3272,6 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_themes_for_sld(pi_map_name IN VARCHAR2)
-    RETURN theme_styling_rules_tab IS
-    --
-    lt_retval theme_styling_rules_tab;
-    --
-  BEGIN
-    --
-    SELECT name
-          ,geometry_column
-          ,styling_rules
-      BULK COLLECT
-      INTO lt_retval
-      FROM user_sdo_themes
-     WHERE name IN(SELECT map_themes.name
-                     FROM user_sdo_maps maps
-                         ,XMLTABLE('/map_definition/theme'
-                                   PASSING XMLTYPE(maps.definition)
-                                   COLUMNS name  VARCHAR2(32) path '@name') map_themes
-                    WHERE maps.name = pi_map_name)
-      ;
-    --
-    RETURN lt_retval;
-    --
-  EXCEPTION
-   WHEN no_data_found
-    THEN
-       RETURN lt_retval;
-   WHEN others
-    THEN
-       RAISE;
-  END get_themes_for_sld;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  FUNCTION get_text_symbolizer(pi_style_name   IN VARCHAR2
-                              ,pi_text_column  IN VARCHAR2)
-    RETURN nm3type.max_varchar2 IS
-    --
-    lv_retval  nm3type.max_varchar2;
-    --
-    lv_font_family        nm3type.max_varchar2;
-    lv_font_size          nm3type.max_varchar2;
-    lv_font_style         nm3type.max_varchar2;
-    lv_font_weight        nm3type.max_varchar2;
-    lv_font_fill          nm3type.max_varchar2;
-    lv_font_fill_opacity  nm3type.max_varchar2;
-    --
-    CURSOR get_uss(cp_style_name IN VARCHAR2)
-        IS
-    SELECT type
-          ,description
-          ,definition
-          ,geometry
-      FROM user_sdo_styles
-     WHERE name = cp_style_name
-         ;
-    --
-    lr_uss  get_uss%ROWTYPE;
-    --
-    CURSOR get_svg_data(cp_xml IN XMLTYPE)
-        IS
-    SELECT EXTRACTVALUE(cp_xml,'/svg/g/@class') g_class
-          ,EXTRACTVALUE(cp_xml,'/svg/g/@style') g_style
-          ,EXTRACTVALUE(cp_xml,'/svg/g/@float-width') g_float_width
-          ,EXTRACTVALUE(cp_xml,'/svg/g/@float-color') g_float_color
-          ,EXTRACTVALUE(cp_xml,'/svg/g/@float-color-opacity') g_float_color_opacity
-      FROM dual
-         ;
-    --
-    lr_svg_data  get_svg_data%ROWTYPE;
-    --
-
-  BEGIN
-    /*
-    ||Get the data from user_sdo_styles.
-    */
-    OPEN  get_uss(pi_style_name);
-    FETCH get_uss
-     INTO lr_uss;
-    CLOSE get_uss;
-    --
-    CASE lr_uss.type
-      WHEN 'TEXT'
-       THEN
-          --
-          OPEN  get_svg_data(XMLTYPE(lr_uss.definition));
-          FETCH get_svg_data
-           INTO lr_svg_data;
-          CLOSE get_svg_data;
-          --
-          lv_font_family := get_style_value(pi_style => lr_svg_data.g_style
-                                           ,pi_field => 'font-family:');
-          lv_font_size := get_style_value(pi_style => lr_svg_data.g_style
-                                         ,pi_field => 'font-size:');
-          lv_font_style := get_style_value(pi_style => lr_svg_data.g_style
-                                          ,pi_field => 'font-style:');
-          lv_font_weight := get_style_value(pi_style => lr_svg_data.g_style
-                                           ,pi_field => 'font-weight:');
-          lv_font_fill := get_style_value(pi_style => lr_svg_data.g_style
-                                         ,pi_field => 'fill:');
-          lv_font_fill_opacity := get_style_value(pi_style => lr_svg_data.g_style
-                                                 ,pi_field => 'fill-opacity:');
-          --
-          lv_retval := '          <se:TextSymbolizer>'
-            ||CHR(10)||'            <se:Label>'
-            ||CHR(10)||'              <ogc:PropertyName>'||pi_text_column||'</ogc:PropertyName>'
-            ||CHR(10)||'            </se:Label>'
-            ||CHR(10)||'            <se:Font>'
-            ||CHR(10)||'              <se:SvgParameter name="font-family">'||REPLACE(lv_font_family,' ','')||'</se:SvgParameter>'
-            ||CHR(10)||'              <se:SvgParameter name="font-size">'||REGEXP_REPLACE(lv_font_size,'[^0-9]','')||'</se:SvgParameter>'
-          ;
-          IF lv_font_style IS NOT NULL
-           AND lv_font_style != 'plain'
-           THEN
-              lv_retval := lv_retval||CHR(10)||'              <se:SvgParameter name="font-style">'||lv_font_style||'</se:SvgParameter>';
-          END IF;
-          --
-          IF lv_font_weight IS NOT NULL
-           THEN
-              lv_retval := lv_retval||CHR(10)||'              <se:SvgParameter name="font-weight">'||lv_font_weight||'</se:SvgParameter>';
-          END IF;
-          --
-          lv_retval := lv_retval
-            ||CHR(10)||'            </se:Font>'
-            ||CHR(10)||'            <se:Fill>'
-            ||CHR(10)||'              <se:SvgParameter name="fill">'||lv_font_fill||'</se:SvgParameter>'
-          ;
-          IF lv_font_fill_opacity IS NOT NULL
-           THEN
-              lv_retval := lv_retval
-                ||CHR(10)||'              <se:SvgParameter name="fill-opacity">'||alpha_to_decimal(TO_NUMBER(lv_font_fill_opacity))||'</se:SvgParameter>';
-          END IF;
-          --
-          lv_retval := lv_retval
-            ||CHR(10)||'            </se:Fill>'
-          ;
-          IF lr_svg_data.g_float_width IS NOT NULL
-           THEN
-              lv_retval := lv_retval
-                ||CHR(10)||'            <se:Halo>'
-                ||CHR(10)||'              <se:Radius>'||lr_svg_data.g_float_width||'</se:Radius>'
-                ||CHR(10)||'              <se:Fill>'
-                ||CHR(10)||'                <se:SvgParameter name="fill">'||lr_svg_data.g_float_color||'</se:SvgParameter>'
-              ;
-              IF lr_svg_data.g_float_color_opacity IS NOT NULL
-               THEN
-                  lv_retval := lv_retval
-                    ||CHR(10)||'                <se:SvgParameter name="fill-opacity">'||alpha_to_decimal(TO_NUMBER(lr_svg_data.g_float_color_opacity))||'</se:SvgParameter>';
-              END IF;
-              --
-              lv_retval := lv_retval
-                ||CHR(10)||'              </se:Fill>'
-                ||CHR(10)||'            </se:Halo>'
-              ;
-          END IF;
-          --
-          lv_retval := lv_retval
-            ||CHR(10)||'          </se:TextSymbolizer>'
-          ;
-      ELSE
-          --Invalid Style Type supplied as Text Style
-          hig.raise_ner(pi_appl => 'AWLRS'
-                       ,pi_id   => 11
-                       ,pi_supplementary_info => pi_style_name);
-    END CASE;
-    --
-    RETURN lv_retval;
-    --
-  END get_text_symbolizer;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  FUNCTION get_geom_symbolizer(pi_style_name   IN VARCHAR2
-                              ,pi_geom_column  IN VARCHAR2
-                              ,pi_layer_type   IN VARCHAR2
-                              ,pi_rule_column  IN VARCHAR2 DEFAULT NULL
-                              ,pi_label_column IN VARCHAR2 DEFAULT NULL
-                              ,pi_label_style  IN VARCHAR2 DEFAULT NULL)
-    RETURN nm3type.max_varchar2 IS
-    --
-    lv_retval  nm3type.max_varchar2;
-    --
-    lv_fill            nm3type.max_varchar2;
-    lv_fill_opacity    nm3type.max_varchar2;
-    lv_stroke          nm3type.max_varchar2;
-    lv_stroke_width    nm3type.max_varchar2;
-    lv_stroke_opacity  nm3type.max_varchar2;
-    lv_width           nm3type.max_varchar2;
-    --
-    lv_style_def  XMLTYPE;
-    --
-    lt_bucket_values  nm3type.tab_varchar32767;
-    --
-    CURSOR get_uss(cp_style_name IN VARCHAR2)
-        IS
-    SELECT type
-          ,description
-          ,definition
-          ,geometry
-      FROM user_sdo_styles
-     WHERE name = cp_style_name
-         ;
-    --
-    lr_uss  get_uss%ROWTYPE;
-    --
-    CURSOR get_svg_data(cp_xml IN XMLTYPE)
-        IS
-    SELECT EXTRACTVALUE(cp_xml,'/svg/g/@class') g_class
-          ,EXTRACTVALUE(cp_xml,'/svg/g/@style') g_style
-          ,EXTRACTVALUE(cp_xml,'/svg/g/@dash')  g_dash
-      FROM dual
-         ;
-    --
-    lr_svg_data  get_svg_data%ROWTYPE;
-    --
-    CURSOR get_svg_lines(cp_xml IN XMLTYPE)
-        IS
-    SELECT EXTRACTVALUE(lines.column_value,'/line/@class') line_class
-          ,EXTRACTVALUE(lines.column_value,'/line/@style') line_style
-          ,EXTRACTVALUE(lines.column_value,'/line/@dash') line_dash
-      FROM XMLTABLE('/svg/g/line' PASSING cp_xml) lines
-         ;
-    --
-    TYPE svg_line_data_tab IS TABLE OF get_svg_lines%ROWTYPE INDEX BY BINARY_INTEGER;
-    lt_svg_line_data svg_line_data_tab;
-    --
-
-    --
-    CURSOR get_adv_style_data(cp_xml IN XMLTYPE)
-        IS
-    SELECT EXTRACTVALUE(collection_buckets.column_value,'CollectionBucket') bucket_value
-          ,EXTRACTVALUE(collection_buckets.column_value,'CollectionBucket/@label') bucket_label
-          ,EXTRACTVALUE(collection_buckets.column_value,'CollectionBucket/@style') bucket_style
-      FROM XMLTABLE('/AdvancedStyle/BucketStyle/Buckets/CollectionBucket' PASSING cp_xml) collection_buckets
-         ;
-    --
-    TYPE adv_style_data_tab IS TABLE OF get_adv_style_data%ROWTYPE INDEX BY BINARY_INTEGER;
-    lt_adv_style_data adv_style_data_tab;
-    --
-    FUNCTION get_default_symboliser(pi_geom_column  IN VARCHAR2
-                                   ,pi_layer_type   IN VARCHAR2
-                                   ,pi_style        IN VARCHAR2)
-      RETURN VARCHAR2 IS
-      --
-      lv_fill            nm3type.max_varchar2;
-      lv_stroke          nm3type.max_varchar2;
-      lv_stroke_width    nm3type.max_varchar2;
-      lv_default_colour  VARCHAR2(7) := '#FF0000';
-      --
-      lv_retval nm3type.max_varchar2;
-      --
-    BEGIN
-      --
-      lv_fill := get_style_value(pi_style => pi_style
-                                ,pi_field => 'fill:');
-      --
-      lv_stroke := get_style_value(pi_style => pi_style
-                                  ,pi_field => 'stroke:');
-      --
-      lv_stroke_width := NVL(get_style_value(pi_style => pi_style
-                                            ,pi_field => 'stroke-width:'),'3.0');
-      --
-      CASE pi_layer_type
-        WHEN 'POINT'
-         THEN
-            lv_retval := '          <se:PointSymbolizer>'
-              ||CHR(10)||'            <se:Geometry>'
-              ||CHR(10)||'              <ogc:PropertyName>'||pi_geom_column||'</ogc:PropertyName>'
-              ||CHR(10)||'            </se:Geometry>'
-              ||CHR(10)||'            <se:Graphic>'
-              ||CHR(10)||'              <se:Mark>'
-              ||CHR(10)||'                <se:WellKnownName>circle</se:WellKnownName>'
-              ||CHR(10)||'                <se:Fill>'
-              ||CHR(10)||'                  <se:SvgParameter name="fill">'||NVL(NVL(lv_fill,lv_stroke),lv_default_colour)||'</se:SvgParameter>'
-              ||CHR(10)||'                </se:Fill>'
-              ||CHR(10)||'                <se:Stroke>'
-              ||CHR(10)||'                  <se:SvgParameter name="stroke">'||NVL(NVL(lv_stroke,lv_fill),lv_default_colour)||'</se:SvgParameter>'
-              ||CHR(10)||'                  <se:SvgParameter name="stroke-width">'||lv_stroke_width||'</se:SvgParameter>'
-              ||CHR(10)||'                </se:Stroke>'
-              ||CHR(10)||'              </se:Mark>'
-              ||CHR(10)||'              <se:Size>'||lv_stroke_width||'</se:Size>'
-              ||CHR(10)||'            </se:Graphic>'
-              ||CHR(10)||'          </se:PointSymbolizer>'
-            ;
-        WHEN 'POLYGON'
-         THEN
-            lv_retval := '          <se:PolygonSymbolizer>'
-              ||CHR(10)||'            <se:Geometry>'
-              ||CHR(10)||'              <ogc:PropertyName>'||pi_geom_column||'</ogc:PropertyName>'
-              ||CHR(10)||'            </se:Geometry>'
-              ||CHR(10)||'            <se:Fill>'
-              ||CHR(10)||'              <se:SvgParameter name="fill">'||NVL(NVL(lv_fill,lv_stroke),lv_default_colour)||'</se:SvgParameter>'
-              ||CHR(10)||'            </se:Fill>'
-              ||CHR(10)||'            <se:Stroke>'
-              ||CHR(10)||'              <se:SvgParameter name="stroke">'||NVL(NVL(lv_stroke,lv_fill),lv_default_colour)||'</se:SvgParameter>'
-              ||CHR(10)||'              <se:SvgParameter name="stroke-width">'||lv_stroke_width||'</se:SvgParameter>'
-              ||CHR(10)||'            </se:Stroke>'
-              ||CHR(10)||'          </se:PolygonSymbolizer>'
-            ;
-        WHEN 'LINE'
-         THEN
-            lv_retval := '          <se:LineSymbolizer>'
-              ||CHR(10)||'            <se:Geometry>'
-              ||CHR(10)||'              <ogc:PropertyName>'||pi_geom_column||'</ogc:PropertyName>'
-              ||CHR(10)||'            </se:Geometry>'
-              ||CHR(10)||'            <se:Stroke>'
-              ||CHR(10)||'              <se:SvgParameter name="stroke">'||NVL(NVL(lv_stroke,lv_fill),lv_default_colour)||'</se:SvgParameter>'
-              ||CHR(10)||'              <se:SvgParameter name="stroke-width">'||lv_stroke_width||'</se:SvgParameter>'
-              ||CHR(10)||'            </se:Stroke>'
-              ||CHR(10)||'          </se:LineSymbolizer>'
-            ;
-        ELSE
-            --Unsuported Layer Type
-            hig.raise_ner(pi_appl               => 'AWLRS'
-                         ,pi_id                 => 9
-                         ,pi_supplementary_info => pi_layer_type||' provided to function get_default_symboliser');
-      END CASE;
-      --
-      RETURN lv_retval;
-      --
-    END get_default_symboliser;
-    --
-    FUNCTION get_line_symboliser(pi_class      IN VARCHAR2
-                                ,pi_style      IN VARCHAR2
-                                ,pi_dash       IN VARCHAR2
-                                ,pi_base_width IN VARCHAR2 DEFAULT NULL)
-      RETURN VARCHAR2 IS
-      --
-      lv_fill          nm3type.max_varchar2;
-      lv_fill_opacity  nm3type.max_varchar2;
-      lv_stroke_width  nm3type.max_varchar2;
-      --
-      lv_retval nm3type.max_varchar2;
-      --
-    BEGIN
-      /*
-      ||Get data from the style attribute.
-      ||NB. Mapserver does not support End Caps or Hatched\Fenced lines
-      ||so this information, where present, is ignored.
-      */
-      lv_fill := get_style_value(pi_style => pi_style
-                                ,pi_field => 'fill:');
-      lv_stroke_width := get_style_value(pi_style => pi_style
-                                        ,pi_field => 'stroke-width:');
-      IF pi_base_width IS NOT NULL
-       AND pi_class = 'parallel'
-       THEN
-          lv_stroke_width := pi_base_width + (lv_stroke_width * 2);
-      END IF;
-      lv_fill_opacity := get_style_value(pi_style => pi_style
-                                        ,pi_field => 'fill-opacity:');
-      --
-      lv_retval := '          <se:LineSymbolizer>'
-        ||CHR(10)||'            <se:Geometry>'
-        ||CHR(10)||'              <ogc:PropertyName>'||pi_geom_column||'</ogc:PropertyName>'
-        ||CHR(10)||'            </se:Geometry>'
-        ||CHR(10)||'            <se:Stroke>'
-        ||CHR(10)||'              <se:SvgParameter name="stroke">'||lv_fill||'</se:SvgParameter>'
-        ||CHR(10)||'              <se:SvgParameter name="stroke-width">'||lv_stroke_width||'</se:SvgParameter>'
-      ;
-      --
-      IF lv_fill_opacity IS NOT NULL
-       THEN
-          lv_retval := lv_retval
-            ||CHR(10)||'              <se:SvgParameter name="stroke-opacity">'||alpha_to_decimal(TO_NUMBER(lv_fill_opacity))||'</se:SvgParameter>'
-          ;
-      END IF;
-      --
-      IF pi_dash IS NOT NULL
-       THEN
-          lv_retval := lv_retval
-            ||CHR(10)||'              <se:SvgParameter name="stroke-dasharray">'||REPLACE(pi_dash,',',' ')||'</se:SvgParameter>'
-          ;
-      END IF;
-      --
-      lv_retval := lv_retval
-        ||CHR(10)||'            </se:Stroke>'
-        ||CHR(10)||'          </se:LineSymbolizer>'
-      ;
-      --
-      RETURN lv_retval;
-      --
-    END get_line_symboliser;
-    --
-  BEGIN
-    /*
-    ||Get the data from user_sdo_styles.
-    */
-    OPEN  get_uss(pi_style_name);
-    FETCH get_uss
-     INTO lr_uss;
-    CLOSE get_uss;
-    --
-    lv_style_def := XMLTYPE(lr_uss.definition);
-    --
-    CASE lr_uss.type
-      WHEN 'AREA'
-       THEN
-          NULL;
-      WHEN 'LINE'
-       THEN
-          --
-          OPEN  get_svg_data(lv_style_def);
-          FETCH get_svg_data
-           INTO lr_svg_data;
-          CLOSE get_svg_data;
-          --
-          IF pi_layer_type IS NOT NULL
-           AND pi_layer_type != 'LINE'
-           THEN
-              /*
-              ||Layer has multiple GTypes and the GType being
-              ||Processed is not a Line so return a default
-              ||symboliser based loosely on the Line Style
-              ||Properties.
-              */
-              lv_retval := get_default_symboliser(pi_geom_column => pi_geom_column
-                                                 ,pi_layer_type  => pi_layer_type
-                                                 ,pi_style       => lr_svg_data.g_style);
-          ELSE
-              lv_retval := get_line_symboliser(pi_class => lr_svg_data.g_class
-                                              ,pi_style => lr_svg_data.g_style
-                                              ,pi_dash  => lr_svg_data.g_dash);
-              --
-              OPEN  get_svg_lines(lv_style_def);
-              FETCH get_svg_lines
-               BULK COLLECT
-               INTO lt_svg_line_data;
-              CLOSE get_svg_lines;
-              --
-              FOR i IN 1..lt_svg_line_data.COUNT LOOP
-                IF lt_svg_line_data(i).line_style IS NOT NULL
-                 THEN
-                    /*
-                    ||Parallel line class needs to be written first.
-                    */
-                    IF lt_svg_line_data(i).line_class = 'parallel'
-                     THEN
-                        lv_retval := get_line_symboliser(pi_class      => lt_svg_line_data(i).line_class
-                                                        ,pi_style      => lt_svg_line_data(i).line_style
-                                                        ,pi_dash       => lt_svg_line_data(i).line_dash
-                                                        ,pi_base_width => get_style_value(pi_style => lr_svg_data.g_style
-                                                                                         ,pi_field => 'stroke-width:'))
-                                     ||CHR(10)||lv_retval;
-                    ELSE
-                        lv_retval := lv_retval||CHR(10)||get_line_symboliser(pi_class      => lt_svg_line_data(i).line_class
-                                                                            ,pi_style      => lt_svg_line_data(i).line_style
-                                                                            ,pi_dash       => lt_svg_line_data(i).line_dash);
-                    END IF;
-                END IF;
-              END LOOP;
-          END IF;
-          --
-      WHEN 'MARKER'
-       THEN
-          --
-          OPEN  get_svg_data(lv_style_def);
-          FETCH get_svg_data
-           INTO lr_svg_data;
-          CLOSE get_svg_data;
-          --
-          IF pi_layer_type IS NOT NULL
-           AND pi_layer_type != 'POINT'
-           THEN
-              /*
-              ||Layer has multiple GTypes and the GType being
-              ||Processed is not a Point so return a default
-              ||symboliser based loosely on the Marker Style
-              ||Properties.
-              */
-              lv_retval := get_default_symboliser(pi_geom_column => pi_geom_column
-                                                 ,pi_layer_type  => pi_layer_type
-                                                 ,pi_style       => lr_svg_data.g_style);
-          ELSE
-              --
-              lv_fill := get_style_value(pi_style => lr_svg_data.g_style
-                                        ,pi_field => 'fill:');
-              lv_fill_opacity := get_style_value(pi_style => lr_svg_data.g_style
-                                                ,pi_field => 'fill-opacity:');
-              lv_stroke := get_style_value(pi_style => lr_svg_data.g_style
-                                          ,pi_field => 'stroke:');
-              lv_stroke_width := get_style_value(pi_style => lr_svg_data.g_style
-                                                ,pi_field => 'stroke-width:');
-              lv_stroke_opacity := get_style_value(pi_style => lr_svg_data.g_style
-                                                  ,pi_field => 'stroke-opacity:');
-              lv_width := get_style_value(pi_style => lr_svg_data.g_style
-                                         ,pi_field => 'width:');
-              --
-              lv_retval := '          <se:PointSymbolizer>'
-                ||CHR(10)||'            <se:Geometry>'
-                ||CHR(10)||'              <ogc:PropertyName>'||pi_geom_column||'</ogc:PropertyName>'
-                ||CHR(10)||'            </se:Geometry>'
-                ||CHR(10)||'            <se:Graphic>'
-              ;
-              IF lv_style_def.existsnode('/svg/g/circle') = 1
-               THEN
-                  lv_retval := lv_retval
-                    ||CHR(10)||'              <se:Mark>'
-                    ||CHR(10)||'                <se:WellKnownName>circle</se:WellKnownName>'
-                  ;
-                  IF lv_fill IS NOT NULL
-                   THEN
-                      lv_retval := lv_retval
-                        ||CHR(10)||'                  <se:Fill>'
-                        ||CHR(10)||'                    <se:SvgParameter name="fill">'||lv_fill||'</se:SvgParameter>'
-                      ;
-                      IF lv_fill_opacity IS NOT NULL
-                       THEN
-                          lv_retval := lv_retval
-                            ||CHR(10)||'                    <se:SvgParameter name="fill-opacity">'||alpha_to_decimal(TO_NUMBER(lv_fill_opacity))||'</se:SvgParameter>'
-                          ;
-                      END IF;
-                      --
-                      lv_retval := lv_retval
-                        ||CHR(10)||'                  </se:Fill>'
-                      ;
-                  END IF;
-                  --
-                  IF lv_stroke IS NOT NULL
-                   THEN
-                      lv_retval := lv_retval
-                        ||CHR(10)||'                  <se:Stroke>'
-                        ||CHR(10)||'                    <se:SvgParameter name="stroke">'||lv_stroke||'</se:SvgParameter>'
-                        ||CHR(10)||'                    <se:SvgParameter name="stroke-width">'||NVL(lv_stroke_width,'1.0')||'</se:SvgParameter>'
-                      ;
-                      IF lv_stroke_opacity IS NOT NULL
-                       THEN
-                          lv_retval := lv_retval
-                            ||CHR(10)||'                    <se:SvgParameter name="stroke-opacity">'||alpha_to_decimal(TO_NUMBER(lv_stroke_opacity))||'</se:SvgParameter>'
-                          ;
-                      END IF;
-                      --
-                      lv_retval := lv_retval
-                        ||CHR(10)||'                  </se:Stroke>'
-                      ;
-                  END IF;
-                  --
-                  lv_retval := lv_retval
-                    ||CHR(10)||'              </se:Mark>'
-                  ;
-              ELSIF lv_style_def.existsnode('/svg/g/rect') = 1
-               THEN
-                  lv_retval := lv_retval
-                    ||CHR(10)||'              <se:Mark>'
-                    ||CHR(10)||'                <se:WellKnownName>square</se:WellKnownName>'
-                  ;
-                  IF lv_fill IS NOT NULL
-                   THEN
-                      lv_retval := lv_retval
-                        ||CHR(10)||'                  <se:Fill>'
-                        ||CHR(10)||'                    <se:SvgParameter name="fill">'||lv_fill||'</se:SvgParameter>'
-                      ;
-                      IF lv_fill_opacity IS NOT NULL
-                       THEN
-                          lv_retval := lv_retval
-                            ||CHR(10)||'                    <se:SvgParameter name="fill-opacity">'||alpha_to_decimal(TO_NUMBER(lv_fill_opacity))||'</se:SvgParameter>'
-                          ;
-                      END IF;
-                      --
-                      lv_retval := lv_retval
-                        ||CHR(10)||'                  </se:Fill>'
-                      ;
-                  END IF;
-                  --
-                  IF lv_stroke IS NOT NULL
-                   THEN
-                      lv_retval := lv_retval
-                        ||CHR(10)||'                  <se:Stroke>'
-                        ||CHR(10)||'                    <se:SvgParameter name="stroke">'||lv_stroke||'</se:SvgParameter>'
-                        ||CHR(10)||'                    <se:SvgParameter name="stroke-width">'||NVL(lv_stroke_width,'1.0')||'</se:SvgParameter>'
-                      ;
-                      IF lv_stroke_opacity IS NOT NULL
-                       THEN
-                          lv_retval := lv_retval
-                            ||CHR(10)||'                    <se:SvgParameter name="stroke-opacity">'||alpha_to_decimal(TO_NUMBER(lv_stroke_opacity))||'</se:SvgParameter>'
-                          ;
-                      END IF;
-                      --
-                      lv_retval := lv_retval
-                        ||CHR(10)||'                  </se:Stroke>'
-                      ;
-                  END IF;
-                  --
-                  lv_retval := lv_retval
-                    ||CHR(10)||'              </se:Mark>'
-                  ;
-              ELSIF lv_style_def.existsnode('/svg/g/image') = 1
-               THEN
-                  lv_retval := lv_retval
-                    ||CHR(10)||'              <se:ExternalGraphic>'
-                    ||CHR(10)||'                <se:OnlineResource xlink:type="simple" xlink:href="'||get_marker_filename(pi_style_name => pi_style_name)||'" />'
-                    ||CHR(10)||'                <se:Format>image/png</se:Format>'
-                    ||CHR(10)||'              </se:ExternalGraphic>'
-                  ;
-              END IF;
-              --
-              IF lv_width IS NOT NULL
-               THEN
-                  lv_retval := lv_retval
-                    ||CHR(10)||'              <se:Size>'||lv_width||'</se:Size>'
-                  ;
-              END IF;
-              --
-              lv_retval := lv_retval
-                ||CHR(10)||'            </se:Graphic>'
-                ||CHR(10)||'          </se:PointSymbolizer>'
-              ;
-          END IF;
-          --
-      WHEN 'COLOR'
-       THEN
-          --
-          OPEN  get_svg_data(lv_style_def);
-          FETCH get_svg_data
-           INTO lr_svg_data;
-          CLOSE get_svg_data;
-          --
-          IF pi_layer_type IS NOT NULL
-           AND pi_layer_type != 'POLYGON'
-           THEN
-              /*
-              ||Layer has multiple GTypes and the GType being
-              ||Processed is not a Polygon so return a default
-              ||symboliser based loosely on the Color Style
-              ||Properties.
-              */
-              lv_retval := get_default_symboliser(pi_geom_column => pi_geom_column
-                                                 ,pi_layer_type  => pi_layer_type
-                                                 ,pi_style       => lr_svg_data.g_style);
-          ELSE
-              --
-              lv_fill := get_style_value(pi_style => lr_svg_data.g_style
-                                        ,pi_field => 'fill:');
-              lv_fill_opacity := get_style_value(pi_style => lr_svg_data.g_style
-                                                ,pi_field => 'fill-opacity:');
-              lv_stroke := get_style_value(pi_style => lr_svg_data.g_style
-                                          ,pi_field => 'stroke:');
-              lv_stroke_width := get_style_value(pi_style => lr_svg_data.g_style
-                                                ,pi_field => 'stroke-width:');
-              lv_stroke_opacity := get_style_value(pi_style => lr_svg_data.g_style
-                                                  ,pi_field => 'stroke-opacity:');
-              --
-              lv_retval := '          <se:PolygonSymbolizer>'
-                ||CHR(10)||'            <se:Geometry>'
-                ||CHR(10)||'              <ogc:PropertyName>'||pi_geom_column||'</ogc:PropertyName>'
-                ||CHR(10)||'            </se:Geometry>'
-              ;
-              --
-              IF lv_fill IS NOT NULL
-               THEN
-                  lv_retval := lv_retval
-                    ||CHR(10)||'            <se:Fill>'
-                    ||CHR(10)||'              <se:SvgParameter name="fill">'||lv_fill||'</se:SvgParameter>'
-                  ;
-                  IF lv_fill_opacity IS NOT NULL
-                   THEN
-                      lv_retval := lv_retval
-                        ||CHR(10)||'              <se:SvgParameter name="fill-opacity">'||alpha_to_decimal(TO_NUMBER(lv_fill_opacity))||'</se:SvgParameter>'
-                      ;
-                  END IF;
-                  --
-                  lv_retval := lv_retval
-                    ||CHR(10)||'            </se:Fill>'
-                  ;
-              END IF;
-              --
-              IF lv_stroke IS NOT NULL
-               THEN
-                  lv_retval := lv_retval
-                    ||CHR(10)||'            <se:Stroke>'
-                    ||CHR(10)||'              <se:SvgParameter name="stroke">'||lv_stroke||'</se:SvgParameter>'
-                    ||CHR(10)||'              <se:SvgParameter name="stroke-width">'||NVL(lv_stroke_width,'1.0')||'</se:SvgParameter>'
-                  ;
-                  IF lv_stroke_opacity IS NOT NULL
-                   THEN
-                      lv_retval := lv_retval
-                        ||CHR(10)||'              <se:SvgParameter name="stroke-opacity">'||alpha_to_decimal(TO_NUMBER(lv_stroke_opacity))||'</se:SvgParameter>'
-                      ;
-                  END IF;
-                  --
-                  lv_retval := lv_retval
-                    ||CHR(10)||'            </se:Stroke>'
-                  ;
-              END IF;
-              --
-              lv_retval := lv_retval||CHR(10)||'          </se:PolygonSymbolizer>';
-              --
-          END IF;
-          --
-      WHEN 'TEXT'
-       THEN
-          NULL;
-      WHEN 'ADVANCED'
-       THEN
-          --
-          OPEN  get_adv_style_data(lv_style_def);
-          FETCH get_adv_style_data
-           BULK COLLECT
-           INTO lt_adv_style_data;
-          CLOSE get_adv_style_data;
-          --
-          FOR i IN 1..lt_adv_style_data.COUNT LOOP
-            /*
-            ||Start the Rule.
-            */
-            lv_retval := lv_retval||CHR(10)||'        <se:Rule>'
-                                  ||CHR(10)||'          <se:Name>'||NVL(lt_adv_style_data(i).bucket_label,lt_adv_style_data(i).bucket_value)||'</se:Name>'
-                                  ||CHR(10)||'          <ogc:Filter>'
-            ;
-            lt_bucket_values := awlrs_util.tokenise_string(pi_string => lt_adv_style_data(i).bucket_value);
-            IF lt_bucket_values.COUNT > 1
-             THEN
-                lv_retval := lv_retval||CHR(10)||'            <ogc:Or>';
-                FOR j IN 1..lt_bucket_values.COUNT LOOP
-                  lv_retval := lv_retval||CHR(10)||'              <ogc:PropertyIsEqualTo>'
-                                        ||CHR(10)||'                <ogc:PropertyName>'||pi_rule_column||'</ogc:PropertyName>'
-                                        ||CHR(10)||'                <ogc:Literal>'||lt_bucket_values(j)||'</ogc:Literal>'
-                                        ||CHR(10)||'              </ogc:PropertyIsEqualTo>';
-                END LOOP;
-                lv_retval := lv_retval||CHR(10)||'            </ogc:Or>';
-            ELSE
-                lv_retval := lv_retval||CHR(10)||'            <ogc:PropertyIsEqualTo>'
-                                      ||CHR(10)||'              <ogc:PropertyName>'||pi_rule_column||'</ogc:PropertyName>'
-                                      ||CHR(10)||'              <ogc:Literal>'||lt_adv_style_data(i).bucket_value||'</ogc:Literal>'
-                                      ||CHR(10)||'            </ogc:PropertyIsEqualTo>';
-            END IF;
-            --
-            lv_retval := lv_retval||CHR(10)||'          </ogc:Filter>';
-            /*
-            ||Get the Symbolizer data.
-            */
-            lv_retval := lv_retval||CHR(10)||get_geom_symbolizer(pi_style_name  => lt_adv_style_data(i).bucket_style
-                                                                ,pi_geom_column => pi_geom_column
-                                                                ,pi_layer_type  => pi_layer_type);
-            /*
-            ||Write the label data if required.
-            */
-            IF pi_label_column IS NOT NULL
-             THEN
-                lv_retval := lv_retval||CHR(10)||get_text_symbolizer(pi_style_name  => pi_label_style
-                                                                    ,pi_text_column => pi_label_column);
-            END IF;
-            /*
-            ||Close the Rule.
-            */
-            lv_retval := lv_retval||CHR(10)||'        </se:Rule>';
-            --
-        END LOOP;
-      ELSE
-          --Unsuported Style Type
-          hig.raise_ner(pi_appl               => 'AWLRS'
-                       ,pi_id                 => 10
-                       ,pi_supplementary_info => pi_style_name);
-    END CASE;
-    --
-    RETURN lv_retval;
-    --
-  END get_geom_symbolizer;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  FUNCTION generate_layers_sld(pi_map_name IN VARCHAR2)
-    RETURN nm3type.tab_varchar32767 IS
-    --
-    lt_layer_sld  nm3type.tab_varchar32767;
-    lt_themes     theme_styling_rules_tab;
-    lt_gtypes     awlrs_sdo.gtype_tab;
-    --
-    lt_rules xml_tab;
-    --
-    lv_layer_type          VARCHAR2(100);
-    lv_layer_text          nm3type.max_varchar2;
-    lv_feature_style_type  user_sdo_styles.type%TYPE;
-    --
-    CURSOR get_rule_data(cp_xml IN XMLTYPE)
-        IS
-    SELECT EXTRACTVALUE(cp_xml,'/rule/@column')         rule_column
-          ,EXTRACTVALUE(cp_xml,'/rule/features/@style') feature_style
-          ,EXTRACTVALUE(cp_xml,'/rule/label/@column')   label_column
-          ,EXTRACTVALUE(cp_xml,'/rule/label/@style')    label_style
-      FROM dual
-         ;
-    --
-    lr_rule_data  get_rule_data%ROWTYPE;
-    --
-    CURSOR get_uss(cp_style_name IN VARCHAR2)
-        IS
-    SELECT type
-      FROM user_sdo_styles
-     WHERE name = cp_style_name
-         ;
-    --
-  BEGIN
-    /*
-    ||Get the themes.
-    */
-    lt_themes := get_themes_for_sld(pi_map_name => pi_map_name);
-    --
-    FOR i IN 1..lt_themes.COUNT LOOP
-      /*
-      ||Get the Geometry Types.
-      */
-      lt_gtypes := awlrs_sdo.get_gtypes(pi_theme_name => lt_themes(i).name);
-      FOR j IN 1..lt_gtypes.COUNT LOOP
-        /*
-        ||Set the Layer Type if required.
-        */
-        IF lt_gtypes.COUNT > 1
-         THEN
-            lv_layer_type := '_'||gtype_to_layer_type(pi_gtype => lt_gtypes(j).gtype);
-        ELSE
-            lv_layer_type := NULL;
-        END IF;
-        /*
-        ||Start the NamedLayer.
-        */
-        lv_layer_text := '  <NamedLayer>'
-              ||CHR(10)||'    <se:Name>'||REPLACE(UPPER(lt_themes(i).name||lv_layer_type), ' ','')||'</se:Name>'
-              ||CHR(10)||'    <UserStyle>'
-              ||CHR(10)||'      <se:Name>'||REPLACE(UPPER(lt_themes(i).name||lv_layer_type), ' ','')||'</se:Name>'
-              ||CHR(10)||'      <se:FeatureTypeStyle>'
-        ;
-        /*
-        ||Get the rules xml.
-        */
-        lt_rules := get_theme_rules(pi_xml => XMLTYPE(lt_themes(i).styling_rules));
-        --
-        FOR k IN 1..lt_rules.COUNT LOOP
-          /*
-          ||Extract the rule data.
-          */
-          OPEN  get_rule_data(lt_rules(k));
-          FETCH get_rule_data
-           INTO lr_rule_data;
-          CLOSE get_rule_data;
-          /*
-          ||Get the data from user_sdo_styles.
-          */
-          OPEN  get_uss(lr_rule_data.feature_style);
-          FETCH get_uss
-           INTO lv_feature_style_type;
-          CLOSE get_uss;
-          --
-          IF lv_feature_style_type = 'ADVANCED'
-           THEN
-              lv_layer_text := lv_layer_text||get_geom_symbolizer(pi_style_name   => lr_rule_data.feature_style
-                                                                 ,pi_geom_column  => lt_themes(i).geometry_column
-                                                                 ,pi_layer_type   => SUBSTR(lv_layer_type,2)
-                                                                 ,pi_rule_column  => lr_rule_data.rule_column
-                                                                 ,pi_label_column => lr_rule_data.label_column
-                                                                 ,pi_label_style  => lr_rule_data.label_style);
-          ELSE
-              /*
-              ||Start the Rule.
-              */
-              lv_layer_text := lv_layer_text||CHR(10)||'        <se:Rule>'
-                                            ||CHR(10)||'          <se:Name>'||lt_themes(i).name||CASE
-                                                                                                  WHEN lv_layer_type IS NOT NULL
-                                                                                                   THEN ' '||SUBSTR(lv_layer_type,2)
-                                                                                                  ELSE NULL
-                                                                                                 END||'</se:Name>'
-              ;
-              /*
-              ||Get the Symbolizer data.
-              */
-              lv_layer_text := lv_layer_text||CHR(10)||get_geom_symbolizer(pi_style_name  => lr_rule_data.feature_style
-                                                                          ,pi_geom_column => lt_themes(i).geometry_column
-                                                                          ,pi_layer_type  => SUBSTR(lv_layer_type,2));
-              /*
-              ||Write the label data if required.
-              */
-              IF lr_rule_data.label_column IS NOT NULL
-               THEN
-                  lv_layer_text := lv_layer_text||CHR(10)||get_text_symbolizer(pi_style_name  => lr_rule_data.label_style
-                                                                              ,pi_text_column => lr_rule_data.label_column);
-              END IF;
-              /*
-              ||Close the Rule.
-              */
-              lv_layer_text := lv_layer_text||CHR(10)||'        </se:Rule>';
-              --
-          END IF;
-          --
-        END LOOP; --lt_rules
-        /*
-        ||Close the NamedLayer.
-        */
-        lv_layer_text := lv_layer_text||CHR(10)||'      </se:FeatureTypeStyle>'
-                                      ||CHR(10)||'    </UserStyle>'
-                                      ||CHR(10)||'  </NamedLayer>'
-        ;
-        /*
-        ||Assign the SLD text to the output table.
-        */
-        lt_layer_sld(lt_layer_sld.COUNT+1) := lv_layer_text;
-        --
-      END LOOP; --lt_gtypes
-    END LOOP; --lt_themes
-    --
-    RETURN lt_layer_sld;
-    --
-  END generate_layers_sld;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  FUNCTION generate_sld_file(pi_map_name IN VARCHAR2)
-    RETURN CLOB IS
-    --
-    lv_retval  CLOB;
-    lt_layers  nm3type.tab_varchar32767;
-    --
-  BEGIN
-    /*
-    ||Write the header.
-    */
-    lv_retval := '<?xml version="1.0" encoding="UTF-8"?>'
-      ||CHR(10)||'<StyledLayerDescriptor version="1.1.0"'
-      ||CHR(10)||'  xmlns="http://www.opengis.net/sld"'
-      ||CHR(10)||'  xmlns:se="http://www.opengis.net/se"'
-      ||CHR(10)||'  xmlns:ogc="http://www.opengis.net/ogc"'
-      ||CHR(10)||'  xmlns:xlink="http://www.w3.org/1999/xlink"'
-      ||CHR(10)||'  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
-      ||CHR(10)||'  xsi:schemaLocation="http://www.opengis.net/sld'
-      ||CHR(10)||'  http://schemas.opengis.net/sld/1.1.0/StyledLayerDescriptor.xsd">'
-    ;
-    /*
-    ||Write the layer styles.
-    */
-    lt_layers := generate_layers_sld(pi_map_name => pi_map_name);
-    FOR i IN 1..lt_layers.COUNT LOOP
-      --
-      lv_retval := lv_retval||CHR(10)||lt_layers(i);
-      --
-    END LOOP;
-    /*
-    ||Write the end of the file.
-    */
-    lv_retval := lv_retval||CHR(10)||'</StyledLayerDescriptor>';
-    --
-    RETURN lv_retval;
-    --
-  END generate_sld_file;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_sld_file(pi_map_name         IN  VARCHAR2
-                        ,po_message_severity OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor   OUT sys_refcursor
-                        ,po_cursor           OUT sys_refcursor)
-    IS
-  BEGIN
-    --
-    OPEN po_cursor FOR
-    SELECT awlrs_map_api.generate_sld_file(pi_map_name => pi_map_name)
-      FROM dual
-         ;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-     THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END get_sld_file;
-
-  --
-  -----------------------------------------------------------------------------
-  --
   PROCEDURE get_marker_files(pi_map_name         IN  VARCHAR2
                             ,po_message_severity OUT hig_codes.hco_code%TYPE
                             ,po_message_cursor   OUT sys_refcursor
@@ -4232,53 +3280,101 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT awlrs_map_api.get_marker_filename(name) file_name
-          ,image                                 file_content
-      FROM (SELECT uss1.name
-                  ,uss1.image
-              FROM user_sdo_styles uss1
-                  ,(SELECT style_name
-                      FROM (SELECT styling_rules
-                              FROM user_sdo_themes
-                             WHERE name IN(SELECT map_themes.name
-                                             FROM user_sdo_maps maps
-                                                 ,XMLTABLE('/map_definition/theme'
-                                                           PASSING XMLTYPE(maps.definition)
-                                                           COLUMNS name  VARCHAR2(100) path '@name') map_themes
-                                            WHERE maps.name = pi_map_name)) theme_rules
-                          ,XMLTABLE('/styling_rules/rule'
-                                    PASSING XMLTYPE(theme_rules.styling_rules)
-                                    COLUMNS style_name VARCHAR2(100) path '/rule/features/@style')) styles1
-             WHERE styles1.style_name = uss1.name
-               AND uss1.type = 'MARKER'
-               AND dbms_lob.getlength(uss1.image) > 0
-             UNION ALL
-            SELECT uss2.name
-                  ,uss2.image
-              FROM user_sdo_styles uss2
-                  ,(SELECT bucket_style
-                      FROM (SELECT adv_uss.definition
-                              FROM user_sdo_styles adv_uss
-                                  ,(SELECT style_name
-                                      FROM (SELECT styling_rules
-                                              FROM user_sdo_themes
-                                             WHERE name IN(SELECT map_themes.name
-                                                             FROM user_sdo_maps maps
-                                                                 ,XMLTABLE('/map_definition/theme'
-                                                                           PASSING XMLTYPE(maps.definition)
-                                                                           COLUMNS name  VARCHAR2(100) path '@name') map_themes
-                                                            WHERE maps.name = pi_map_name)) theme_rules
-                                          ,XMLTABLE('/styling_rules/rule'
-                                                    PASSING XMLTYPE(theme_rules.styling_rules)
-                                                    COLUMNS style_name VARCHAR2(100) path '/rule/features/@style')) styles2
-                             WHERE styles2.style_name = adv_uss.name
-                               AND adv_uss.type = 'ADVANCED') adv_defs
-                          ,XMLTABLE('/AdvancedStyle/BucketStyle/Buckets/CollectionBucket'
-                                    PASSING XMLTYPE(adv_defs.definition)
-                                    COLUMNS bucket_style VARCHAR2(100) path '@style') collection_buckets) adv_styles
-             WHERE adv_styles.bucket_style = uss2.name
-               AND uss2.type = 'MARKER'
-               AND dbms_lob.getlength(uss2.image) > 0)
+    SELECT awlrs_map_api.get_marker_filename(uss.name) file_name
+          ,uss.image file_content
+      FROM user_sdo_styles uss
+     WHERE uss.name IN(SELECT uss1.name
+                         FROM user_sdo_styles uss1
+                             ,(SELECT style_name
+                                 FROM (SELECT styling_rules
+                                         FROM user_sdo_themes
+                                        WHERE name IN(SELECT map_themes.name
+                                                        FROM user_sdo_maps maps
+                                                            ,XMLTABLE('/map_definition/theme'
+                                                                      PASSING XMLTYPE(maps.definition)
+                                                                      COLUMNS name  VARCHAR2(100) path '@name') map_themes
+                                                       WHERE maps.name = pi_map_name)) theme_rules
+                                     ,XMLTABLE('/styling_rules/rule'
+                                               PASSING XMLTYPE(theme_rules.styling_rules)
+                                               COLUMNS style_name VARCHAR2(100) path '/rule/features/@style')) styles1
+                        WHERE styles1.style_name = uss1.name
+                          AND uss1.type = 'MARKER'
+                          AND dbms_lob.getlength(uss1.image) > 0
+                       UNION ALL
+                       SELECT uss2.name
+                         FROM user_sdo_styles uss2
+                             ,(SELECT bucket_style
+                                 FROM (SELECT adv_uss.definition
+                                         FROM user_sdo_styles adv_uss
+                                             ,(SELECT style_name
+                                                 FROM (SELECT styling_rules
+                                                         FROM user_sdo_themes
+                                                        WHERE name IN(SELECT map_themes.name
+                                                                        FROM user_sdo_maps maps
+                                                                            ,XMLTABLE('/map_definition/theme'
+                                                                                      PASSING XMLTYPE(maps.definition)
+                                                                                      COLUMNS name  VARCHAR2(100) path '@name') map_themes
+                                                                       WHERE maps.name = pi_map_name)) theme_rules
+                                                     ,XMLTABLE('/styling_rules/rule'
+                                                               PASSING XMLTYPE(theme_rules.styling_rules)
+                                                               COLUMNS style_name VARCHAR2(100) path '/rule/features/@style')) styles2
+                                        WHERE styles2.style_name = adv_uss.name
+                                          AND adv_uss.type = 'ADVANCED') adv_defs
+                                     ,XMLTABLE('/AdvancedStyle/BucketStyle/Buckets/CollectionBucket'
+                                               PASSING XMLTYPE(adv_defs.definition)
+                                               COLUMNS bucket_style VARCHAR2(100) path '@style') collection_buckets) adv_styles
+                        WHERE adv_styles.bucket_style = uss2.name
+                          AND uss2.type = 'MARKER'
+                          AND dbms_lob.getlength(uss2.image) > 0
+                       UNION ALL
+                       SELECT uss3.name
+                         FROM user_sdo_styles uss3
+                             ,(SELECT DISTINCT name
+                                 FROM (SELECT awlrs_map_api.get_style_value(EXTRACTVALUE(XMLTYPE(uss4.definition),'/svg/g/@style'),'marker-name:') name
+                                         FROM user_sdo_styles uss4
+                                             ,(SELECT style_name
+                                                 FROM (SELECT styling_rules
+                                                         FROM user_sdo_themes
+                                                        WHERE name IN(SELECT map_themes.name
+                                                                        FROM user_sdo_maps maps
+                                                                            ,XMLTABLE('/map_definition/theme'
+                                                                                      PASSING XMLTYPE(maps.definition)
+                                                                                      COLUMNS name  VARCHAR2(100) path '@name') map_themes
+                                                                       WHERE maps.name = pi_map_name)) theme_rules
+                                                     ,XMLTABLE('/styling_rules/rule'
+                                                               PASSING XMLTYPE(theme_rules.styling_rules)
+                                                               COLUMNS style_name VARCHAR2(100) path '/rule/features/@style')) styles1
+                                        WHERE styles1.style_name = uss4.name
+                                          AND uss4.type = 'LINE'
+                                          AND awlrs_map_api.get_style_value(EXTRACTVALUE(XMLTYPE(uss4.definition),'/svg/g/@style'),'marker-name:') IS NOT NULL
+                                        UNION ALL
+                                       SELECT awlrs_map_api.get_style_value(EXTRACTVALUE(XMLTYPE(uss5.definition),'/svg/g/@style'),'marker-name:') name
+                                         FROM user_sdo_styles uss5
+                                             ,(SELECT bucket_style
+                                                 FROM (SELECT adv_uss2.definition
+                                                         FROM user_sdo_styles adv_uss2
+                                                             ,(SELECT style_name
+                                                                 FROM (SELECT styling_rules
+                                                                         FROM user_sdo_themes
+                                                                        WHERE name IN(SELECT map_themes.name
+                                                                                        FROM user_sdo_maps maps
+                                                                                            ,XMLTABLE('/map_definition/theme'
+                                                                                                      PASSING XMLTYPE(maps.definition)
+                                                                                                      COLUMNS name  VARCHAR2(100) path '@name') map_themes
+                                                                                       WHERE maps.name = pi_map_name)) theme_rules
+                                                                     ,XMLTABLE('/styling_rules/rule'
+                                                                               PASSING XMLTYPE(theme_rules.styling_rules)
+                                                                               COLUMNS style_name VARCHAR2(100) path '/rule/features/@style')) styles2
+                                                        WHERE styles2.style_name = adv_uss2.name
+                                                          AND adv_uss2.type = 'ADVANCED') adv_defs
+                                                     ,XMLTABLE('/AdvancedStyle/BucketStyle/Buckets/CollectionBucket'
+                                                               PASSING XMLTYPE(adv_defs.definition)
+                                                               COLUMNS bucket_style VARCHAR2(100) path '@style') collection_buckets) adv_styles
+                                        WHERE adv_styles.bucket_style = uss5.name
+                                          AND uss5.type = 'LINE'
+                                          AND awlrs_map_api.get_style_value(EXTRACTVALUE(XMLTYPE(uss5.definition),'/svg/g/@style'),'marker-name:') IS NOT NULL)) map_styles
+                        WHERE map_styles.name = uss3.name
+                          AND dbms_lob.getlength(uss3.image) > 0)
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -4553,7 +3649,9 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT asmc_data
+    SELECT asmc_id
+          ,asmc_name
+          ,asmc_data
       FROM awlrs_saved_map_configs
      WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
        AND asmc_product = pi_product
@@ -4582,7 +3680,9 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT asmc_data
+    SELECT asmc_id
+          ,asmc_name
+          ,asmc_data
       FROM awlrs_saved_map_configs
      WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
        AND asmc_id = pi_id
