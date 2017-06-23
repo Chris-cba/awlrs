@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.17   09 Jun 2017 18:43:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.18   23 Jun 2017 17:59:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   09 Jun 2017 18:43:12  $
-  --       Date fetched Out : $Modtime:   09 Jun 2017 18:27:18  $
-  --       Version          : $Revision:   1.17  $
+  --       Date into PVCS   : $Date:   23 Jun 2017 17:59:22  $
+  --       Date fetched Out : $Modtime:   23 Jun 2017 17:55:30  $
+  --       Version          : $Revision:   1.18  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -694,6 +694,7 @@ AS
     lv_new_np_id     nm_nodes.no_np_id%TYPE;
     lv_create_node   BOOLEAN := TRUE;
     lv_datum_only    VARCHAR2(1) := 'Y';
+    lv_distance      NUMBER;
     --
     lv_new_elements_cursor  sys_refcursor;
     --
@@ -705,6 +706,54 @@ AS
           ,nm_nodes
      WHERE no_node_id = cp_node_id
        AND no_np_id = np_id
+         ;
+    --
+    CURSOR get_measure(cp_nt_type    IN nm_types.nt_type%TYPE
+                      ,cp_group_type IN nm_group_types_all.ngt_group_type%TYPE
+                      ,cp_map_name   IN VARCHAR2
+                      ,cp_x          IN NUMBER
+                      ,cp_y          IN NUMBER
+                      ,cp_ne_id      IN nm_elements_all.ne_id%TYPE)
+        IS
+    WITH themes AS(SELECT nth_theme_id
+                         ,nth_tolerance
+                         ,nt_length_unit
+                     FROM nm_themes_all
+                         ,nm_nw_themes
+                         ,nm_linear_types
+                         ,nm_types
+                    WHERE nth_theme_name IN(SELECT vnmd_theme_name
+                                              FROM v_nm_msv_map_def
+                                             WHERE vnmd_name = cp_map_name)      
+                      AND EXISTS(SELECT 1
+                                   FROM nm_theme_roles
+                                       ,hig_user_roles
+                                  WHERE nthr_theme_id = nth_theme_id
+                                    AND nthr_role = hur_role
+                                    AND hur_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME')
+                                    AND hur_start_date <= TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY'))
+                      AND nth_theme_id = nnth_nth_theme_id
+                      AND nnth_nlt_id = nlt_id
+                      AND nlt_nt_type = nt_type
+                      AND nlt_nt_type = cp_nt_type
+                      AND NVL(nlt_gty_type,'~~~~~') = NVL(cp_group_type,'~~~~~'))
+    SELECT element_offset
+          ,distance_from_point
+      FROM (SELECT a.ntd_pk_id element_id
+                  ,nm3unit.get_formatted_value(a.ntd_measure,nt_length_unit) element_offset
+                  ,a.ntd_distance distance_from_point
+              FROM themes
+                  ,TABLE(nm3sdo.get_objects_in_buffer(nth_theme_id
+                                                     ,nm3sdo.get_2d_pt(cp_x,cp_y)
+                                                     ,nth_tolerance
+                                                     ,1
+                                                     ,'TRUE'
+                                                     ,NULL).ntl_theme_list) a)
+          ,nm_elements
+     WHERE element_id = ne_id
+       AND ne_id = cp_ne_id
+     ORDER
+        BY distance_from_point
          ;
     --
   BEGIN
@@ -728,6 +777,9 @@ AS
         validate_split_at_node(pi_ne_rec  => lr_ne
                               ,pi_node_id => pi_split_at_node_id);
     END IF;
+    /*
+    ||Set the offset.
+    */
     IF pi_split_offset IS NOT NULL
      THEN
         lv_split_offset := pi_split_offset;
@@ -737,18 +789,28 @@ AS
         */
         IF pi_split_at_node_id IS NOT NULL
          THEN
+            --
             OPEN  get_node_x_y(pi_split_at_node_id);
             FETCH get_node_x_y
              INTO lv_x
                  ,lv_y;
             CLOSE get_node_x_y;
             --
-            lv_split_offset := TO_NUMBER(nm3unit.get_formatted_value(p_value => nm3Sdo.get_measure(p_layer => nm3sdm.get_nt_theme(p_nt => lr_ne.ne_nt_type
-                                                                                                                                 ,p_gt => lr_ne.ne_gty_group_type)
-                                                                                                  ,p_ne_id => pi_ne_id
-                                                                                                  ,p_x     => lv_x
-                                                                                                  ,p_y     => lv_y).lr_offset
-                                                                    ,p_unit_id => nm3net.get_nt_units_from_ne(p_ne_id => pi_ne_id)));
+            OPEN  get_measure(cp_nt_type    => lr_ne.ne_nt_type
+                             ,cp_group_type => lr_ne.ne_gty_group_type
+                             ,cp_map_name   => hig.get_sysopt('AWLMAPNAME')
+                             ,cp_x          => lv_x
+                             ,cp_y          => lv_y
+                             ,cp_ne_id      => pi_ne_id);
+            FETCH get_measure
+             INTO lv_split_offset
+                 ,lv_distance;
+            IF get_measure%NOTFOUND
+             THEN
+                hig.raise_ner(pi_appl => 'AWLRS'
+                             ,pi_id   => 38);
+  	        END IF;	
+            CLOSE get_measure;
             --
         END IF;
     END IF;
