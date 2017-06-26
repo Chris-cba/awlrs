@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.15   Jun 02 2017 10:09:34   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.16   26 Jun 2017 16:17:02   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 02 2017 10:09:34  $
-  --       Date fetched Out : $Modtime:   Jun 02 2017 10:07:46  $
-  --       Version          : $Revision:   1.15  $
+  --       Date into PVCS   : $Date:   26 Jun 2017 16:17:02  $
+  --       Date fetched Out : $Modtime:   26 Jun 2017 16:11:30  $
+  --       Version          : $Revision:   1.16  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.15  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.16  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -783,7 +783,7 @@ AS
                         ,pi_description        IN     nm_inv_items_all.iit_descr%TYPE
                         ,pi_start_date         IN     nm_inv_items_all.iit_start_date%TYPE
                         ,pi_end_date           IN     nm_inv_items_all.iit_end_date%TYPE
-                        ,pi_notes              IN     VARCHAR2
+                        ,pi_notes              IN     nm_inv_items_all.iit_note%TYPE
                         ,pi_iit_foreign_key    IN     nm_inv_items_all.iit_foreign_key%TYPE
                         ,pi_attrib_names       IN     attrib_name_tab
                         ,pi_attrib_scrn_texts  IN     attrib_scrn_text_tab
@@ -832,6 +832,7 @@ AS
     g_iit_rec.iit_descr := pi_description;
     g_iit_rec.iit_x_sect := pi_xsp;
     g_iit_rec.iit_foreign_key := pi_iit_foreign_key;
+    g_iit_rec.iit_note := pi_notes;
     --
     IF pi_attrib_names.COUNT != pi_attrib_scrn_texts.COUNT
      OR pi_attrib_names.COUNT != pi_attrib_char_values.COUNT
@@ -2112,18 +2113,19 @@ AS
                             ,TABLE(nm3pla.get_connected_chunks(p_ne_id    => asset_id
                                                               ,p_route_id => ne_id
                                                               ,p_obj_type => obj_type).npa_placement_array) pl
-                         UNION ALL
-                         SELECT nm_ne_id_in   asset_id
-                               ,ne.ne_id      ne_id
-                               ,nm_begin_mp   from_offset
-                               ,nm_end_mp     to_offset
-                               ,nm_start_date member_start_date
-                           FROM nm_members
-                               ,nm_elements_all ne
-                          WHERE ne_nt_type = pi_nwtype
-                            AND ne_id = nm_ne_id_of
-                            AND nm_ne_id_in = pi_iit_ne_id
-                            AND nm_type = 'I') locs
+                       WHERE membs.ne_id = pl.pl_ne_id
+                       UNION ALL
+                      SELECT nm_ne_id_in   asset_id
+                            ,ne.ne_id      ne_id
+                            ,nm_begin_mp   from_offset
+                            ,nm_end_mp     to_offset
+                            ,nm_start_date member_start_date
+                        FROM nm_members
+                            ,nm_elements_all ne
+                       WHERE ne_nt_type = pi_nwtype
+                         AND ne_id = nm_ne_id_of
+                         AND nm_ne_id_in = pi_iit_ne_id
+                         AND nm_type = 'I') locs
                     ,nm_admin_units_all
                     ,nm_elements_all ne
                     ,nm_types
