@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.11   Jun 02 2017 09:59:02   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.12   26 Jun 2017 16:13:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   Jun 02 2017 09:59:02  $
-  --       Date fetched Out : $Modtime:   May 31 2017 15:06:36  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   26 Jun 2017 16:13:58  $
+  --       Date fetched Out : $Modtime:   26 Jun 2017 16:11:28  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -160,7 +160,7 @@ AS
                         ,pi_description        IN     nm_inv_items_all.iit_descr%TYPE
                         ,pi_start_date         IN     nm_inv_items_all.iit_start_date%TYPE
                         ,pi_end_date           IN     nm_inv_items_all.iit_end_date%TYPE
-                        ,pi_notes              IN     VARCHAR2
+                        ,pi_notes              IN     nm_inv_items_all.iit_note%TYPE
                         ,pi_iit_foreign_key    IN     nm_inv_items_all.iit_foreign_key%TYPE
                         ,pi_attrib_names       IN     attrib_name_tab
                         ,pi_attrib_scrn_texts  IN     attrib_scrn_text_tab
