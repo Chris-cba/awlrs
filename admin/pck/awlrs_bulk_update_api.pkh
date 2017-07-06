@@ -1,0 +1,81 @@
+CREATE OR REPLACE PACKAGE awlrs_bulk_update_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_bulk_update_api.pkh-arc   1.2   06 Jul 2017 21:31:20   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_bulk_update_api.pkh  $
+  --       Date into PVCS   : $Date:   06 Jul 2017 21:31:20  $
+  --       Date fetched Out : $Modtime:   06 Jul 2017 10:13:46  $
+  --       Version          : $Revision:   1.2  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_flex_attribs(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                               ,pi_nt_type          IN  nm_types.nt_type%TYPE
+                               ,pi_group_type       IN  nm_group_types_all.ngt_group_type%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_nt_flex_attribs(pi_ne_id      IN nm_elements_all.ne_id%TYPE
+                              ,pi_nt_type    IN nm_types.nt_type%TYPE
+                              ,pi_group_type IN nm_group_types_all.ngt_group_type%TYPE)
+    RETURN awlrs_element_api.flex_attr_tab;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_element_attribs(pi_nt_type             IN  nm_types.nt_type%TYPE
+                                  ,pi_group_type          IN  nm_group_types_all.ngt_group_type%TYPE
+                                  ,pi_ne_ids              IN  awlrs_util.ne_id_tab
+                                  ,pi_attrib_column_names IN  awlrs_element_api.attrib_column_name_tab
+                                  ,pi_attrib_prompts      IN  awlrs_element_api.attrib_prompt_tab
+                                  ,pi_attrib_char_values  IN  awlrs_element_api.attrib_char_value_tab
+                                  ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor      OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_parent_group_types(pi_child_nt_type    IN  nm_types.nt_type%TYPE
+                                  ,pi_child_group_type IN  nm_group_types_all.ngt_group_type%TYPE
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor
+                                  ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_group_memberships(pi_member_ne_ids               IN  awlrs_util.ne_id_tab
+                                    ,pi_group_ne_ids                IN  awlrs_util.ne_id_tab
+                                    ,pi_enddate_existing_membership IN  VARCHAR2
+                                    ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor              OUT sys_refcursor);
+
+END awlrs_bulk_update_api;
+/
