@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.9   15 Jun 2017 19:25:30   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.10   06 Jul 2017 21:25:40   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   15 Jun 2017 19:25:30  $
---       Date fetched Out : $Modtime:   15 Jun 2017 19:09:36  $
---       Version          : $Revision:   1.9  $
+--       Date into PVCS   : $Date:   06 Jul 2017 21:25:40  $
+--       Date fetched Out : $Modtime:   06 Jul 2017 21:12:08  $
+--       Version          : $Revision:   1.10  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 15-JUN-2017 19:09
+--       Generation Date  : 06-JUL-2017 21:12
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -903,6 +903,60 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 48);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,49
+      ,null
+      ,'The selected Parent Group Type is Exclusive, please use the End-Date Existing Memberships option'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 49);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,50
+      ,null
+      ,'The Element Ids given must all be of the same Network\Group type'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 50);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,51
+      ,null
+      ,'The selected Parent Group Type is Exclusive, please select a single Parent Group'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 51);
 --
 ----------------------------------------------------------------------------------------
 --
