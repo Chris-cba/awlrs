@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.22   23 Jun 2017 13:34:56   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.23   Jul 11 2017 14:08:02   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   23 Jun 2017 13:34:56  $
-  --       Date fetched Out : $Modtime:   23 Jun 2017 12:14:32  $
-  --       Version          : $Revision:   1.22  $
+  --       Date into PVCS   : $Date:   Jul 11 2017 14:08:02  $
+  --       Date fetched Out : $Modtime:   Jul 11 2017 12:22:50  $
+  --       Version          : $Revision:   1.23  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.23  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -2353,7 +2353,10 @@ AS
           IF lr_theme_types.asset_type IS NOT NULL
            THEN
               lv_layer_child_inv_types := get_child_inv_types(pi_inv_type => lr_theme_types.asset_type);
-              lv_layer_asset_loc_types := get_asset_loc_types(pi_inv_type => lr_theme_types.asset_type);
+              lv_layer_asset_loc_types := get_asset_loc_types(pi_inv_type => lr_theme_types.asset_type);         
+          ELSE
+            lv_layer_child_inv_types := NULL;
+            lv_layer_asset_loc_types := NULL;
           END IF;
           --
       ELSE
