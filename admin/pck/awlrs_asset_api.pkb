@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.16   26 Jun 2017 16:17:02   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.17   Jul 11 2017 14:07:44   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   26 Jun 2017 16:17:02  $
-  --       Date fetched Out : $Modtime:   26 Jun 2017 16:11:30  $
-  --       Version          : $Revision:   1.16  $
+  --       Date into PVCS   : $Date:   Jul 11 2017 14:07:44  $
+  --       Date fetched Out : $Modtime:   Jul 11 2017 13:52:58  $
+  --       Version          : $Revision:   1.17  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.16  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.17  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -2296,11 +2296,11 @@ AS
     --
     OPEN po_cursor FOR
       SELECT iig_top_id    toplevelid
-            ,nm3inv.get_inv_type(iig_top_id)||' '||iig_top_id  toplevellabel
+            ,nm3inv.get_inv_type(iig_top_id)  toplevelassettype
             ,iig_item_id   itemid
-            ,nm3inv.get_inv_type(iig_item_id)||' '||iig_item_id  itemlevellabel
+            ,nm3inv.get_inv_type(iig_item_id) itemlevelassettype
             ,iig_parent_id parentid 
-            ,nm3inv.get_inv_type(iig_parent_id)||' '||iig_parent_id  parentlevellabel
+            ,nm3inv.get_inv_type(iig_parent_id) parentlevelassettype
         FROM nm_inv_item_groupings_all
        WHERE iig_top_id = nm3inv.get_top_item_id(pi_iit_ne_id) 
          AND TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
