@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.18   Jul 20 2017 16:19:36   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.19   Jul 21 2017 12:20:42   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 20 2017 16:19:36  $
-  --       Date fetched Out : $Modtime:   Jul 20 2017 16:06:22  $
-  --       Version          : $Revision:   1.18  $
+  --       Date into PVCS   : $Date:   Jul 21 2017 12:20:42  $
+  --       Date fetched Out : $Modtime:   Jul 21 2017 12:18:26  $
+  --       Version          : $Revision:   1.19  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.18  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.19  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -833,7 +833,7 @@ AS
     g_iit_rec.iit_inv_type := pi_asset_type;
     g_iit_rec.iit_descr := pi_description;
     g_iit_rec.iit_x_sect := pi_xsp;
-    g_iit_rec.iit_foreign_key := pi_iit_foreign_key;
+    g_iit_rec.iit_foreign_key := lv_iit_foreign_key;
     g_iit_rec.iit_note := pi_notes;
     --
     IF pi_attrib_names.COUNT != pi_attrib_scrn_texts.COUNT
@@ -850,7 +850,14 @@ AS
       lt_element_attribs(i).attrib_name := pi_attrib_names(i);
       lt_element_attribs(i).scrn_text   := pi_attrib_scrn_texts(i);
       lt_element_attribs(i).char_value  := pi_attrib_char_values(i);
-      --
+      /*
+      ||populate foreign_key key flexible attribute
+      ||As per Gopi is struggling to populate IIT_FOREIGN_KEY on UI when add child so if null add via API.
+      */  
+      IF pi_iit_foreign_key IS NOT NULL AND lt_element_attribs(i).attrib_name = 'IIT_FOREIGN_KEY' AND lt_element_attribs(i).char_value IS NULL
+       THEN
+         lt_element_attribs(i).char_value := lv_iit_foreign_key;     
+      END IF  ;         
     END LOOP;
     --
     build_asset_rec(pi_inv_type   => g_iit_rec.iit_inv_type
@@ -2299,10 +2306,12 @@ AS
     OPEN po_cursor FOR
       SELECT iig_top_id    toplevelid
             ,nm3inv.get_inv_type(iig_top_id)  toplevelassettype
+            ,nm3inv.get_inv_primary_key(p_ne_id => iig_top_id)toplevelpk
             ,iig_item_id   itemid
             ,nm3inv.get_inv_type(iig_item_id) itemlevelassettype
             ,iig_parent_id parentid 
             ,nm3inv.get_inv_type(iig_parent_id) parentlevelassettype
+            ,nm3inv.get_inv_primary_key(p_ne_id => iig_parent_id)parentlevelpk
         FROM nm_inv_item_groupings_all
        WHERE iig_top_id = nm3inv.get_top_item_id(pi_iit_ne_id) 
          AND TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
