@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.23   Jul 11 2017 14:08:02   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.24   27 Jul 2017 10:47:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 11 2017 14:08:02  $
-  --       Date fetched Out : $Modtime:   Jul 11 2017 12:22:50  $
-  --       Version          : $Revision:   1.23  $
+  --       Date into PVCS   : $Date:   27 Jul 2017 10:47:38  $
+  --       Date fetched Out : $Modtime:   13 Jul 2017 19:10:32  $
+  --       Version          : $Revision:   1.24  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.23  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.24  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -1990,7 +1990,7 @@ AS
                THEN
                   lv_retval := lv_retval
                     ||CHR(10)||'        OUTLINECOLOR "'||lv_stroke||'"'
-                    ||CHR(10)||'        OUTLINEWIDTH '||NVL(lv_stroke_width,'1.0')
+                    ||CHR(10)||'        WIDTH '||NVL(lv_stroke_width,'1.0')
                   ;
               END IF;
               --
