@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.15   10 May 2017 19:24:06   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.16   27 Jul 2017 22:30:10   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   10 May 2017 19:24:06  $
-  --       Date fetched Out : $Modtime:   10 May 2017 19:21:28  $
-  --       Version          : $Revision:   1.15  $
+  --       Date into PVCS   : $Date:   27 Jul 2017 22:30:10  $
+  --       Date fetched Out : $Modtime:   27 Jul 2017 22:20:02  $
+  --       Version          : $Revision:   1.16  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -295,7 +295,14 @@ AS
               ,po_format      => lv_format_mask);
     --
     RETURN get_assignment(pi_value       => pi_value
-                         ,pi_datatype    => lv_datatype
+                         ,pi_datatype    => CASE
+                                              WHEN lv_datatype = 'DATE'
+                                               AND pi_inv_or_ne = 'NE'
+                                               THEN
+                                                  'VARCHAR2'
+                                              ELSE
+                                                  lv_datatype
+                                            END
                          ,pi_format_mask => lv_format_mask);
     --
   END get_attr_assignment;
