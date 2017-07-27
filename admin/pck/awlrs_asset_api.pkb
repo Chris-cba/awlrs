@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.19   Jul 21 2017 12:20:42   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.20   27 Jul 2017 10:48:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 21 2017 12:20:42  $
-  --       Date fetched Out : $Modtime:   Jul 21 2017 12:18:26  $
-  --       Version          : $Revision:   1.19  $
+  --       Date into PVCS   : $Date:   27 Jul 2017 10:48:20  $
+  --       Date fetched Out : $Modtime:   24 Jul 2017 18:44:12  $
+  --       Version          : $Revision:   1.20  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.19  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.20  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -2080,14 +2080,14 @@ AS
       OPEN po_cursor FOR
       SELECT *
         FROM (SELECT asset_id
-                    ,ne.ne_id         element_id
-                    ,ne.ne_nt_type    element_type
+                    ,ne.ne_id          element_id
+                    ,ne.ne_nt_type     element_type
                     ,CASE ne.ne_nt_type
                        WHEN 'ESU' THEN ne.ne_name_1
                        WHEN 'NSGN' THEN ne.ne_number
                        ELSE ne.ne_unique
-                     END              element_unique
-                    ,ne.ne_descr      element_descr
+                     END               element_unique
+                    ,ne.ne_descr       element_descr
                     ,TO_NUMBER(nm3unit.get_formatted_value(locs.from_offset, un_unit_id)) from_offset
                     ,TO_NUMBER(nm3unit.get_formatted_value(locs.to_offset, un_unit_id))   to_offset
                     ,TO_NUMBER(nm3unit.get_formatted_value(CASE
@@ -2099,30 +2099,34 @@ AS
                                                            END
                                                           ,un_unit_id)) offset_length
                     ,nm3net.get_ne_length(ne.ne_id) element_length
-                    ,un_unit_id       element_unit_id
-                    ,un_unit_name     element_unit_name
-                    ,nau_name         element_admin_unit
-                    ,ne_start_date    element_start_date
+                    ,un_unit_id        element_unit_id
+                    ,un_unit_name      element_unit_name
+                    ,nau_name          element_admin_unit
+                    ,ne_start_date     element_start_date
                     ,member_start_date member_start_date
-                FROM (WITH membs AS(SELECT DISTINCT im.nm_ne_id_in asset_id
-                                       ,rm.nm_ne_id_in ne_id
-                                       ,rm.nm_obj_type obj_type
-                                       ,im.nm_start_date member_start_date
-                                   FROM nm_members rm
-                                       ,nm_members im
-                                  WHERE im.nm_ne_id_in = pi_iit_ne_id
-                                    AND im.nm_ne_id_of = rm.nm_ne_id_of
-                                    AND rm.nm_obj_type = pi_grouptype)
-                      SELECT asset_id
-                            ,ne_id
-                            ,pl.pl_start    from_offset
-                            ,pl.pl_end      to_offset
-                            ,member_start_date
-                        FROM membs
-                            ,TABLE(nm3pla.get_connected_chunks(p_ne_id    => asset_id
-                                                              ,p_route_id => ne_id
-                                                              ,p_obj_type => obj_type).npa_placement_array) pl
-                       WHERE membs.ne_id = pl.pl_ne_id
+                FROM (WITH membs AS(SELECT rm.nm_ne_id_in ne_id
+                                          ,MIN(im.nm_start_date) member_start_date
+                                      FROM nm_members rm
+                                          ,nm_members im
+                                     WHERE im.nm_ne_id_in = pi_iit_ne_id
+                                       AND im.nm_ne_id_of = rm.nm_ne_id_of
+                                       AND rm.nm_obj_type = pi_grouptype
+                                     GROUP
+                                        BY rm.nm_ne_id_in)
+                          ,grp_locs AS(SELECT pl.pl_ne_id   ne_id
+                                             ,pl.pl_start   from_offset
+                                             ,pl.pl_end     to_offset
+                                         FROM TABLE(nm3pla.get_connected_chunks(p_ne_id    => pi_iit_ne_id
+                                                                               ,p_route_id => NULL
+                                                                               ,p_obj_type => pi_grouptype).npa_placement_array)pl)
+                      SELECT pi_iit_ne_id asset_id
+                            ,grp_locs.ne_id
+                            ,grp_locs.from_offset
+                            ,grp_locs.to_offset
+                            ,membs.member_start_date
+                        FROM grp_locs
+                            ,membs
+                       WHERE grp_locs.ne_id = membs.ne_id
                        UNION ALL
                       SELECT nm_ne_id_in   asset_id
                             ,ne.ne_id      ne_id
@@ -2131,7 +2135,8 @@ AS
                             ,nm_start_date member_start_date
                         FROM nm_members
                             ,nm_elements_all ne
-                       WHERE ne_nt_type = pi_nwtype
+                       WHERE pi_grouptype IS NULL
+                         AND ne_nt_type = pi_nwtype
                          AND ne_id = nm_ne_id_of
                          AND nm_ne_id_in = pi_iit_ne_id
                          AND nm_type = 'I') locs
@@ -2148,6 +2153,7 @@ AS
                  AND ne.ne_id = locs.ne_id)
        ORDER
           BY element_unique
+            ,from_offset
            ;
       --
     END IF;
