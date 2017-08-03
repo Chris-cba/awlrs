@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.20   27 Jul 2017 10:48:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.21   Aug 03 2017 13:54:24   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   27 Jul 2017 10:48:20  $
-  --       Date fetched Out : $Modtime:   24 Jul 2017 18:44:12  $
-  --       Version          : $Revision:   1.20  $
+  --       Date into PVCS   : $Date:   Aug 03 2017 13:54:24  $
+  --       Date fetched Out : $Modtime:   Aug 03 2017 10:49:40  $
+  --       Version          : $Revision:   1.21  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.20  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.21  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -2318,12 +2318,9 @@ AS
             ,iig_parent_id parentid 
             ,nm3inv.get_inv_type(iig_parent_id) parentlevelassettype
             ,nm3inv.get_inv_primary_key(p_ne_id => iig_parent_id)parentlevelpk
-        FROM nm_inv_item_groupings_all
-       WHERE iig_top_id = nm3inv.get_top_item_id(pi_iit_ne_id) 
-         AND TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-             >= NVL(iig_start_date,TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY'))
-         AND TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-             <= NVL(iig_end_date,TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY'));
+        FROM nm_inv_item_groupings
+       WHERE iig_top_id = nm3inv.get_top_item_id(pi_iit_ne_id)
+       ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
