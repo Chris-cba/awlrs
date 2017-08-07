@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.21   Aug 03 2017 13:54:24   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.22   07 Aug 2017 13:43:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 03 2017 13:54:24  $
-  --       Date fetched Out : $Modtime:   Aug 03 2017 10:49:40  $
-  --       Version          : $Revision:   1.21  $
+  --       Date into PVCS   : $Date:   07 Aug 2017 13:43:48  $
+  --       Date fetched Out : $Modtime:   07 Aug 2017 12:58:00  $
+  --       Version          : $Revision:   1.22  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.21  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.22  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -2120,13 +2120,13 @@ AS
                                                                                ,p_route_id => NULL
                                                                                ,p_obj_type => pi_grouptype).npa_placement_array)pl)
                       SELECT pi_iit_ne_id asset_id
-                            ,grp_locs.ne_id
+                            ,membs.ne_id
                             ,grp_locs.from_offset
                             ,grp_locs.to_offset
                             ,membs.member_start_date
                         FROM grp_locs
                             ,membs
-                       WHERE grp_locs.ne_id = membs.ne_id
+                       WHERE membs.ne_id = grp_locs.ne_id(+)
                        UNION ALL
                       SELECT nm_ne_id_in   asset_id
                             ,ne.ne_id      ne_id
