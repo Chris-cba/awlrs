@@ -7,11 +7,11 @@
 --
 --  PVCS Identifiers :-
 --
---      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1005_awlrs1006_metadata_upg.sql-arc   1.0   06 Jul 2017 21:26:40   Mike.Huitson  $
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1005_awlrs1006_metadata_upg.sql-arc   1.1   Aug 07 2017 14:22:06   Peter.Bibby  $
 --      Module Name      : $Workfile:   awlrs1005_awlrs1006_metadata_upg.sql  $
---      Date into PVCS   : $Date:   06 Jul 2017 21:26:40  $
---      Date fetched Out : $Modtime:   06 Jul 2017 21:18:28  $
---      Version          : $Revision:   1.0  $
+--      Date into PVCS   : $Date:   Aug 07 2017 14:22:06  $
+--      Date fetched Out : $Modtime:   Aug 07 2017 14:20:54  $
+--      Version          : $Revision:   1.1  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
@@ -97,6 +97,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 51);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,52
+      ,null
+      ,'Invalid Extent Id supplied'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 52);
 --
 ------------------------------------------------------------------
 Commit;
