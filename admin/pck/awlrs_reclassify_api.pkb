@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reclassify_api.pkb-arc   1.2   02 Feb 2017 10:02:40   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reclassify_api.pkb-arc   1.3   16 Aug 2017 15:28:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reclassify_api.pkb  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:40  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   16 Aug 2017 15:28:50  $
+  --       Date fetched Out : $Modtime:   16 Aug 2017 15:18:02  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reclassify_api';
   --
   g_disp_derived    BOOLEAN := TRUE;
@@ -112,6 +112,88 @@ AS
     RETURN lt_attrib_values;
     --
   END get_nt_flex_attribs;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_types(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor
+                        ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lr_ne  nm_elements_all%ROWTYPE;
+    lr_nt  nm_types%ROWTYPE;
+    --
+  BEGIN
+    --
+    lr_ne := nm3net.get_ne(pi_ne_id => pi_ne_id);
+    lr_nt := nm3net.get_nt(lr_ne.ne_nt_type);
+    --
+    OPEN po_cursor FOR
+    SELECT nt.nt_type        network_type
+          ,nt.nt_unique      network_type_unique
+          ,nt.nt_descr       network_type_descr
+          ,nt.nt_length_unit network_type_length_unit
+          ,nt.nt_admin_type  network_type_admin_type
+      FROM nm_types nt
+     WHERE NVL(nt.nt_node_type,nm3type.get_nvl) = NVL(lr_nt.nt_node_type,nm3type.get_nvl)
+       AND ((lr_ne.ne_type IN('S','D') AND nt_datum = 'Y')
+            OR (lr_ne.ne_type NOT IN('S','D') AND nt_datum = 'N'))
+    ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_nt_types;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_group_types(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lr_ne  nm_elements_all%ROWTYPE;
+    lr_nt  nm_types%ROWTYPE;
+    --
+  BEGIN
+    --
+    lr_ne := nm3net.get_ne(pi_ne_id => pi_ne_id);
+    lr_nt := nm3net.get_nt(lr_ne.ne_nt_type);
+    --
+    OPEN po_cursor FOR
+    SELECT nt.nt_type         network_type
+          ,nt.nt_unique       network_type_unique
+          ,nt.nt_descr        network_type_descr
+          ,nt.nt_length_unit  network_type_length_unit
+          ,nt.nt_admin_type   network_type_admin_type
+          ,ngt.ngt_group_type group_type
+          ,ngt.ngt_descr      group_type_descr
+      FROM nm_group_types ngt
+          ,nm_types nt
+     WHERE NVL(nt.nt_node_type,nm3type.get_nvl) = NVL(lr_nt.nt_node_type,nm3type.get_nvl)
+       AND ((lr_ne.ne_type IN('S','D') AND nt.nt_datum = 'Y')
+            OR (lr_ne.ne_type NOT IN('S','D') AND nt.nt_datum = 'N'))
+       AND nt.nt_type = ngt.ngt_nt_type
+    ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_group_types;
 
   --
   -----------------------------------------------------------------------------
@@ -293,6 +375,7 @@ AS
                               ,pi_new_start_node_id   IN     nm_elements_all.ne_no_start%TYPE
                               ,pi_new_end_node_id     IN     nm_elements_all.ne_no_end%TYPE
                               ,pi_new_length          IN     nm_elements_all.ne_length%TYPE
+                              ,pi_new_start_date      IN     nm_elements_all.ne_start_date%TYPE
                               ,pi_new_element_attribs IN     awlrs_element_api.flex_attr_tab
                               ,pi_reason              IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                               ,pi_run_checks          IN     VARCHAR2 DEFAULT 'Y'
@@ -355,6 +438,7 @@ AS
     g_new_element.ne_no_start       := pi_new_start_node_id;
     g_new_element.ne_no_end         := pi_new_end_node_id;
     g_new_element.ne_length         := pi_new_length;
+    g_new_element.ne_start_date     := pi_new_start_date;
     --
     awlrs_element_api.build_element_rec(pi_nt_type    => g_new_element.ne_nt_type
                                        ,pi_global     => 'awlrs_reclassify_api.g_new_element'
@@ -422,6 +506,7 @@ AS
                               ,pi_new_start_node_id   IN     nm_elements_all.ne_no_start%TYPE
                               ,pi_new_end_node_id     IN     nm_elements_all.ne_no_end%TYPE
                               ,pi_new_length          IN     nm_elements_all.ne_length%TYPE
+                              ,pi_new_start_date      IN     nm_elements_all.ne_start_date%TYPE
                               ,pi_attrib_column_names IN     awlrs_element_api.attrib_column_name_tab
                               ,pi_attrib_prompts      IN     awlrs_element_api.attrib_prompt_tab
                               ,pi_attrib_char_values  IN     awlrs_element_api.attrib_char_value_tab
@@ -465,6 +550,7 @@ AS
                       ,pi_new_start_node_id   => pi_new_start_node_id
                       ,pi_new_end_node_id     => pi_new_end_node_id
                       ,pi_new_length          => pi_new_length
+                      ,pi_new_start_date      => pi_new_start_date
                       ,pi_new_element_attribs => lt_element_attribs
                       ,pi_reason              => pi_reason
                       ,pi_run_checks          => pi_run_checks
