@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.21   19 Jun 2017 10:20:24   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.22   21 Aug 2017 11:46:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   19 Jun 2017 10:20:24  $
-  --       Date fetched Out : $Modtime:   16 Jun 2017 17:06:18  $
-  --       Version          : $Revision:   1.21  $
+  --       Date into PVCS   : $Date:   21 Aug 2017 11:46:36  $
+  --       Date fetched Out : $Modtime:   21 Aug 2017 11:43:24  $
+  --       Version          : $Revision:   1.22  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -353,10 +353,10 @@ AS
                          ,pi_mem_start_date   IN  nm_members.nm_start_date%TYPE
                          ,pi_old_mem_begin_mp IN  nm_members.nm_begin_mp%TYPE
                          ,pi_old_mem_end_mp   IN  nm_members.nm_end_mp%TYPE
---                         ,pi_old_cardinality  IN  nm_members.nm_cardinality%TYPE
+                         ,pi_old_cardinality  IN  nm_members.nm_cardinality%TYPE
                          ,pi_new_mem_begin_mp IN  nm_members.nm_begin_mp%TYPE
                          ,pi_new_mem_end_mp   IN  nm_members.nm_end_mp%TYPE
---                         ,pi_new_cardinality  IN  nm_members.nm_cardinality%TYPE
+                         ,pi_new_cardinality  IN  nm_members.nm_cardinality%TYPE
                          ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                          ,po_message_severity OUT hig_codes.hco_code%TYPE
                          ,po_message_cursor   OUT sys_refcursor)
@@ -416,11 +416,13 @@ AS
     IF lr_db_rec.nm_end_mp != pi_old_mem_end_mp
      OR (lr_db_rec.nm_end_mp IS NULL AND pi_old_mem_end_mp IS NOT NULL)
      OR (lr_db_rec.nm_end_mp IS NOT NULL AND pi_old_mem_end_mp IS NULL)
---     OR (lr_db_rec.nm_cardinality != pi_old_cardinality)
---     OR (lr_db_rec.nm_cardinality IS NULL AND pi_old_cardinality IS NOT NULL)
---     OR (lr_db_rec.nm_cardinality IS NOT NULL AND pi_old_cardinality IS NULL)
+     OR (lr_db_rec.nm_cardinality != pi_old_cardinality)
+     OR (lr_db_rec.nm_cardinality IS NULL AND pi_old_cardinality IS NOT NULL)
+     OR (lr_db_rec.nm_cardinality IS NOT NULL AND pi_old_cardinality IS NULL)
      THEN
-        --Updated by another user
+        /*
+        ||Updated by another user.
+        */
         hig.raise_ner(pi_appl => 'AWLRS'
                      ,pi_id   => 24);
     END IF;
@@ -429,9 +431,11 @@ AS
     */
     IF (pi_old_mem_begin_mp = pi_new_mem_begin_mp OR (pi_old_mem_begin_mp IS NULL AND pi_new_mem_begin_mp IS NULL))
      AND (pi_old_mem_end_mp = pi_new_mem_end_mp OR (pi_old_mem_end_mp IS NULL AND pi_new_mem_end_mp IS NULL))
---     AND (pi_old_cardinality = pi_new_cardinality OR (pi_old_cardinality IS NULL AND pi_new_cardinality IS NULL))
+     AND (pi_old_cardinality = pi_new_cardinality OR (pi_old_cardinality IS NULL AND pi_new_cardinality IS NULL))
      THEN
-        --There are no changes to be applied
+        /*
+        ||There are no changes to be applied.
+        */
         hig.raise_ner(pi_appl => 'AWLRS'
                      ,pi_id   => 25);
     END IF;
@@ -448,14 +452,19 @@ AS
         --
         IF nm3net.is_gty_partial(lr_group_ne.ne_gty_group_type) = 'N'
          THEN
-            --Update of Start and/or End of a Member is not allowed for non Partial Group Types
+            /*
+            ||Update of Start and/or End of a Member is
+            ||not allowed for non Partial Group Types.
+            */
             hig.raise_ner(pi_appl => 'AWLRS'
                          ,pi_id   => 40);        
         END IF;
         --
         IF awlrs_element_api.is_nt_inclusion_parent(pi_nt_type => lr_group_ne.ne_nt_type)
          THEN
-            --Membership of an Inclusion Parent Group cannot be modified
+            /*
+            ||Membership of an Inclusion Parent Group cannot be modified.
+            */
             hig.raise_ner(pi_appl => 'AWLRS'
                          ,pi_id   => 48);
         END IF;
@@ -467,7 +476,7 @@ AS
     UPDATE nm_members
        SET nm_begin_mp = pi_new_mem_begin_mp
           ,nm_end_mp = pi_new_mem_end_mp
---          ,nm_cardinality = pi_new_cardinality
+          ,nm_cardinality = pi_new_cardinality
      WHERE nm_ne_id_in = pi_group_ne_id
        AND nm_ne_id_of = pi_mem_ne_id
        AND nm_begin_mp = pi_old_mem_begin_mp
@@ -514,7 +523,9 @@ AS
     IF awlrs_element_api.is_nt_inclusion_parent(pi_nt_type => lr_group_ne.ne_nt_type)
      AND lr_memb_ne.ne_type != 'D'
      THEN
-        --Membership of an Inclusion Parent Group cannot be modified
+        /*
+        ||Membership of an Inclusion Parent Group cannot be modified.
+        */
         hig.raise_ner(pi_appl => 'AWLRS'
                      ,pi_id   => 39);
     END IF;
