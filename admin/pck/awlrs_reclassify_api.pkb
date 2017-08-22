@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reclassify_api.pkb-arc   1.3   16 Aug 2017 15:28:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reclassify_api.pkb-arc   1.4   Aug 22 2017 11:14:02   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_reclassify_api.pkb  $
-  --       Date into PVCS   : $Date:   16 Aug 2017 15:28:50  $
-  --       Date fetched Out : $Modtime:   16 Aug 2017 15:18:02  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   Aug 22 2017 11:14:02  $
+  --       Date fetched Out : $Modtime:   Aug 22 2017 10:47:02  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reclassify_api';
   --
   g_disp_derived    BOOLEAN := TRUE;
@@ -136,6 +136,7 @@ AS
           ,nt.nt_descr       network_type_descr
           ,nt.nt_length_unit network_type_length_unit
           ,nt.nt_admin_type  network_type_admin_type
+          ,nt_node_type      network_type_node_type
       FROM nm_types nt
      WHERE NVL(nt.nt_node_type,nm3type.get_nvl) = NVL(lr_nt.nt_node_type,nm3type.get_nvl)
        AND ((lr_ne.ne_type IN('S','D') AND nt_datum = 'Y')
