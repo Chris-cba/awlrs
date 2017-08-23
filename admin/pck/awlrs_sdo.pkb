@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.6   12 May 2017 14:45:26   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.7   Aug 23 2017 11:19:14   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   12 May 2017 14:45:26  $
-  --       Date fetched Out : $Modtime:   09 May 2017 00:05:02  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   Aug 23 2017 11:19:14  $
+  --       Date fetched Out : $Modtime:   Aug 23 2017 10:45:50  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -718,6 +718,7 @@ AS
           ,element_offset
           ,distance_from_point
           ,element_length_unit_name
+          ,ne_start_date element_start_date
       FROM (SELECT a.ntd_pk_id element_id
                   ,nt_type     element_network_type
                   ,nt_unique   element_network_type_unique
