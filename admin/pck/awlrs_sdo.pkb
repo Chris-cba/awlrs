@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.7   Aug 23 2017 11:19:14   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.8   Aug 23 2017 15:17:02   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Aug 23 2017 11:19:14  $
-  --       Date fetched Out : $Modtime:   Aug 23 2017 10:45:50  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   Aug 23 2017 15:17:02  $
+  --       Date fetched Out : $Modtime:   Aug 23 2017 15:10:44  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -635,23 +635,36 @@ AS
     IS
     --
     lr_theme  nm_themes_all%ROWTYPE;
+    lv_unit_id nm_units.un_unit_id%TYPE;
     --
   BEGIN
     --
     lr_theme := nm3get.get_nth(pi_nth_theme_name => pi_theme_name);
     --
+    /*
+    ||Temp fix to round the m value based on the unit of measure of network type. Need to get unit id.
+    */
+    --
+    SELECT nt_length_unit
+      INTO lv_unit_id
+      FROM nm_elements 
+          ,nm_types
+     WHERE ne_nt_type = nt_type
+       AND ne_id = pi_element_id
+         ;
+    
     OPEN po_cursor FOR 'WITH element_shape AS(SELECT '||lr_theme.nth_feature_shape_column||' geom'
             ||CHR(10)||'                        FROM '||lr_theme.nth_feature_table
             ||CHR(10)||'                       WHERE '||lr_theme.nth_pk_column||' = :pi_ne_id)'
             ||CHR(10)||'SELECT a.id'
-            ||CHR(10)||'      ,a.x'
-            ||CHR(10)||'      ,a.y'
-            ||CHR(10)||'      ,a.z m'
+            ||CHR(10)||'      ,a.x x ' 
+            ||CHR(10)||'      ,a.y y ' 
+            ||CHR(10)||'      ,TO_NUMBER(nm3unit.get_formatted_value(a.z, :pi_unit_id)) m '
             ||CHR(10)||'  FROM element_shape'
             ||CHR(10)||'      ,TABLE(sdo_util.getvertices(geom)) a'
             ||CHR(10)||' ORDER'
             ||CHR(10)||'    BY a.id'
-    USING pi_element_id
+    USING pi_element_id, lv_unit_id
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
