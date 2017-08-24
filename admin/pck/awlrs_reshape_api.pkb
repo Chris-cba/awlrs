@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.6   24 Aug 2017 13:05:40   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.7   24 Aug 2017 16:20:08   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkb  $
-  --       Date into PVCS   : $Date:   24 Aug 2017 13:05:40  $
-  --       Date fetched Out : $Modtime:   24 Aug 2017 13:04:50  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   24 Aug 2017 16:20:08  $
+  --       Date fetched Out : $Modtime:   24 Aug 2017 13:21:08  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reshape_api';
   --
@@ -47,6 +47,7 @@ AS
                          ,pi_new_element_char_values  IN     awlrs_element_api.attrib_char_value_tab
                          ,pi_new_start_node           IN     nm_elements_all.ne_no_start%TYPE
                          ,pi_new_end_node             IN     nm_elements_all.ne_no_end%TYPE
+                         ,pi_new_start_date           IN     nm_elements_all.ne_start_date%TYPE
                          ,po_new_ne_id                IN OUT nm_elements_all.ne_id%TYPE
                          ,po_message_severity         IN OUT hig_codes.hco_code%TYPE
                          ,po_message_tab              IN OUT NOCOPY awlrs_message_tab)
@@ -69,7 +70,7 @@ AS
                                            ,pi_new_start_node_id   => pi_new_start_node
                                            ,pi_new_end_node_id     => pi_new_end_node
                                            ,pi_new_length          => nm3net.get_ne_length(p_ne_id => pi_ne_id)
-                                           ,pi_new_start_date      => lr_ne.ne_start_date
+                                           ,pi_new_start_date      => pi_new_start_date
                                            ,pi_attrib_column_names => pi_new_element_column_names
                                            ,pi_attrib_prompts      => pi_new_element_prompts
                                            ,pi_attrib_char_values  => pi_new_element_char_values
@@ -266,6 +267,7 @@ AS
                      ,pi_new_element_char_values  => pi_new_element_char_values
                      ,pi_new_start_node           => pi_new_start_node
                      ,pi_new_end_node             => pi_new_end_node
+                     ,pi_new_start_date           => TRUNC(pi_effective_date)
                      ,po_new_ne_id                => lv_new_ne_id
                      ,po_message_severity         => lv_severity
                      ,po_message_tab              => lt_messages);
