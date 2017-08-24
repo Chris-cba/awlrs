@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.24   27 Jul 2017 10:47:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.25   24 Aug 2017 13:39:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   27 Jul 2017 10:47:38  $
-  --       Date fetched Out : $Modtime:   13 Jul 2017 19:10:32  $
-  --       Version          : $Revision:   1.24  $
+  --       Date into PVCS   : $Date:   24 Aug 2017 13:39:36  $
+  --       Date fetched Out : $Modtime:   22 Aug 2017 19:00:06  $
+  --       Version          : $Revision:   1.25  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.24  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.25  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -2669,7 +2669,7 @@ AS
         END IF;
         --
         lv_layer_text := lv_layer_text||') USING UNIQUE '||lt_themes(i).nth_feature_pk_column||lv_using_srid||'"'
-              ||CHR(10)||'    FILTER (%featurekey% in (%featurekeyvalues%))'
+              ||CHR(10)||'#    FILTER (%featurekey% in (%featurekeyvalues%))'
               ||CHR(10)||'    VALIDATION'
               ||CHR(10)||'      "user"                     "^.*"'
               ||CHR(10)||'      "pwd"                      "^.*"'
@@ -2705,6 +2705,7 @@ AS
               ||CHR(10)||'      "init=epsg:'||lv_epsg||'"'
               ||CHR(10)||'    END'
               ||CHR(10)||'    PROCESSING "LABEL_NO_CLIP=on"'
+              ||CHR(10)||'    PROCESSING "NATIVE_FILTER=(%featurekey% in (%featurekeyvalues%))"'
               ||CHR(10)||'  END #layer'
               ||CHR(10)||''
         ;
@@ -3168,36 +3169,30 @@ AS
       ||CHR(10)||''
       ||CHR(10)||'  OUTPUTFORMAT'
       ||CHR(10)||'    NAME "JSON"'
-      ||CHR(10)||'    MIMETYPE "application/x-javascript"'
       ||CHR(10)||'    DRIVER "OGR/GeoJSON"'
-      ||CHR(10)||'    IMAGEMODE FEATURE'
-      ||CHR(10)||'    TRANSPARENT FALSE'
+      ||CHR(10)||'    MIMETYPE "application/x-javascript"'
+      ||CHR(10)||'    FORMATOPTION "LCO:COORDINATE_PRECISION=4"'
       ||CHR(10)||'    FORMATOPTION "STORAGE=memory"'
       ||CHR(10)||'    FORMATOPTION "FORM=simple"'
-      ||CHR(10)||'    FORMATOPTION "LCO:COORDINATE_PRECISION=4"'
       ||CHR(10)||'  END'
       ||CHR(10)||''
       ||CHR(10)||'  OUTPUTFORMAT'
       ||CHR(10)||'    NAME "CSV"'
-      ||CHR(10)||'    MIMETYPE "text/csv"'
       ||CHR(10)||'    DRIVER "OGR/CSV"'
-      ||CHR(10)||'    IMAGEMODE FEATURE'
-      ||CHR(10)||'    TRANSPARENT FALSE'
+      ||CHR(10)||'    MIMETYPE "text/csv"'
       ||CHR(10)||'    FORMATOPTION "LCO:GEOMETRY=AS_WKT"'
-      ||CHR(10)||'    FORMATOPTION "STORAGE=memory"'
+      ||CHR(10)||'    FORMATOPTION "STORAGE=filesystem"'
       ||CHR(10)||'    FORMATOPTION "FORM=simple"'
-      ||CHR(10)||'    FORMATOPTION "LCO:COORDINATE_PRECISION=4"'
       ||CHR(10)||'    FORMATOPTION "FILENAME=result.csv"'
       ||CHR(10)||'  END'
       ||CHR(10)||''
       ||CHR(10)||'  OUTPUTFORMAT'
       ||CHR(10)||'    NAME "SHAPEZIP"'
       ||CHR(10)||'    DRIVER "OGR/ESRI Shapefile"'
-      ||CHR(10)||'    IMAGEMODE FEATURE'
-      ||CHR(10)||'    TRANSPARENT FALSE'
-      ||CHR(10)||'    FORMATOPTION "STORAGE=memory"'
+      ||CHR(10)||'    MIMETYPE "application/shapefile"'
+      ||CHR(10)||'    FORMATOPTION "STORAGE=filesystem"'
       ||CHR(10)||'    FORMATOPTION "FORM=zip"'
-      ||CHR(10)||'    FORMATOPTION "LCO:COORDINATE_PRECISION=4"'
+      ||CHR(10)||'    FORMATOPTION "LCO:SPATIAL_INDEX=YES"'
       ||CHR(10)||'    FORMATOPTION "FILENAME=result.zip"'
       ||CHR(10)||'  END'
       ||CHR(10)||''
