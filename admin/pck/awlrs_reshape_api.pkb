@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.5   24 Aug 2017 11:45:16   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.6   24 Aug 2017 13:05:40   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkb  $
-  --       Date into PVCS   : $Date:   24 Aug 2017 11:45:16  $
-  --       Date fetched Out : $Modtime:   24 Aug 2017 11:36:26  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   24 Aug 2017 13:05:40  $
+  --       Date fetched Out : $Modtime:   24 Aug 2017 13:04:50  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reshape_api';
   --
@@ -283,7 +283,7 @@ AS
                   ,pi_new_element_column_names => pi_new_element_column_names
                   ,pi_new_element_prompts      => pi_new_element_prompts
                   ,pi_new_element_char_values  => pi_new_element_char_values
-                  ,pi_effective_date           => pi_effective_date
+                  ,pi_effective_date           => TRUNC(pi_effective_date)
                   ,po_new_ne_id                => lv_new_ne_id
                   ,po_message_severity         => lv_severity
                   ,po_message_tab              => lt_messages);
