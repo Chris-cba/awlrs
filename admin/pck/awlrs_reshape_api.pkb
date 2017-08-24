@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.4   03 Feb 2017 10:38:06   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.5   24 Aug 2017 11:45:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkb  $
-  --       Date into PVCS   : $Date:   03 Feb 2017 10:38:06  $
-  --       Date fetched Out : $Modtime:   03 Feb 2017 10:37:00  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   24 Aug 2017 11:45:16  $
+  --       Date fetched Out : $Modtime:   24 Aug 2017 11:36:26  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reshape_api';
   --
@@ -69,6 +69,7 @@ AS
                                            ,pi_new_start_node_id   => pi_new_start_node
                                            ,pi_new_end_node_id     => pi_new_end_node
                                            ,pi_new_length          => nm3net.get_ne_length(p_ne_id => pi_ne_id)
+                                           ,pi_new_start_date      => lr_ne.ne_start_date
                                            ,pi_attrib_column_names => pi_new_element_column_names
                                            ,pi_attrib_prompts      => pi_new_element_prompts
                                            ,pi_attrib_char_values  => pi_new_element_char_values
