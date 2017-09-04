@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.22   21 Aug 2017 11:46:36   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.23   04 Sep 2017 18:21:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   21 Aug 2017 11:46:36  $
-  --       Date fetched Out : $Modtime:   21 Aug 2017 11:43:24  $
-  --       Version          : $Revision:   1.22  $
+  --       Date into PVCS   : $Date:   04 Sep 2017 18:21:16  $
+  --       Date fetched Out : $Modtime:   04 Sep 2017 17:46:50  $
+  --       Version          : $Revision:   1.23  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.23  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -280,6 +280,12 @@ AS
               ,pi_mem_end_mp   => pi_mem_end_mp
               ,pi_start_date   => pi_start_date);
     --
+    IF nm3nwval.group_has_overlaps(pi_ne_id_in => pi_group_ne_id)
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 143);
+    END IF;
+    --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
@@ -333,6 +339,12 @@ AS
                 ,pi_mem_end_mp   => pi_mem_end_mps(i)
                 ,pi_start_date   => pi_start_date);
     END LOOP;
+    --
+    IF nm3nwval.group_has_overlaps(pi_ne_id_in => pi_group_ne_id)
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 143);
+    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
