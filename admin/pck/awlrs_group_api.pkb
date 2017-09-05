@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.23   04 Sep 2017 18:21:16   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.24   05 Sep 2017 13:54:34   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   04 Sep 2017 18:21:16  $
-  --       Date fetched Out : $Modtime:   04 Sep 2017 17:46:50  $
-  --       Version          : $Revision:   1.23  $
+  --       Date into PVCS   : $Date:   05 Sep 2017 13:54:34  $
+  --       Date fetched Out : $Modtime:   05 Sep 2017 13:39:10  $
+  --       Version          : $Revision:   1.24  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.23  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.24  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -211,6 +211,25 @@ AS
     */
     l_mem_ne_rec := nm3get.get_ne( pi_mem_ne_id );
     /*
+    ||Make sure the member element is valid for the group.
+    */
+    IF l_mem_ne_rec.ne_type = 'D'
+     THEN
+        --Element is a distance break.
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 171
+                     ,pi_supplementary_info => l_mem_ne_rec.ne_unique);
+    END IF;
+    --
+    IF NOT(nm3net.nt_valid_in_group(pi_nt_type => l_mem_ne_rec.ne_nt_type
+                                   ,pi_gty     => pi_group_rec.ne_gty_group_type))
+     THEN
+        --Element is of a network type not permitted for this group type.
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 55
+                     ,pi_supplementary_info => l_mem_ne_rec.ne_unique);
+    END IF;
+    /*
     ||Set the membership details.
     */
     l_nm_rec.nm_ne_id_in   := pi_group_rec.ne_id;
@@ -218,8 +237,24 @@ AS
     l_nm_rec.nm_type       := 'G';
     l_nm_rec.nm_obj_type   := pi_group_rec.ne_gty_group_type;
     l_nm_rec.nm_start_date := TRUNC(NVL(pi_start_date,GREATEST(pi_group_rec.ne_start_date,l_mem_ne_rec.ne_start_date)));
+    l_nm_rec.nm_end_date   := l_mem_ne_rec.ne_end_date ;
     l_nm_rec.nm_begin_mp   := NVL(pi_mem_begin_mp, 0);
     l_nm_rec.nm_end_mp     := NVL(pi_mem_end_mp,NVL(nm3net.get_ne_length(pi_mem_ne_id),0));
+    l_nm_rec.nm_slk        := NULL;
+    --
+    BEGIN
+      l_nm_rec.nm_cardinality := nm3net.get_element_cardinality(p_route_ne_id => pi_group_rec.ne_id
+                                                               ,p_datum_ne_id => pi_mem_ne_id);
+    EXCEPTION
+      WHEN others
+       THEN
+          l_nm_rec.nm_cardinality := 1;
+    END;
+    --
+    l_nm_rec.nm_admin_unit  := pi_group_rec.ne_admin_unit;
+    l_nm_rec.nm_seq_no      := 0;
+    l_nm_rec.nm_seg_no      := NULL;
+    l_nm_rec.nm_true        := NULL;
     /*
     IF nm3net.is_nt_linear (l_group_ne_rec.ne_gty_group_type) = 'Y'
      THEN
@@ -235,14 +270,6 @@ AS
         l_nm_rec.nm_true := NULL;
     END IF;
     */
-    l_nm_rec.nm_slk         := NULL;
-    l_nm_rec.nm_true        := NULL;
-    l_nm_rec.nm_cardinality := nm3net.get_element_cardinality(p_route_ne_id => pi_group_rec.ne_id
-                                                             ,p_datum_ne_id => pi_mem_ne_id);
-    l_nm_rec.nm_admin_unit  := nm3get.get_ne(pi_ne_id => pi_mem_ne_id).ne_admin_unit;
-    l_nm_rec.nm_end_date    := l_mem_ne_rec.ne_end_date ;
-    l_nm_rec.nm_seq_no      := 0;
-    l_nm_rec.nm_seg_no      := 0;
     --
     nm3ins.ins_nm(l_nm_rec);
     --
