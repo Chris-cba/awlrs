@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.22   07 Aug 2017 13:43:48   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.23   Sep 06 2017 12:00:42   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   07 Aug 2017 13:43:48  $
-  --       Date fetched Out : $Modtime:   07 Aug 2017 12:58:00  $
-  --       Version          : $Revision:   1.22  $
+  --       Date into PVCS   : $Date:   Sep 06 2017 12:00:42  $
+  --       Date fetched Out : $Modtime:   Sep 06 2017 11:57:12  $
+  --       Version          : $Revision:   1.23  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.22  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.23  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -1698,11 +1698,6 @@ AS
      THEN
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 88);
-    /*WHEN OTHERS
-    THEN
-      awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);*/
-
     --
   END add_asset_location;
 
@@ -1725,6 +1720,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT add_location_sp;   
+    --    
     lr_iit := get_asset(pi_iit_ne_id    => pi_iit_ne_id
                        ,pi_nit_inv_type => pi_nit_inv_type);
     --
@@ -1739,7 +1736,6 @@ AS
                       ,pi_append_replace   => pi_append_replace
                       ,po_message_severity => po_message_severity
                       ,po_message_cursor   => po_message_cursor);
-
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1747,6 +1743,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO add_location_sp;     
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END add_asset_location;
