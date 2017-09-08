@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reclassify_api.pkb-arc   1.5   08 Sep 2017 10:50:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reclassify_api.pkb-arc   1.6   08 Sep 2017 11:04:40   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reclassify_api.pkb  $
-  --       Date into PVCS   : $Date:   08 Sep 2017 10:50:50  $
-  --       Date fetched Out : $Modtime:   08 Sep 2017 10:48:10  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   08 Sep 2017 11:04:40  $
+  --       Date fetched Out : $Modtime:   08 Sep 2017 11:03:30  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reclassify_api';
   --
   g_disp_derived    BOOLEAN := TRUE;
@@ -432,7 +432,7 @@ AS
     g_new_element.ne_admin_unit     := pi_new_admin_unit_id;
     g_new_element.ne_no_start       := pi_new_start_node_id;
     g_new_element.ne_no_end         := pi_new_end_node_id;
-    g_new_element.ne_start_date     := pi_new_start_date;
+    g_new_element.ne_start_date     := TRUNC(pi_new_start_date);
     --
     awlrs_element_api.build_element_rec(pi_nt_type    => g_new_element.ne_nt_type
                                        ,pi_global     => 'awlrs_reclassify_api.g_new_element'
