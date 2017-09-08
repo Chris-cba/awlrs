@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reclassify_api.pkb-arc   1.4   Aug 22 2017 11:14:02   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reclassify_api.pkb-arc   1.5   08 Sep 2017 10:50:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reclassify_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 22 2017 11:14:02  $
-  --       Date fetched Out : $Modtime:   Aug 22 2017 10:47:02  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   08 Sep 2017 10:50:50  $
+  --       Date fetched Out : $Modtime:   08 Sep 2017 10:48:10  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reclassify_api';
   --
   g_disp_derived    BOOLEAN := TRUE;
@@ -375,7 +375,6 @@ AS
                               ,pi_new_admin_unit_id   IN     nm_elements_all.ne_admin_unit%TYPE
                               ,pi_new_start_node_id   IN     nm_elements_all.ne_no_start%TYPE
                               ,pi_new_end_node_id     IN     nm_elements_all.ne_no_end%TYPE
-                              ,pi_new_length          IN     nm_elements_all.ne_length%TYPE
                               ,pi_new_start_date      IN     nm_elements_all.ne_start_date%TYPE
                               ,pi_new_element_attribs IN     awlrs_element_api.flex_attr_tab
                               ,pi_reason              IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
@@ -418,11 +417,6 @@ AS
     --
     IF g_new_element.ne_gty_group_type IS NOT NULL
      THEN
-        IF NVL(g_new_element.ne_length,0) != NVL(pi_new_length,0)
-         THEN
-            hig.raise_ner(pi_appl => 'NET'
-                         ,pi_id   => 111);
-        END IF;
         --
         IF NVL(g_new_element.ne_no_start,-1) != NVL(pi_new_start_node_id,-1)
          OR NVL(g_new_element.ne_no_end,-1) != NVL(pi_new_end_node_id,-1)
@@ -438,7 +432,6 @@ AS
     g_new_element.ne_admin_unit     := pi_new_admin_unit_id;
     g_new_element.ne_no_start       := pi_new_start_node_id;
     g_new_element.ne_no_end         := pi_new_end_node_id;
-    g_new_element.ne_length         := pi_new_length;
     g_new_element.ne_start_date     := pi_new_start_date;
     --
     awlrs_element_api.build_element_rec(pi_nt_type    => g_new_element.ne_nt_type
@@ -506,7 +499,6 @@ AS
                               ,pi_new_admin_unit_id   IN     nm_elements_all.ne_admin_unit%TYPE
                               ,pi_new_start_node_id   IN     nm_elements_all.ne_no_start%TYPE
                               ,pi_new_end_node_id     IN     nm_elements_all.ne_no_end%TYPE
-                              ,pi_new_length          IN     nm_elements_all.ne_length%TYPE
                               ,pi_new_start_date      IN     nm_elements_all.ne_start_date%TYPE
                               ,pi_attrib_column_names IN     awlrs_element_api.attrib_column_name_tab
                               ,pi_attrib_prompts      IN     awlrs_element_api.attrib_prompt_tab
@@ -550,7 +542,6 @@ AS
                       ,pi_new_admin_unit_id   => pi_new_admin_unit_id
                       ,pi_new_start_node_id   => pi_new_start_node_id
                       ,pi_new_end_node_id     => pi_new_end_node_id
-                      ,pi_new_length          => pi_new_length
                       ,pi_new_start_date      => pi_new_start_date
                       ,pi_new_element_attribs => lt_element_attribs
                       ,pi_reason              => pi_reason
