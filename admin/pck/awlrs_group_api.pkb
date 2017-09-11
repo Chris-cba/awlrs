@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.24   05 Sep 2017 13:54:34   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.25   11 Sep 2017 18:49:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   05 Sep 2017 13:54:34  $
-  --       Date fetched Out : $Modtime:   05 Sep 2017 13:39:10  $
-  --       Version          : $Revision:   1.24  $
+  --       Date into PVCS   : $Date:   11 Sep 2017 18:49:14  $
+  --       Date fetched Out : $Modtime:   11 Sep 2017 18:42:44  $
+  --       Version          : $Revision:   1.25  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.24  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.25  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -186,6 +186,37 @@ AS
   END get_sub_groups;
 
   --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION valid_sub_group_type(pi_parent_group_type IN nm_group_types_all.ngt_group_type%TYPE
+                               ,pi_child_group_type  IN nm_group_types_all.ngt_group_type%TYPE)
+    RETURN BOOLEAN IS
+    --
+    lv_dummy  PLS_INTEGER;
+    --
+  BEGIN
+    --
+    SELECT 1
+      INTO lv_dummy
+      FROM dual
+     WHERE EXISTS(SELECT 'x'
+                    FROM nm_group_relations
+                   WHERE ngr_parent_group_type = pi_parent_group_type
+                     AND ngr_child_group_type = pi_child_group_type)
+         ;
+    --
+    RETURN TRUE;
+    --
+  EXCEPTION
+    WHEN no_data_found
+     THEN
+        RETURN FALSE;
+    WHEN others
+     THEN
+        RAISE;
+  END valid_sub_group_type;
+  
+  --
   -----------------------------------------------------------------------------
   --
   PROCEDURE add_member(pi_group_rec    IN  nm_elements_all%ROWTYPE
@@ -221,8 +252,12 @@ AS
                      ,pi_supplementary_info => l_mem_ne_rec.ne_unique);
     END IF;
     --
-    IF NOT(nm3net.nt_valid_in_group(pi_nt_type => l_mem_ne_rec.ne_nt_type
-                                   ,pi_gty     => pi_group_rec.ne_gty_group_type))
+    IF (pi_group_rec.ne_nt_type = 'G'
+        AND NOT(nm3net.nt_valid_in_group(pi_nt_type => l_mem_ne_rec.ne_nt_type
+                                        ,pi_gty     => pi_group_rec.ne_gty_group_type)))
+     OR (pi_group_rec.ne_nt_type = 'P'
+         AND NOT(valid_sub_group_type(pi_parent_group_type => pi_group_rec.ne_gty_group_type
+                                     ,pi_child_group_type  => l_mem_ne_rec.ne_gty_group_type)))
      THEN
         --Element is of a network type not permitted for this group type.
         hig.raise_ner(pi_appl => 'NET'
