@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.7   24 Aug 2017 16:20:08   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.8   Sep 14 2017 11:15:54   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkb  $
-  --       Date into PVCS   : $Date:   24 Aug 2017 16:20:08  $
-  --       Date fetched Out : $Modtime:   24 Aug 2017 13:21:08  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   Sep 14 2017 11:15:54  $
+  --       Date fetched Out : $Modtime:   Sep 14 2017 11:13:38  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reshape_api';
   --
@@ -69,7 +69,6 @@ AS
                                            ,pi_new_admin_unit_id   => lr_ne.ne_admin_unit
                                            ,pi_new_start_node_id   => pi_new_start_node
                                            ,pi_new_end_node_id     => pi_new_end_node
-                                           ,pi_new_length          => nm3net.get_ne_length(p_ne_id => pi_ne_id)
                                            ,pi_new_start_date      => pi_new_start_date
                                            ,pi_attrib_column_names => pi_new_element_column_names
                                            ,pi_attrib_prompts      => pi_new_element_prompts
