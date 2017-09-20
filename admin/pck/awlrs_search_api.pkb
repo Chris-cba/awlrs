@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.9   20 Jun 2017 17:14:00   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.10   20 Sep 2017 10:27:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   20 Jun 2017 17:14:00  $
-  --       Date fetched Out : $Modtime:   20 Jun 2017 10:51:52  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   20 Sep 2017 10:27:58  $
+  --       Date fetched Out : $Modtime:   20 Sep 2017 10:25:28  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -2001,14 +2001,14 @@ AS
                 ||CHR(10)||'                     ,(SELECT ial_meaning'
                 ||CHR(10)||'                         FROM nm_inv_attri_lookup'
                 ||CHR(10)||'                        WHERE ial_domain = '||nm3flx.string(lt_ita(i).ita_id_domain)
-                ||CHR(10)||'                          AND ial_value = iit.'||LOWER(lt_ita(i).ita_attrib_name)||') '||lv_scrn_text
+                ||CHR(10)||'                          AND ial_value = iit.'||LOWER(lt_ita(i).ita_attrib_name)||') "'||lv_scrn_text||'"'
               ;
               --
           ELSE
-              po_select_list := po_select_list||CHR(10)||'                     ,iit.'||LOWER(lt_ita(i).ita_attrib_name)||' '||lv_scrn_text;
+              po_select_list := po_select_list||CHR(10)||'                     ,iit.'||LOWER(lt_ita(i).ita_attrib_name)||' "'||lv_scrn_text||'"';
           END IF;
           --
-          po_alias_list := po_alias_list||CHR(10)||'      ,'||lv_scrn_text;
+          po_alias_list := po_alias_list||CHR(10)||'      ,"'||lv_scrn_text||'"';
           --
       END IF;
       --
@@ -2062,15 +2062,15 @@ AS
                                           ,po_sql         => lv_sql);
           lv_sql := '(SELECT meaning FROM ('||lv_sql||') WHERE code = '||lt_ntc(i).ntc_column_name||')';
           --
-          po_select_list := po_select_list||CHR(10)||'                       ,'||lv_sql||' '||lv_prompt;
+          po_select_list := po_select_list||CHR(10)||'                       ,'||lv_sql||' "'||lv_prompt||'"';
           --
       ELSE
           --
-          po_select_list := po_select_list||CHR(10)||'                       ,'||LOWER(lt_ntc(i).ntc_column_name)||' '||lv_prompt;
+          po_select_list := po_select_list||CHR(10)||'                       ,'||LOWER(lt_ntc(i).ntc_column_name)||' "'||lv_prompt||'"';
           --
       END IF;
       --
-      po_alias_list := po_alias_list||CHR(10)||'      ,'||lv_prompt;
+      po_alias_list := po_alias_list||CHR(10)||'      ,"'||lv_prompt||'"';
       --
     END LOOP;
     --
