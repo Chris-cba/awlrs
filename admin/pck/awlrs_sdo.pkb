@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.8   Aug 23 2017 15:17:02   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.9   26 Sep 2017 14:14:46   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Aug 23 2017 15:17:02  $
-  --       Date fetched Out : $Modtime:   Aug 23 2017 15:10:44  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   26 Sep 2017 14:14:46  $
+  --       Date fetched Out : $Modtime:   26 Sep 2017 14:13:52  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -478,6 +478,171 @@ AS
     RETURN lt_retval;
     --
   END snap_to_network;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE snap_asset_to_network(pi_x                IN  NUMBER
+                                 ,pi_y                IN  NUMBER
+                                 ,pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_sql         nm3type.max_varchar2;
+    lv_batch_size  INTEGER := NVL(TO_NUMBER(hig.get_sysopt('SDOBATSIZE')),10);
+    --
+    lr_asset_theme  nm_themes_all%ROWTYPE;
+    lr_net_theme  nm_themes_all%ROWTYPE;
+    --
+    TYPE theme_id_tab IS TABLE OF nm_themes_all.nth_theme_id%TYPE;
+    lt_base_theme_ids theme_id_tab;
+    --
+  BEGIN
+    --
+    lr_asset_theme := nm3get.get_nth(pi_nth_theme_name => pi_theme_name);
+    /*
+    ||Derived from nm3sdo.get_nearest_lref but we want to return a list
+    ||not just the nearest one.
+    ||First check if there is an over-riding theme snapping rule.
+    */
+    SELECT DISTINCT NVL(nth_base_table_theme,nth_theme_id)
+      BULK COLLECT
+      INTO lt_base_theme_ids
+      FROM (SELECT a.nth_theme_id
+                  ,a.nth_base_table_theme
+              FROM nm_theme_snaps
+                  ,nm_themes_all b
+                  ,nm_themes_all a
+             WHERE nts_theme_id = lr_asset_theme.nth_theme_id
+               AND a.nth_theme_id = nts_snap_to
+               AND b.nth_theme_id = nts_theme_id
+               AND EXISTS(SELECT 1
+                            FROM nm_nw_themes
+                           WHERE nnth_nth_theme_id = a.nth_theme_id)
+             ORDER
+                BY nts_priority)
+         ;
+    --
+    IF lt_base_theme_ids.COUNT = 0
+     THEN
+        --
+        SELECT DISTINCT NVL(a.nth_base_table_theme,a.nth_theme_id) theme_id
+          BULK COLLECT
+          INTO lt_base_theme_ids
+          FROM nm_base_themes
+              ,nm_themes_all b
+              ,nm_themes_all a
+         WHERE nbth_theme_id = lr_asset_theme.nth_theme_id
+           AND b.nth_theme_id = nbth_base_theme
+           AND NVL(a.nth_base_table_theme, a.nth_theme_id) = b.nth_theme_id
+           AND EXISTS(SELECT 1
+                        FROM nm_theme_roles
+                       WHERE nthr_theme_id = a.nth_theme_id)
+             ;
+        --
+        IF lt_base_theme_ids.COUNT = 0
+         THEN
+            SELECT DISTINCT NVL(a.nth_base_table_theme,a.nth_theme_id) theme_id
+              BULK COLLECT
+              INTO lt_base_theme_ids
+              FROM nm_inv_themes
+                  ,nm_inv_nw
+                  ,nm_linear_types
+                  ,nm_nw_themes
+                  ,nm_themes_all a
+             WHERE nith_nth_theme_id = lr_asset_theme.nth_theme_id
+               AND nith_nit_id = nin_nit_inv_code
+               AND nin_nw_type = nlt_nt_type
+               AND nlt_id = nnth_nlt_id
+               AND nnth_nth_theme_id = nth_theme_id
+               AND EXISTS(SELECT 1
+                            FROM hig_user_roles
+                                ,nm_theme_roles
+                           WHERE hur_username = SYS_CONTEXT ('NM3_SECURITY_CTX','USERNAME')
+                             AND hur_role = nthr_role
+                             AND nthr_theme_id = a.nth_theme_id)
+                 ;
+        END IF;
+    END IF;
+    --
+    IF lt_base_theme_ids.COUNT = 0
+     THEN
+        --No snaps at this position.
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 286);
+    END IF;
+    --
+    lv_sql :=  'WITH pt AS(SELECT mdsys.sdo_geometry(2001'
+    ||CHR(10)||'                                    ,2992'
+    ||CHR(10)||'                                    ,mdsys.sdo_point_type(:p_x,:p_y,NULL)'
+    ||CHR(10)||'                                    ,NULL'
+    ||CHR(10)||'                                    ,NULL) pnt'
+    ||CHR(10)||'             FROM dual)'
+    ||CHR(10)||'SELECT snaps.ne_id'
+    ||CHR(10)||'      ,ne_unique'
+    ||CHR(10)||'      ,ne_descr'
+    ||CHR(10)||'      ,ne_nt_type'
+    ||CHR(10)||'      ,ne_gty_group_type'
+    ||CHR(10)||'      ,ne_type'
+    ||CHR(10)||'      ,TO_NUMBER(nm3unit.get_formatted_value(CASE WHEN ne_length IS NOT NULL THEN LEAST(ne_length,sdo_lrs.get_measure(snaps.snap_pnt)) ELSE sdo_lrs.get_measure(snaps.snap_pnt) END'
+    ||CHR(10)||'                                            ,nt_length_unit)) offset'
+    ||CHR(10)||'      ,nt_length_unit unit_id'
+    ||CHR(10)||'      ,un_unit_name unit_name'
+    ||CHR(10)||'      ,snap_dist distance'
+    ||CHR(10)||'      ,nm3sdo.get_x_from_pt_geometry(snaps.snap_pnt) snapped_x'
+    ||CHR(10)||'      ,nm3sdo.get_y_from_pt_geometry(snaps.snap_pnt) snapped_y'
+    ||CHR(10)||'  FROM nm_elements ne'
+    ||CHR(10)||'      ,nm_types'
+    ||CHR(10)||'      ,nm_units'
+    ||CHR(10)||'      ,(SELECT /*+ first_rows */ *'
+    ||CHR(10)||'          FROM ('
+    ;
+    --
+    FOR i IN 1..lt_base_theme_ids.COUNT LOOP
+      --
+      lr_net_theme := nm3get.get_nth(pi_nth_theme_id => lt_base_theme_ids(i));
+      --
+      IF i > 1
+       THEN
+          lv_sql := lv_sql||'        UNION ALL'||CHR(10);
+      END IF;
+      --
+      lv_sql := lv_sql||'SELECT ft.'||lr_net_theme.nth_feature_pk_column||' ne_id'
+      ||CHR(10)||'              ,sdo_nn_distance(1) snap_dist'
+      ||CHR(10)||'              ,sdo_lrs.project_pt('||lr_net_theme.nth_feature_shape_column
+      ||CHR(10)||'                                 ,dim.diminfo'
+      ||CHR(10)||'                                 ,pt.pnt) snap_pnt'
+      ||CHR(10)||'          FROM (SELECT diminfo FROM user_sdo_geom_metadata where table_name = '''||lr_net_theme.nth_feature_table||''') dim'
+      ||CHR(10)||'              ,'||lr_net_theme.nth_feature_table||' ft'
+      ||CHR(10)||'              ,pt'
+      ||CHR(10)||'         WHERE sdo_nn('||lr_net_theme.nth_feature_shape_column
+      ||CHR(10)||'                     ,pt.pnt'
+      ||CHR(10)||'                     ,''sdo_batch_size='||lv_batch_size||' unit=meter'''
+      ||CHR(10)||'                     ,1) = ''TRUE'''
+      ;
+      --
+    END LOOP;
+    --
+    lv_sql := lv_sql||')'||CHR(10)||'         ORDER BY snap_dist) snaps'
+     ||CHR(10)||' WHERE ROWNUM <= '||lv_batch_size
+     ||CHR(10)||'   AND snaps.ne_id = ne.ne_id'
+     ||CHR(10)||'   AND ne_nt_type = nt_type'
+     ||CHR(10)||'   AND nt_length_unit = un_unit_id'
+    ;
+    --
+    OPEN po_cursor FOR lv_sql USING pi_x,pi_y;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END snap_asset_to_network;
 
   --
   ------------------------------------------------------------------------------
