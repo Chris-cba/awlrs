@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.12   26 Jun 2017 16:13:58   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.13   Sep 27 2017 11:49:36   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   26 Jun 2017 16:13:58  $
-  --       Date fetched Out : $Modtime:   26 Jun 2017 16:11:28  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   Sep 27 2017 11:49:36  $
+  --       Date fetched Out : $Modtime:   Sep 19 2017 13:01:22  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -145,6 +145,9 @@ AS
   --
   PROCEDURE add_asset_location_off_nw(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
                                      ,pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                                     ,pi_inv_type         IN  nm_inv_items.iit_inv_type%TYPE DEFAULT NULL
+                                     ,pi_ne_id            IN  nm_inv_items_all.iit_ne_id%TYPE DEFAULT NULL
+                                     ,pi_offset           IN  nm_inv_items_all.iit_ne_id%TYPE DEFAULT NULL                                     
                                      ,pi_effective_date   IN  nm_members_all.nm_start_date%TYPE
                                      ,pi_shape_wkt        IN  CLOB
                                      ,po_message_severity OUT hig_codes.hco_code%TYPE

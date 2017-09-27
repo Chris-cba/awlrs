@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.23   Sep 06 2017 12:00:42   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.24   Sep 27 2017 11:49:36   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 06 2017 12:00:42  $
-  --       Date fetched Out : $Modtime:   Sep 06 2017 11:57:12  $
-  --       Version          : $Revision:   1.23  $
+  --       Date into PVCS   : $Date:   Sep 27 2017 11:49:36  $
+  --       Date fetched Out : $Modtime:   Sep 21 2017 14:45:40  $
+  --       Version          : $Revision:   1.24  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.23  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.24  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -1753,6 +1753,9 @@ AS
   --
   PROCEDURE add_asset_location_off_nw(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
                                      ,pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                                     ,pi_inv_type         IN  nm_inv_items.iit_inv_type%TYPE DEFAULT NULL
+                                     ,pi_ne_id            IN  nm_inv_items_all.iit_ne_id%TYPE DEFAULT NULL
+                                     ,pi_offset           IN  nm_inv_items_all.iit_ne_id%TYPE DEFAULT NULL
                                      ,pi_effective_date   IN  nm_members_all.nm_start_date%TYPE
                                      ,pi_shape_wkt        IN  CLOB
                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
@@ -1783,10 +1786,30 @@ AS
         */
         nm3homo_gis.locate_item(pi_gt_theme_id    => lr_theme.nth_theme_id
                                ,pi_item_id        => pi_iit_ne_id
-                               ,pi_start_ne_id    => null
-                               ,pi_start_offset   => null
+                               ,pi_start_ne_id    => NULL
+                               ,pi_start_offset   => NULL
                                ,pi_effective_date => trunc(pi_effective_date)
                                ,pi_geom           => lv_geom);
+        --
+        /*
+        ||If off network and snap to specified then replace network location with specified ne_id
+        ||bp and ep offset will be same as only available for xy points.
+        */        
+        IF pi_ne_id IS NOT NULL AND pi_offset IS NOT NULL THEN
+          --
+          add_asset_location(pi_iit_ne_id        => pi_iit_ne_id
+                            ,pi_nit_inv_type     => pi_inv_type
+                            ,pi_ne_id            => pi_ne_id
+                            ,pi_begin_mp         => pi_offset
+                            ,pi_end_mp           => pi_offset
+                            ,pi_startdate        => trunc(pi_effective_date)
+                            ,pi_append_replace   => 'R'
+                            ,po_message_severity => po_message_severity
+                            ,po_message_cursor   => po_message_cursor);
+
+
+         
+        END IF;
     END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
