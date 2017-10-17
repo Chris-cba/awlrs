@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.25   24 Aug 2017 13:39:36   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.26   Oct 17 2017 14:24:04   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   24 Aug 2017 13:39:36  $
-  --       Date fetched Out : $Modtime:   22 Aug 2017 19:00:06  $
-  --       Version          : $Revision:   1.25  $
+  --       Date into PVCS   : $Date:   Oct 17 2017 14:24:04  $
+  --       Date fetched Out : $Modtime:   Oct 17 2017 11:40:46  $
+  --       Version          : $Revision:   1.26  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.25  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.26  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -125,6 +125,7 @@ AS
               FROM nm_inv_type_groupings
              WHERE itg_inv_type = nith_nit_id) hierarchy_relation
           ,nth_dependency dependent_geometry
+          ,nth_location_updatable location_updatable
           ,CASE
              WHEN nw_themes.network_type IS NOT NULL
               THEN
@@ -2596,6 +2597,13 @@ AS
             lv_layer_text := lv_layer_text||CHR(10)||'      "dependent_geometry"          "'||lr_theme_types.dependent_geometry||'"';
         END IF;
         --
+        --
+        IF lr_theme_types.asset_type IS NOT NULL
+         AND lr_theme_types.location_updatable IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "location_updatable"          "'||lr_theme_types.location_updatable||'"';
+        END IF;
+        --        
         lv_layer_text := lv_layer_text
               ||CHR(10)||'      "is_editable"                 "'||NVL(lr_theme_types.editable,'N')||'"'
               ||CHR(10)||'      "show_in_map"                 "'||lv_layer_show_in_map||'"'

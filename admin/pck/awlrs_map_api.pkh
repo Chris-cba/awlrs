@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.12   23 Jun 2017 10:42:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.13   Oct 17 2017 14:24:04   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkh  $
-  --       Date into PVCS   : $Date:   23 Jun 2017 10:42:38  $
-  --       Date fetched Out : $Modtime:   20 Jun 2017 16:58:06  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   Oct 17 2017 14:24:04  $
+  --       Date fetched Out : $Modtime:   Oct 17 2017 11:41:28  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
   --
   TYPE theme_types_rec IS RECORD(admin_type                   nm_au_types.nat_admin_type%TYPE
                                 ,network_type                 nm_types.nt_type%TYPE
@@ -30,6 +30,7 @@ AS
                                 ,top_of_hierarchy             nm_inv_types_all.nit_top%TYPE
                                 ,hierarchy_relation           nm_inv_type_groupings.itg_relation%TYPE
                                 ,dependent_geometry           nm_themes_all.nth_dependency%TYPE
+                                ,location_updatable           nm_themes_all.nth_location_updatable%TYPE                                
                                 ,editable                     VARCHAR2(1));
   TYPE theme_types_tab IS TABLE OF theme_types_rec INDEX BY BINARY_INTEGER;
   --
