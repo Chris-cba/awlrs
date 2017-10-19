@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.26   Oct 17 2017 14:24:04   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.27   19 Oct 2017 11:06:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 17 2017 14:24:04  $
-  --       Date fetched Out : $Modtime:   Oct 17 2017 11:40:46  $
-  --       Version          : $Revision:   1.26  $
+  --       Date into PVCS   : $Date:   19 Oct 2017 11:06:56  $
+  --       Date fetched Out : $Modtime:   19 Oct 2017 11:05:54  $
+  --       Version          : $Revision:   1.27  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.26  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.27  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -642,8 +642,8 @@ AS
   --
   ---------------------------------------------------------------------------
   --
-  PROCEDURE update_map_extent(pi_theme_id IN nm_themes_all.nth_theme_id%TYPE)
-    IS
+  FUNCTION update_map_extent(pi_theme_id IN nm_themes_all.nth_theme_id%TYPE)
+    RETURN VARCHAR2 IS
     --
     lr_extent  awlrs_sdo.extent_rec;
     --
@@ -674,6 +674,8 @@ AS
      THEN
         g_max_y := lr_extent.max_y;
     END IF;
+    --
+    RETURN lr_extent.min_x||' '||lr_extent.min_y||' '||lr_extent.max_x||' '||lr_extent.max_y;
     --
   END update_map_extent;
 
@@ -2185,6 +2187,7 @@ AS
     --
     lv_layer_text                  CLOB;
     lv_layer_type                  VARCHAR2(100);
+    lv_theme_extent                VARCHAR2(500);
     lv_gml_msGeometry_type         VARCHAR2(100);
     lv_wfs_featureid               VARCHAR2(100);
     lv_group                       VARCHAR2(200);
@@ -2372,7 +2375,7 @@ AS
       /*
       ||Update the Map Extent global variables.
       */
-      update_map_extent(pi_theme_id => lt_themes(i).nth_theme_id);
+      lv_theme_extent := update_map_extent(pi_theme_id => lt_themes(i).nth_theme_id);
       /*
       ||Get the EPSG.
       */
@@ -2486,6 +2489,7 @@ AS
               ||CHR(10)||'    METADATA'
               ||CHR(10)||'      "wms_title"                   "'||lv_title||'"'
               ||CHR(10)||'      "wms_enable_request"          "*"'
+              ||CHR(10)||'      "wms_extent"                  "'||lv_theme_extent||'"'
               ||CHR(10)||'      "wfs_title"                   "'||lv_title||'"'
               ||CHR(10)||'      "wfs_featureid"               "'||lv_wfs_featureid||'"'
               ||CHR(10)||'      "wfs_enable_request"          "*"'
@@ -2677,7 +2681,6 @@ AS
         END IF;
         --
         lv_layer_text := lv_layer_text||') USING UNIQUE '||lt_themes(i).nth_feature_pk_column||lv_using_srid||'"'
-              ||CHR(10)||'#    FILTER (%featurekey% in (%featurekeyvalues%))'
               ||CHR(10)||'    VALIDATION'
               ||CHR(10)||'      "user"                     "^.*"'
               ||CHR(10)||'      "pwd"                      "^.*"'
