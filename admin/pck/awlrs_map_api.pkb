@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.27   19 Oct 2017 11:06:56   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.28   20 Oct 2017 19:13:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   19 Oct 2017 11:06:56  $
-  --       Date fetched Out : $Modtime:   19 Oct 2017 11:05:54  $
-  --       Version          : $Revision:   1.27  $
+  --       Date into PVCS   : $Date:   20 Oct 2017 19:13:28  $
+  --       Date fetched Out : $Modtime:   20 Oct 2017 17:31:38  $
+  --       Version          : $Revision:   1.28  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.27  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.28  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -1733,7 +1733,8 @@ AS
           IF pi_layer_type = 'LINE'
            THEN
               lv_retval := lv_retval
-                ||CHR(10)||'        REPEATDISTANCE 800';
+                ||CHR(10)||'        REPEATDISTANCE 800'
+                ||CHR(10)||'        MINDISTANCE 800';
           END IF;
           --
           lv_retval := lv_retval
@@ -2213,15 +2214,58 @@ AS
     --
     ---------------------------------------------------------------------------
     --
-    FUNCTION get_theme_rule_cols(pi_theme_name IN VARCHAR2
-                                ,pi_pk_column  IN VARCHAR2
-                                ,pi_alias      IN VARCHAR2)
+    FUNCTION get_theme_label_col(pi_theme_name IN VARCHAR2
+                                ,pi_pk_column  IN VARCHAR2)
       RETURN VARCHAR2 IS
       --
-      lt_columns nm3type.tab_varchar30;
-      lv_retval nm3type.max_varchar2;
+      lv_retval VARCHAR2(100);
       --
     BEGIN
+      --
+      SELECT theme_styles.label_column
+        INTO lv_retval
+        FROM user_sdo_themes themes
+            ,XMLTABLE('/styling_rules/rule/label'
+                      PASSING XMLTYPE(themes.styling_rules)
+                      COLUMNS label_column VARCHAR2(32) path '@column') theme_styles
+       WHERE themes.name = pi_theme_name
+         AND UPPER(theme_styles.label_column) != UPPER(pi_pk_column)
+         AND ROWNUM = 1
+           ;
+      --
+      RETURN lv_retval;
+      --
+    EXCEPTION
+     WHEN no_data_found
+      THEN
+         RETURN NULL;
+     WHEN others
+      THEN
+         RAISE;
+    END get_theme_label_col;
+
+    --
+    ---------------------------------------------------------------------------
+    --
+    FUNCTION get_theme_extra_cols(pi_theme_name IN VARCHAR2
+                                 ,pi_pk_column  IN VARCHAR2
+                                 ,pi_alias      IN VARCHAR2)
+      RETURN VARCHAR2 IS
+      --
+      lt_columns  nm3type.tab_varchar30;
+      --
+      lv_label_col  nm3type.max_varchar2;
+      lv_retval     nm3type.max_varchar2;
+      --
+    BEGIN
+      --
+      lv_label_col := get_theme_label_col(pi_theme_name => pi_theme_name
+                                         ,pi_pk_column  => pi_pk_column);
+      --
+      IF lv_label_col IS NOT NULL
+       THEN
+          lv_retval := ', '||pi_alias||lv_label_col;
+      END IF;
       --
       SELECT DISTINCT pi_alias||theme_styles.label_column
         BULK COLLECT
@@ -2231,7 +2275,7 @@ AS
                       PASSING XMLTYPE(themes.styling_rules)
                       COLUMNS label_column VARCHAR2(30) path '@column') theme_styles
        WHERE themes.name = pi_theme_name
-         AND UPPER(theme_styles.label_column) != UPPER(pi_pk_column)
+         AND UPPER(theme_styles.label_column) NOT IN(UPPER(pi_pk_column),UPPER(lv_label_col))
            ;
       --
       FOR i IN 1..lt_columns.COUNT LOOP
@@ -2250,46 +2294,7 @@ AS
      WHEN others
       THEN
          RAISE;
-    END get_theme_rule_cols;
-
-    --
-    ---------------------------------------------------------------------------
-    --
-    FUNCTION get_theme_label_col(pi_theme_name IN VARCHAR2
-                                ,pi_pk_column  IN VARCHAR2
-                                ,pi_alias      IN VARCHAR2)
-      RETURN VARCHAR2 IS
-      --
-      lv_retval VARCHAR2(100);
-      --
-    BEGIN
-      --
-      SELECT pi_alias||theme_styles.label_column
-        INTO lv_retval
-        FROM user_sdo_themes themes
-            ,XMLTABLE('/styling_rules/rule/label'
-                      PASSING XMLTYPE(themes.styling_rules)
-                      COLUMNS label_column VARCHAR2(32) path '@column') theme_styles
-       WHERE themes.name = pi_theme_name
-         AND UPPER(theme_styles.label_column) != UPPER(pi_pk_column)
-         AND ROWNUM = 1
-           ;
-      --
-      IF lv_retval IS NOT NULL
-       THEN
-          lv_retval := ', '||lv_retval;
-      END IF;
-      --
-      RETURN lv_retval;
-      --
-    EXCEPTION
-     WHEN no_data_found
-      THEN
-         RETURN NULL;
-     WHEN others
-      THEN
-         RAISE;
-    END get_theme_label_col;
+    END get_theme_extra_cols;
 
     --
     ---------------------------------------------------------------------------
@@ -2393,12 +2398,9 @@ AS
       /*
       ||Get the style data from user_sdo_themes and user_sdo_styles.
       */
-      lv_theme_extra_cols := get_theme_label_col(pi_theme_name => lt_themes(i).name
-                                                ,pi_pk_column  => lt_themes(i).nth_feature_pk_column
-                                                ,pi_alias      => 'ft.')
-                           ||get_theme_rule_cols(pi_theme_name => lt_themes(i).name
-                                                ,pi_pk_column  => lt_themes(i).nth_feature_pk_column
-                                                ,pi_alias      => 'ft.');
+      lv_theme_extra_cols := get_theme_extra_cols(pi_theme_name => lt_themes(i).name
+                                                 ,pi_pk_column  => lt_themes(i).nth_feature_pk_column
+                                                 ,pi_alias      => 'ft.');
       /*
       ||Determine whether a tooltip template is defined.
       */
@@ -3725,6 +3727,8 @@ AS
      WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
        AND asmc_product = pi_product
        AND asmc_home_extent = 'N'
+     ORDER
+        BY asmc_name
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -3755,6 +3759,8 @@ AS
      WHERE asmc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
        AND asmc_product = pi_product
        AND asmc_home_extent = 'N'
+     ORDER
+        BY asmc_name
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
