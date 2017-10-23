@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.25   11 Sep 2017 18:49:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.26   23 Oct 2017 18:44:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   11 Sep 2017 18:49:14  $
-  --       Date fetched Out : $Modtime:   11 Sep 2017 18:42:44  $
-  --       Version          : $Revision:   1.25  $
+  --       Date into PVCS   : $Date:   23 Oct 2017 18:44:28  $
+  --       Date fetched Out : $Modtime:   23 Oct 2017 18:39:54  $
+  --       Version          : $Revision:   1.26  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.25  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.26  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -117,6 +117,114 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_paged_members(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                             ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                             ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                             ,pi_skip_n_rows      IN  PLS_INTEGER
+                             ,pi_pagesize         IN  PLS_INTEGER
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_sql               nm3type.max_varchar2;
+    lv_additional_where  nm3type.max_varchar2;
+    lv_lower_index       PLS_INTEGER;
+    lv_upper_index       PLS_INTEGER;
+    --
+  BEGIN
+    --
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_additional_where);
+    --
+    lv_sql :=  'SELECT *'
+    ||CHR(10)||'  FROM (WITH membs AS (SELECT group_element_id'
+    ||CHR(10)||'                             ,member_element_id'
+    ||CHR(10)||'                             ,member_seq_no'
+    ||CHR(10)||'                             ,member_element_type'
+    ||CHR(10)||'                             ,member_network_type'
+    ||CHR(10)||'                             ,member_network_type_descr'
+    ||CHR(10)||'                             ,member_unique'
+    ||CHR(10)||'                             ,member_description'
+    ||CHR(10)||'                             ,member_length'
+    ||CHR(10)||'                             ,member_start_node'
+    ||CHR(10)||'                             ,member_end_node'
+    ||CHR(10)||'                             ,member_start_mp'
+    ||CHR(10)||'                             ,member_end_mp'
+    ||CHR(10)||'                             ,member_partial_ind'
+    ||CHR(10)||'                             ,member_membership_length'
+    ||CHR(10)||'                             ,member_offset'
+    ||CHR(10)||'                             ,CASE WHEN member_poe = 0 THEN NULL WHEN member_poe < 0 THEN ''O'' ELSE ''G'' END member_poe'
+    ||CHR(10)||'                             ,member_cardinality'
+    ||CHR(10)||'                             ,member_start_date'
+    ||CHR(10)||'                             ,member_end_date'
+    ||CHR(10)||'                         FROM (SELECT nm_seq_no member_seq_no'
+    ||CHR(10)||'                                     ,ne.ne_type member_element_type'
+    ||CHR(10)||'                                     ,ne.ne_nt_type member_network_type'
+    ||CHR(10)||'                                     ,nt.nt_descr member_network_type_descr'
+    ||CHR(10)||'                                     ,ne.ne_unique member_unique'
+    ||CHR(10)||'                                     ,ne.ne_descr member_description'
+    ||CHR(10)||'                                     ,nm3net.get_ne_length(ne.ne_id) member_length'
+    ||CHR(10)||'                                     ,ne.ne_no_start member_start_node'
+    ||CHR(10)||'                                     ,ne.ne_no_end member_end_node'
+    ||CHR(10)||'                                     ,nm.nm_begin_mp member_start_mp'
+    ||CHR(10)||'                                     ,nm.nm_end_mp member_end_mp'
+    ||CHR(10)||'                                     ,CASE'
+    ||CHR(10)||'                                        WHEN nm.nm_end_mp = (nm.nm_end_mp - nm.nm_begin_mp)'
+    ||CHR(10)||'                                         AND nm.nm_begin_mp = 0'
+    ||CHR(10)||'                                         THEN'
+    ||CHR(10)||'                                            ''N'''
+    ||CHR(10)||'                                        ELSE'
+    ||CHR(10)||'                                            ''Y'''
+    ||CHR(10)||'                                      END member_partial_ind'
+    ||CHR(10)||'                                     ,(nm.nm_end_mp - nm.nm_begin_mp) member_membership_length'
+    ||CHR(10)||'                                     ,nm.nm_slk member_offset'
+    ||CHR(10)||'                                     ,nm3net_o.get_node_class(nm.nm_ne_id_in'
+    ||CHR(10)||'                                                             ,CASE WHEN nm.nm_cardinality = 1 THEN ne.ne_no_start ELSE ne.ne_no_end END).nc_poe member_poe'
+    ||CHR(10)||'                                     ,nm.nm_cardinality member_cardinality'
+    ||CHR(10)||'                                     ,nm.nm_start_date member_start_date'
+    ||CHR(10)||'                                     ,nm.nm_end_date member_end_date'
+    ||CHR(10)||'                                     ,nm.nm_ne_id_in group_element_id'
+    ||CHR(10)||'                                     ,nm.nm_ne_id_of member_element_id'
+    ||CHR(10)||'                                 FROM nm_members nm'
+    ||CHR(10)||'                                     ,nm_elements ne'
+    ||CHR(10)||'                                     ,nm_types nt'
+    ||CHR(10)||'                                WHERE nm.nm_ne_id_in = :pi_ne_id'
+    ||CHR(10)||'                                  AND nm.nm_type = ''G'''
+    ||CHR(10)||'                                  AND nm.nm_ne_id_of = ne.ne_id'
+    ||CHR(10)||'                                  AND ne.ne_nt_type = nt.nt_type)'
+    ||CHR(10)||'                       ORDER BY '||NVL(LOWER(pi_order_column),'member_seq_no')||' '
+                                                 ||NVL(LOWER(pi_order_asc_desc),'asc')||')'
+    ||CHR(10)||'        SELECT rownum ind'
+    ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+    ||CHR(10)||'              ,membs.*'
+    ||CHR(10)||'          FROM membs)'
+             ||lv_additional_where
+    ;
+    --
+    OPEN po_cursor FOR lv_sql
+    USING pi_ne_id
+         ,lv_lower_index
+         ,lv_upper_index
+        ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_members;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_members_essentials(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor   OUT sys_refcursor
@@ -147,6 +255,73 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_members_essentials;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_members_essentials(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                        ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                                        ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                                        ,pi_skip_n_rows      IN  PLS_INTEGER
+                                        ,pi_pagesize         IN  PLS_INTEGER
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_sql               nm3type.max_varchar2;
+    lv_additional_where  nm3type.max_varchar2;
+    lv_lower_index       PLS_INTEGER;
+    lv_upper_index       PLS_INTEGER;
+    --
+  BEGIN
+    --
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_additional_where);
+    --
+    lv_sql :=  'SELECT *'
+    ||CHR(10)||'  FROM (WITH membs AS (SELECT group_element_id'
+    ||CHR(10)||'                             ,member_element_id'
+    ||CHR(10)||'                             ,member_unique'
+    ||CHR(10)||'                             ,member_description'
+    ||CHR(10)||'                         FROM (SELECT nm_seq_no member_seq_no'
+    ||CHR(10)||'                                     ,nm.nm_ne_id_in group_element_id'
+    ||CHR(10)||'                                     ,nm.nm_ne_id_of member_element_id'
+    ||CHR(10)||'                                     ,ne.ne_unique   member_unique'
+    ||CHR(10)||'                                     ,ne.ne_descr    member_description'
+    ||CHR(10)||'                                 FROM nm_members nm'
+    ||CHR(10)||'                                     ,nm_elements ne'
+    ||CHR(10)||'                                WHERE nm.nm_ne_id_in = :pi_ne_id'
+    ||CHR(10)||'                                  AND nm.nm_ne_id_of = ne.ne_id'
+    ||CHR(10)||'                                  AND nm.nm_type = ''G'')'
+    ||CHR(10)||'                        ORDER BY '||NVL(LOWER(pi_order_column),'member_seq_no')||' '
+                                                  ||NVL(LOWER(pi_order_asc_desc),'asc')||')'
+    ||CHR(10)||'        SELECT rownum ind'
+    ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+    ||CHR(10)||'              ,membs.*'
+    ||CHR(10)||'          FROM membs)'
+             ||lv_additional_where
+    ;
+    --
+    OPEN po_cursor FOR lv_sql
+    USING pi_ne_id
+         ,lv_lower_index
+         ,lv_upper_index
+        ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_members_essentials;
 
   --
   -----------------------------------------------------------------------------

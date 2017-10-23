@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkh-arc   1.7   21 Aug 2017 11:46:02   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkh-arc   1.8   23 Oct 2017 18:44:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkh  $
-  --       Date into PVCS   : $Date:   21 Aug 2017 11:46:02  $
-  --       Date fetched Out : $Modtime:   21 Aug 2017 11:43:24  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   23 Oct 2017 18:44:28  $
+  --       Date fetched Out : $Modtime:   23 Oct 2017 18:40:28  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -38,10 +38,34 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_paged_members(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                             ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                             ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                             ,pi_skip_n_rows      IN  PLS_INTEGER
+                             ,pi_pagesize         IN  PLS_INTEGER
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_members_essentials(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor   OUT sys_refcursor
                                   ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_members_essentials(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                        ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                                        ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                                        ,pi_skip_n_rows      IN  PLS_INTEGER
+                                        ,pi_pagesize         IN  PLS_INTEGER
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
