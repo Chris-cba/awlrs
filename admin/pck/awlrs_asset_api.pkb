@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.24   Sep 27 2017 11:49:36   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.25   23 Oct 2017 12:40:40   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 27 2017 11:49:36  $
-  --       Date fetched Out : $Modtime:   Sep 21 2017 14:45:40  $
-  --       Version          : $Revision:   1.24  $
+  --       Date into PVCS   : $Date:   23 Oct 2017 12:40:40  $
+  --       Date fetched Out : $Modtime:   23 Oct 2017 12:35:30  $
+  --       Version          : $Revision:   1.25  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.24  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.25  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -395,18 +395,18 @@ AS
     -- 
     IF lr_nit.nit_table_name IS NOT NULL
      THEN
-        lv_sql := 'SELECT '||lr_nit.nit_foreign_pk_column||' ne_id,'
-       ||CHR(10)||'       CAST(:invtype as VARCHAR2(4))       inv_type,'
-       ||CHR(10)||'       CAST('||lr_nit.nit_foreign_pk_column||' as VARCHAR2(50)) primary_key,'
-       ||CHR(10)||'       CAST(NULL as VARCHAR2(4))          xsp,'
-       ||CHR(10)||'       CAST(NULL as VARCHAR2(40))         description,'
-       ||CHR(10)||'       CAST(NULL as VARCHAR2(4000))       identified_by,'
-       ||CHR(10)||'       CAST(NULL as NUMBER(9))            admin_unit,'
-       ||CHR(10)||'       CAST(:invtypedesc as VARCHAR2(4000)) asset_type_description,'
-       ||CHR(10)||'       CAST(NULL as DATE)                 start_date,'
-       ||CHR(10)||'       CAST(NULL as DATE)                 end_date,'
-       ||CHR(10)||'       CAST(NULL as VARCHAR2(40))         note'
-       ||CHR(10)||'       CAST(NULL as VARCHAR2(50))         foreign_key'       
+        lv_sql := 'SELECT '||lr_nit.nit_foreign_pk_column||' ne_id'
+       ||CHR(10)||'      ,CAST(:invtype as VARCHAR2(4))       inv_type'
+       ||CHR(10)||'      ,CAST('||lr_nit.nit_foreign_pk_column||' as VARCHAR2(50)) primary_key'
+       ||CHR(10)||'      ,CAST(NULL as VARCHAR2(4))          xsp'
+       ||CHR(10)||'      ,CAST(NULL as VARCHAR2(40))         description'
+       ||CHR(10)||'      ,CAST(NULL as VARCHAR2(4000))       identified_by'
+       ||CHR(10)||'      ,CAST(NULL as NUMBER(9))            admin_unit'
+       ||CHR(10)||'      ,CAST(:invtypedesc as VARCHAR2(4000)) asset_type_description'
+       ||CHR(10)||'      ,CAST(NULL as DATE)                 start_date'
+       ||CHR(10)||'      ,CAST(NULL as DATE)                 end_date'
+       ||CHR(10)||'      ,CAST(NULL as VARCHAR2(40))         note'
+       ||CHR(10)||'      ,CAST(NULL as VARCHAR2(50))         foreign_key'       
        ||CHR(10)||'  FROM  '||lr_nit.nit_table_name
        ||CHR(10)||'  WHERE '||lr_nit.nit_foreign_pk_column||' = :iit_ne_id'
         ;
