@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.25   23 Oct 2017 12:40:40   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.26   24 Oct 2017 18:58:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   23 Oct 2017 12:40:40  $
-  --       Date fetched Out : $Modtime:   23 Oct 2017 12:35:30  $
-  --       Version          : $Revision:   1.25  $
+  --       Date into PVCS   : $Date:   24 Oct 2017 18:58:28  $
+  --       Date fetched Out : $Modtime:   24 Oct 2017 18:32:10  $
+  --       Version          : $Revision:   1.26  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.25  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.26  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -1970,11 +1970,9 @@ AS
                          ,po_cursor           OUT sys_refcursor)
     IS
     --
-    lv_ft_pla  nm_placement_array := nm3pla.initialise_placement_array;
+    lt_pla  nm_placement_array := nm3pla.initialise_placement_array;
     --
     lv_pref_lrm  nm_group_types.ngt_group_type%TYPE := nm3user.get_preferred_lrm;
-    --
-    lr_nit  nm_inv_types_all%ROWTYPE;
     --
     lt_datum_locs   nm3asset.tab_rec_datum_loc_dets;
     lt_route_locs   nm3route_ref.tab_rec_route_loc_dets;
@@ -1982,201 +1980,111 @@ AS
     --
   BEGIN
     --
-    /*
-    ||Get the asset type data.
-    */
-    lr_nit := nm3get.get_nit(pi_iit_inv_type);
-    -- 
-    IF lr_nit.nit_table_name IS NOT NULL
+    IF pi_grouptype IS NULL
      THEN
+        /*
+        ||Get Datums.
+        */
+        nm3asset.get_inv_datum_location_details(pi_iit_ne_id          => pi_iit_ne_id
+                                               ,pi_nit_inv_type       => pi_iit_inv_type
+                                               ,po_tab_datum_loc_dets => lt_datum_locs);
         --
-        IF pi_grouptype IS NULL
-         THEN
-            /*
-            ||Get Datums.
-            */
-            nm3asset.get_inv_datum_location_details(pi_iit_ne_id          => pi_iit_ne_id
-                                                   ,pi_nit_inv_type       => pi_iit_inv_type
-                                                   ,po_tab_datum_loc_dets => lt_datum_locs);
-            --
-            FOR i IN 1..lt_datum_locs.COUNT LOOP
-              --
-              nm3pla.add_element_to_pl_arr(pio_pl_arr => lv_ft_pla
-                                          ,pi_ne_id   => lt_datum_locs(i).datum_ne_id
-                                          ,pi_start   => lt_datum_locs(i).nm_begin_mp
-                                          ,pi_end     => lt_datum_locs(i).nm_end_mp);
-              --
-            END LOOP;
-            --
-        ELSIF nm3net.is_nt_linear(pi_nwtype) = 'Y'
-         THEN
-            /*
-            ||Get Linear Groups.
-            */
-            nm3user.set_preferred_lrm(pi_group_type   => pi_grouptype
-                                     ,pi_set_user_opt => FALSE);
-            --
-            nm3asset.get_inv_route_location_details(pi_iit_ne_id          => pi_iit_ne_id
-                                                   ,pi_nit_inv_type       => pi_iit_inv_type
-                                                   ,po_tab_route_loc_dets => lt_route_locs);
-            --
-            nm3user.set_preferred_lrm(pi_group_type   => lv_pref_lrm
-                                     ,pi_set_user_opt => FALSE);
-            --
-            FOR i IN 1..lt_route_locs.COUNT LOOP
-              --
-              nm3pla.add_element_to_pl_arr(pio_pl_arr => lv_ft_pla
-                                          ,pi_ne_id   => lt_route_locs(i).route_ne_id
-                                          ,pi_start   => lt_route_locs(i).nm_slk
-                                          ,pi_end     => lt_route_locs(i).nm_end_slk);
-              --
-            END LOOP;
-            --
-        ELSE
-            /*
-            ||Get Non Linear Groups.
-            */
-            nm3asset.get_non_linear_grp_membership(pi_iit_inv_type              => pi_iit_inv_type
-                                                  ,pi_iit_ne_id                 => pi_iit_ne_id
-                                                  ,po_tab_rec_nl_grp_membership => lt_nl_grp_locs);
-            --
-            FOR i IN 1..lt_nl_grp_locs.COUNT LOOP
-              --
-              nm3pla.add_element_to_pl_arr(pio_pl_arr => lv_ft_pla
-                                          ,pi_ne_id   => lt_nl_grp_locs(i).ne_id
-                                          ,pi_start   => NULL
-                                          ,pi_end     => NULL);
-              --
-            END LOOP;
-            --
-        END IF;
+        FOR i IN 1..lt_datum_locs.COUNT LOOP
+          --
+          nm3pla.add_element_to_pl_arr(pio_pl_arr => lt_pla
+                                      ,pi_ne_id   => lt_datum_locs(i).datum_ne_id
+                                      ,pi_start   => lt_datum_locs(i).nm_begin_mp
+                                      ,pi_end     => lt_datum_locs(i).nm_end_mp);
+          --
+        END LOOP;
         --
-        OPEN po_cursor FOR
-        SELECT *
-          FROM (SELECT pi_iit_ne_id     asset_id
-                      ,ne.ne_id         element_id
-                      ,ne.ne_nt_type    element_type
-                      ,CASE ne.ne_nt_type
-                         WHEN 'ESU' THEN ne.ne_name_1
-                         WHEN 'NSGN' THEN ne.ne_number
-                         ELSE ne.ne_unique
-                       END              element_unique
-                      ,ne.ne_descr      element_descr
-                      ,TO_NUMBER(nm3unit.get_formatted_value(locs.pl_start, un_unit_id)) from_offset
-                      ,TO_NUMBER(nm3unit.get_formatted_value(locs.pl_end, un_unit_id))   to_offset
-                      ,TO_NUMBER(nm3unit.get_formatted_value(CASE
-                                                              WHEN locs.pl_end > locs.pl_start
-                                                               THEN
-                                                                  locs.pl_end - locs.pl_start
-                                                              ELSE
-                                                                  locs.pl_start - locs.pl_end
-                                                             END
-                                                            ,un_unit_id)) offset_length
-                      ,nm3net.get_ne_length(ne.ne_id) element_length
-                      ,un_unit_id         element_unit_id
-                      ,un_unit_name       element_unit_name
-                      ,nau_name           element_admin_unit
-                      ,ne_start_date      element_start_date
-                      ,CAST(NULL AS DATE) member_start_date
-                  FROM TABLE(lv_ft_pla.npa_placement_array) locs
-                      ,nm_admin_units_all
-                      ,nm_elements_all ne
-                      ,nm_types
-                      ,nm_units
-                      ,nm_unit_domains
-                 WHERE ud_domain_name(+) = 'LENGTH'
-                   AND ud_domain_id(+) = un_domain_id
-                   AND un_unit_id(+) = nt_length_unit
-                   AND nt_type = ne_nt_type
-                   AND ne.ne_admin_unit = nau_admin_unit
-                   AND NVL(ne.ne_gty_group_type,'~~~~~') = NVL(pi_grouptype,'~~~~~')
-                   AND ne.ne_nt_type = pi_nwtype
-                   AND ne.ne_id = locs.pl_ne_id)
-         ORDER
-            BY element_unique
-             ;
+    ELSIF nm3net.is_nt_linear(pi_nwtype) = 'Y'
+     THEN
+        /*
+        ||Get Linear Groups.
+        */
+        nm3user.set_preferred_lrm(pi_group_type   => pi_grouptype
+                                 ,pi_set_user_opt => FALSE);
+        --
+        nm3asset.get_inv_route_location_details(pi_iit_ne_id          => pi_iit_ne_id
+                                               ,pi_nit_inv_type       => pi_iit_inv_type
+                                               ,po_tab_route_loc_dets => lt_route_locs);
+        --
+        nm3user.set_preferred_lrm(pi_group_type   => lv_pref_lrm
+                                 ,pi_set_user_opt => FALSE);
+        --
+        FOR i IN 1..lt_route_locs.COUNT LOOP
+          --
+          nm3pla.add_element_to_pl_arr(pio_pl_arr => lt_pla
+                                      ,pi_ne_id   => lt_route_locs(i).route_ne_id
+                                      ,pi_start   => lt_route_locs(i).nm_slk
+                                      ,pi_end     => lt_route_locs(i).nm_end_slk);
+          --
+        END LOOP;
         --
     ELSE
-      OPEN po_cursor FOR
-      SELECT *
-        FROM (SELECT asset_id
-                    ,ne.ne_id          element_id
-                    ,ne.ne_nt_type     element_type
-                    ,CASE ne.ne_nt_type
-                       WHEN 'ESU' THEN ne.ne_name_1
-                       WHEN 'NSGN' THEN ne.ne_number
-                       ELSE ne.ne_unique
-                     END               element_unique
-                    ,ne.ne_descr       element_descr
-                    ,TO_NUMBER(nm3unit.get_formatted_value(locs.from_offset, un_unit_id)) from_offset
-                    ,TO_NUMBER(nm3unit.get_formatted_value(locs.to_offset, un_unit_id))   to_offset
-                    ,TO_NUMBER(nm3unit.get_formatted_value(CASE
-                                                            WHEN locs.to_offset > locs.from_offset
-                                                             THEN
-                                                                locs.to_offset - locs.from_offset
-                                                            ELSE
-                                                                locs.from_offset - locs.to_offset
-                                                           END
-                                                          ,un_unit_id)) offset_length
-                    ,nm3net.get_ne_length(ne.ne_id) element_length
-                    ,un_unit_id        element_unit_id
-                    ,un_unit_name      element_unit_name
-                    ,nau_name          element_admin_unit
-                    ,ne_start_date     element_start_date
-                    ,member_start_date member_start_date
-                FROM (WITH membs AS(SELECT rm.nm_ne_id_in ne_id
-                                          ,MIN(im.nm_start_date) member_start_date
-                                      FROM nm_members rm
-                                          ,nm_members im
-                                     WHERE im.nm_ne_id_in = pi_iit_ne_id
-                                       AND im.nm_ne_id_of = rm.nm_ne_id_of
-                                       AND rm.nm_obj_type = pi_grouptype
-                                     GROUP
-                                        BY rm.nm_ne_id_in)
-                          ,grp_locs AS(SELECT pl.pl_ne_id   ne_id
-                                             ,pl.pl_start   from_offset
-                                             ,pl.pl_end     to_offset
-                                         FROM TABLE(nm3pla.get_connected_chunks(p_ne_id    => pi_iit_ne_id
-                                                                               ,p_route_id => NULL
-                                                                               ,p_obj_type => pi_grouptype).npa_placement_array)pl)
-                      SELECT pi_iit_ne_id asset_id
-                            ,membs.ne_id
-                            ,grp_locs.from_offset
-                            ,grp_locs.to_offset
-                            ,membs.member_start_date
-                        FROM grp_locs
-                            ,membs
-                       WHERE membs.ne_id = grp_locs.ne_id(+)
-                       UNION ALL
-                      SELECT nm_ne_id_in   asset_id
-                            ,ne.ne_id      ne_id
-                            ,nm_begin_mp   from_offset
-                            ,nm_end_mp     to_offset
-                            ,nm_start_date member_start_date
-                        FROM nm_members
-                            ,nm_elements_all ne
-                       WHERE pi_grouptype IS NULL
-                         AND ne_nt_type = pi_nwtype
-                         AND ne_id = nm_ne_id_of
-                         AND nm_ne_id_in = pi_iit_ne_id
-                         AND nm_type = 'I') locs
-                    ,nm_admin_units_all
-                    ,nm_elements_all ne
-                    ,nm_types
-                    ,nm_units
-                    ,nm_unit_domains
-               WHERE ud_domain_name(+) = 'LENGTH'
-                 AND ud_domain_id(+) = un_domain_id
-                 AND un_unit_id(+) = nt_length_unit
-                 AND nt_type = ne_nt_type
-                 AND ne.ne_admin_unit = nau_admin_unit
-                 AND ne.ne_id = locs.ne_id)
-       ORDER
-          BY element_unique
-            ,from_offset
-           ;
-      --
+        /*
+        ||Get Non Linear Groups.
+        */
+        nm3asset.get_non_linear_grp_membership(pi_iit_inv_type              => pi_iit_inv_type
+                                              ,pi_iit_ne_id                 => pi_iit_ne_id
+                                              ,po_tab_rec_nl_grp_membership => lt_nl_grp_locs);
+        --
+        FOR i IN 1..lt_nl_grp_locs.COUNT LOOP
+          --
+          nm3pla.add_element_to_pl_arr(pio_pl_arr => lt_pla
+                                      ,pi_ne_id   => lt_nl_grp_locs(i).ne_id
+                                      ,pi_start   => NULL
+                                      ,pi_end     => NULL);
+          --
+        END LOOP;
+        --
     END IF;
+    --
+    OPEN po_cursor FOR
+    SELECT *
+      FROM (SELECT pi_iit_ne_id     asset_id
+                  ,ne.ne_id         element_id
+                  ,ne.ne_nt_type    element_type
+                  ,CASE ne.ne_nt_type
+                     WHEN 'ESU' THEN ne.ne_name_1
+                     WHEN 'NSGN' THEN ne.ne_number
+                     ELSE ne.ne_unique
+                   END              element_unique
+                  ,ne.ne_descr      element_descr
+                  ,TO_NUMBER(nm3unit.get_formatted_value(locs.pl_start, un_unit_id)) from_offset
+                  ,TO_NUMBER(nm3unit.get_formatted_value(locs.pl_end, un_unit_id))   to_offset
+                  ,TO_NUMBER(nm3unit.get_formatted_value(CASE
+                                                          WHEN locs.pl_end > locs.pl_start
+                                                           THEN
+                                                              locs.pl_end - locs.pl_start
+                                                          ELSE
+                                                              locs.pl_start - locs.pl_end
+                                                         END
+                                                        ,un_unit_id)) offset_length
+                  ,nm3net.get_ne_length(ne.ne_id) element_length
+                  ,un_unit_id         element_unit_id
+                  ,un_unit_name       element_unit_name
+                  ,nau_name           element_admin_unit
+                  ,ne_start_date      element_start_date
+                  ,CAST(NULL AS DATE) member_start_date
+              FROM TABLE(lt_pla.npa_placement_array) locs
+                  ,nm_admin_units_all
+                  ,nm_elements_all ne
+                  ,nm_types
+                  ,nm_units
+                  ,nm_unit_domains
+             WHERE ud_domain_name(+) = 'LENGTH'
+               AND ud_domain_id(+) = un_domain_id
+               AND un_unit_id(+) = nt_length_unit
+               AND nt_type = ne_nt_type
+               AND ne.ne_admin_unit = nau_admin_unit
+               AND NVL(ne.ne_gty_group_type,'~~~~~') = NVL(pi_grouptype,'~~~~~')
+               AND ne.ne_nt_type = pi_nwtype
+               AND ne.ne_id = locs.pl_ne_id)
+     ORDER
+        BY element_unique
+         ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
