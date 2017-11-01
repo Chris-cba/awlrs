@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.28   20 Oct 2017 19:13:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.29   01 Nov 2017 11:36:18   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   20 Oct 2017 19:13:28  $
-  --       Date fetched Out : $Modtime:   20 Oct 2017 17:31:38  $
-  --       Version          : $Revision:   1.28  $
+  --       Date into PVCS   : $Date:   01 Nov 2017 11:36:18  $
+  --       Date fetched Out : $Modtime:   01 Nov 2017 11:32:24  $
+  --       Version          : $Revision:   1.29  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.28  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.29  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -2275,7 +2275,7 @@ AS
                       PASSING XMLTYPE(themes.styling_rules)
                       COLUMNS label_column VARCHAR2(30) path '@column') theme_styles
        WHERE themes.name = pi_theme_name
-         AND UPPER(theme_styles.label_column) NOT IN(UPPER(pi_pk_column),UPPER(lv_label_col))
+         AND UPPER(theme_styles.label_column) NOT IN(UPPER(pi_pk_column),UPPER(NVL(lv_label_col,'~~~~~')))
            ;
       --
       FOR i IN 1..lt_columns.COUNT LOOP
