@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.26   24 Oct 2017 18:58:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.27   07 Nov 2017 11:26:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   24 Oct 2017 18:58:28  $
-  --       Date fetched Out : $Modtime:   24 Oct 2017 18:32:10  $
-  --       Version          : $Revision:   1.26  $
+  --       Date into PVCS   : $Date:   07 Nov 2017 11:26:28  $
+  --       Date fetched Out : $Modtime:   06 Nov 2017 18:34:08  $
+  --       Version          : $Revision:   1.27  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.26  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.27  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -2067,7 +2067,22 @@ AS
                   ,un_unit_name       element_unit_name
                   ,nau_name           element_admin_unit
                   ,ne_start_date      element_start_date
-                  ,CAST(NULL AS DATE) member_start_date
+                  ,CASE 
+                     WHEN pi_grouptype IS NOT NULL
+                      THEN
+                         (SELECT MIN(im.nm_start_date)
+                            FROM nm_members rm
+                                ,nm_members im
+                           WHERE im.nm_ne_id_in = pi_iit_ne_id
+                             AND im.nm_ne_id_of = rm.nm_ne_id_of
+                             AND rm.nm_ne_id_in = ne_id
+                             AND rm.nm_obj_type = pi_grouptype)
+                     ELSE
+                         (SELECT MIN(nm_start_date)
+                            FROM nm_members
+                           WHERE nm_ne_id_in = pi_iit_ne_id
+                             AND nm_ne_id_of = ne_id)
+                   END member_start_date
               FROM TABLE(lt_pla.npa_placement_array) locs
                   ,nm_admin_units_all
                   ,nm_elements_all ne
