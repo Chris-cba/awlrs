@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.29   01 Nov 2017 11:36:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.30   07 Nov 2017 16:43:34   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   01 Nov 2017 11:36:18  $
-  --       Date fetched Out : $Modtime:   01 Nov 2017 11:32:24  $
-  --       Version          : $Revision:   1.29  $
+  --       Date into PVCS   : $Date:   07 Nov 2017 16:43:34  $
+  --       Date fetched Out : $Modtime:   06 Nov 2017 14:22:58  $
+  --       Version          : $Revision:   1.30  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.29  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.30  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -1365,17 +1365,21 @@ AS
                                        ,pi_field => 'stroke:');
     lv_marker_stroke_width := get_style_value(pi_style => pi_style
                                              ,pi_field => 'stroke-width:');
-    lv_marker_width := get_style_value(pi_style => pi_style
-                                      ,pi_field => ';width:');
     --
     lv_retval := '      STYLE';
     --
     IF pi_style_def.existsnode('/svg/g/image') = 1
      THEN
+        --
         lv_retval := lv_retval
           ||CHR(10)||'        SYMBOL "%fileprefix%'||get_marker_filename(pi_style_name => pi_style_name)||'"'
         ;
+        --
+        lv_marker_width := get_style_value(pi_style => pi_style
+                                          ,pi_field => 'width:');
+        --
     ELSE
+        --
         IF lv_marker_fill IS NOT NULL
          THEN
             lv_retval := lv_retval
@@ -1412,6 +1416,9 @@ AS
               ||CHR(10)||'        SYMBOL "'||pi_style_name||'"'
             ;
         END IF;
+        --
+        lv_marker_width := get_style_value(pi_style => pi_style
+                                          ,pi_field => ';width:');
         --
     END IF;
     --
@@ -2028,9 +2035,9 @@ AS
              THEN
                 lv_retval := lv_retval||CHR(10)||'      EXPRESSION (';
                 FOR j IN 1..lt_bucket_values.COUNT LOOP
-                  lv_retval := lv_retval||CASE WHEN j = 1 THEN NULL ELSE ' OR ' END||'['||pi_rule_column||'] = "'||lt_adv_style_data(i).bucket_value||'"';
+                  lv_retval := lv_retval||CASE WHEN j = 1 THEN NULL ELSE ' OR ' END||'"['||pi_rule_column||']" = "'||lt_bucket_values(j)||'"';
                 END LOOP;
-                lv_retval := lv_retval||CHR(10)||')';
+                lv_retval := lv_retval||')';
             ELSE
                 lv_retval := lv_retval||CHR(10)||'      EXPRESSION ("['||pi_rule_column||']" = "'||lt_adv_style_data(i).bucket_value||'")';
             END IF;
