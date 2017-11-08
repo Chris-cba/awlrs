@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.27   07 Nov 2017 11:26:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.28   Nov 08 2017 14:15:50   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   07 Nov 2017 11:26:28  $
-  --       Date fetched Out : $Modtime:   06 Nov 2017 18:34:08  $
-  --       Version          : $Revision:   1.27  $
+  --       Date into PVCS   : $Date:   Nov 08 2017 14:15:50  $
+  --       Date fetched Out : $Modtime:   Nov 08 2017 11:14:46  $
+  --       Version          : $Revision:   1.28  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.27  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.28  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -1368,17 +1368,18 @@ AS
                               ,pi_end_mp           IN  nm_members_all.nm_end_mp%TYPE
                               ,pi_startdate        IN  nm_members_all.nm_start_date%TYPE
                               ,pi_append_replace   IN  VARCHAR2
-                              ,po_message_severity OUT hig_codes.hco_code%TYPE
-                              ,po_message_cursor   OUT sys_refcursor)
+                              ,po_message_severity IN OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   IN OUT sys_refcursor)
     IS
     --
     lv_existing_loc_job_id NUMBER;
     lv_job_id              NUMBER;
     lv_is_datum            VARCHAR2(1);
-    --
     lv_no_overlaps_job_id  NUMBER;
     lv_warning_code        VARCHAR2(1000);
     lv_warning_msg         VARCHAR2(1000);
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
     --
     e_no_permission EXCEPTION;
     e_item_not_entered EXCEPTION;
@@ -1560,22 +1561,38 @@ AS
      THEN
         IF lv_warning_code = nm3homo.get_contiguous_warning_const
          THEN
-            --
-            hig.raise_ner(pi_appl               => 'NET'
-                         ,pi_id                 => 95
-                         ,pi_supplementary_info => 'This check has been done across the whole of this piece of Network.');
-            --
+            --contiguous warning
+            --hig.raise_ner(pi_appl => 'NET'
+            --             ,pi_id   => 95
+            --             ,pi_supplementary_info => '. This check has been done across the whole of this piece of Network.');
+          awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
+                                           ,pi_ner_id             => 95
+                                           ,pi_supplementary_info => '. This check has been done across the whole of this piece of Network.'
+                                           ,pi_category           => awlrs_util.c_msg_cat_warning
+                                           ,po_message_tab        => lt_messages);            
         ELSE
             --unknown warning
-            hig.raise_ner(pi_appl               => 'NET'
-                         ,pi_id                 => 94
-                         ,pi_supplementary_info => lv_warning_code);
-            --
+            --hig.raise_ner(pi_appl => 'NET'
+            --             ,pi_id   => 94
+            --             ,pi_supplementary_info => lv_warning_code);
+          awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
+                                           ,pi_ner_id             => 94
+                                           ,pi_supplementary_info => lv_warning_code
+                                           ,pi_category           => awlrs_util.c_msg_cat_warning
+                                           ,po_message_tab        => lt_messages);            
         END IF;
     END IF;
     --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
+    IF lt_messages.COUNT > 0
+     THEN
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+    ELSE
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+    END IF;
     --
   EXCEPTION
     WHEN e_no_permission
@@ -1737,8 +1754,10 @@ AS
                       ,po_message_severity => po_message_severity
                       ,po_message_cursor   => po_message_cursor);
     --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
+    --
+    --  awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+    --                                       ,po_cursor           => po_message_cursor);
+    --
     --
   EXCEPTION
     WHEN others
@@ -1835,6 +1854,7 @@ AS
                             ,po_message_cursor   OUT sys_refcursor
                             ,po_cursor           OUT sys_refcursor)
     IS
+    --
     e_field_required EXCEPTION;
     --
     e_inv_item_not_found EXCEPTION;
@@ -1859,6 +1879,8 @@ AS
     lv_warning_msg   VARCHAR2(2000);
     --
     lr_nit  nm_inv_types%ROWTYPE ;
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
     --
   BEGIN
     --
@@ -1891,19 +1913,42 @@ AS
         IF lv_warning_code = nm3homo.get_contiguous_warning_const
          THEN
             --contiguous warning
-            hig.raise_ner(pi_appl => 'NET'
-                         ,pi_id   => 95
-                         ,pi_supplementary_info => '. This check has been done across the whole of this piece of Network.');
+            --hig.raise_ner(pi_appl => 'NET'
+            --             ,pi_id   => 95
+            --             ,pi_supplementary_info => '. This check has been done across the whole of this piece of Network.');
+          awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
+                                           ,pi_ner_id             => 95
+                                           ,pi_supplementary_info => '. This check has been done across the whole of this piece of Network.'
+                                           ,pi_category           => awlrs_util.c_msg_cat_warning
+                                           ,po_message_tab        => lt_messages);            
         ELSE
             --unknown warning
-            hig.raise_ner(pi_appl => 'NET'
-                         ,pi_id   => 94
-                         ,pi_supplementary_info => lv_warning_code);
+            --hig.raise_ner(pi_appl => 'NET'
+            --             ,pi_id   => 94
+            --             ,pi_supplementary_info => lv_warning_code);
+          awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
+                                           ,pi_ner_id             => 94
+                                           ,pi_supplementary_info => lv_warning_code
+                                           ,pi_category           => awlrs_util.c_msg_cat_warning
+                                           ,po_message_tab        => lt_messages);            
         END IF;
     END IF;
     --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
+    IF lt_messages.COUNT > 0
+     THEN
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+    ELSE
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+    END IF;
+    --
+
+    
+    --awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+    --                                     ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN e_field_required
