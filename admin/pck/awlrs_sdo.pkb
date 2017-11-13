@@ -1,19 +1,19 @@
-CREATE OR REPLACE PACKAGE BODY awlrs_sdo
+CREATE OR REPLACE PACKAGE BODY TRANSINFO.awlrs_sdo
 AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.9   26 Sep 2017 14:14:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.10   Nov 13 2017 10:37:00   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   26 Sep 2017 14:14:46  $
-  --       Date fetched Out : $Modtime:   26 Sep 2017 14:13:52  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   Nov 13 2017 10:37:00  $
+  --       Date fetched Out : $Modtime:   Nov 13 2017 10:33:50  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -493,8 +493,9 @@ AS
     lv_sql         nm3type.max_varchar2;
     lv_batch_size  INTEGER := NVL(TO_NUMBER(hig.get_sysopt('SDOBATSIZE')),10);
     --
-    lr_asset_theme  nm_themes_all%ROWTYPE;
-    lr_net_theme  nm_themes_all%ROWTYPE;
+    lr_asset_theme       nm_themes_all%ROWTYPE;
+    lr_asset_theme_meta  user_sdo_geom_metadata%ROWTYPE;
+    lr_net_theme         nm_themes_all%ROWTYPE;
     --
     TYPE theme_id_tab IS TABLE OF nm_themes_all.nth_theme_id%TYPE;
     lt_base_theme_ids theme_id_tab;
@@ -502,6 +503,7 @@ AS
   BEGIN
     --
     lr_asset_theme := nm3get.get_nth(pi_nth_theme_name => pi_theme_name);
+    lr_asset_theme_meta := nm3sdo.get_theme_metadata(p_nth_id => lr_asset_theme.nth_theme_id);
     /*
     ||Derived from nm3sdo.get_nearest_lref but we want to return a list
     ||not just the nearest one.
@@ -575,7 +577,7 @@ AS
     END IF;
     --
     lv_sql :=  'WITH pt AS(SELECT mdsys.sdo_geometry(2001'
-    ||CHR(10)||'                                    ,2992'
+    ||CHR(10)||'                                    ,:srid'
     ||CHR(10)||'                                    ,mdsys.sdo_point_type(:p_x,:p_y,NULL)'
     ||CHR(10)||'                                    ,NULL'
     ||CHR(10)||'                                    ,NULL) pnt'
@@ -632,7 +634,10 @@ AS
      ||CHR(10)||'   AND nt_length_unit = un_unit_id'
     ;
     --
-    OPEN po_cursor FOR lv_sql USING pi_x,pi_y;
+    OPEN po_cursor FOR lv_sql
+      USING lr_asset_theme_meta.srid
+           ,pi_x
+           ,pi_y;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
