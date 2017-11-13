@@ -3,11 +3,11 @@
 --
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1008_awlrs1009_upg.sql-arc   1.0   Oct 30 2017 10:45:02   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1008_awlrs1009_upg.sql-arc   1.1   13 Nov 2017 15:53:38   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs1008_awlrs1009_upg.sql  $
---       Date into PVCS   : $Date:   Oct 30 2017 10:45:02  $
---       Date fetched Out : $Modtime:   Oct 30 2017 10:17:54  $
---       Version          : $Revision:   1.0  $
+--       Date into PVCS   : $Date:   13 Nov 2017 15:53:38  $
+--       Date fetched Out : $Modtime:   13 Nov 2017 15:51:18  $
+--       Version          : $Revision:   1.1  $
 --
 --   Product upgrade script
 --
@@ -43,6 +43,7 @@ begin
    hig2.pre_upgrade_check (p_product               => 'AWLRS'
                           ,p_new_version           => '1.0.0.9'
                           ,p_allowed_old_version_1 => '1.0.0.8'
+                          ,p_allowed_old_version_2 => '1.0.0.9'
                           );
 END;
 /
@@ -173,7 +174,7 @@ SET TERM ON
 Prompt Setting The Version Number...
 SET TERM OFF
 BEGIN
-      hig2.upgrade('AWLRS','awlrs1008_awlrs1009_upg.sql','Upgrade from 1.0.0.8 to 1.0.0.9','1.0.0.9');
+      hig2.upgrade('AWLRS','awlrs1008_awlrs1009_upg.sql','Upgrade from 1.0.0.8 to 1.0.0.9 (Build2)','1.0.0.9');
 END;
 /
 COMMIT;
