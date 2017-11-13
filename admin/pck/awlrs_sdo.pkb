@@ -1,19 +1,19 @@
-CREATE OR REPLACE PACKAGE BODY TRANSINFO.awlrs_sdo
+CREATE OR REPLACE PACKAGE BODY awlrs_sdo
 AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.10   Nov 13 2017 10:37:00   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.11   Nov 13 2017 15:07:14   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Nov 13 2017 10:37:00  $
-  --       Date fetched Out : $Modtime:   Nov 13 2017 10:33:50  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   Nov 13 2017 15:07:14  $
+  --       Date fetched Out : $Modtime:   Nov 13 2017 15:01:54  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
