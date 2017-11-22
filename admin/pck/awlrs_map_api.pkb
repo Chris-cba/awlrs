@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.30   07 Nov 2017 16:43:34   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.31   22 Nov 2017 16:53:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   07 Nov 2017 16:43:34  $
-  --       Date fetched Out : $Modtime:   06 Nov 2017 14:22:58  $
-  --       Version          : $Revision:   1.30  $
+  --       Date into PVCS   : $Date:   22 Nov 2017 16:53:50  $
+  --       Date fetched Out : $Modtime:   22 Nov 2017 15:54:00  $
+  --       Version          : $Revision:   1.31  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.30  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.31  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -2654,7 +2654,7 @@ AS
         */
         IF lr_theme_types.network_element_type = 'S'
          THEN
-            lv_layer_text := lv_layer_text||', nl.ne_no_start start_node, nl.ne_no_end end_node';
+            lv_layer_text := lv_layer_text||', nl.ne_length element_length, nl.ne_no_start start_node, nl.ne_no_end end_node';
         END IF;
         --
         IF pi_all_ft_cols = 'Y'
