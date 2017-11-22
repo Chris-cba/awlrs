@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkb-arc   1.7   01 Jun 2017 11:42:24   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_undo_api.pkb-arc   1.8   22 Nov 2017 16:58:02   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_undo_api.pkb  $
-  --       Date into PVCS   : $Date:   01 Jun 2017 11:42:24  $
-  --       Date fetched Out : $Modtime:   01 Jun 2017 10:58:04  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   22 Nov 2017 16:58:02  $
+  --       Date fetched Out : $Modtime:   25 Oct 2017 14:12:06  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_undo_api';
   --
   --
@@ -183,7 +183,7 @@ AS
   --
   PROCEDURE undo_operation(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                           ,pi_operation        IN  hig_codes.hco_meaning%TYPE
-                          ,pi_include_datums   IN  BOOLEAN DEFAULT TRUE
+                          ,pi_include_datums   IN  VARCHAR2 DEFAULT 'Y'
                           ,po_message_severity OUT hig_codes.hco_code%TYPE
                           ,po_message_cursor   OUT sys_refcursor)
     IS
@@ -265,12 +265,8 @@ AS
           nm3undo.unreplace(p_ne_id => lv_old_ne_id1);
       WHEN 'Close'
        THEN
-          /*
-          ||TODO nm 4700 fix45 introduces an additional parameter that we should support but it hasn't been QA'd yet.
-          */
-          nm3undo.unclose(p_ne_id => lv_old_ne_id1);
-          --nm3undo.unclose(p_ne_id          => lv_old_ne_id1
-          --               ,p_include_datums => pi_include_datums);
+          nm3undo.unclose(p_ne_id          => lv_old_ne_id1
+                         ,p_include_datums => (pi_include_datums = 'Y'));
       ELSE
           NULL;
     END CASE;
