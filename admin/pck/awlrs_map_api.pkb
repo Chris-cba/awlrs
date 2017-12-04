@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.31   22 Nov 2017 16:53:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.32   04 Dec 2017 16:17:02   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   22 Nov 2017 16:53:50  $
-  --       Date fetched Out : $Modtime:   22 Nov 2017 15:54:00  $
-  --       Version          : $Revision:   1.31  $
+  --       Date into PVCS   : $Date:   04 Dec 2017 16:17:02  $
+  --       Date fetched Out : $Modtime:   01 Dec 2017 16:59:38  $
+  --       Version          : $Revision:   1.32  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.31  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.32  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -178,6 +178,8 @@ AS
              ELSE
                  NULL
            END is_editable
+          ,nth_feature_table     feature_table
+          ,nth_feature_pk_column feature_pk_column
       FROM nm_themes_all
           ,nm_inv_themes
           ,nm_inv_types_all
@@ -2356,6 +2358,8 @@ AS
            THEN
               lv_group_memb_types := get_group_member_types(pi_ne_type    => lr_theme_types.network_element_type
                                                            ,pi_group_type => lr_theme_types.network_group_type);
+          ELSE
+              lv_group_memb_types := NULL;
           END IF;
           --
           IF lr_theme_types.node_type IS NOT NULL
@@ -2371,8 +2375,8 @@ AS
               lv_layer_child_inv_types := get_child_inv_types(pi_inv_type => lr_theme_types.asset_type);
               lv_layer_asset_loc_types := get_asset_loc_types(pi_inv_type => lr_theme_types.asset_type);         
           ELSE
-            lv_layer_child_inv_types := NULL;
-            lv_layer_asset_loc_types := NULL;
+              lv_layer_child_inv_types := NULL;
+              lv_layer_asset_loc_types := NULL;
           END IF;
           --
       ELSE
