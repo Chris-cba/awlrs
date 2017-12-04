@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.10   20 Sep 2017 10:27:58   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.11   04 Dec 2017 16:21:46   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   20 Sep 2017 10:27:58  $
-  --       Date fetched Out : $Modtime:   20 Sep 2017 10:25:28  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   04 Dec 2017 16:21:46  $
+  --       Date fetched Out : $Modtime:   04 Dec 2017 13:20:50  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -39,6 +39,17 @@ AS
   BEGIN
     RETURN g_body_sccsid;
   END get_body_version;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION is_node_layer(pi_feature_table IN nm_themes_all.nth_feature_table%TYPE)
+    RETURN BOOLEAN IS
+  BEGIN
+    --
+    RETURN (pi_feature_table LIKE 'V_NM_NO_%_SDO');
+    --
+  END is_node_layer;
 
   --
   -----------------------------------------------------------------------------
@@ -537,6 +548,187 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION gen_node_attributes_sql
+    RETURN VARCHAR2 IS
+  BEGIN
+    /*
+    ||The ne_unique column in the query below is based upon ne_name_1
+    ||because we have to work with the NGS Network Elements and the
+    ||column that stores the user recognisable identifier could therefore
+    ||be ne_unique, ne_number or ne_name_1, ne_name_1 being the largest column.
+    */
+    RETURN   'SELECT CAST(column_name AS VARCHAR2(30)) column_name'
+  ||CHR(10)||'      ,CAST(prompt AS VARCHAR2(30)) prompt'
+  ||CHR(10)||'      ,CAST(datatype AS VARCHAR2(10)) datatype'
+  ||CHR(10)||'      ,CAST(format_mask AS VARCHAR2(80)) format_mask'
+  ||CHR(10)||'      ,CAST(field_length AS NUMBER(4)) field_length'
+  ||CHR(10)||'      ,CAST(decimal_places AS NUMBER(1)) decimal_places'
+  ||CHR(10)||'      ,CAST(min_value AS NUMBER(11,3)) min_value'
+  ||CHR(10)||'      ,CAST(max_value AS NUMBER(11,3)) max_value'
+  ||CHR(10)||'      ,field_case'
+  ||CHR(10)||'      ,CAST(domain_id AS VARCHAR2(40)) domain_id'
+  ||CHR(10)||'      ,CAST(sql_based_domain AS VARCHAR2(1)) sql_based_domain'
+  ||CHR(10)||'      ,display_sequence'
+  ||CHR(10)||'  FROM (SELECT column_name'
+  ||CHR(10)||'              ,CASE column_name'
+  ||CHR(10)||'                 WHEN ''NO_NODE_NAME''      THEN ''Name'''
+  ||CHR(10)||'                 WHEN ''NO_DESCR''          THEN ''Description'''
+  ||CHR(10)||'                 WHEN ''NO_PURPOSE''        THEN ''Purpose'''
+  ||CHR(10)||'                 WHEN ''NO_START_DATE''     THEN ''Start Date'''
+  ||CHR(10)||'                 WHEN ''NO_END_DATE''       THEN ''End Date'''
+  ||CHR(10)||'                 WHEN ''NO_NODE_TYPE''      THEN ''Type'''
+  ||CHR(10)||'                 WHEN ''NO_DATE_CREATED''   THEN ''Date Created'''
+  ||CHR(10)||'                 WHEN ''NO_CREATED_BY''     THEN ''Created By'''
+  ||CHR(10)||'                 WHEN ''NO_DATE_MODIFIED''  THEN ''Date Modified'''
+  ||CHR(10)||'                 WHEN ''NO_MODIFIED_BY''    THEN ''Modified By'''
+  ||CHR(10)||'                 WHEN ''NO_NODE_ID''        THEN ''Node Id'''  
+  ||CHR(10)||'                 WHEN ''NO_NP_ID''          THEN ''Point Id'''
+  ||CHR(10)||'                 WHEN ''NPL_ID''            THEN ''Point Location Id'''
+  ||CHR(10)||'               END prompt'
+  ||CHR(10)||'              ,data_type datatype'
+  ||CHR(10)||'              ,CASE'
+  ||CHR(10)||'                 WHEN column_name IN(''NO_START_DATE'',''NO_END_DATE'')'
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     :default_date_format'
+  ||CHR(10)||'                 WHEN column_name IN(''NO_DATE_CREATED'',''NO_DATE_MODIFIED'')'
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     :default_datetime_format'
+  ||CHR(10)||'                 ELSE'
+  ||CHR(10)||'                     NULL'
+  ||CHR(10)||'               END format_mask'
+  ||CHR(10)||'              ,CASE'
+  ||CHR(10)||'                 WHEN column_name IN(''NO_START_DATE'',''NO_END_DATE'')'
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     LENGTH(:default_date_format)'
+  ||CHR(10)||'                 WHEN column_name IN(''NO_DATE_CREATED'',''NO_DATE_MODIFIED'')'
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     LENGTH(REPLACE(:default_datetime_format,''24'',''''))'
+  ||CHR(10)||'                 ELSE'
+  ||CHR(10)||'                     NVL(data_precision, data_length)'
+  ||CHR(10)||'               END field_length'
+  ||CHR(10)||'              ,data_scale decimal_places'
+  ||CHR(10)||'              ,NULL min_value'
+  ||CHR(10)||'              ,NULL max_value'
+  ||CHR(10)||'              ,''UPPER'' field_case'
+  ||CHR(10)||'              ,CASE'
+  ||CHR(10)||'                 WHEN column_name = ''NO_NODE_TYPE'' THEN ''NO_NODE_TYPE'''
+  ||CHR(10)||'                 ELSE NULL'
+  ||CHR(10)||'               END domain_id'
+  ||CHR(10)||'              ,''N'' sql_based_domain'
+  ||CHR(10)||'              ,CASE column_name'
+  ||CHR(10)||'                 WHEN ''NO_NODE_NAME''      THEN 1'
+  ||CHR(10)||'                 WHEN ''NO_DESCR''          THEN 2'
+  ||CHR(10)||'                 WHEN ''NO_PURPOSE''        THEN 3'
+  ||CHR(10)||'                 WHEN ''NO_START_DATE''     THEN 4'
+  ||CHR(10)||'                 WHEN ''NO_END_DATE''       THEN 5'
+  ||CHR(10)||'                 WHEN ''NO_NODE_TYPE''      THEN 6'
+  ||CHR(10)||'                 WHEN ''NO_DATE_CREATED''   THEN 7'
+  ||CHR(10)||'                 WHEN ''NO_CREATED_BY''     THEN 8'
+  ||CHR(10)||'                 WHEN ''NO_DATE_MODIFIED''  THEN 9'
+  ||CHR(10)||'                 WHEN ''NO_MODIFIED_BY''    THEN 10'
+  ||CHR(10)||'                 WHEN ''NO_NODE_ID''        THEN 11'  
+  ||CHR(10)||'                 WHEN ''NO_NP_ID''          THEN 12'
+  ||CHR(10)||'                 WHEN ''NPL_ID''            THEN 14'
+  ||CHR(10)||'               END display_sequence'
+  ||CHR(10)||'          FROM all_tab_columns'
+  ||CHR(10)||'         WHERE owner = SYS_CONTEXT(''NM3CORE'',''APPLICATION_OWNER'')'
+  ||CHR(10)||'           AND table_name = :feature_table'
+  ||CHR(10)||'           AND column_name IN(''NO_NODE_NAME'',''NO_DESCR'',''NO_PURPOSE'',''NO_START_DATE'''
+  ||CHR(10)||'                             ,''NO_END_DATE'',''NO_NODE_TYPE'',''NO_DATE_CREATED'',''NO_CREATED_BY'''
+  ||CHR(10)||'                             ,''NO_DATE_MODIFIED'',''NO_MODIFIED_BY'',''NO_NODE_ID'',''NPL_ID'',''NO_NP_ID''))'
+    ;
+    --
+  END gen_node_attributes_sql;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_node_attributes(pi_feature_table IN  nm_themes_all.nth_feature_table%TYPE
+                               ,po_cursor        OUT sys_refcursor)
+    IS
+  BEGIN
+    OPEN po_cursor FOR gen_node_attributes_sql||' ORDER BY display_sequence'
+    USING g_default_date_format
+         ,g_default_datetime_format
+         ,g_default_date_format
+         ,g_default_datetime_format
+         ,pi_feature_table
+    ;
+  END get_node_attributes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION gen_table_attributes_sql
+    RETURN VARCHAR2 IS
+  BEGIN
+    /*
+    ||The ne_unique column in the query below is based upon ne_name_1
+    ||because we have to work with the NGS Network Elements and the
+    ||column that stores the user recognisable identifier could therefore
+    ||be ne_unique, ne_number or ne_name_1, ne_name_1 being the largest column.
+    */
+    RETURN   'SELECT CAST(column_name AS VARCHAR2(30)) column_name'
+  ||CHR(10)||'      ,CAST(prompt AS VARCHAR2(30)) prompt'
+  ||CHR(10)||'      ,CAST(datatype AS VARCHAR2(10)) datatype'
+  ||CHR(10)||'      ,CAST(format_mask AS VARCHAR2(80)) format_mask'
+  ||CHR(10)||'      ,CAST(field_length AS NUMBER(4)) field_length'
+  ||CHR(10)||'      ,CAST(decimal_places AS NUMBER(1)) decimal_places'
+  ||CHR(10)||'      ,CAST(min_value AS NUMBER(11,3)) min_value'
+  ||CHR(10)||'      ,CAST(max_value AS NUMBER(11,3)) max_value'
+  ||CHR(10)||'      ,field_case'
+  ||CHR(10)||'      ,CAST(domain_id AS VARCHAR2(40)) domain_id'
+  ||CHR(10)||'      ,CAST(sql_based_domain AS VARCHAR2(1)) sql_based_domain'
+  ||CHR(10)||'      ,display_sequence'
+  ||CHR(10)||'  FROM (SELECT column_name'
+  ||CHR(10)||'              ,column_name prompt'
+  ||CHR(10)||'              ,data_type datatype'
+  ||CHR(10)||'              ,CASE'
+  ||CHR(10)||'                 WHEN data_type = ''DATE'''
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     :default_datetime_format'
+  ||CHR(10)||'                 ELSE'
+  ||CHR(10)||'                     NULL'
+  ||CHR(10)||'               END format_mask'
+  ||CHR(10)||'              ,CASE'
+  ||CHR(10)||'                 WHEN data_type = ''DATE'''
+  ||CHR(10)||'                  THEN'
+  ||CHR(10)||'                     LENGTH(REPLACE(:default_datetime_format,''24'',''''))'
+  ||CHR(10)||'                 ELSE'
+  ||CHR(10)||'                     NVL(data_precision, data_length)'
+  ||CHR(10)||'               END field_length'
+  ||CHR(10)||'              ,data_scale decimal_places'
+  ||CHR(10)||'              ,NULL min_value'
+  ||CHR(10)||'              ,NULL max_value'
+  ||CHR(10)||'              ,''MIXED'' field_case'
+  ||CHR(10)||'              ,NULL domain_id'
+  ||CHR(10)||'              ,''N'' sql_based_domain'
+  ||CHR(10)||'              ,column_id display_sequence'
+  ||CHR(10)||'          FROM all_tab_columns'
+  ||CHR(10)||'         WHERE owner = SYS_CONTEXT(''NM3CORE'',''APPLICATION_OWNER'')'
+  ||CHR(10)||'           AND table_name = :feature_table'
+  ||CHR(10)||'           AND data_type IN(''VARCHAR2'',''NUMBER'',''DATE''))'
+    ;
+    --
+  END gen_table_attributes_sql;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_table_attributes(pi_feature_table IN  nm_themes_all.nth_feature_table%TYPE
+                                ,po_cursor        OUT sys_refcursor)
+    IS
+  BEGIN
+    OPEN po_cursor FOR gen_table_attributes_sql||' ORDER BY display_sequence'
+    USING g_default_datetime_format
+         ,g_default_datetime_format
+         ,pi_feature_table
+    ;
+  END get_table_attributes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_search_attributes(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
                                  ,po_message_cursor   OUT sys_refcursor
@@ -569,9 +761,14 @@ AS
               --
           ELSE
               --
-              hig.raise_ner(pi_appl => 'AWLRS'
-                           ,pi_id   => 6
-                           ,pi_supplementary_info => pi_theme_name);
+              IF is_node_layer(pi_feature_table => lt_theme_types(1).feature_table)
+               THEN
+                  get_node_attributes(pi_feature_table => lt_theme_types(1).feature_table
+                                     ,po_cursor        => po_cursor);
+              ELSE
+                  get_table_attributes(pi_feature_table => lt_theme_types(1).feature_table
+                                      ,po_cursor        => po_cursor);
+              END IF;
               --
         END CASE;
         --
@@ -841,6 +1038,119 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION get_node_types_sql
+    RETURN VARCHAR2 IS
+  BEGIN
+    --
+    RETURN   'SELECT nnt_type code'
+  ||CHR(10)||'      ,nnt_descr meaning'
+  ||CHR(10)||'  FROM nm_node_types'
+    ;
+    --
+  END get_node_types_sql;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_node_types(po_cursor OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR get_node_types_sql||' ORDER BY meaning';
+    --
+  END get_node_types;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_node_types(pi_filter      IN  VARCHAR2
+                                ,pi_skip_n_rows IN  PLS_INTEGER
+                                ,pi_pagesize    IN  PLS_INTEGER
+                                ,po_cursor      OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index       PLS_INTEGER;
+    lv_upper_index       PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    lv_cursor_sql       nm3type.max_varchar2 := 'SELECT code'
+                                     ||CHR(10)||'      ,meaning'
+                                     ||CHR(10)||'      ,row_count'
+                                     ||CHR(10)||'  FROM (SELECT rownum ind'
+                                     ||CHR(10)||'              ,code'
+                                     ||CHR(10)||'              ,meaning'
+                                     ||CHR(10)||'              ,CASE'
+                                     ||CHR(10)||'                 WHEN UPPER(meaning) = UPPER(:filter) THEN 1'
+                                     ||CHR(10)||'                 WHEN UPPER(meaning) LIKE UPPER(:filter)||''%'' THEN 2'
+                                     ||CHR(10)||'                 ELSE 3'
+                                     ||CHR(10)||'               END match_quality'
+                                     ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                     ||CHR(10)||'          FROM ('
+    ;
+    --
+  BEGIN
+    --
+    IF pi_filter IS NOT NULL
+     THEN
+        lv_filter := ' WHERE UPPER(nnt_type) LIKE UPPER(''%''||:filter||''%'')';
+    END IF;
+    --
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||get_node_types_sql
+                     ||lv_filter
+                     ||') ORDER BY match_quality,meaning)'
+                     ||CHR(10)||lv_row_restriction
+    ;
+    --
+    IF pi_filter IS NOT NULL
+     THEN
+        IF pi_pagesize IS NOT NULL
+         THEN
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,pi_filter
+                 ,pi_filter
+                 ,lv_lower_index
+                 ,lv_upper_index
+            ;
+        ELSE
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,pi_filter
+                 ,pi_filter
+                 ,lv_lower_index
+            ;
+        END IF;
+    ELSE
+        IF pi_pagesize IS NOT NULL
+         THEN
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,pi_filter
+                 ,lv_lower_index
+                 ,lv_upper_index
+            ;
+        ELSE
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,pi_filter
+                 ,lv_lower_index
+            ;
+        END IF;
+    END IF;
+    --
+  END get_paged_node_types;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   FUNCTION get_asset_domain_sql
     RETURN VARCHAR2 IS
   BEGIN
@@ -1049,9 +1359,14 @@ AS
               --
           ELSE
               --
-              hig.raise_ner(pi_appl => 'AWLRS'
-                           ,pi_id   => 6
-                           ,pi_supplementary_info => pi_theme_name);
+              IF pi_column_name = 'NO_NODE_TYPE'
+               THEN
+                  get_node_types(po_cursor => po_cursor);
+              ELSE
+                  hig.raise_ner(pi_appl => 'AWLRS'
+                               ,pi_id   => 6
+                               ,pi_supplementary_info => pi_theme_name);
+              END IF;
               --
         END CASE;
         --
@@ -1170,10 +1485,17 @@ AS
               END IF;
               --
           ELSE
-              --
-              hig.raise_ner(pi_appl => 'AWLRS'
-                           ,pi_id   => 6
-                           ,pi_supplementary_info => pi_theme_name);
+              IF pi_column_name = 'NO_NODE_TYPE'
+               THEN
+                  get_paged_node_types(pi_filter      => pi_filter
+                                      ,pi_skip_n_rows => pi_skip_n_rows
+                                      ,pi_pagesize    => pi_pagesize
+                                      ,po_cursor      => po_cursor);
+              ELSE
+                  hig.raise_ner(pi_appl => 'AWLRS'
+                               ,pi_id   => 6
+                               ,pi_supplementary_info => pi_theme_name);
+              END IF;
               --
         END CASE;
         --
@@ -1696,16 +2018,27 @@ AS
       --
     BEGIN
       --
-      IF pi_theme_types.asset_type IS NOT NULL
-       THEN
-          --
-          lv_sql := gen_asset_type_attributes_sql(pi_inv_type => pi_theme_types.asset_type);
-          --
-      ELSE
-          --
-          lv_sql := gen_network_attributes_sql;
-          --
-      END IF;
+      CASE
+        WHEN pi_theme_types.network_type IS NOT NULL
+         THEN
+            --
+            lv_sql := gen_network_attributes_sql;
+            --
+        WHEN pi_theme_types.asset_type IS NOT NULL
+         THEN
+            --
+            lv_sql := gen_asset_type_attributes_sql(pi_inv_type => pi_theme_types.asset_type);
+            --
+        WHEN is_node_layer(pi_feature_table => pi_theme_types.feature_table)
+         THEN
+            --
+            lv_sql := gen_node_attributes_sql;
+            --
+        ELSE
+            --
+            lv_sql := gen_table_attributes_sql;
+            --
+      END CASE;
       /*
       ||Some FT Asset Types include the identified PK column as
       ||an attribute which leads to two rows in the select below
@@ -1718,8 +2051,33 @@ AS
               ||'   AND rownum = 1'
       ;
       --
-      IF pi_theme_types.asset_type IS NOT NULL
-       THEN
+      CASE
+        WHEN pi_theme_types.network_type IS NOT NULL
+         THEN
+          --
+          EXECUTE IMMEDIATE lv_sql
+             INTO po_format
+                 ,po_format_mask
+            USING g_default_date_format
+                 ,g_default_datetime_format
+                 ,pi_theme_types.unit_id
+                 ,g_default_date_format
+                 ,g_default_datetime_format
+                 ,pi_theme_types.unit_id
+                 ,pi_theme_types.network_type
+                 ,pi_theme_types.network_type
+                 ,pi_theme_types.network_type
+                 ,g_default_date_format
+                 ,g_default_date_format
+                 ,pi_theme_types.network_type
+                 ,g_default_date_format
+                 ,g_default_date_format
+                 ,pi_theme_types.network_type
+                 ,pi_theme_types.network_group_type
+                 ,pi_attrib_name;
+          --
+        WHEN pi_theme_types.asset_type IS NOT NULL
+         THEN
           --
           IF pi_theme_types.ft_asset_type = 'Y'
            THEN
@@ -1748,30 +2106,30 @@ AS
               --
           END IF;
           --
-      ELSE
-          --
-          EXECUTE IMMEDIATE lv_sql
-             INTO po_format
-                 ,po_format_mask
-            USING g_default_date_format
-                 ,g_default_datetime_format
-                 ,pi_theme_types.unit_id
-                 ,g_default_date_format
-                 ,g_default_datetime_format
-                 ,pi_theme_types.unit_id
-                 ,pi_theme_types.network_type
-                 ,pi_theme_types.network_type
-                 ,pi_theme_types.network_type
-                 ,g_default_date_format
-                 ,g_default_date_format
-                 ,pi_theme_types.network_type
-                 ,g_default_date_format
-                 ,g_default_date_format
-                 ,pi_theme_types.network_type
-                 ,pi_theme_types.network_group_type
-                 ,pi_attrib_name;
-          --
-      END IF;
+        WHEN is_node_layer(pi_feature_table => pi_theme_types.feature_table)
+         THEN
+            --
+            EXECUTE IMMEDIATE lv_sql
+               INTO po_format
+                   ,po_format_mask
+              USING g_default_date_format
+                   ,g_default_datetime_format
+                   ,g_default_date_format
+                   ,g_default_datetime_format
+                   ,pi_theme_types.feature_table
+                   ,pi_attrib_name;
+            --
+        ELSE
+            --
+            EXECUTE IMMEDIATE lv_sql
+               INTO po_format
+                   ,po_format_mask
+              USING g_default_datetime_format
+                   ,g_default_datetime_format
+                   ,pi_theme_types.feature_table
+                   ,pi_attrib_name;
+            --
+      END CASE;
       --
     EXCEPTION
       WHEN no_data_found
@@ -2075,6 +2433,50 @@ AS
     END LOOP;
     --
   END get_network_attributes_lists;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_table_attributes_lists(pi_feature_table IN     nm_themes_all.nth_feature_table%TYPE
+                                      ,po_alias_list    IN OUT VARCHAR2
+                                      ,po_select_list   IN OUT VARCHAR2)
+    IS
+    --
+    lv_prompt  nm_type_columns.ntc_prompt%TYPE;
+    lv_sql     nm3type.max_varchar2;
+    --
+    TYPE atc_rec IS RECORD(column_name  all_tab_columns.column_name%TYPE
+                          ,prompt       all_tab_columns.column_name%TYPE);
+    TYPE atc_tab IS TABLE OF atc_rec;
+    lt_atc  atc_tab;
+    --
+  BEGIN
+    /*
+    ||Add any attributes.
+    */
+    SELECT column_name
+          ,column_name prompt
+      BULK COLLECT
+      INTO lt_atc
+      FROM all_tab_columns
+     WHERE owner = SYS_CONTEXT('NM3CORE','APPLICATION_OWNER')
+       AND table_name = pi_feature_table
+       AND data_type IN('VARCHAR2','NUMBER','DATE')
+     ORDER
+        BY column_id
+         ;
+    --
+    FOR i IN 1..lt_atc.COUNT LOOP
+      --
+      lv_prompt := LOWER(REPLACE(REPLACE(REPLACE(lt_atc(i).prompt,'.',''),'"',''),' ','_'));
+      --
+      po_select_list := po_select_list||CHR(10)||'                       ,'||LOWER(lt_atc(i).column_name)||' "'||lv_prompt||'"';
+      --
+      po_alias_list := po_alias_list||CHR(10)||'      ,"'||lv_prompt||'"';
+      --
+    END LOOP;
+    --
+  END get_table_attributes_lists;
 
   --
   -----------------------------------------------------------------------------
@@ -2666,6 +3068,504 @@ AS
   END get_paged_assets_quick_search;
 
   --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_node_quick_search_sql(pi_feature_table    IN VARCHAR2
+                                    ,pi_like_cols        IN columns_tab
+                                    ,pi_include_enddated IN VARCHAR2 DEFAULT 'N'
+                                    ,pi_order_column     IN VARCHAR2 DEFAULT NULL
+                                    ,pi_order_asc_desc   IN VARCHAR2 DEFAULT NULL
+                                    ,pi_paged            IN BOOLEAN DEFAULT FALSE)
+    RETURN VARCHAR2 IS
+    --
+    lv_pagecols     VARCHAR2(200);
+    lv_like_cols    nm3type.max_varchar2;
+    lv_match_cases  nm3type.max_varchar2;
+    lv_retval       nm3type.max_varchar2;
+    lv_order_by     VARCHAR2(200);
+    --
+  BEGIN
+    --
+    IF pi_paged
+     THEN
+        lv_pagecols := 'rownum ind'
+            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+            ||CHR(10)||'      ,';
+    END IF;
+    --
+    IF pi_order_column IS NOT NULL
+     THEN
+        lv_order_by := pi_order_column||' '||NVL(LOWER(pi_order_asc_desc),'asc');
+    ELSE
+        lv_order_by := 'match_quality, name';
+    END IF;
+    --
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_like_cols := lv_like_cols||CASE WHEN i > 1 THEN '||'' ''||' END||pi_like_cols(i);
+      lv_match_cases := lv_match_cases||CHR(10)||'                          WHEN UPPER('||pi_like_cols(i)||') = UPPER(:search_string) THEN '||i;
+      --
+    END LOOP;
+    --
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_match_cases := lv_match_cases||CHR(10)||'                          WHEN UPPER('||pi_like_cols(i)||') LIKE UPPER(:search_string||''%'') THEN '||TO_CHAR(pi_like_cols.COUNT + i);
+      --
+    END LOOP;
+    --
+    lv_match_cases := lv_match_cases||CHR(10)||'                          ELSE '||TO_CHAR((pi_like_cols.COUNT * 2) + 1);
+    --
+    lv_retval :=  'SELECT '||lv_pagecols
+                           ||'result_id'
+       ||CHR(10)||'      ,name'
+       ||CHR(10)||'      ,description'
+       ||CHR(10)||'      ,purpose'
+       ||CHR(10)||'      ,start_date'
+       ||CHR(10)||'      ,end_date'
+       ||CHR(10)||'      ,node_type'
+       ||CHR(10)||'      ,date_created'
+       ||CHR(10)||'      ,created_by'
+       ||CHR(10)||'      ,date_modified'
+       ||CHR(10)||'      ,modified_by'
+       ||CHR(10)||'      ,node_id'  
+       ||CHR(10)||'      ,point_id'
+       ||CHR(10)||'      ,point_location_id'
+       ||CHR(10)||'  FROM (SELECT no_node_id result_id'
+       ||CHR(10)||'              ,no_node_name name'
+       ||CHR(10)||'              ,no_descr description'
+       ||CHR(10)||'              ,no_purpose purpose'
+       ||CHR(10)||'              ,no_start_date start_date'
+       ||CHR(10)||'              ,no_end_date end_date'
+       ||CHR(10)||'              ,no_node_type node_type'
+       ||CHR(10)||'              ,no_date_created date_created'
+       ||CHR(10)||'              ,no_created_by created_by'
+       ||CHR(10)||'              ,no_date_modified date_modified'
+       ||CHR(10)||'              ,no_modified_by modified_by'
+       ||CHR(10)||'              ,no_node_id node_id'  
+       ||CHR(10)||'              ,no_np_id point_id'
+       ||CHR(10)||'              ,npl_id point_location_id'
+       ||CHR(10)||'              ,CASE'||lv_match_cases
+       ||CHR(10)||'               END match_quality'
+       ||CHR(10)||'          FROM '||pi_feature_table
+       ||CHR(10)||'         WHERE UPPER('||NVL(lv_like_cols,'no_node_name||'' ''||no_descr')||') LIKE :like_string'
+       ||CASE
+           WHEN pi_include_enddated = 'N'
+            THEN CHR(10)||'           AND no_end_date IS NULL'
+         END
+       ||CHR(10)||'         ORDER BY '||lv_order_by||')'
+    ;
+    --
+    RETURN lv_retval;
+    --
+  END get_node_quick_search_sql;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nodes_quick_search(pi_search_string    IN  VARCHAR2
+                                  ,pi_feature_table    IN  VARCHAR2
+                                  ,pi_like_cols        IN  columns_tab
+                                  ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                                  ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                                  ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                                  ,pi_max_rows         IN  NUMBER DEFAULT NULL
+                                  ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_sql               nm3type.max_varchar2;
+    lv_query             nm3type.max_varchar2;
+    lv_using             nm3type.max_varchar2;
+    lv_alias_list        nm3type.max_varchar2;
+    lv_select_list       nm3type.max_varchar2;
+    lv_additional_where  nm3type.max_varchar2;
+    lv_search_string     nm3type.max_varchar2;
+    lv_like_string       nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    lv_search_string := UPPER(pi_search_string);
+    lv_like_string := '%'||lv_search_string||'%';
+    --
+    IF pi_max_rows IS NOT NULL
+     THEN
+        lv_additional_where := CHR(10)||' WHERE rownum <= :max_rows';
+    END IF;
+    --
+    lv_query := get_node_quick_search_sql(pi_feature_table    => pi_feature_table
+                                         ,pi_like_cols        => pi_like_cols
+                                         ,pi_include_enddated => pi_include_enddated
+                                         ,pi_order_column     => pi_order_column
+                                         ,pi_order_asc_desc   => pi_order_asc_desc)
+                ||lv_additional_where
+    ;
+    --
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_using := lv_using||'lv_search_string'
+         ||CHR(10)||'       ,lv_search_string'
+         ||CHR(10)||'       ,'
+      ;
+      --
+    END LOOP;
+    --
+    lv_sql :=  'DECLARE'
+    ||CHR(10)||'  lv_query          nm3type.max_varchar2 := :query;'
+    ||CHR(10)||'  lv_search_string  nm3type.max_varchar2 := :search_string;'
+    ||CHR(10)||'  lv_max_rows       PLS_INTEGER := :max_rows;'
+    ||CHR(10)||'BEGIN'
+    ||CHR(10)||'  OPEN :cursor_out FOR lv_query'
+    ||CHR(10)||'  USING '||lv_using
+             ||':like_string'
+             ||CASE
+                 WHEN pi_max_rows IS NOT NULL
+                  THEN
+                     CHR(10)||'       ,lv_max_rows'
+               END
+    ||CHR(10)||'  ;'
+    ||CHR(10)||'END;'
+    ;
+    --
+    EXECUTE IMMEDIATE lv_sql
+      USING lv_query
+           ,lv_search_string
+           ,pi_max_rows
+           ,IN OUT po_cursor
+           ,lv_like_string;
+    --
+  END get_nodes_quick_search;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_nodes_quick_search(pi_search_string    IN  VARCHAR2
+                                        ,pi_feature_table    IN  VARCHAR2
+                                        ,pi_like_cols        IN  columns_tab
+                                        ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                                        ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                                        ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                                        ,pi_skip_n_rows      IN  PLS_INTEGER
+                                        ,pi_pagesize         IN  PLS_INTEGER
+                                        ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_sql               nm3type.max_varchar2;
+    lv_query             nm3type.max_varchar2;
+    lv_using             nm3type.max_varchar2;
+    lv_lower_index       PLS_INTEGER;
+    lv_upper_index       PLS_INTEGER;
+    lv_alias_list        nm3type.max_varchar2;
+    lv_select_list       nm3type.max_varchar2;
+    lv_additional_where  nm3type.max_varchar2;
+    lv_search_string     nm3type.max_varchar2;
+    lv_like_string       nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    lv_search_string := UPPER(pi_search_string);
+    lv_like_string := '%'||lv_search_string||'%';
+    --
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_additional_where);
+    --
+    lv_query := 'SELECT *'
+     ||CHR(10)||'  FROM ('||get_node_quick_search_sql(pi_feature_table    => pi_feature_table
+                                                     ,pi_like_cols        => pi_like_cols
+                                                     ,pi_include_enddated => pi_include_enddated
+                                                     ,pi_order_column     => pi_order_column
+                                                     ,pi_order_asc_desc   => pi_order_asc_desc
+                                                     ,pi_paged            => TRUE)||')'
+              ||lv_additional_where
+    ;
+    --
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_using := lv_using||'lv_search_string'
+         ||CHR(10)||'       ,lv_search_string'
+         ||CHR(10)||'       ,'
+      ;
+      --
+    END LOOP;
+    --
+    lv_sql :=  'DECLARE'
+    ||CHR(10)||'  lv_query          nm3type.max_varchar2 := :query;'
+    ||CHR(10)||'  lv_search_string  nm3type.max_varchar2 := :search_string;'
+    ||CHR(10)||'  lv_lower_index    PLS_INTEGER := :lower_index;'
+    ||CHR(10)||'  lv_upper_index    PLS_INTEGER := :upper_index;'
+    ||CHR(10)||'BEGIN'
+    ||CHR(10)||'  OPEN :cursor_out FOR lv_query'
+    ||CHR(10)||'  USING '||lv_using
+             ||':like_string'
+    ||CHR(10)||'       ,lv_lower_index'
+             ||CASE
+                 WHEN pi_pagesize IS NOT NULL
+                  THEN
+                     CHR(10)||'       ,lv_upper_index'
+               END
+    ||CHR(10)||'  ;'
+    ||CHR(10)||'END;'
+    ;
+    --
+    EXECUTE IMMEDIATE lv_sql
+      USING lv_query
+           ,lv_search_string
+           ,lv_lower_index
+           ,lv_upper_index
+           ,IN OUT po_cursor
+           ,lv_like_string;
+    --
+  END get_paged_nodes_quick_search;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_table_quick_search_sql(pi_feature_table     IN VARCHAR2
+                                     ,pi_feature_pk_column IN VARCHAR2
+                                     ,pi_alias_list        IN VARCHAR2
+                                     ,pi_select_list       IN VARCHAR2
+                                     ,pi_like_cols         IN columns_tab
+                                     ,pi_order_column      IN VARCHAR2 DEFAULT NULL
+                                     ,pi_order_asc_desc    IN VARCHAR2 DEFAULT NULL
+                                     ,pi_paged             IN BOOLEAN DEFAULT FALSE)
+    RETURN VARCHAR2 IS
+    --
+    lv_pagecols     VARCHAR2(200);
+    lv_like_cols    nm3type.max_varchar2;
+    lv_match_cases  nm3type.max_varchar2;
+    lv_retval       nm3type.max_varchar2;
+    lv_order_by     VARCHAR2(200);
+    --
+  BEGIN
+    --
+    IF pi_paged
+     THEN
+        lv_pagecols := 'rownum ind'
+            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+            ||CHR(10)||'      ,';
+    END IF;
+    --
+    IF pi_order_column IS NOT NULL
+     THEN
+        lv_order_by := pi_order_column||' '||NVL(LOWER(pi_order_asc_desc),'asc');
+    ELSE
+        lv_order_by := pi_feature_pk_column;
+    END IF;
+    --
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_like_cols := lv_like_cols||CASE WHEN i > 1 THEN '||'' ''||' END||pi_like_cols(i);
+      lv_match_cases := lv_match_cases||CHR(10)||'                          WHEN UPPER('||pi_like_cols(i)||') = UPPER(:search_string) THEN '||i;
+      --
+    END LOOP;
+    --
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_match_cases := lv_match_cases||CHR(10)||'                          WHEN UPPER('||pi_like_cols(i)||') LIKE UPPER(:search_string||''%'') THEN '||TO_CHAR(pi_like_cols.COUNT + i);
+      --
+    END LOOP;
+    --
+    lv_match_cases := lv_match_cases||CHR(10)||'                          ELSE '||TO_CHAR((pi_like_cols.COUNT * 2) + 1);
+    --
+    lv_retval := 'WITH records AS(SELECT '||pi_feature_pk_column||' result_id'
+               ||pi_select_list
+      ||CHR(10)||'                       ,CASE'||lv_match_cases
+      ||CHR(10)||'                        END match_quality'
+      ||CHR(10)||'                   FROM '||pi_feature_table
+      ||CHR(10)||'                  WHERE UPPER('||NVL(lv_like_cols,pi_feature_pk_column)||') LIKE :like_string'
+      ||CHR(10)||'                  ORDER BY '||lv_order_by||')'
+      ||CHR(10)||'SELECT '||lv_pagecols
+               ||'result_id'
+               ||pi_alias_list
+      ||CHR(10)||'  FROM records'
+    ;
+    --
+    RETURN lv_retval;
+    --
+  END get_table_quick_search_sql;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_table_quick_search(pi_search_string     IN  VARCHAR2
+                                  ,pi_feature_table     IN  VARCHAR2
+                                  ,pi_feature_pk_column IN  VARCHAR2
+                                  ,pi_like_cols         IN  columns_tab
+                                  ,pi_order_column      IN  VARCHAR2 DEFAULT NULL
+                                  ,pi_order_asc_desc    IN  VARCHAR2 DEFAULT NULL
+                                  ,pi_max_rows          IN  NUMBER DEFAULT NULL
+                                  ,po_cursor            OUT sys_refcursor)
+    IS
+    --
+    lv_sql               nm3type.max_varchar2;
+    lv_query             nm3type.max_varchar2;
+    lv_using             nm3type.max_varchar2;
+    lv_alias_list        nm3type.max_varchar2;
+    lv_select_list       nm3type.max_varchar2;
+    lv_additional_where  nm3type.max_varchar2;
+    lv_search_string     nm3type.max_varchar2;
+    lv_like_string       nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    lv_search_string := UPPER(pi_search_string);
+    lv_like_string := '%'||lv_search_string||'%';
+    --
+    IF pi_max_rows IS NOT NULL
+     THEN
+        lv_additional_where := CHR(10)||' WHERE rownum <= :max_rows';
+    END IF;
+    --
+    get_table_attributes_lists(pi_feature_table => pi_feature_table
+                              ,po_alias_list    => lv_alias_list
+                              ,po_select_list   => lv_select_list);
+    --
+    lv_query := get_table_quick_search_sql(pi_feature_table     => pi_feature_table
+                                          ,pi_feature_pk_column => pi_feature_pk_column
+                                          ,pi_alias_list        => lv_alias_list
+                                          ,pi_select_list       => lv_select_list
+                                          ,pi_like_cols         => pi_like_cols
+                                          ,pi_order_column      => pi_order_column
+                                          ,pi_order_asc_desc    => pi_order_asc_desc)
+                ||lv_additional_where
+    ;
+    --
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_using := lv_using||'lv_search_string'
+         ||CHR(10)||'       ,lv_search_string'
+         ||CHR(10)||'       ,'
+      ;
+      --
+    END LOOP;
+    --
+    lv_sql :=  'DECLARE'
+    ||CHR(10)||'  lv_query          nm3type.max_varchar2 := :query;'
+    ||CHR(10)||'  lv_search_string  nm3type.max_varchar2 := :search_string;'
+    ||CHR(10)||'  lv_max_rows       PLS_INTEGER := :max_rows;'
+    ||CHR(10)||'BEGIN'
+    ||CHR(10)||'  OPEN :cursor_out FOR lv_query'
+    ||CHR(10)||'  USING '||lv_using
+             ||':like_string'
+             ||CASE
+                 WHEN pi_max_rows IS NOT NULL
+                  THEN
+                     CHR(10)||'       ,lv_max_rows'
+                 ELSE
+                     NULL
+               END
+    ||CHR(10)||'  ;'
+    ||CHR(10)||'END;'
+    ;
+    --
+    EXECUTE IMMEDIATE lv_sql
+      USING lv_query
+           ,lv_search_string
+           ,pi_max_rows
+           ,IN OUT po_cursor
+           ,lv_like_string;
+    --
+  END get_table_quick_search;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_table_quick_search(pi_search_string     IN  VARCHAR2
+                                        ,pi_feature_table     IN  VARCHAR2
+                                        ,pi_feature_pk_column IN  VARCHAR2
+                                        ,pi_like_cols         IN  columns_tab
+                                        ,pi_order_column      IN  VARCHAR2 DEFAULT NULL
+                                        ,pi_order_asc_desc    IN  VARCHAR2 DEFAULT NULL
+                                        ,pi_skip_n_rows       IN  PLS_INTEGER
+                                        ,pi_pagesize          IN  PLS_INTEGER
+                                        ,po_cursor            OUT sys_refcursor)
+    IS
+    --
+    lv_sql               nm3type.max_varchar2;
+    lv_query             nm3type.max_varchar2;
+    lv_using             nm3type.max_varchar2;
+    lv_alias_list        nm3type.max_varchar2;
+    lv_select_list       nm3type.max_varchar2;
+    lv_lower_index       PLS_INTEGER;
+    lv_upper_index       PLS_INTEGER;
+    lv_additional_where  nm3type.max_varchar2;
+    lv_search_string     nm3type.max_varchar2;
+    lv_like_string       nm3type.max_varchar2;
+    lv_cursor            sys_refcursor;
+    --
+  BEGIN
+    --
+    lv_search_string := UPPER(pi_search_string);
+    lv_like_string := '%'||lv_search_string||'%';
+    --
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_additional_where);
+    --
+    get_table_attributes_lists(pi_feature_table => pi_feature_table
+                              ,po_alias_list    => lv_alias_list
+                              ,po_select_list   => lv_select_list);
+    --
+    lv_query := 'SELECT *'
+     ||CHR(10)||'  FROM ('||get_table_quick_search_sql(pi_feature_table     => pi_feature_table
+                                                      ,pi_feature_pk_column => pi_feature_pk_column
+                                                      ,pi_alias_list        => lv_alias_list
+                                                      ,pi_select_list       => lv_select_list
+                                                      ,pi_like_cols         => pi_like_cols
+                                                      ,pi_order_column      => pi_order_column
+                                                      ,pi_order_asc_desc    => pi_order_asc_desc
+                                                      ,pi_paged             => TRUE)||')'
+              ||lv_additional_where
+    ;
+    --
+    FOR i IN 1..pi_like_cols.COUNT LOOP
+      --
+      lv_using := lv_using||'lv_search_string'
+         ||CHR(10)||'       ,lv_search_string'
+         ||CHR(10)||'       ,'
+      ;
+      --
+    END LOOP;
+    --
+    lv_sql :=  'DECLARE'
+    ||CHR(10)||'  lv_query          nm3type.max_varchar2 := :query;'
+    ||CHR(10)||'  lv_search_string  nm3type.max_varchar2 := :search_string;'
+    ||CHR(10)||'  lv_lower_index    PLS_INTEGER := :lower_index;'
+    ||CHR(10)||'  lv_upper_index    PLS_INTEGER := :upper_index;'
+    ||CHR(10)||'BEGIN'
+    ||CHR(10)||'  OPEN :cursor_out FOR lv_query'
+    ||CHR(10)||'  USING '||lv_using
+             ||':like_string'
+    ||CHR(10)||'       ,lv_lower_index'
+             ||CASE
+                 WHEN pi_pagesize IS NOT NULL
+                  THEN
+                     CHR(10)||'       ,lv_upper_index'
+                 ELSE
+                     NULL
+               END
+    ||CHR(10)||'  ;'
+    ||CHR(10)||'END;'
+    ;
+    --
+    EXECUTE IMMEDIATE lv_sql
+      USING lv_query
+           ,lv_search_string
+           ,lv_lower_index
+           ,lv_upper_index
+           ,IN OUT lv_cursor
+           ,lv_like_string;
+    --
+    po_cursor := lv_cursor;
+    --
+  END get_paged_table_quick_search;
+
+  --
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_quick_search_results(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
@@ -2746,11 +3646,42 @@ AS
                                      ,po_cursor           => po_cursor);
               --
           ELSE
-              --Layer does not represent an Asset Type or a Network Type
-              hig.raise_ner(pi_appl => 'AWLRS'
-                           ,pi_id   => 6
-                           ,pi_supplementary_info => pi_theme_name);
               --
+              IF is_node_layer(pi_feature_table => lt_theme_types(1).feature_table)
+               THEN
+                  --
+                  IF lt_like_cols.COUNT = 0
+                   THEN
+                      lt_like_cols(1) := 'no_node_name';
+                      lt_like_cols(2) := 'no_descr';
+                  END IF;
+                  --
+                  get_nodes_quick_search(pi_search_string    => pi_search_string
+                                        ,pi_feature_table    => lt_theme_types(1).feature_table
+                                        ,pi_like_cols        => lt_like_cols
+                                        ,pi_include_enddated => pi_include_enddated
+                                        ,pi_order_column     => pi_order_column
+                                        ,pi_order_asc_desc   => pi_order_asc_desc
+                                        ,pi_max_rows         => pi_max_rows
+                                        ,po_cursor           => po_cursor);
+                  --
+              ELSE
+                  --
+                  IF lt_like_cols.COUNT = 0
+                   THEN
+                      lt_like_cols(1) := lt_theme_types(1).feature_pk_column;
+                  END IF;
+                  --
+                  get_table_quick_search(pi_search_string     => pi_search_string
+                                        ,pi_feature_table     => lt_theme_types(1).feature_table
+                                        ,pi_feature_pk_column => lt_theme_types(1).feature_pk_column
+                                        ,pi_like_cols         => lt_like_cols
+                                        ,pi_order_column      => pi_order_column
+                                        ,pi_order_asc_desc    => pi_order_asc_desc
+                                        ,pi_max_rows          => pi_max_rows
+                                        ,po_cursor            => po_cursor);
+                  --
+              END IF;
         END CASE;
         --
     ELSE
@@ -2860,9 +3791,43 @@ AS
               --
           ELSE
               --
-              hig.raise_ner(pi_appl => 'AWLRS'
-                           ,pi_id   => 6
-                           ,pi_supplementary_info => pi_theme_name);
+              IF is_node_layer(pi_feature_table => lt_theme_types(1).feature_table)
+               THEN
+                  --
+                  IF lt_like_cols.COUNT = 0
+                   THEN
+                      lt_like_cols(1) := 'no_node_name';
+                      lt_like_cols(2) := 'no_descr';
+                  END IF;
+                  --
+                  get_paged_nodes_quick_search(pi_search_string    => pi_search_string
+                                              ,pi_feature_table    => lt_theme_types(1).feature_table
+                                              ,pi_like_cols        => lt_like_cols
+                                              ,pi_include_enddated => pi_include_enddated
+                                              ,pi_order_column     => pi_order_column
+                                              ,pi_order_asc_desc   => pi_order_asc_desc
+                                              ,pi_skip_n_rows      => pi_skip_n_rows
+                                              ,pi_pagesize         => pi_pagesize
+                                              ,po_cursor           => po_cursor);
+                  --
+              ELSE
+                  --
+                  IF lt_like_cols.COUNT = 0
+                   THEN
+                      lt_like_cols(1) := lt_theme_types(1).feature_pk_column;
+                  END IF;
+                  --
+                  get_paged_table_quick_search(pi_search_string     => pi_search_string
+                                              ,pi_feature_table     => lt_theme_types(1).feature_table
+                                              ,pi_feature_pk_column => lt_theme_types(1).feature_pk_column
+                                              ,pi_like_cols         => lt_like_cols
+                                              ,pi_order_column      => pi_order_column
+                                              ,pi_order_asc_desc    => pi_order_asc_desc
+                                              ,pi_skip_n_rows       => pi_skip_n_rows
+                                              ,pi_pagesize          => pi_pagesize
+                                              ,po_cursor            => po_cursor);
+                  --
+              END IF;
               --
         END CASE;
         --
@@ -2950,7 +3915,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_network_search(pi_theme_types      IN awlrs_map_api.theme_types_rec
+  PROCEDURE get_network_search(pi_theme_types      IN  awlrs_map_api.theme_types_rec
                               ,pi_criteria         IN  XMLTYPE
                               ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
                               ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
@@ -3013,7 +3978,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_paged_network_search(pi_theme_types      IN awlrs_map_api.theme_types_rec
+  PROCEDURE get_paged_network_search(pi_theme_types      IN  awlrs_map_api.theme_types_rec
                                     ,pi_criteria         IN  XMLTYPE
                                     ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
                                     ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
@@ -3153,7 +4118,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_assets_search(pi_theme_types      IN awlrs_map_api.theme_types_rec
+  PROCEDURE get_assets_search(pi_theme_types      IN  awlrs_map_api.theme_types_rec
                              ,pi_criteria         IN  XMLTYPE
                              ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
                              ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
@@ -3226,7 +4191,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_paged_assets_search(pi_theme_types      IN awlrs_map_api.theme_types_rec
+  PROCEDURE get_paged_assets_search(pi_theme_types      IN  awlrs_map_api.theme_types_rec
                                    ,pi_criteria         IN  XMLTYPE
                                    ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
                                    ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
@@ -3318,6 +4283,345 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION get_node_search_sql(pi_feature_table    IN VARCHAR2
+                              ,pi_where_clause     IN VARCHAR2
+                              ,pi_include_enddated IN VARCHAR2 DEFAULT 'N'
+                              ,pi_order_column     IN VARCHAR2 DEFAULT NULL
+                              ,pi_order_asc_desc   IN VARCHAR2 DEFAULT NULL
+                              ,pi_paged            IN BOOLEAN DEFAULT FALSE)
+    RETURN VARCHAR2 IS
+    --
+    lv_pagecols  VARCHAR2(200);
+    lv_retval    nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    IF pi_paged
+     THEN
+        lv_pagecols := 'rownum ind'
+            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+            ||CHR(10)||'      ,';
+    END IF;
+    --
+    lv_retval :=  'SELECT '||lv_pagecols
+                       ||'result_id'
+       ||CHR(10)||'      ,name'
+       ||CHR(10)||'      ,description'
+       ||CHR(10)||'      ,purpose'
+       ||CHR(10)||'      ,start_date'
+       ||CHR(10)||'      ,end_date'
+       ||CHR(10)||'      ,node_type'
+       ||CHR(10)||'      ,date_created'
+       ||CHR(10)||'      ,created_by'
+       ||CHR(10)||'      ,date_modified'
+       ||CHR(10)||'      ,modified_by'
+       ||CHR(10)||'      ,node_id'  
+       ||CHR(10)||'      ,point_id'
+       ||CHR(10)||'      ,point_location_id'
+       ||CHR(10)||'  FROM (SELECT no_node_id result_id'
+       ||CHR(10)||'              ,no_node_name name'
+       ||CHR(10)||'              ,no_descr description'
+       ||CHR(10)||'              ,no_purpose purpose'
+       ||CHR(10)||'              ,no_start_date start_date'
+       ||CHR(10)||'              ,no_end_date end_date'
+       ||CHR(10)||'              ,no_node_type node_type'
+       ||CHR(10)||'              ,no_date_created date_created'
+       ||CHR(10)||'              ,no_created_by created_by'
+       ||CHR(10)||'              ,no_date_modified date_modified'
+       ||CHR(10)||'              ,no_modified_by modified_by'
+       ||CHR(10)||'              ,no_node_id node_id'  
+       ||CHR(10)||'              ,no_np_id point_id'
+       ||CHR(10)||'              ,npl_id point_location_id'
+       ||CHR(10)||'          FROM '||pi_feature_table
+       ||CHR(10)||'         WHERE ('||pi_where_clause||')'
+       ||CASE
+          WHEN pi_include_enddated = 'N'
+           THEN
+              CHR(10)||'           AND no_end_date IS NULL'
+         END
+       ||CHR(10)||'         ORDER BY '||NVL(LOWER(pi_order_column),'name')||' '
+                                      ||NVL(LOWER(pi_order_asc_desc),'asc')||')'
+    ;
+    --
+    RETURN lv_retval;
+    --
+  END get_node_search_sql;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_node_search(pi_theme_types      IN  awlrs_map_api.theme_types_rec
+                           ,pi_criteria         IN  XMLTYPE
+                           ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                           ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                           ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                           ,pi_max_rows         IN  NUMBER DEFAULT NULL
+                           ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_sql               nm3type.max_varchar2;
+    lv_alias_list        nm3type.max_varchar2;
+    lv_select_list       nm3type.max_varchar2;
+    lv_where             nm3type.max_varchar2;
+    lv_additional_where  nm3type.max_varchar2;
+    lv_nvl               VARCHAR2(10) := nm3type.get_nvl;
+    --
+  BEGIN
+    /*
+    ||Generate the where clause from the given criteria.
+    */
+    lv_where := generate_where_clause(pi_theme_types => pi_theme_types
+                                     ,pi_criteria    => pi_criteria);
+    --
+    IF pi_max_rows IS NOT NULL
+     THEN
+        lv_additional_where := CHR(10)||' WHERE rownum <= :max_rows';
+    END IF;
+    --
+    lv_sql := get_node_search_sql(pi_feature_table    => pi_theme_types.feature_table
+                                 ,pi_where_clause     => lv_where
+                                 ,pi_include_enddated => pi_include_enddated
+                                 ,pi_order_column     => pi_order_column
+                                 ,pi_order_asc_desc   => pi_order_asc_desc)
+              ||lv_additional_where
+    ;
+    --
+    IF pi_max_rows IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_sql
+        USING pi_max_rows
+        ;
+    ELSE
+        OPEN po_cursor FOR lv_sql;
+    END IF;
+    --
+  END get_node_search;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_node_search(pi_theme_types      IN  awlrs_map_api.theme_types_rec
+                                 ,pi_criteria         IN  XMLTYPE
+                                 ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                                 ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                                 ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                                 ,pi_skip_n_rows      IN  PLS_INTEGER
+                                 ,pi_pagesize         IN  PLS_INTEGER
+                                 ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_sql               nm3type.max_varchar2;
+    lv_alias_list        nm3type.max_varchar2;
+    lv_select_list       nm3type.max_varchar2;
+    lv_where             nm3type.max_varchar2;
+    lv_additional_where  nm3type.max_varchar2;
+    lv_nvl               VARCHAR2(10) := nm3type.get_nvl;
+    lv_lower_index       PLS_INTEGER;
+    lv_upper_index       PLS_INTEGER;
+    --
+  BEGIN
+    /*
+    ||Generate the where clause from the given criteria.
+    */
+    lv_where := generate_where_clause(pi_theme_types => pi_theme_types
+                                     ,pi_criteria    => pi_criteria);
+    --
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_additional_where);
+    --
+    lv_sql := 'SELECT *'
+   ||CHR(10)||'  FROM ('||get_node_search_sql(pi_feature_table    => pi_theme_types.feature_table
+                                             ,pi_where_clause     => lv_where
+                                             ,pi_include_enddated => pi_include_enddated
+                                             ,pi_order_column     => pi_order_column
+                                             ,pi_order_asc_desc   => pi_order_asc_desc
+                                             ,pi_paged            => TRUE)||')'
+            ||lv_additional_where
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_sql
+        USING lv_lower_index
+             ,lv_upper_index
+        ;
+    ELSE
+        OPEN po_cursor FOR lv_sql
+        USING lv_lower_index
+        ;
+    END IF;
+    --
+  END get_paged_node_search;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_table_search_sql(pi_theme_types      IN awlrs_map_api.theme_types_rec
+                               ,pi_select_list      IN VARCHAR2
+                               ,pi_where_clause     IN VARCHAR2
+                               ,pi_include_enddated IN VARCHAR2 DEFAULT 'N'
+                               ,pi_order_column     IN VARCHAR2 DEFAULT NULL
+                               ,pi_order_asc_desc   IN VARCHAR2 DEFAULT NULL
+                               ,pi_paged            IN BOOLEAN DEFAULT FALSE)
+    RETURN VARCHAR2 IS
+    --
+    lv_pagecols  VARCHAR2(200);
+    lv_retval    nm3type.max_varchar2;
+    lv_order_by  VARCHAR2(200);
+    --
+  BEGIN
+    --
+    IF pi_paged
+     THEN
+        lv_pagecols := 'rownum ind'
+            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+            ||CHR(10)||'      ,';
+    END IF;
+    --
+    IF pi_order_column IS NOT NULL
+     THEN
+        lv_order_by := pi_order_column||' '||NVL(LOWER(pi_order_asc_desc),'asc');
+    ELSE
+        lv_order_by := pi_theme_types.feature_pk_column;
+    END IF;
+    --
+    lv_retval := 'WITH records AS(SELECT '||pi_theme_types.feature_pk_column||' result_id'
+               ||pi_select_list
+      ||CHR(10)||'                   FROM '||pi_theme_types.feature_table
+      ||CHR(10)||'                  WHERE ('||pi_where_clause||')'
+      ||CHR(10)||'                  ORDER BY '||lv_order_by||')'
+      ||CHR(10)||'SELECT '||lv_pagecols
+                       ||'records.*'
+      ||CHR(10)||'  FROM records'
+    ;
+    --
+    RETURN lv_retval;
+    --
+  END get_table_search_sql;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_table_search(pi_theme_types    IN  awlrs_map_api.theme_types_rec
+                            ,pi_criteria       IN  XMLTYPE
+                            ,pi_order_column   IN  VARCHAR2 DEFAULT NULL
+                            ,pi_order_asc_desc IN  VARCHAR2 DEFAULT NULL
+                            ,pi_max_rows       IN  NUMBER DEFAULT NULL
+                            ,po_cursor         OUT sys_refcursor)
+    IS
+    --
+    lv_sql               nm3type.max_varchar2;
+    lv_alias_list        nm3type.max_varchar2;
+    lv_select_list       nm3type.max_varchar2;
+    lv_where             nm3type.max_varchar2;
+    lv_additional_where  nm3type.max_varchar2;
+    lv_nvl               VARCHAR2(10) := nm3type.get_nvl;
+    --
+  BEGIN
+    /*
+    ||Generate the where clause from the given criteria.
+    */
+    lv_where := generate_where_clause(pi_theme_types => pi_theme_types
+                                     ,pi_criteria    => pi_criteria);
+    --
+    IF pi_max_rows IS NOT NULL
+     THEN
+        lv_additional_where := CHR(10)||' WHERE rownum <= :max_rows';
+    END IF;
+    --
+    get_table_attributes_lists(pi_feature_table => pi_theme_types.feature_table
+                              ,po_alias_list    => lv_alias_list
+                              ,po_select_list   => lv_select_list);
+    --
+    lv_sql := get_table_search_sql(pi_theme_types    => pi_theme_types
+                                  ,pi_select_list    => lv_select_list
+                                  ,pi_where_clause   => lv_where
+                                  ,pi_order_column   => pi_order_column
+                                  ,pi_order_asc_desc => pi_order_asc_desc)
+              ||lv_additional_where
+    ;
+    --
+    IF pi_max_rows IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_sql
+        USING pi_max_rows
+        ;
+    ELSE
+        OPEN po_cursor FOR lv_sql;
+    END IF;
+    --
+  END get_table_search;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_table_search(pi_theme_types    IN awlrs_map_api.theme_types_rec
+                                  ,pi_criteria       IN  XMLTYPE
+                                  ,pi_order_column   IN  VARCHAR2 DEFAULT NULL
+                                  ,pi_order_asc_desc IN  VARCHAR2 DEFAULT NULL
+                                  ,pi_skip_n_rows    IN  PLS_INTEGER
+                                  ,pi_pagesize       IN  PLS_INTEGER
+                                  ,po_cursor         OUT sys_refcursor)
+    IS
+    --
+    lv_sql               nm3type.max_varchar2;
+    lv_alias_list        nm3type.max_varchar2;
+    lv_select_list       nm3type.max_varchar2;
+    lv_where             nm3type.max_varchar2;
+    lv_additional_where  nm3type.max_varchar2;
+    lv_nvl               VARCHAR2(10) := nm3type.get_nvl;
+    lv_lower_index       PLS_INTEGER;
+    lv_upper_index       PLS_INTEGER;
+    --
+  BEGIN
+    /*
+    ||Generate the where clause from the given criteria.
+    */
+    lv_where := generate_where_clause(pi_theme_types => pi_theme_types
+                                     ,pi_criteria    => pi_criteria);
+    --
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_additional_where);
+    --
+    get_table_attributes_lists(pi_feature_table => pi_theme_types.feature_table
+                              ,po_alias_list    => lv_alias_list
+                              ,po_select_list   => lv_select_list);
+    --
+    lv_sql := 'SELECT *'
+   ||CHR(10)||'  FROM ('||get_table_search_sql(pi_theme_types    => pi_theme_types
+                                              ,pi_select_list    => lv_select_list
+                                              ,pi_where_clause   => lv_where
+                                              ,pi_order_column   => pi_order_column
+                                              ,pi_order_asc_desc => pi_order_asc_desc
+                                              ,pi_paged          => TRUE)||')'
+            ||lv_additional_where
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_sql
+        USING lv_lower_index
+             ,lv_upper_index
+        ;
+    ELSE
+        OPEN po_cursor FOR lv_sql
+        USING lv_lower_index
+        ;
+    END IF;
+    --
+  END get_paged_table_search;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_search_results(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
                               ,pi_criteria         IN  XMLTYPE
                               ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
@@ -3363,9 +4667,25 @@ AS
               --
           ELSE
               --
-              hig.raise_ner(pi_appl => 'AWLRS'
-                           ,pi_id   => 6
-                           ,pi_supplementary_info => pi_theme_name);
+              IF is_node_layer(pi_feature_table => lt_theme_types(1).feature_table)
+               THEN
+                  --
+                  get_node_search(pi_theme_types      => lt_theme_types(1)
+                                 ,pi_criteria         => pi_criteria
+                                 ,pi_include_enddated => pi_include_enddated
+                                 ,pi_order_column     => pi_order_column
+                                 ,pi_order_asc_desc   => pi_order_asc_desc
+                                 ,pi_max_rows         => pi_max_rows
+                                 ,po_cursor           => po_cursor);
+                  --
+              ELSE
+                  get_table_search(pi_theme_types    => lt_theme_types(1)
+                                  ,pi_criteria       => pi_criteria
+                                  ,pi_order_column   => pi_order_column
+                                  ,pi_order_asc_desc => pi_order_asc_desc
+                                  ,pi_max_rows       => pi_max_rows
+                                  ,po_cursor         => po_cursor);
+              END IF;
               --
         END CASE;
         --
@@ -3442,9 +4762,29 @@ AS
               --
           ELSE
               --
-              hig.raise_ner(pi_appl => 'AWLRS'
-                           ,pi_id   => 6
-                           ,pi_supplementary_info => pi_theme_name);
+              IF is_node_layer(pi_feature_table => lt_theme_types(1).feature_table)
+               THEN
+                  --
+                  get_paged_node_search(pi_theme_types      => lt_theme_types(1)
+                                       ,pi_criteria         => pi_criteria
+                                       ,pi_include_enddated => pi_include_enddated
+                                       ,pi_order_column     => pi_order_column
+                                       ,pi_order_asc_desc   => pi_order_asc_desc
+                                       ,pi_skip_n_rows      => pi_skip_n_rows
+                                       ,pi_pagesize         => pi_pagesize
+                                       ,po_cursor           => po_cursor);
+                  --
+              ELSE
+                  --
+                  get_paged_table_search(pi_theme_types    => lt_theme_types(1)
+                                        ,pi_criteria       => pi_criteria
+                                        ,pi_order_column   => pi_order_column
+                                        ,pi_order_asc_desc => pi_order_asc_desc
+                                        ,pi_skip_n_rows    => pi_skip_n_rows
+                                        ,pi_pagesize       => pi_pagesize
+                                        ,po_cursor         => po_cursor);
+                  --
+              END IF;
               --
         END CASE;
         --
