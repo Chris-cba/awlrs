@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.8   Sep 14 2017 11:15:54   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.9   06 Dec 2017 18:23:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 14 2017 11:15:54  $
-  --       Date fetched Out : $Modtime:   Sep 14 2017 11:13:38  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   06 Dec 2017 18:23:20  $
+  --       Date fetched Out : $Modtime:   05 Dec 2017 18:19:38  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reshape_api';
   --
@@ -220,6 +220,43 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE do_rescale(pi_ne_id            IN     nm_elements.ne_id%TYPE
+                      ,pi_offset_st        IN     NUMBER
+                      ,pi_use_history      IN     VARCHAR2
+                      ,po_message_severity IN OUT hig_codes.hco_code%TYPE
+                      ,po_message_tab      IN OUT NOCOPY awlrs_message_tab)
+    IS
+    --
+    lv_message_cursor  sys_refcursor;
+    --
+    lt_messages  awlrs_util.message_tab;
+    --
+  BEGIN
+    --
+    awlrs_group_api.rescale_route(pi_ne_id            => pi_ne_id
+                                 ,pi_offset_st        => pi_offset_st
+                                 ,pi_use_history      => pi_use_history
+                                 ,po_message_severity => po_message_severity
+                                 ,po_message_cursor   => lv_message_cursor);
+    --
+    FETCH lv_message_cursor
+     BULK COLLECT
+     INTO lt_messages;
+    CLOSE lv_message_cursor;
+    --
+    FOR i IN 1..lt_messages.COUNT LOOP
+      --
+      awlrs_util.add_message(pi_category    => lt_messages(i).category
+                            ,pi_message     => lt_messages(i).message
+                            ,po_message_tab => po_message_tab);
+      --
+    END LOOP;
+    --
+  END do_rescale;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE reshape_element(pi_theme_name               IN     nm_themes_all.nth_theme_name%TYPE
                            ,pi_ne_id                    IN     nm_elements_all.ne_id%TYPE
                            ,pi_shape_wkt                IN     CLOB
@@ -233,6 +270,7 @@ AS
                            ,pi_do_recalibrate           IN     VARCHAR2 DEFAULT 'N'
                            ,pi_recal_start_point        IN     NUMBER DEFAULT NULL
                            ,pi_recal_new_length_to_end  IN     NUMBER DEFAULT NULL
+                           ,pi_do_rescale_parents       IN     VARCHAR2 DEFAULT 'N'
                            ,pi_reason                   IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                            ,pi_effective_date           IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                            ,pi_run_checks               IN     VARCHAR2 DEFAULT 'Y'
@@ -246,6 +284,20 @@ AS
     lv_severity   hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
     --
     lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
+    CURSOR get_linear_groups(cp_ne_id IN nm_elements_all.ne_id%TYPE)
+        IS
+    SELECT nm_ne_id_in group_id
+          ,nm3net.get_min_slk(pi_ne_id => nm_ne_id_in) min_slk
+      FROM nm_members 
+     WHERE nm_ne_id_of = cp_ne_id
+       AND nm_obj_type IN(SELECT ngt_group_type
+                            FROM nm_group_types
+                           WHERE ngt_linear_flag = 'Y')
+         ;
+    --
+    TYPE groups_tab IS TABLE OF get_linear_groups%ROWTYPE;
+    lt_groups  groups_tab;
     --
   BEGIN
     /*
@@ -322,6 +374,54 @@ AS
             --
         END IF;
         --
+    END IF;
+    /*
+    ||Rescale any linear groups the element belongs to.
+    */
+    IF lv_severity = awlrs_util.c_msg_cat_success
+     AND pi_do_rescale_parents = 'Y'
+     THEN
+        --
+        OPEN  get_linear_groups(pi_ne_id);
+        FETCH get_linear_groups
+         BULK COLLECT
+         INTO lt_groups;
+        CLOSE get_linear_groups;
+        --
+        FOR i IN 1..lt_groups.COUNT LOOP
+          --
+          lv_severity := awlrs_util.c_msg_cat_success;
+          lt_messages.DELETE;
+          --
+          do_rescale(pi_ne_id            => lt_groups(i).group_id
+                    ,pi_offset_st        => lt_groups(i).min_slk
+                    ,pi_use_history      => 'Y'
+                    ,po_message_severity => lv_severity
+                    ,po_message_tab      => lt_messages);
+          --
+          IF lv_severity = awlrs_util.c_msg_cat_ask_continue
+           THEN
+              --
+              lt_messages.DELETE;
+              --
+              do_rescale(pi_ne_id            => lt_groups(i).group_id
+                        ,pi_offset_st        => lt_groups(i).min_slk
+                        ,pi_use_history      => 'N'
+                        ,po_message_severity => lv_severity
+                        ,po_message_tab      => lt_messages);
+              --
+          END IF;
+          --
+          IF lv_severity != awlrs_util.c_msg_cat_success
+           THEN
+              /*
+              ||If an error has ocured rescaling a group end the whole operation.
+              */
+              EXIT;
+              --
+          END IF;
+          --
+        END LOOP;
     END IF;
     /*
     ||If errors occurred rollback.

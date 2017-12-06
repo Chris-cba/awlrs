@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkh-arc   1.3   03 Feb 2017 10:38:06   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkh-arc   1.4   06 Dec 2017 18:23:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkh  $
-  --       Date into PVCS   : $Date:   03 Feb 2017 10:38:06  $
-  --       Date fetched Out : $Modtime:   03 Feb 2017 10:37:00  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   06 Dec 2017 18:23:20  $
+  --       Date fetched Out : $Modtime:   05 Dec 2017 18:19:36  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
   
   --
   -----------------------------------------------------------------------------
@@ -45,6 +45,7 @@ AS
                            ,pi_do_recalibrate           IN     VARCHAR2 DEFAULT 'N'
                            ,pi_recal_start_point        IN     NUMBER DEFAULT NULL
                            ,pi_recal_new_length_to_end  IN     NUMBER DEFAULT NULL
+                           ,pi_do_rescale_parents       IN     VARCHAR2 DEFAULT 'N'
                            ,pi_reason                   IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                            ,pi_effective_date           IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                            ,pi_run_checks               IN     VARCHAR2 DEFAULT 'Y'
