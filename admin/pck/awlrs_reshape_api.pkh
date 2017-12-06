@@ -1,0 +1,57 @@
+CREATE OR REPLACE PACKAGE awlrs_reshape_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkh-arc   1.4   06 Dec 2017 18:23:20   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_reshape_api.pkh  $
+  --       Date into PVCS   : $Date:   06 Dec 2017 18:23:20  $
+  --       Date fetched Out : $Modtime:   05 Dec 2017 18:19:36  $
+  --       Version          : $Revision:   1.4  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE reshape_element(pi_theme_name               IN     nm_themes_all.nth_theme_name%TYPE
+                           ,pi_ne_id                    IN     nm_elements_all.ne_id%TYPE
+                           ,pi_shape_wkt                IN     CLOB
+                           ,pi_do_replace               IN     VARCHAR2 DEFAULT 'N'
+                           ,pi_do_reclassify            IN     VARCHAR2 DEFAULT 'N'
+                           ,pi_new_element_column_names IN     awlrs_element_api.attrib_column_name_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_column_name_tab)
+                           ,pi_new_element_prompts      IN     awlrs_element_api.attrib_prompt_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_prompt_tab)
+                           ,pi_new_element_char_values  IN     awlrs_element_api.attrib_char_value_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_char_value_tab)
+                           ,pi_new_start_node           IN     nm_elements_all.ne_no_start%TYPE DEFAULT NULL
+                           ,pi_new_end_node             IN     nm_elements_all.ne_no_end%TYPE DEFAULT NULL
+                           ,pi_do_recalibrate           IN     VARCHAR2 DEFAULT 'N'
+                           ,pi_recal_start_point        IN     NUMBER DEFAULT NULL
+                           ,pi_recal_new_length_to_end  IN     NUMBER DEFAULT NULL
+                           ,pi_do_rescale_parents       IN     VARCHAR2 DEFAULT 'N'
+                           ,pi_reason                   IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
+                           ,pi_effective_date           IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                           ,pi_run_checks               IN     VARCHAR2 DEFAULT 'Y'
+                           ,po_new_ne_id                IN OUT nm_elements_all.ne_id%TYPE
+                           ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor              OUT sys_refcursor);
+
+END awlrs_reshape_api;
+/
