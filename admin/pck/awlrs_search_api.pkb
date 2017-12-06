@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.11   04 Dec 2017 16:21:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.12   06 Dec 2017 17:35:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   04 Dec 2017 16:21:46  $
-  --       Date fetched Out : $Modtime:   04 Dec 2017 13:20:50  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   06 Dec 2017 17:35:28  $
+  --       Date fetched Out : $Modtime:   06 Dec 2017 17:34:32  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -1347,11 +1347,13 @@ AS
                   --
                   get_admin_units(pi_admin_type  => lt_theme_types(1).admin_type
                                  ,po_cursor      => po_cursor);
+                  --
               ELSE
                   --
                   get_asset_domain(pi_asset_type  => lt_theme_types(1).asset_type
                                   ,pi_column_name => pi_column_name
                                   ,po_cursor      => po_cursor);
+                  --
               END IF;
               --
               awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -1361,11 +1363,18 @@ AS
               --
               IF pi_column_name = 'NO_NODE_TYPE'
                THEN
+                  --
                   get_node_types(po_cursor => po_cursor);
+                  --
+                  awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                                       ,po_cursor           => po_message_cursor);
+                  --
               ELSE
+                  --
                   hig.raise_ner(pi_appl => 'AWLRS'
                                ,pi_id   => 6
                                ,pi_supplementary_info => pi_theme_name);
+                  --
               END IF;
               --
         END CASE;
