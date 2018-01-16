@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.11   Nov 13 2017 15:07:14   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.12   16 Jan 2018 17:35:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Nov 13 2017 15:07:14  $
-  --       Date fetched Out : $Modtime:   Nov 13 2017 15:01:54  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   16 Jan 2018 17:35:50  $
+  --       Date fetched Out : $Modtime:   16 Jan 2018 17:33:12  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -906,7 +906,7 @@ AS
                   ,nt_type     element_network_type
                   ,nt_unique   element_network_type_unique
                   ,a.ntd_name  element_unique
-                  ,nm3unit.get_formatted_value(a.ntd_measure,un_unit_id) element_offset
+                  ,TO_NUMBER(nm3unit.get_formatted_value(a.ntd_measure,un_unit_id)) element_offset
                   ,nm3unit.convert_unit(1,un_unit_id,a.ntd_distance) distance_from_point
                   ,un_unit_name element_length_unit_name
               FROM themes
