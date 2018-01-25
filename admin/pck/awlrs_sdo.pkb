@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.12   16 Jan 2018 17:35:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.13   25 Jan 2018 17:20:18   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   16 Jan 2018 17:35:50  $
-  --       Date fetched Out : $Modtime:   16 Jan 2018 17:33:12  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   25 Jan 2018 17:20:18  $
+  --       Date fetched Out : $Modtime:   25 Jan 2018 17:04:34  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -871,6 +871,10 @@ AS
                          ,nth_tolerance
                          ,nt_type
                          ,nt_unique
+                         ,nlt_gty_type
+                         ,(SELECT ngt_descr
+                             FROM nm_group_types
+                            WHERE ngt_group_type = nlt_gty_type) ngt_descr
                          ,un_unit_id
                          ,un_unit_name
                      FROM nm_themes_all
@@ -896,6 +900,8 @@ AS
            element_id
           ,element_network_type
           ,element_network_type_unique
+          ,element_group_type
+          ,element_group_type_descr
           ,element_unique
           ,ne_descr element_description
           ,element_offset
@@ -905,6 +911,8 @@ AS
       FROM (SELECT a.ntd_pk_id element_id
                   ,nt_type     element_network_type
                   ,nt_unique   element_network_type_unique
+                  ,nlt_gty_type element_group_type
+                  ,ngt_descr      element_group_type_descr
                   ,a.ntd_name  element_unique
                   ,TO_NUMBER(nm3unit.get_formatted_value(a.ntd_measure,un_unit_id)) element_offset
                   ,nm3unit.convert_unit(1,un_unit_id,a.ntd_distance) distance_from_point
