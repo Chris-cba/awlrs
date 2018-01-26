@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.32   04 Dec 2017 16:17:02   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.33   26 Jan 2018 16:24:42   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   04 Dec 2017 16:17:02  $
-  --       Date fetched Out : $Modtime:   01 Dec 2017 16:59:38  $
-  --       Version          : $Revision:   1.32  $
+  --       Date into PVCS   : $Date:   26 Jan 2018 16:24:42  $
+  --       Date fetched Out : $Modtime:   26 Jan 2018 14:35:38  $
+  --       Version          : $Revision:   1.33  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.32  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.33  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -1360,9 +1360,12 @@ AS
     lv_marker_width         nm3type.max_varchar2;
     --
   BEGIN
-    --
-    lv_marker_fill := get_style_value(pi_style => pi_style
-                                     ,pi_field => ';fill:');
+    /*
+    ||The replace around pi_style below is to prevent picking
+    ||up the font-fill colour when the fill colour is not present.
+    */
+    lv_marker_fill := get_style_value(pi_style => REPLACE(pi_style,'font-fill:','')
+                                     ,pi_field => 'fill:');
     lv_marker_stroke := get_style_value(pi_style => pi_style
                                        ,pi_field => 'stroke:');
     lv_marker_stroke_width := get_style_value(pi_style => pi_style
