@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.33   26 Jan 2018 16:24:42   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.34   26 Jan 2018 16:52:26   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   26 Jan 2018 16:24:42  $
-  --       Date fetched Out : $Modtime:   26 Jan 2018 14:35:38  $
-  --       Version          : $Revision:   1.33  $
+  --       Date into PVCS   : $Date:   26 Jan 2018 16:52:26  $
+  --       Date fetched Out : $Modtime:   26 Jan 2018 16:46:14  $
+  --       Version          : $Revision:   1.34  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.33  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.34  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -118,6 +118,7 @@ AS
           ,nw_themes.node_type
           ,nw_themes.unit_id
           ,nith_nit_id asset_type
+          ,nit_category asset_category
           ,CASE WHEN nit_table_name IS NOT NULL THEN 'Y' ELSE 'N' END ft_asset_type
           ,nit_multiple_allowed multiple_locs_allowed
           ,nit_top top_of_hierarchy
@@ -2579,6 +2580,11 @@ AS
         IF lr_theme_types.asset_type IS NOT NULL
          THEN
             lv_layer_text := lv_layer_text||CHR(10)||'      "asset_type"                  "'||lr_theme_types.asset_type||'"';
+        END IF;
+        --
+        IF lr_theme_types.asset_category IS NOT NULL
+         THEN
+            lv_layer_text := lv_layer_text||CHR(10)||'      "asset_category"              "'||lr_theme_types.asset_category||'"';
         END IF;
         --
         IF lr_theme_types.asset_type IS NOT NULL
