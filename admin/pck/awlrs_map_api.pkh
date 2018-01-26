@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.14   04 Dec 2017 16:15:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.15   26 Jan 2018 16:52:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkh  $
-  --       Date into PVCS   : $Date:   04 Dec 2017 16:15:30  $
-  --       Date fetched Out : $Modtime:   30 Nov 2017 17:17:02  $
-  --       Version          : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   26 Jan 2018 16:52:28  $
+  --       Date fetched Out : $Modtime:   26 Jan 2018 16:38:32  $
+  --       Version          : $Revision:   1.15  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
   --
   TYPE theme_types_rec IS RECORD(admin_type                   nm_au_types.nat_admin_type%TYPE
                                 ,network_type                 nm_types.nt_type%TYPE
@@ -25,6 +25,7 @@ AS
                                 ,node_type                    nm_types.nt_node_type%TYPE
                                 ,unit_id                      nm_units.un_unit_id%TYPE
                                 ,asset_type                   nm_inv_types_all.nit_inv_type%TYPE
+                                ,asset_category               nm_inv_types_all.nit_category%TYPE
                                 ,ft_asset_type                VARCHAR2(1)
                                 ,multiple_locs_allowed        nm_inv_types_all.nit_multiple_allowed%TYPE
                                 ,top_of_hierarchy             nm_inv_types_all.nit_top%TYPE
