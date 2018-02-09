@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.28   Nov 08 2017 14:15:50   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.29   Feb 09 2018 15:49:18   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Nov 08 2017 14:15:50  $
-  --       Date fetched Out : $Modtime:   Nov 08 2017 11:14:46  $
-  --       Version          : $Revision:   1.28  $
+  --       Date into PVCS   : $Date:   Feb 09 2018 15:49:18  $
+  --       Date fetched Out : $Modtime:   Feb 07 2018 11:10:32  $
+  --       Version          : $Revision:   1.29  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.28  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.29  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -796,7 +796,6 @@ AS
     IS
     --
     lt_element_attribs  flex_attr_tab;
-    lr_iit_rec          nm_inv_items_all%ROWTYPE;
     --
     lv_iit_foreign_key nm_inv_items_all.iit_foreign_key%TYPE;
     --
@@ -864,16 +863,14 @@ AS
                    ,pi_global     => 'awlrs_asset_api.g_iit_rec'
                    ,pi_attributes => lt_element_attribs);
     --
-    lr_iit_rec := g_iit_rec;
-    --
     IF pi_xsp IS NOT NULL
      THEN
-        check_xsp_validate(pi_iit_ne_id  => lr_iit_rec.iit_ne_id
+        check_xsp_validate(pi_iit_ne_id  => g_iit_rec.iit_ne_id
                           ,pi_inv_type   => pi_asset_type
                           ,pi_iit_x_sect => pi_xsp);
     END IF;
     --
-    nm3ins.ins_iit_all(p_rec_iit_all => lr_iit_rec);
+    nm3ins.ins_iit_all(p_rec_iit_all => g_iit_rec);
     po_iit_ne_id := g_iit_rec.iit_ne_id;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -1561,25 +1558,19 @@ AS
      THEN
         IF lv_warning_code = nm3homo.get_contiguous_warning_const
          THEN
-            --contiguous warning
-            --hig.raise_ner(pi_appl => 'NET'
-            --             ,pi_id   => 95
-            --             ,pi_supplementary_info => '. This check has been done across the whole of this piece of Network.');
-          awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
-                                           ,pi_ner_id             => 95
-                                           ,pi_supplementary_info => '. This check has been done across the whole of this piece of Network.'
-                                           ,pi_category           => awlrs_util.c_msg_cat_warning
-                                           ,po_message_tab        => lt_messages);            
+           --contiguous warning
+           awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
+                                            ,pi_ner_id             => 95
+                                            ,pi_supplementary_info => '. This check has been done across the whole of this piece of Network.'
+                                            ,pi_category           => awlrs_util.c_msg_cat_warning
+                                            ,po_message_tab        => lt_messages);            
         ELSE
-            --unknown warning
-            --hig.raise_ner(pi_appl => 'NET'
-            --             ,pi_id   => 94
-            --             ,pi_supplementary_info => lv_warning_code);
-          awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
-                                           ,pi_ner_id             => 94
-                                           ,pi_supplementary_info => lv_warning_code
-                                           ,pi_category           => awlrs_util.c_msg_cat_warning
-                                           ,po_message_tab        => lt_messages);            
+           --unknown warning
+           awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
+                                            ,pi_ner_id             => 94
+                                            ,pi_supplementary_info => lv_warning_code
+                                            ,pi_category           => awlrs_util.c_msg_cat_warning
+                                            ,po_message_tab        => lt_messages);            
         END IF;
     END IF;
     --
@@ -1754,11 +1745,6 @@ AS
                       ,po_message_severity => po_message_severity
                       ,po_message_cursor   => po_message_cursor);
     --
-    --
-    --  awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-    --                                       ,po_cursor           => po_message_cursor);
-    --
-    --
   EXCEPTION
     WHEN others
      THEN
@@ -1913,24 +1899,18 @@ AS
         IF lv_warning_code = nm3homo.get_contiguous_warning_const
          THEN
             --contiguous warning
-            --hig.raise_ner(pi_appl => 'NET'
-            --             ,pi_id   => 95
-            --             ,pi_supplementary_info => '. This check has been done across the whole of this piece of Network.');
-          awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
-                                           ,pi_ner_id             => 95
-                                           ,pi_supplementary_info => '. This check has been done across the whole of this piece of Network.'
-                                           ,pi_category           => awlrs_util.c_msg_cat_warning
-                                           ,po_message_tab        => lt_messages);            
+           awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
+                                            ,pi_ner_id             => 95
+                                            ,pi_supplementary_info => '. This check has been done across the whole of this piece of Network.'
+                                            ,pi_category           => awlrs_util.c_msg_cat_warning
+                                            ,po_message_tab        => lt_messages);            
         ELSE
             --unknown warning
-            --hig.raise_ner(pi_appl => 'NET'
-            --             ,pi_id   => 94
-            --             ,pi_supplementary_info => lv_warning_code);
-          awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
-                                           ,pi_ner_id             => 94
-                                           ,pi_supplementary_info => lv_warning_code
-                                           ,pi_category           => awlrs_util.c_msg_cat_warning
-                                           ,po_message_tab        => lt_messages);            
+            awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
+                                             ,pi_ner_id             => 94
+                                             ,pi_supplementary_info => lv_warning_code
+                                             ,pi_category           => awlrs_util.c_msg_cat_warning
+                                             ,po_message_tab        => lt_messages);            
         END IF;
     END IF;
     --
@@ -1944,11 +1924,6 @@ AS
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                              ,po_cursor           => po_message_cursor);
     END IF;
-    --
-
-    
-    --awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-    --                                     ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN e_field_required
