@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.12   06 Dec 2017 17:35:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.13   09 Feb 2018 14:00:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   06 Dec 2017 17:35:28  $
-  --       Date fetched Out : $Modtime:   06 Dec 2017 17:34:32  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   09 Feb 2018 14:00:36  $
+  --       Date fetched Out : $Modtime:   09 Feb 2018 13:59:46  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -1629,8 +1629,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION execute_gaz_query(pi_ne_id   IN nm_elements_all.ne_id%TYPE
-                            ,pi_inv_type IN nm_inv_types_all.nit_inv_type%TYPE)
+  FUNCTION execute_gaz_query(pi_ne_id            IN nm_elements_all.ne_id%TYPE
+                            ,pi_inv_type         IN nm_inv_types_all.nit_inv_type%TYPE
+                            ,pi_include_enddated IN VARCHAR2 DEFAULT 'N')
     RETURN NUMBER IS
     --
     lv_job_id    NUMBER := nm3ddl.sequence_nextval('RTG_JOB_ID_SEQ');
@@ -1665,7 +1666,16 @@ AS
           ,'I'
           ,pi_inv_type);
     --
+    IF pi_include_enddated = 'Y'
+     THEN
+        nm3gaz_qry.g_use_date_based_views := FALSE;
+    ELSE
+        nm3gaz_qry.g_use_date_based_views := TRUE;
+    END IF;
+    --
     lv_query_id := nm3gaz_qry.perform_query (lv_job_id);
+    --
+    nm3gaz_qry.g_use_date_based_views := TRUE;
     --
     RETURN lv_query_id;
     --
@@ -2005,10 +2015,11 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE process_single_expression(pi_theme_types     IN     awlrs_map_api.theme_types_rec
-                                     ,pi_group_operation IN     VARCHAR2
-                                     ,pi_expression      IN     single_expression_rec
-                                     ,po_sql             IN OUT nm3type.max_varchar2)
+  PROCEDURE process_single_expression(pi_theme_types      IN     awlrs_map_api.theme_types_rec
+                                     ,pi_group_operation  IN     VARCHAR2
+                                     ,pi_expression       IN     single_expression_rec
+                                     ,pi_include_enddated IN     VARCHAR2 DEFAULT 'N'
+                                     ,po_sql              IN OUT nm3type.max_varchar2)
     IS
     --
     lv_datatype     VARCHAR2(106);
@@ -2173,8 +2184,9 @@ AS
        THEN
           --
           po_sql := po_sql||' '||lv_operation||' iit_ne_id IN(SELECT ngqi_item_id FROM nm_gaz_query_item_list WHERE ngqi_job_id = '
-                    ||execute_gaz_query(pi_ne_id    => awlrs_element_api.get_ne_id(pi_element_name => pi_expression.value1)
-                                       ,pi_inv_type => pi_theme_types.asset_type)
+                    ||execute_gaz_query(pi_ne_id            => awlrs_element_api.get_ne_id(pi_element_name => pi_expression.value1)
+                                       ,pi_inv_type         => pi_theme_types.asset_type
+                                       ,pi_include_enddated => pi_include_enddated)
                     ||')';
           --
       ELSE
@@ -2200,9 +2212,10 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE process_group_expression(pi_theme_types IN     awlrs_map_api.theme_types_rec
-                                    ,pi_expression  IN     group_expression_rec
-                                    ,po_sql         IN OUT nm3type.max_varchar2)
+  PROCEDURE process_group_expression(pi_theme_types      IN     awlrs_map_api.theme_types_rec
+                                    ,pi_expression       IN     group_expression_rec
+                                    ,pi_include_enddated IN     VARCHAR2 DEFAULT 'N'
+                                    ,po_sql              IN OUT nm3type.max_varchar2)
     IS
     --
     lv_open_bracket      VARCHAR2(1);
@@ -2229,10 +2242,11 @@ AS
               lv_group_expression := NULL;
           END IF;
           --
-          process_single_expression(pi_theme_types     => pi_theme_types
-                                   ,pi_group_operation => lv_group_expression
-                                   ,pi_expression      => lt_single_expression(j)
-                                   ,po_sql             => po_sql);
+          process_single_expression(pi_theme_types      => pi_theme_types
+                                   ,pi_group_operation  => lv_group_expression
+                                   ,pi_expression       => lt_single_expression(j)
+                                   ,pi_include_enddated => pi_include_enddated
+                                   ,po_sql              => po_sql);
           --
         END LOOP;
     END IF;
@@ -2266,9 +2280,10 @@ AS
               END IF;
               --
               po_sql := po_sql||lv_open_bracket;
-              process_group_expression(pi_theme_types => pi_theme_types
-                                      ,pi_expression  => lt_group_expression(i)
-                                      ,po_sql         => po_sql);
+              process_group_expression(pi_theme_types      => pi_theme_types
+                                      ,pi_expression       => lt_group_expression(i)
+                                      ,pi_include_enddated => pi_include_enddated
+                                      ,po_sql              => po_sql);
               po_sql := po_sql||lv_close_bracket;
               --
           END IF;
@@ -2282,8 +2297,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION generate_where_clause(pi_theme_types IN awlrs_map_api.theme_types_rec
-                                ,pi_criteria    IN XMLTYPE)
+  FUNCTION generate_where_clause(pi_theme_types      IN awlrs_map_api.theme_types_rec
+                                ,pi_criteria         IN XMLTYPE
+                                ,pi_include_enddated IN VARCHAR2 DEFAULT 'N')
     RETURN VARCHAR2 IS
     --
     lv_sql nm3type.max_varchar2;
@@ -2296,9 +2312,10 @@ AS
                                            ,pi_root => 'SearchCriteria/');
     --
     FOR i IN 1..lt_expressions.COUNT LOOP
-      process_group_expression(pi_theme_types => pi_theme_types
-                              ,pi_expression  => lt_expressions(i)
-                              ,po_sql         => lv_sql);
+      process_group_expression(pi_theme_types      => pi_theme_types
+                              ,pi_expression       => lt_expressions(i)
+                              ,pi_include_enddated => pi_include_enddated
+                              ,po_sql              => lv_sql);
     END LOOP;
     --
     RETURN NVL(LTRIM(lv_sql),'1=1');
@@ -4101,6 +4118,15 @@ AS
            ||CHR(10)||'                     ,iit_primary_key primary_key'
            ||CHR(10)||'                     ,iit_descr description'
            ||CHR(10)||'                     ,nau_name admin_unit'
+           ||CASE
+               WHEN pi_nit_rec.nit_x_sect_allow_flag = 'Y'
+                THEN CHR(10)||'                     ,iit_x_sect xsp'
+             END
+           ||CHR(10)||'                     ,iit_start_date start_date'
+           ||CASE
+               WHEN pi_include_enddated = 'Y'
+                THEN CHR(10)||'                     ,iit_end_date end_date'
+             END
                     ||pi_select_list
            ||CHR(10)||'                 FROM nm_inv_items_all iit'
            ||CHR(10)||'                     ,nm_admin_units_all nau'
@@ -4152,8 +4178,9 @@ AS
     /*
     ||Generate the where clause from the given criteria.
     */
-    lv_where := generate_where_clause(pi_theme_types => pi_theme_types
-                                     ,pi_criteria    => pi_criteria);
+    lv_where := generate_where_clause(pi_theme_types      => pi_theme_types
+                                     ,pi_criteria         => pi_criteria
+                                     ,pi_include_enddated => pi_include_enddated);
     --
     IF pi_max_rows IS NOT NULL
      THEN
@@ -4228,8 +4255,9 @@ AS
     /*
     ||Generate the where clause from the given criteria.
     */
-    lv_where := generate_where_clause(pi_theme_types => pi_theme_types
-                                     ,pi_criteria    => pi_criteria);
+    lv_where := generate_where_clause(pi_theme_types      => pi_theme_types
+                                     ,pi_criteria         => pi_criteria
+                                     ,pi_include_enddated => pi_include_enddated);
     --
     awlrs_util.gen_row_restriction(pi_index_column => 'ind'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
