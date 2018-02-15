@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.9   06 Dec 2017 18:23:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.10   Feb 15 2018 10:51:34   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkb  $
-  --       Date into PVCS   : $Date:   06 Dec 2017 18:23:20  $
-  --       Date fetched Out : $Modtime:   05 Dec 2017 18:19:38  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   Feb 15 2018 10:51:34  $
+  --       Date fetched Out : $Modtime:   Feb 14 2018 15:16:18  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reshape_api';
   --
@@ -382,7 +382,7 @@ AS
      AND pi_do_rescale_parents = 'Y'
      THEN
         --
-        OPEN  get_linear_groups(pi_ne_id);
+        OPEN  get_linear_groups(lv_ne_id);
         FETCH get_linear_groups
          BULK COLLECT
          INTO lt_groups;
