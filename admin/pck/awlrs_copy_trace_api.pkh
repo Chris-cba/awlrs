@@ -1,0 +1,101 @@
+CREATE OR REPLACE PACKAGE awlrs_copy_trace_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_copy_trace_api.pkh-arc   1.0   Feb 27 2018 12:40:00   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_copy_trace_api.pkh  $
+  --       Date into PVCS   : $Date:   Feb 27 2018 12:40:00  $
+  --       Date fetched Out : $Modtime:   Feb 19 2018 10:36:58  $
+  --       Version          : $Revision:   1.0  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION is_used_for_unique(pi_nt_type IN nm_types.nt_type%TYPE
+                             ,pi_column  IN nm_type_columns.ntc_column_name%TYPE)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_file_feature_map(pi_file_descr          IN     awlrs_file_feature_maps.affm_file_descr%TYPE
+                                ,pi_datum_nt            IN     awlrs_file_feature_maps.affm_datum_nt%TYPE
+                                ,po_file_feature_map_id IN OUT awlrs_file_feature_maps.affm_id%TYPE
+                                ,po_message_severity       OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor         OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_file_feature_maps(po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_group_attrib_map(pi_affm_id          IN  awlrs_file_feature_maps.affm_id%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_datum_attrib_map(pi_affm_id          IN  awlrs_file_feature_maps.affm_id%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_auto_inclusion_types(pi_datumn_nt        IN  nm_types.nt_type%TYPE
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_parent_ne_id(pi_parent_nt        IN  nm_elements.ne_nt_type%TYPE
+                            ,pi_ne_unique        IN  nm_elements.ne_unique%TYPE
+                            ,pi_ne_owner         IN  nm_elements.ne_owner%TYPE
+                            ,pi_ne_name_1        IN  nm_elements.ne_name_1%TYPE
+                            ,pi_ne_name_2        IN  nm_elements.ne_name_2%TYPE
+                            ,pi_ne_prefix        IN  nm_elements.ne_prefix%TYPE
+                            ,pi_ne_number        IN  nm_elements.ne_number%TYPE
+                            ,pi_ne_sub_type      IN  nm_elements.ne_sub_type%TYPE
+                            ,pi_ne_no_start      IN  nm_elements.ne_no_start%TYPE
+                            ,pi_ne_no_end        IN  nm_elements.ne_no_end%TYPE
+                            ,pi_ne_sub_class     IN  nm_elements.ne_sub_class%TYPE
+                            ,pi_ne_nsg_ref       IN  nm_elements.ne_nsg_ref%TYPE
+                            ,pi_ne_version_no    IN  nm_elements.ne_version_no%TYPE
+                            ,pi_ne_group         IN  nm_elements.ne_group%TYPE
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor);
+
+END awlrs_copy_trace_api;
+/
