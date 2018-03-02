@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_copy_trace_api.pkb-arc   1.1   Mar 02 2018 13:23:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_copy_trace_api.pkb-arc   1.2   Mar 02 2018 13:56:26   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_copy_trace_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 02 2018 13:23:14  $
-  --       Date fetched Out : $Modtime:   Mar 02 2018 13:21:36  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Mar 02 2018 13:56:26  $
+  --       Date fetched Out : $Modtime:   Mar 02 2018 13:55:42  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_copy_trace_api';
   --
@@ -272,6 +272,8 @@ AS
     OPEN po_cursor FOR
     SELECT nti_nw_parent_type parent_nt
           ,ngt_group_type     parent_gty
+          ,nti_parent_column  parent_column
+          ,nti_child_column   child_column
           ,nti_auto_create    auto_create
           ,nt_admin_type      admin_type
       FROM nm_type_inclusion
