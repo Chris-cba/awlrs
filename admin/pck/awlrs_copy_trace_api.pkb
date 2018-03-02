@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_copy_trace_api.pkb-arc   1.0   Feb 27 2018 12:39:56   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_copy_trace_api.pkb-arc   1.1   Mar 02 2018 13:23:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_copy_trace_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 27 2018 12:39:56  $
-  --       Date fetched Out : $Modtime:   Feb 19 2018 10:44:18  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Mar 02 2018 13:23:14  $
+  --       Date fetched Out : $Modtime:   Mar 02 2018 13:21:36  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_copy_trace_api';
   --
@@ -273,10 +273,13 @@ AS
     SELECT nti_nw_parent_type parent_nt
           ,ngt_group_type     parent_gty
           ,nti_auto_create    auto_create
+          ,nt_admin_type      admin_type
       FROM nm_type_inclusion
           ,nm_group_types
+          ,nm_types
      WHERE nti_nw_child_type = pi_datumn_nt
        AND nti_nw_parent_type = ngt_nt_type
+       AND ngt_nt_type = nt_type
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
