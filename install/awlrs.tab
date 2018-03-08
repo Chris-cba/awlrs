@@ -1,15 +1,43 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.6   10 May 2017 20:09:40   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.7   Mar 08 2018 17:32:14   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.tab  $
---       Date into PVCS   : $Date:   10 May 2017 20:09:40  $
---       Date fetched Out : $Modtime:   10 May 2017 19:54:46  $
---       Version          : $Revision:   1.6  $
+--       Date into PVCS   : $Date:   Mar 08 2018 17:32:14  $
+--       Date fetched Out : $Modtime:   Mar 08 2018 15:15:06  $
+--       Version          : $Revision:   1.7  $
 -------------------------------------------------------------------------
---   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Wed May 10  19:49:42 2017 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Thu Mar 08  14:20:08 2018 by Server Generator 10.1.2.9.28
+
+PROMPT Creating Table 'AWLRS_FILE_DATUM_ATTRIB_MAP'
+CREATE TABLE AWLRS_FILE_DATUM_ATTRIB_MAP
+ (AFDAM_ID NUMBER(38) NOT NULL
+ ,AFDAM_AFFM_ID NUMBER(38) NOT NULL
+ ,AFDAM_FILE_ATTRIB VARCHAR2(30) NOT NULL
+ ,AFDAM_TARGET_ATTRIB VARCHAR2(30) NOT NULL
+ )
+/
+
+PROMPT Creating Table 'AWLRS_FILE_FEATURE_MAPS'
+CREATE TABLE AWLRS_FILE_FEATURE_MAPS
+ (AFFM_ID NUMBER(38) NOT NULL
+ ,AFFM_FILE_DESCR VARCHAR2(200) NOT NULL
+ ,AFFM_DATUM_NT VARCHAR2(4) NOT NULL
+ )
+/
+
+PROMPT Creating Table 'AWLRS_FILE_GRP_ATTRIB_MAP'
+CREATE TABLE AWLRS_FILE_GRP_ATTRIB_MAP
+ (AFGAM_ID NUMBER(38) NOT NULL
+ ,AFGAM_AFFM_ID NUMBER(38) NOT NULL
+ ,AFGAM_TARGET_NT VARCHAR2(4) NOT NULL
+ ,AFGAM_TARGET_GTY VARCHAR2(4) NOT NULL
+ ,AFGAM_FILE_ATTRIB VARCHAR2(30) NOT NULL
+ ,AFGAM_TARGET_ATTRIB VARCHAR2(30) NOT NULL
+ )
+/
 
 PROMPT Creating Table 'AWLRS_PERSISTENCE'
 CREATE TABLE AWLRS_PERSISTENCE

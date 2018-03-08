@@ -1,15 +1,40 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.ind-arc   1.4   04 May 2017 11:24:06   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.ind-arc   1.5   Mar 08 2018 17:32:14   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.ind  $
---       Date into PVCS   : $Date:   04 May 2017 11:24:06  $
---       Date fetched Out : $Modtime:   04 May 2017 11:21:28  $
---       Version          : $Revision:   1.4  $
+--       Date into PVCS   : $Date:   Mar 08 2018 17:32:14  $
+--       Date fetched Out : $Modtime:   Mar 08 2018 15:13:30  $
+--       Version          : $Revision:   1.5  $
 -------------------------------------------------------------------------
---   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Thu May 04  11:01:23 2017 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Thu Mar 08  14:20:08 2018 by Server Generator 10.1.2.9.28
+
+PROMPT Creating Index 'AFDAM_FK_AFFM_IND'
+CREATE INDEX AFDAM_FK_AFFM_IND ON AWLRS_FILE_DATUM_ATTRIB_MAP
+ (AFDAM_AFFM_ID)
+/
+
+PROMPT Creating Index 'AFFM_FK_NT_IND'
+CREATE INDEX AFFM_FK_NT_IND ON AWLRS_FILE_FEATURE_MAPS
+ (AFFM_DATUM_NT)
+/
+
+PROMPT Creating Index 'AFGAM_FK_AFFM_IND'
+CREATE INDEX AFGAM_FK_AFFM_IND ON AWLRS_FILE_GRP_ATTRIB_MAP
+ (AFGAM_AFFM_ID)
+/
+
+PROMPT Creating Index 'AFGAM_FK_NGT_IND'
+CREATE INDEX AFGAM_FK_NGT_IND ON AWLRS_FILE_GRP_ATTRIB_MAP
+ (AFGAM_TARGET_GTY)
+/
+
+PROMPT Creating Index 'AFGAM_FK_NT_IND'
+CREATE INDEX AFGAM_FK_NT_IND ON AWLRS_FILE_GRP_ATTRIB_MAP
+ (AFGAM_TARGET_NT)
+/
 
 PROMPT Creating Index 'AP_FK_HUS_IND'
 CREATE INDEX AP_FK_HUS_IND ON AWLRS_PERSISTENCE

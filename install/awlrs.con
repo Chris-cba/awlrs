@@ -1,15 +1,33 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.7   10 May 2017 20:05:48   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.8   Mar 08 2018 17:32:14   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.con  $
---       Date into PVCS   : $Date:   10 May 2017 20:05:48  $
---       Date fetched Out : $Modtime:   10 May 2017 20:04:30  $
---       Version          : $Revision:   1.7  $
+--       Date into PVCS   : $Date:   Mar 08 2018 17:32:14  $
+--       Date fetched Out : $Modtime:   Mar 08 2018 15:13:12  $
+--       Version          : $Revision:   1.8  $
 -------------------------------------------------------------------------
---   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Wed May 10  20:02:46 2017 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Thu Mar 08  14:20:08 2018 by Server Generator 10.1.2.9.28
+  
+PROMPT Creating Primary Key on 'AWLRS_FILE_DATUM_ATTRIB_MAP'
+ALTER TABLE AWLRS_FILE_DATUM_ATTRIB_MAP
+ ADD (CONSTRAINT AFDAM_PK PRIMARY KEY 
+  (AFDAM_ID))
+/
+
+PROMPT Creating Primary Key on 'AWLRS_FILE_FEATURE_MAPS'
+ALTER TABLE AWLRS_FILE_FEATURE_MAPS
+ ADD (CONSTRAINT AFFM_PK PRIMARY KEY 
+  (AFFM_ID))
+/
+
+PROMPT Creating Primary Key on 'AWLRS_FILE_GRP_ATTRIB_MAP'
+ALTER TABLE AWLRS_FILE_GRP_ATTRIB_MAP
+ ADD (CONSTRAINT AFGAM_PK PRIMARY KEY 
+  (AFGAM_ID))
+/
 
 PROMPT Creating Primary Key on 'AWLRS_PERSISTENCE'
 ALTER TABLE AWLRS_PERSISTENCE
@@ -67,7 +85,42 @@ ALTER TABLE AWLRS_SAVED_SEARCH_CRITERIA
   ,ASSC_NAME))
 /
 
-    
+       
+
+PROMPT Creating Foreign Key on 'AWLRS_FILE_DATUM_ATTRIB_MAP'
+ALTER TABLE AWLRS_FILE_DATUM_ATTRIB_MAP ADD (CONSTRAINT
+ AFDAM_FK_AFFM FOREIGN KEY 
+  (AFDAM_AFFM_ID) REFERENCES AWLRS_FILE_FEATURE_MAPS
+  (AFFM_ID) ON DELETE CASCADE)
+/
+
+PROMPT Creating Foreign Key on 'AWLRS_FILE_FEATURE_MAPS'
+ALTER TABLE AWLRS_FILE_FEATURE_MAPS ADD (CONSTRAINT
+ AFFM_FK_NT FOREIGN KEY 
+  (AFFM_DATUM_NT) REFERENCES NM_TYPES
+  (NT_TYPE) ON DELETE CASCADE)
+/
+
+PROMPT Creating Foreign Key on 'AWLRS_FILE_GRP_ATTRIB_MAP'
+ALTER TABLE AWLRS_FILE_GRP_ATTRIB_MAP ADD (CONSTRAINT
+ AFGAM_FK_AFFM FOREIGN KEY 
+  (AFGAM_AFFM_ID) REFERENCES AWLRS_FILE_FEATURE_MAPS
+  (AFFM_ID) ON DELETE CASCADE)
+/
+
+PROMPT Creating Foreign Key on 'AWLRS_FILE_GRP_ATTRIB_MAP'
+ALTER TABLE AWLRS_FILE_GRP_ATTRIB_MAP ADD (CONSTRAINT
+ AFGAM_FK_NGT FOREIGN KEY 
+  (AFGAM_TARGET_GTY) REFERENCES NM_GROUP_TYPES_ALL
+  (NGT_GROUP_TYPE) ON DELETE CASCADE)
+/
+
+PROMPT Creating Foreign Key on 'AWLRS_FILE_GRP_ATTRIB_MAP'
+ALTER TABLE AWLRS_FILE_GRP_ATTRIB_MAP ADD (CONSTRAINT
+ AFGAM_FK_NT FOREIGN KEY 
+  (AFGAM_TARGET_NT) REFERENCES NM_TYPES
+  (NT_TYPE) ON DELETE CASCADE)
+/
 
 PROMPT Creating Foreign Key on 'AWLRS_PERSISTENCE'
 ALTER TABLE AWLRS_PERSISTENCE ADD (CONSTRAINT

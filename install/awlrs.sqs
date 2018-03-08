@@ -1,16 +1,37 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.sqs-arc   1.3   04 May 2017 11:24:10   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.sqs-arc   1.4   Mar 08 2018 17:32:14   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.sqs  $
---       Date into PVCS   : $Date:   04 May 2017 11:24:10  $
---       Date fetched Out : $Modtime:   04 May 2017 11:21:38  $
---       Version          : $Revision:   1.3  $
+--       Date into PVCS   : $Date:   Mar 08 2018 17:32:14  $
+--       Date fetched Out : $Modtime:   Mar 08 2018 15:14:18  $
+--       Version          : $Revision:   1.4  $
 -------------------------------------------------------------------------
---   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Thu May 04  11:01:23 2017 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Thu Mar 08  14:20:08 2018 by Server Generator 10.1.2.9.28
  
+PROMPT Creating Sequence 'AFDAM_ID_SEQ'
+CREATE SEQUENCE AFDAM_ID_SEQ
+ NOMAXVALUE
+ NOMINVALUE
+ NOCYCLE
+/
+
+PROMPT Creating Sequence 'AFFM_ID_SEQ'
+CREATE SEQUENCE AFFM_ID_SEQ
+ NOMAXVALUE
+ NOMINVALUE
+ NOCYCLE
+/
+
+PROMPT Creating Sequence 'AFGAM_ID_SEQ'
+CREATE SEQUENCE AFGAM_ID_SEQ
+ NOMAXVALUE
+ NOMINVALUE
+ NOCYCLE
+/
+
 PROMPT Creating Sequence 'AP_ID_SEQ'
 CREATE SEQUENCE AP_ID_SEQ
  INCREMENT BY 1
