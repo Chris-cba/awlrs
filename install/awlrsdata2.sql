@@ -1,19 +1,19 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.11   Aug 07 2017 14:06:08   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.12   Mar 08 2018 17:43:44   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Aug 07 2017 14:06:08  $
---       Date fetched Out : $Modtime:   Aug 07 2017 13:56:56  $
---       Version          : $Revision:   1.11  $
+--       Date into PVCS   : $Date:   Mar 08 2018 17:43:44  $
+--       Date fetched Out : $Modtime:   Mar 08 2018 12:21:24  $
+--       Version          : $Revision:   1.12  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 07-AUG-2017 13:56
+--       Generation Date  : 08-MAR-2018 12:21
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
 --
 -------------------------------------------------------------------------
---   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
 --
 --   TABLES PROCESSED

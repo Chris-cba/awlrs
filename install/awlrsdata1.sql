@@ -1,19 +1,19 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.9   15 Jun 2017 21:45:48   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.10   Mar 08 2018 17:43:44   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   15 Jun 2017 21:45:48  $
---       Date fetched Out : $Modtime:   15 Jun 2017 21:42:50  $
---       Version          : $Revision:   1.9  $
+--       Date into PVCS   : $Date:   Mar 08 2018 17:43:44  $
+--       Date fetched Out : $Modtime:   Mar 08 2018 12:21:24  $
+--       Version          : $Revision:   1.10  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 15-JUN-2017 21:42
+--       Generation Date  : 08-MAR-2018 12:21
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
 --
 -------------------------------------------------------------------------
---   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
 --
 --   TABLES PROCESSED
@@ -312,6 +312,54 @@ SELECT 'AWLUIDBUG'
 SET TERM ON
 PROMPT hig_sequence_associations
 SET TERM OFF
+--
+INSERT
+  INTO HIG_SEQUENCE_ASSOCIATIONS
+      (HSA_TABLE_NAME
+      ,HSA_COLUMN_NAME
+      ,HSA_SEQUENCE_NAME
+      ,HSA_LAST_REBUILD_DATE)
+SELECT 'AWLRS_FILE_DATUM_ATTRIB_MAP'
+      ,'AFDAM_ID'
+      ,'AFDAM_ID_SEQ'
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_SEQUENCE_ASSOCIATIONS
+                   WHERE HSA_TABLE_NAME = 'AWLRS_FILE_DATUM_ATTRIB_MAP'
+                     AND HSA_COLUMN_NAME = 'AFDAM_ID');
+--
+INSERT
+  INTO HIG_SEQUENCE_ASSOCIATIONS
+      (HSA_TABLE_NAME
+      ,HSA_COLUMN_NAME
+      ,HSA_SEQUENCE_NAME
+      ,HSA_LAST_REBUILD_DATE)
+SELECT 'AWLRS_FILE_FEATURE_MAP'
+      ,'AFFM_ID'
+      ,'AFFM_ID_SEQ'
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_SEQUENCE_ASSOCIATIONS
+                   WHERE HSA_TABLE_NAME = 'AWLRS_FILE_FEATURE_MAP'
+                     AND HSA_COLUMN_NAME = 'AFFM_ID');
+--
+INSERT
+  INTO HIG_SEQUENCE_ASSOCIATIONS
+      (HSA_TABLE_NAME
+      ,HSA_COLUMN_NAME
+      ,HSA_SEQUENCE_NAME
+      ,HSA_LAST_REBUILD_DATE)
+SELECT 'AWLRS_FILE_GRP_ATTRIB_MAP'
+      ,'AFGAM_ID'
+      ,'AFGAM_ID_SEQ'
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_SEQUENCE_ASSOCIATIONS
+                   WHERE HSA_TABLE_NAME = 'AWLRS_FILE_GRP_ATTRIB_MAP'
+                     AND HSA_COLUMN_NAME = 'AFGAM_ID');
 --
 INSERT
   INTO HIG_SEQUENCE_ASSOCIATIONS
