@@ -3,11 +3,11 @@
 --
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1009_awlrs1010_upg.sql-arc   1.0   Mar 08 2018 17:49:04   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1009_awlrs1010_upg.sql-arc   1.1   Mar 09 2018 15:51:34   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrs1009_awlrs1010_upg.sql  $
---       Date into PVCS   : $Date:   Mar 08 2018 17:49:04  $
---       Date fetched Out : $Modtime:   Mar 07 2018 17:03:10  $
---       Version          : $Revision:   1.0  $
+--       Date into PVCS   : $Date:   Mar 09 2018 15:51:34  $
+--       Date fetched Out : $Modtime:   Mar 09 2018 15:51:10  $
+--       Version          : $Revision:   1.1  $
 --
 --   Product upgrade script
 --
@@ -61,27 +61,6 @@ FROM dual
 SET FEEDBACK ON
 start &&run_file
 SET FEEDBACK OFF
---
----------------------------------------------------------------------------------------------------
---                        **************** VIEWS   ****************
-SET TERM ON
-PROMPT Views...
-SET TERM OFF
-SET DEFINE ON
-SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||
-        '&terminator'||'views'||'&terminator'||'awlrsviews.sql' run_file
-FROM dual
-/
-SET FEEDBACK ON
-start &&run_file
-SET FEEDBACK OFF
---
----------------------------------------------------------------------------------------------------
---                        **************** TRIGGERS   ****************
---
----------------------------------------------------------------------------------------------------
---                        **************** APPLICATION CONTEXTS ****************
---
 --
 ---------------------------------------------------------------------------------------------------
 --                  **************** PACKAGE HEADERS AND BODIES   ****************
