@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.13   25 Jan 2018 17:20:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.14   Apr 06 2018 17:51:34   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   25 Jan 2018 17:20:18  $
-  --       Date fetched Out : $Modtime:   25 Jan 2018 17:04:34  $
-  --       Version          : $Revision:   1.13  $
+  --       Date into PVCS   : $Date:   Apr 06 2018 17:51:34  $
+  --       Date fetched Out : $Modtime:   Mar 26 2018 14:09:52  $
+  --       Version          : $Revision:   1.14  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -104,6 +104,80 @@ AS
      THEN
         RAISE;
   END get_end_x_y;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_esu_id(pi_shape        IN mdsys.sdo_geometry
+                     ,pi_displacement IN NUMBER DEFAULT NULL)
+    RETURN VARCHAR2 IS
+    --
+    lv_mid_x      NUMBER;
+    lv_mid_y      NUMBER;
+    lv_esuid      VARCHAR2(30);
+    --
+    null_shape    EXCEPTION;
+    disp_too_big  EXCEPTION;
+    no_mid_point  EXCEPTION;
+    --
+  BEGIN
+    --
+    IF pi_shape IS NOT NULL
+     THEN
+        --
+        BEGIN
+          --
+          IF pi_displacement IS NULL
+           THEN
+              --
+              SELECT t.x
+                    ,t.y
+                INTO lv_mid_x
+                    ,lv_mid_y           
+                FROM TABLE(sdo_util.getvertices(sdo_lrs.locate_pt(pi_shape,sdo_lrs.geom_segment_end_measure(pi_shape)/2,0))) t
+                   ;
+              --
+          ELSE
+              --make sure the displacement is not greater than half the length
+              IF ABS(pi_displacement) <= 0.5 * (sdo_lrs.geom_segment_end_measure(pi_shape))
+               THEN
+                  --
+                  SELECT t.x
+                        ,t.y
+                    INTO lv_mid_x
+                        ,lv_mid_y           
+                    FROM TABLE(sdo_util.getvertices(sdo_lrs.locate_pt(pi_shape,(sdo_lrs.geom_segment_end_measure(pi_shape)/2) + pi_displacement,0))) t
+                       ;
+                  --
+              ELSE
+                  --
+                  hig.raise_ner(pi_appl => nm3type.c_nsg
+                               ,pi_id   => 17);
+                  --
+              END IF;
+              --
+          END IF;
+          --  
+          lv_esuid := TO_CHAR(lv_mid_x,'0000000')||TO_CHAR(lv_mid_y,'0000000');
+          lv_esuid := REPLACE(lv_esuid,' ','');
+          --
+        EXCEPTION
+          WHEN no_data_found
+           THEN
+              hig.raise_ner(pi_appl => nm3type.c_nsg
+                           ,pi_id   => 16);
+        END;
+        --
+    ELSE
+        --
+        hig.raise_ner(pi_appl => nm3type.c_nsg
+                     ,pi_id   => 15);
+        --
+    END IF;
+    --
+    RETURN lv_esuid;
+    --
+  END get_esu_id;
 
   --
   -----------------------------------------------------------------------------
@@ -825,7 +899,7 @@ AS
     
     OPEN po_cursor FOR 'WITH element_shape AS(SELECT '||lr_theme.nth_feature_shape_column||' geom'
             ||CHR(10)||'                        FROM '||lr_theme.nth_feature_table
-            ||CHR(10)||'                       WHERE '||lr_theme.nth_pk_column||' = :pi_ne_id)'
+            ||CHR(10)||'                       WHERE '||lr_theme.nth_feature_pk_column||' = :pi_ne_id)'--            ||CHR(10)||'                       WHERE '||lr_theme.nth_pk_column||' = :pi_ne_id)'
             ||CHR(10)||'SELECT a.id'
             ||CHR(10)||'      ,a.x x ' 
             ||CHR(10)||'      ,a.y y ' 
