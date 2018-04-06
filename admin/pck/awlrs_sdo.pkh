@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.4   26 Sep 2017 14:09:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.5   Apr 06 2018 17:49:52   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkh  $
-  --       Date into PVCS   : $Date:   26 Sep 2017 14:09:44  $
-  --       Date fetched Out : $Modtime:   25 Sep 2017 11:42:48  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   Apr 06 2018 17:49:52  $
+  --       Date fetched Out : $Modtime:   Mar 16 2018 15:20:04  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
   --
   TYPE gtype_rec IS RECORD(theme_id  nm_theme_gtypes.ntg_theme_id%TYPE
                           ,gtype     nm_theme_gtypes.ntg_gtype%TYPE);
@@ -67,6 +67,13 @@ AS
   PROCEDURE get_end_x_y(pi_shape IN  mdsys.sdo_geometry
                        ,po_x     OUT NUMBER
                        ,po_y     OUT NUMBER);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_esu_id(pi_shape        IN mdsys.sdo_geometry
+                     ,pi_displacement IN NUMBER DEFAULT NULL)
+    RETURN VARCHAR2;
 
   --
   -----------------------------------------------------------------------------
