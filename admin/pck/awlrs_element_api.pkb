@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.27   19 Jun 2017 10:17:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.28   Apr 06 2018 17:49:12   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   19 Jun 2017 10:17:18  $
-  --       Date fetched Out : $Modtime:   19 Jun 2017 10:15:52  $
-  --       Version          : $Revision:   1.27  $
+  --       Date into PVCS   : $Date:   Apr 06 2018 17:49:12  $
+  --       Date fetched Out : $Modtime:   Mar 26 2018 16:29:14  $
+  --       Version          : $Revision:   1.28  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.27  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.28  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1781,6 +1781,7 @@ AS
     lv_prim_ad_type    nm_inv_types_all.nit_inv_type%TYPE;
     lv_severity        hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
     lv_message_cursor  sys_refcursor;
+    lv_esu_id          nm_elements_all.ne_name_1%TYPE;    
     --
     lr_ne  nm_elements_all%ROWTYPE;
     lr_nt  nm_types%ROWTYPE;
@@ -1848,6 +1849,17 @@ AS
         lv_shape := awlrs_sdo.wkt_to_sdo_geom(pi_theme_name => pi_theme_name
                                              ,pi_shape      => pi_shape_wkt);
         --
+    END IF;
+    /*
+    ||If working with an ESU get the ESU ID.
+    */
+    IF lv_shape IS NOT NULL
+     AND lr_ne.ne_nt_type = 'ESU'
+     THEN
+        lv_esu_id := awlrs_sdo.get_esu_id(pi_shape        => lv_shape
+                                         ,pi_displacement => hig.get_sysopt('NSGDISP'));
+        lr_ne.ne_name_1 := lv_esu_id;
+        lr_ne.ne_descr := lv_esu_id;
     END IF;
     /*
     ||Create Nodes if needed.
