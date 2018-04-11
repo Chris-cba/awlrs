@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_recalibrate_api.pkb-arc   1.3   05 Dec 2017 15:45:58   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_recalibrate_api.pkb-arc   1.4   Apr 11 2018 14:57:10   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_recalibrate_api.pkb  $
-  --       Date into PVCS   : $Date:   05 Dec 2017 15:45:58  $
-  --       Date fetched Out : $Modtime:   05 Dec 2017 15:45:14  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   Apr 11 2018 14:57:10  $
+  --       Date fetched Out : $Modtime:   Apr 11 2018 13:53:56  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_recalibrate_api';
   --
@@ -147,7 +147,7 @@ AS
     CURSOR get_linear_groups(cp_ne_id nm_elements_all.ne_id%TYPE)
         IS
     SELECT nm_ne_id_in group_id
-          ,nm3net.get_min_slk(pi_ne_id => nm_ne_id_in) min_slk
+          ,nvl(nm3net.get_min_slk(pi_ne_id => nm_ne_id_in),0) min_slk
       FROM nm_members 
      WHERE nm_ne_id_of = cp_ne_id
        AND nm_obj_type IN(SELECT ngt_group_type

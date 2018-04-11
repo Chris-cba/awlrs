@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.10   Feb 15 2018 10:51:34   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.11   Apr 11 2018 14:57:10   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 15 2018 10:51:34  $
-  --       Date fetched Out : $Modtime:   Feb 14 2018 15:16:18  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   Apr 11 2018 14:57:10  $
+  --       Date fetched Out : $Modtime:   Apr 11 2018 12:19:56  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reshape_api';
   --
@@ -288,7 +288,7 @@ AS
     CURSOR get_linear_groups(cp_ne_id IN nm_elements_all.ne_id%TYPE)
         IS
     SELECT nm_ne_id_in group_id
-          ,nm3net.get_min_slk(pi_ne_id => nm_ne_id_in) min_slk
+          ,nvl(nm3net.get_min_slk(pi_ne_id => nm_ne_id_in),0) min_slk
       FROM nm_members 
      WHERE nm_ne_id_of = cp_ne_id
        AND nm_obj_type IN(SELECT ngt_group_type
