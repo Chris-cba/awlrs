@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.13   09 Feb 2018 14:00:36   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.14   May 03 2018 13:08:26   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   09 Feb 2018 14:00:36  $
-  --       Date fetched Out : $Modtime:   09 Feb 2018 13:59:46  $
-  --       Version          : $Revision:   1.13  $
+  --       Date into PVCS   : $Date:   May 03 2018 13:08:26  $
+  --       Date fetched Out : $Modtime:   Apr 19 2018 13:21:48  $
+  --       Version          : $Revision:   1.14  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.14  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -2408,8 +2408,9 @@ AS
                                         ,po_select_list IN OUT VARCHAR2)
     IS
     --
-    lv_prompt  nm_type_columns.ntc_prompt%TYPE;
-    lv_sql     nm3type.max_varchar2;
+    lv_prompt   nm_type_columns.ntc_prompt%TYPE;
+    lv_sql      nm3type.max_varchar2;
+    lv_flx_sql  nm3type.max_varchar2;
     --
     TYPE ntc_rec IS RECORD(ntc_column_name  nm_type_columns.ntc_column_name%TYPE
                           ,ntc_prompt       nm_type_columns.ntc_prompt%TYPE);
@@ -2435,13 +2436,15 @@ AS
       --
       lv_prompt := LOWER(REPLACE(REPLACE(REPLACE(lt_ntc(i).ntc_prompt,'.',''),'"',''),' ','_'));
       --
-      IF awlrs_element_api.get_domain_sql_with_bind(pi_nt_type     => pi_nt_type
-                                                   ,pi_column_name => lt_ntc(i).ntc_column_name) IS NOT NULL
+      lv_flx_sql := awlrs_element_api.get_domain_sql_with_bind(pi_nt_type     => pi_nt_type
+                                                              ,pi_column_name => lt_ntc(i).ntc_column_name);
+      --
+      IF lv_flx_sql IS NOT NULL
        THEN
           --
           awlrs_element_api.gen_domain_sql(pi_nt_type     => pi_nt_type
                                           ,pi_column_name => lt_ntc(i).ntc_column_name
-                                          ,pi_bind_value  => NULL
+                                          ,pi_bind_value  => REPLACE(nm3flx.extract_bind_variable(lv_flx_sql),':',NULL)
                                           ,pi_ordered     => FALSE
                                           ,po_sql         => lv_sql);
           lv_sql := '(SELECT meaning FROM ('||lv_sql||') WHERE code = '||lt_ntc(i).ntc_column_name||')';
