@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.5   Apr 06 2018 17:49:52   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.6   May 08 2018 20:51:46   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkh  $
-  --       Date into PVCS   : $Date:   Apr 06 2018 17:49:52  $
-  --       Date fetched Out : $Modtime:   Mar 16 2018 15:20:04  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   May 08 2018 20:51:46  $
+  --       Date fetched Out : $Modtime:   May 08 2018 11:03:00  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
   --
   TYPE gtype_rec IS RECORD(theme_id  nm_theme_gtypes.ntg_theme_id%TYPE
                           ,gtype     nm_theme_gtypes.ntg_gtype%TYPE);
@@ -42,14 +42,33 @@ AS
                                             ,snapped_x          NUMBER
                                             ,snapped_y          NUMBER);
   TYPE snap_to_network_results_tab IS TABLE OF snap_to_network_results_rec INDEX BY BINARY_INTEGER;
+  /*
+  ||The ne_unique column in the record below is based upon ne_name_1
+  ||because AWLRS has to work with the NGS Network Elements and the 
+  ||column that stores the user recognisable identifier could therefore
+  ||be ne_unique, ne_number or ne_name_1, ne_name_1 being the largest column.
+  */
+  TYPE path_results_rec IS RECORD(ne_id              nm_elements_all.ne_id%TYPE
+                                 ,ne_unique          nm_elements_all.ne_name_1%TYPE
+                                 ,ne_descr           nm_elements_all.ne_descr%TYPE
+                                 ,ne_nt_type         nm_types.nt_type%TYPE
+                                 ,ne_gty_group_type  nm_elements_all.ne_gty_group_type%TYPE
+                                 ,ne_type            nm_elements_all.ne_type%TYPE
+                                 ,from_offset        NUMBER
+                                 ,to_offset          NUMBER
+                                 ,unit_id            nm_units.un_unit_id%TYPE
+                                 ,unit_name          nm_units.un_unit_name%TYPE
+                                 ,geom_wkt           CLOB
+                                 ,admin_unit         nm_admin_units_all.nau_name%TYPE);
+  TYPE path_results_tab IS TABLE OF path_results_rec INDEX BY BINARY_INTEGER;
   --
-  -----------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   --
   FUNCTION get_version
     RETURN VARCHAR2;
 
   --
-  -----------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   --
   FUNCTION get_body_version
     RETURN VARCHAR2;
@@ -76,13 +95,13 @@ AS
     RETURN VARCHAR2;
 
   --
-  -----------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   --
   FUNCTION get_gtypes(pi_theme_id IN nm_themes_all.nth_theme_id%TYPE)
     RETURN gtype_tab;
 
   --
-  -----------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   --
   FUNCTION get_gtypes(pi_theme_name IN nm_themes_all.nth_theme_name%TYPE)
     RETURN gtype_tab;
@@ -94,20 +113,20 @@ AS
     RETURN CLOB;
 
   --
-  -----------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   --
   FUNCTION wkt_to_sdo_geom(pi_theme_name IN nm_themes_all.nth_theme_name%TYPE
                           ,pi_shape      IN CLOB)
     RETURN mdsys.sdo_geometry;
 
   --
-  -----------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   --
   FUNCTION get_theme_extent(pi_theme_id IN nm_themes_all.nth_theme_id%TYPE)
     RETURN extent_rec;
 
   --
-  -----------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   --
   FUNCTION snap_to_network(pi_x             IN NUMBER
                           ,pi_y             IN NUMBER
@@ -116,7 +135,7 @@ AS
     RETURN snap_to_network_results_tab;
 
   --
-  -----------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   --
   PROCEDURE snap_to_network(pi_x                IN  NUMBER
                            ,pi_y                IN  NUMBER
@@ -127,7 +146,7 @@ AS
                            ,po_cursor           OUT sys_refcursor);
 
   --
-  -----------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   --
   PROCEDURE snap_asset_to_network(pi_x                IN  NUMBER
                                  ,pi_y                IN  NUMBER
@@ -185,7 +204,7 @@ AS
                                 ,po_cursor           OUT sys_refcursor);
 
   --
-  -----------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   --
   PROCEDURE get_linear_elements_at_point(pi_x                IN  NUMBER
                                         ,pi_y                IN  NUMBER
@@ -194,7 +213,15 @@ AS
                                         ,po_cursor           OUT sys_refcursor);
 
   --
-  -----------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_location_geometry_wkt(pi_element_id  IN nm_elements_all.ne_id%TYPE
+                                    ,pi_from_offset IN NUMBER
+                                    ,pi_to_offset   IN NUMBER)
+    RETURN CLOB;
+
+  --
+  ------------------------------------------------------------------------------
   --
   PROCEDURE get_location_geometry_wkt(pi_element_id       IN  nm_elements_all.ne_id%TYPE
                                      ,pi_from_offset      IN  NUMBER
@@ -203,8 +230,57 @@ AS
                                      ,po_message_cursor   OUT sys_refcursor
                                      ,po_cursor           OUT sys_refcursor);
 
---
-------------------------------------------------------------------------------
---
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE create_path(pi_theme_name           IN  nm_themes_all.nth_theme_name%TYPE
+                       ,pi_start_x              IN  nm_elements_all.ne_id%TYPE
+                       ,pi_start_y              IN  NUMBER
+                       ,pi_end_x                IN  nm_elements_all.ne_id%TYPE
+                       ,pi_end_y                IN  NUMBER
+                       ,pi_buffer_perc          IN  NUMBER DEFAULT NULL
+                       ,pi_min_buffer           IN  NUMBER DEFAULT NULL
+                       ,pi_restrict_to_ne_id    IN  nm_elements_all.ne_id%TYPE DEFAULT NULL
+                       ,pi_return_datums        IN  VARCHAR2 DEFAULT 'Y'
+                       ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor       OUT sys_refcursor
+                       ,po_cursor               OUT sys_refcursor);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE create_path(pi_theme_name           IN  nm_themes_all.nth_theme_name%TYPE
+                       ,pi_start_element_id     IN  nm_elements_all.ne_id%TYPE
+                       ,pi_start_element_offset IN  NUMBER
+                       ,pi_end_element_id       IN  nm_elements_all.ne_id%TYPE
+                       ,pi_end_element_offset   IN  NUMBER
+                       ,pi_buffer_perc          IN  NUMBER DEFAULT NULL
+                       ,pi_min_buffer           IN  NUMBER DEFAULT NULL
+                       ,pi_restrict_to_ne_id    IN  nm_elements_all.ne_id%TYPE DEFAULT NULL
+                       ,pi_return_datums        IN  VARCHAR2 DEFAULT 'Y'
+                       ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor       OUT sys_refcursor
+                       ,po_cursor               OUT sys_refcursor);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE get_element_vertices_nlgod(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                      ,pi_element_id       IN  nm_elements_all.ne_id%TYPE
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor
+                                      ,po_cursor           OUT sys_refcursor);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_pl_by_xy(pi_layer IN NUMBER
+                       ,pi_x1 IN NUMBER
+                       ,pi_y1 IN NUMBER
+                       ,pi_x2 IN NUMBER
+                       ,pi_y2 IN NUMBER
+                       ,pi_compl_flag VARCHAR2 DEFAULT 'N')
+    RETURN nm_placement_array;
+
 END awlrs_sdo;
 /
