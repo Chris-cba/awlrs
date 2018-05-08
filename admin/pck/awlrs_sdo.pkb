@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.14   Apr 06 2018 17:51:34   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.15   May 08 2018 20:51:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Apr 06 2018 17:51:34  $
-  --       Date fetched Out : $Modtime:   Mar 26 2018 14:09:52  $
-  --       Version          : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   May 08 2018 20:51:48  $
+  --       Date fetched Out : $Modtime:   May 08 2018 17:59:34  $
+  --       Version          : $Revision:   1.15  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -88,7 +88,7 @@ AS
       INTO lv_x
           ,lv_y
       FROM TABLE(sdo_util.getvertices(pi_shape)) a
-     WHERE a.id = sdo_util.getnumvertices(pi_shape) 
+     WHERE a.id = sdo_util.getnumvertices(pi_shape)
          ;
     --
     po_x := lv_x;
@@ -133,7 +133,7 @@ AS
               SELECT t.x
                     ,t.y
                 INTO lv_mid_x
-                    ,lv_mid_y           
+                    ,lv_mid_y
                 FROM TABLE(sdo_util.getvertices(sdo_lrs.locate_pt(pi_shape,sdo_lrs.geom_segment_end_measure(pi_shape)/2,0))) t
                    ;
               --
@@ -145,7 +145,7 @@ AS
                   SELECT t.x
                         ,t.y
                     INTO lv_mid_x
-                        ,lv_mid_y           
+                        ,lv_mid_y
                     FROM TABLE(sdo_util.getvertices(sdo_lrs.locate_pt(pi_shape,(sdo_lrs.geom_segment_end_measure(pi_shape)/2) + pi_displacement,0))) t
                        ;
                   --
@@ -157,7 +157,7 @@ AS
               END IF;
               --
           END IF;
-          --  
+          --
           lv_esuid := TO_CHAR(lv_mid_x,'0000000')||TO_CHAR(lv_mid_y,'0000000');
           lv_esuid := REPLACE(lv_esuid,' ','');
           --
@@ -891,18 +891,18 @@ AS
     --
     SELECT nt_length_unit
       INTO lv_unit_id
-      FROM nm_elements 
+      FROM nm_elements
           ,nm_types
      WHERE ne_nt_type = nt_type
        AND ne_id = pi_element_id
          ;
-    
+
     OPEN po_cursor FOR 'WITH element_shape AS(SELECT '||lr_theme.nth_feature_shape_column||' geom'
             ||CHR(10)||'                        FROM '||lr_theme.nth_feature_table
             ||CHR(10)||'                       WHERE '||lr_theme.nth_feature_pk_column||' = :pi_ne_id)'--            ||CHR(10)||'                       WHERE '||lr_theme.nth_pk_column||' = :pi_ne_id)'
             ||CHR(10)||'SELECT a.id'
-            ||CHR(10)||'      ,a.x x ' 
-            ||CHR(10)||'      ,a.y y ' 
+            ||CHR(10)||'      ,a.x x '
+            ||CHR(10)||'      ,a.y y '
             ||CHR(10)||'      ,TO_NUMBER(nm3unit.get_formatted_value(a.z, :pi_unit_id)) m '
             ||CHR(10)||'  FROM element_shape'
             ||CHR(10)||'      ,TABLE(sdo_util.getvertices(geom)) a'
@@ -958,7 +958,7 @@ AS
                          ,nm_units
                     WHERE nth_theme_name IN(SELECT vnmd_theme_name
                                               FROM v_nm_msv_map_def
-                                             WHERE vnmd_name = lv_map_name)      
+                                             WHERE vnmd_name = lv_map_name)
                       AND EXISTS(SELECT 1
                                    FROM nm_theme_roles
                                        ,hig_user_roles
@@ -999,7 +999,7 @@ AS
                                                      ,'TRUE'
                                                      ,NULL).ntl_theme_list) a)
           ,nm_elements
-     WHERE element_id = ne_id                                       
+     WHERE element_id = ne_id
      ORDER
         BY distance_from_point
           ,ne_gty_group_type NULLS FIRST
@@ -1014,7 +1014,7 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_linear_elements_at_point;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -1053,7 +1053,7 @@ AS
                                                                                     ,pl_start
                                                                                     ,pl_end
                                                                                     ,0))),0.005))) geom_wkt
-          FROM TABLE(lv_pl_array.npa_placement_array) 
+          FROM TABLE(lv_pl_array.npa_placement_array)
              ;
     ELSE
         OPEN po_cursor FOR
@@ -1071,6 +1071,1513 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                  ,po_cursor           => po_message_cursor);
   END get_location_geometry_wkt;
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_unit_id_from_srid(pi_srid IN NUMBER)
+    RETURN nm_units.un_unit_id%TYPE IS
+    --
+    lv_unit  nm_units.un_unit_id%TYPE;
+    --
+  BEGIN
+    --
+    SELECT un_unit_id
+      INTO lv_unit
+      FROM (SELECT CASE
+                     WHEN UPPER(un_unit_name) = 'METRES'
+                       OR UPPER(un_unit_name) = 'METERS'
+                       OR UPPER(un_unit_name) = 'METER'
+                       THEN 'METER'
+                     WHEN UPPER (un_unit_name) = 'MILES'
+                       THEN 'MILE'
+                     WHEN UPPER (un_unit_name) = 'KILOMETERS'
+                       THEN 'KILOMETER'
+                     WHEN UPPER (un_unit_name) = 'DECIMAL DEGREES'
+                       OR UPPER (un_unit_name) = 'DEGREES'
+                       THEN 'DECIMAL DEGREE'
+                     ELSE
+                       UPPER(un_unit_name)
+                   END un_unit_name
+                  ,un_unit_id
+              FROM nm_units)
+          ,(SELECT srid
+                  ,REPLACE(REGEXP_SUBSTR(SUBSTR(wktext,(instr(wktext,'UNIT ['||chr(34),-1)),(length(wktext)-(instr(wktext,'UNIT ['||chr(34),-1))))
+                                        ,CHR(34)||'[^'||CHR(34)||']+'||CHR(34))
+                          ,CHR(34),'') unit_name
+              FROM mdsys.cs_srs
+             WHERE srid = pi_srid)
+     WHERE '%'||UPPER(unit_name)||'%' LIKE '%'||UPPER(un_unit_name)||'%'
+         ;
+    --
+    RETURN lv_unit;
+    --
+  EXCEPTION
+    WHEN no_data_found
+     THEN
+        /*
+        ||Default to Metres.
+        */
+        RETURN 1;
+        --
+    WHEN others
+     THEN
+        RAISE;
+  END get_unit_id_from_srid;
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_location_geometry_wkt(pi_element_id  IN nm_elements_all.ne_id%TYPE
+                                    ,pi_from_offset IN NUMBER
+                                    ,pi_to_offset   IN NUMBER)
+    RETURN CLOB IS
+    --
+    lr_ne  nm_elements_all%ROWTYPE;
+    --
+    lv_pl_array  nm_placement_array;
+    lv_retval    CLOB;
+    --
+  BEGIN
+    --
+    lr_ne := nm3get.get_ne_all(pi_ne_id => pi_element_id);
+    --
+    IF lr_ne.ne_gty_group_type IS NOT NULL
+     AND nm3net.is_gty_linear(p_gty => lr_ne.ne_gty_group_type) = 'N'
+     THEN
+        lv_pl_array := nm3pla.get_placement_from_ne(pi_element_id);
+    ELSE
+        lv_pl_array := nm3pla.get_sub_placement(nm_placement(pi_element_id
+                                                            ,NVL(pi_from_offset,0)
+                                                            ,NVL(pi_to_offset,nm3net.get_ne_length(pi_element_id))
+                                                            ,0));
+    END IF;
+    --
+    IF lv_pl_array.npa_placement_array.COUNT > 1
+     THEN
+        SELECT awlrs_sdo.sdo_geom_to_wkt(sdo_aggr_union(mdsys.sdoaggrtype(
+                 nm3sdo.get_placement_geometry(nm3pla.get_sub_placement(nm_placement(pl_ne_id
+                                                                                    ,pl_start
+                                                                                    ,pl_end
+                                                                                    ,0))),0.005))) geom_wkt
+          INTO lv_retval
+          FROM TABLE(lv_pl_array.npa_placement_array)
+             ;
+    ELSE
+        lv_retval := awlrs_sdo.sdo_geom_to_wkt(nm3sdo.get_placement_geometry(lv_pl_array));
+    END IF;
+    --
+    RETURN lv_retval;
+    --
+  END get_location_geometry_wkt;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE seed_network_subset(pi_theme_id    IN nm_themes_all.nth_theme_id%TYPE
+                               ,pi_srid        IN NUMBER
+                               ,pi_start_x     IN NUMBER
+                               ,pi_start_y     IN NUMBER
+                               ,pi_end_x       IN NUMBER
+                               ,pi_end_y       IN NUMBER
+                               ,pi_buffer_perc IN NUMBER DEFAULT NULL
+                               ,pi_min_buffer  IN NUMBER DEFAULT NULL)
+    IS
+    --
+    lv_job_id        NUMBER := nm3net.get_next_nte_id;
+    lv_min_x         NUMBER;
+    lv_min_y         NUMBER;
+    lv_max_x         NUMBER;
+    lv_max_y         NUMBER;
+    lv_buffer_perc   NUMBER;
+    lv_min_buffer    NUMBER;
+    lv_buffer        NUMBER;
+    lv_buffer_units  NUMBER;
+    --
+  BEGIN
+    /*
+    ||Define the mbr.
+    */
+    lv_min_x := LEAST(pi_start_x,pi_end_x);
+    lv_min_y := LEAST(pi_start_y,pi_end_y);
+    lv_max_x := GREATEST(pi_start_x,pi_end_x);
+    lv_max_y := GREATEST(pi_start_y,pi_end_y);
+    /*
+    ||Set a buffer around the mbr.
+    */
+    lv_buffer_perc := NVL(pi_buffer_perc,hig.get_sysopt('AWLRSPTHPERC'));
+    lv_min_buffer := NVL(pi_min_buffer,hig.get_sysopt('AWLRSPTHMINB'));
+    --
+    lv_buffer_units := get_unit_id_from_srid(pi_srid => pi_srid);
+    --
+    IF lv_buffer_units = 1
+     THEN
+        lv_buffer := GREATEST(GREATEST(lv_max_x - lv_min_x, lv_max_y - lv_min_y)*(lv_buffer_perc/100)
+                             ,lv_min_buffer);
+    ELSE
+        /*
+        ||Minimum buffer size is specified in Metres so convert it
+        ||before comparing with the percentage based buffer size.
+        */
+        lv_buffer := GREATEST(GREATEST(lv_max_x - lv_min_x, lv_max_y - lv_min_y)*(lv_buffer_perc/100)
+                             ,nm3unit.convert_unit(p_un_id_in  => 1
+                                                  ,p_un_id_out => lv_buffer_units
+                                                  ,p_value     => lv_min_buffer));
+    END IF;
+    /*
+    ||Find the network elements that interact with the mbr.
+    */
+    INSERT
+      INTO nm_nw_temp_extents
+    SELECT *
+      FROM (WITH results
+              AS(SELECT buf.*
+                       ,ne.ne_type
+                   FROM TABLE(nm3sdo.get_objects_in_buffer(pi_theme_id
+                                                          ,SDO_GEOMETRY(2003
+                                                                       ,pi_srid
+                                                                       ,NULL
+                                                                       ,SDO_ELEM_INFO_ARRAY(1,1003,3)
+                                                                       ,SDO_ORDINATE_ARRAY(lv_min_x,lv_min_y,lv_max_x,lv_max_y))
+                                                          ,lv_buffer
+                                                          ,lv_buffer_units).ntl_theme_list) buf
+                       ,nm_elements ne
+                  WHERE ntd_pk_id = ne_id)
+           SELECT lv_job_id      nte_job_id
+                 ,nm_ne_id_of    nte_ne_id_of
+                 ,nm_begin_mp    nte_begin_mp
+                 ,nm_end_mp      nte_end_mp
+                 ,nm_cardinality nte_cardinality
+                 ,nm_seq_no      nte_seq_no
+                 ,ntd_pk_id      nte_route_ne_id
+             FROM nm_members
+                 ,results
+            WHERE ntd_pk_id = nm_ne_id_in
+              AND nm_type = 'G'
+            UNION
+           SELECT lv_job_id   nte_job_id
+                 ,a.ne_id     nte_ne_id_of
+                 ,0           nte_begin_mp
+                 ,a.ne_length nte_end_mp
+                 ,null        nte_cardinality
+                 ,null        nte_seq_no
+                 ,null        nte_route_ne_id
+             FROM nm_elements a
+                 ,results
+            WHERE ntd_pk_id = a.ne_id
+              AND a.ne_type = 'S')
+         ;
+    --
+    nm_cncts.make_cnct_from_tmp_extent(lv_job_id);
+    --
+  END seed_network_subset;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_datum_theme_id(pi_theme_name IN nm_themes_all.nth_theme_name%TYPE)
+    RETURN nm_themes_all.nth_theme_id%TYPE IS
+    --
+    lv_retval  nm_themes_all.nth_theme_id%TYPE;
+    --
+    CURSOR get_apgt(cp_theme_name IN nm_themes_all.nth_theme_name%TYPE)
+        IS
+    SELECT nth_theme_id
+      INTO lv_retval
+      FROM nm_themes_all
+          ,awlrs_path_group_themes
+     WHERE apgt_group_theme_name = cp_theme_name
+       AND apgt_datum_theme_name = nth_theme_name
+         ;
+    --
+    CURSOR get_base_theme(cp_theme_name IN nm_themes_all.nth_theme_name%TYPE)
+        IS
+    SELECT nth_theme_id
+      FROM nm_themes_all
+          ,nm_nw_themes
+          ,nm_linear_types
+          ,nm_nt_groupings_all
+     WHERE nng_group_type =(SELECT nlt_gty_type
+                              FROM nm_nw_themes
+                                  ,nm_linear_types
+                                  ,nm_types
+                                  ,nm_type_inclusion
+                                  ,nm_group_types_all
+                             WHERE nnth_nth_theme_id =(SELECT nth_theme_id FROM nm_themes_all WHERE nth_theme_name = cp_theme_name)
+                               AND nnth_nlt_id = nlt_id
+                               AND nlt_g_i_d = 'G'
+                               AND nlt_nt_type = nt_type
+                               AND nt_type = nti_nw_parent_type(+)
+                               AND nlt_gty_type = ngt_group_type(+)
+                            UNION ALL
+                            SELECT nat_gty_group_type
+                              FROM nm_area_themes
+                                  ,nm_area_types
+                                  ,nm_types
+                                  ,nm_type_inclusion
+                                  ,nm_group_types_all
+                             WHERE nath_nth_theme_id  =(SELECT nth_theme_id FROM nm_themes_all WHERE nth_theme_name = cp_theme_name)
+                               AND nath_nat_id = nat_id
+                               AND nat_nt_type = nt_type
+                               AND nt_type = nti_nw_parent_type(+)
+                               AND nat_gty_group_type = ngt_group_type)
+       AND nng_nt_type = nlt_nt_type
+       AND nlt_id = nnth_nlt_id
+       AND nnth_nth_theme_id = nth_theme_id
+       AND nth_base_table_theme IS NULL
+         ;
+    --
+  BEGIN
+    --
+    OPEN  get_apgt(pi_theme_name);
+    FETCH get_apgt
+     INTO lv_retval;
+    --
+    IF get_apgt%NOTFOUND
+     THEN
+        OPEN  get_base_theme(pi_theme_name);
+        FETCH get_base_theme
+         INTO lv_retval;
+        --
+        IF get_base_theme%NOTFOUND
+         THEN
+            hig.raise_ner(pi_appl => 'AWLRS'
+                         ,pi_id   => 53);
+        END IF;
+        --
+        CLOSE get_base_theme;
+    END IF;
+    --
+    CLOSE get_apgt;
+    --
+    RETURN lv_retval;
+    --
+  END get_datum_theme_id;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE create_path(pi_theme_name           IN  nm_themes_all.nth_theme_name%TYPE
+                       ,pi_start_x              IN  nm_elements_all.ne_id%TYPE
+                       ,pi_start_y              IN  NUMBER
+                       ,pi_end_x                IN  nm_elements_all.ne_id%TYPE
+                       ,pi_end_y                IN  NUMBER
+                       ,pi_buffer_perc          IN  NUMBER DEFAULT NULL
+                       ,pi_min_buffer           IN  NUMBER DEFAULT NULL
+                       ,pi_restrict_to_ne_id    IN  nm_elements_all.ne_id%TYPE DEFAULT NULL
+                       ,pi_return_datums        IN  VARCHAR2 DEFAULT 'Y'
+                       ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor       OUT sys_refcursor
+                       ,po_cursor               OUT sys_refcursor)
+    IS
+    --
+    lr_theme              nm_themes_all%ROWTYPE;
+    lr_datum_theme_meta   user_sdo_geom_metadata%ROWTYPE;
+    --
+    lv_datum_theme_id     nm_themes_all.nth_theme_id%TYPE;
+    lv_target_group_type  nm_group_types_all.ngt_group_type%TYPE;
+    lv_job_id             nm_nw_temp_extents.nte_job_id%TYPE;
+    --
+    FUNCTION theme_is_datum(pi_theme_id IN nm_themes_all.nth_theme_id%TYPE)
+      RETURN BOOLEAN IS
+      --
+      lv_dummy   VARCHAR2(1);
+      lv_retval  BOOLEAN;
+      --
+      CURSOR chk(cp_theme_id IN nm_themes_all.nth_theme_id%TYPE)
+          IS
+      SELECT 'x'
+        FROM nm_linear_types
+            ,nm_nw_themes
+       WHERE nnth_nth_theme_id = cp_theme_id
+         AND nnth_nlt_id = nlt_id
+           ;
+
+    BEGIN
+      --
+      OPEN  chk(pi_theme_id);
+      FETCH chk
+       INTO lv_dummy;
+      lv_retval := chk%FOUND;
+      CLOSE chk;
+      --
+      RETURN lv_retval;
+      --
+    END;
+    --
+    FUNCTION get_group_type(pi_theme_id   IN nm_themes_all.nth_theme_id%TYPE
+                           ,pi_theme_name IN nm_themes_all.nth_theme_name%TYPE)
+      RETURN nm_group_types_all.ngt_group_type%TYPE IS
+      --
+      lv_retval  nm_group_types_all.ngt_group_type%TYPE;
+      --
+    BEGIN
+      --
+      SELECT nlt_gty_type
+        INTO lv_retval
+        FROM nm_linear_types
+            ,nm_nw_themes
+       WHERE nnth_nth_theme_id = pi_theme_id
+         AND nnth_nlt_id = nlt_id
+           ;
+      --
+      RETURN lv_retval;
+      --
+    EXCEPTION
+      WHEN no_data_found
+       THEN
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 54);
+      WHEN others
+       THEN
+          RAISE;
+    END get_group_type;
+    --
+  BEGIN
+    /*
+    ||Get the Theme Id and SRID.
+    */
+    lr_theme := nm3get.get_nth(pi_nth_theme_name => pi_theme_name);
+    /*
+    ||Get the Datum theme we want to path through.
+    */
+    IF theme_is_datum(pi_theme_id => lr_theme.nth_theme_id)
+     THEN
+        --
+        lv_datum_theme_id := lr_theme.nth_theme_id;
+        --
+    ELSE
+        --
+        lv_datum_theme_id := get_datum_theme_id(pi_theme_name => pi_theme_name);
+        --
+        lv_target_group_type := get_group_type(pi_theme_id   => lr_theme.nth_theme_id
+                                              ,pi_theme_name => pi_theme_name);
+        --
+    END IF;
+    --
+    lr_datum_theme_meta := nm3sdo.get_theme_metadata(p_nth_id => lv_datum_theme_id);
+    /*
+    ||Prepare the network to be searched.
+    */
+    IF pi_restrict_to_ne_id IS NULL
+     THEN
+        seed_network_subset(pi_theme_id    => lv_datum_theme_id
+                           ,pi_srid        => lr_datum_theme_meta.srid
+                           ,pi_start_x     => pi_start_x
+                           ,pi_start_y     => pi_start_y
+                           ,pi_end_x       => pi_end_x
+                           ,pi_end_y       => pi_end_y
+                           ,pi_buffer_perc => pi_buffer_perc
+                           ,pi_min_buffer  => pi_min_buffer);
+    ELSE
+        --
+        lv_job_id := nm3net.get_next_nte_id;
+        --
+        INSERT
+          INTO nm_nw_temp_extents
+        SELECT lv_job_id      nte_job_id
+              ,nm_ne_id_of    nte_ne_id_of
+              ,nm_begin_mp    nte_begin_mp
+              ,nm_end_mp      nte_end_mp
+              ,nm_cardinality nte_cardinality
+              ,nm_seq_no      nte_seq_no
+              ,nm_ne_id_in    nte_route_ne_id
+          FROM nm_members
+         WHERE nm_ne_id_in = pi_restrict_to_ne_id
+           AND nm_type = 'G'
+             ;
+        --
+        nm_cncts.make_cnct_from_tmp_extent(lv_job_id);
+        --
+    END IF;
+    /*
+    ||Build a ref cursor to return the path.
+    */
+    IF pi_return_datums = 'Y'
+     OR lv_target_group_type IS NULL
+     THEN
+        OPEN po_cursor FOR
+        WITH all_data
+          AS (SELECT ROWNUM ind
+                    ,np.*
+                FROM TABLE(awlrs_sdo.get_pl_by_xy(lv_datum_theme_id
+                                                 ,pi_start_x
+                                                 ,pi_start_y
+                                                 ,pi_end_x
+                                                 ,pi_end_y
+                                                 ,'N').npa_placement_array) np)
+        SELECT ne_id
+              ,CASE ne_nt_type
+                 WHEN 'ESU' THEN ne_name_1
+                 WHEN 'NSGN' THEN ne_number
+                 ELSE ne_unique
+               END ne_unique
+              ,ne_descr
+              ,ne_nt_type
+              ,ne_gty_group_type
+              ,ne_type
+              ,pl_start       from_offset
+              ,pl_end         to_offset
+              ,nt_length_unit unit_id
+              ,un_unit_name   unit_name
+              ,awlrs_sdo.sdo_geom_to_wkt(nm3sdo.get_placement_geometry(nm_placement_array(CAST(COLLECT(nm_placement(ne_id,pl_start,pl_end,0)) AS nm_placement_array_type)))) geom_wkt
+              ,nau_name ne_admin_unit
+          FROM nm_units
+              ,nm_types
+              ,nm_admin_units_all
+              ,nm_elements
+              ,all_data
+         WHERE pl_ne_id = ne_id
+           AND ne_admin_unit = nau_admin_unit
+           AND ne_nt_type = nt_type
+           AND nt_length_unit = un_unit_id
+         GROUP
+            BY ne_id
+              ,CASE ne_nt_type
+                 WHEN 'ESU' THEN ne_name_1
+                 WHEN 'NSGN' THEN ne_number
+                 ELSE ne_unique
+               END
+              ,ne_descr
+              ,ne_nt_type
+              ,ne_gty_group_type
+              ,pl_start
+              ,pl_end
+              ,nt_length_unit
+              ,un_unit_name
+              ,nt_node_type
+              ,ne_type
+              ,nau_name
+              ,ind
+         ORDER
+            BY ind
+             ;
+    ELSE
+      --
+      lv_job_id := nm3net.get_next_nte_id;
+      --
+      INSERT
+        INTO nm_nw_temp_extents
+             (nte_job_id
+             ,nte_ne_id_of
+             ,nte_begin_mp
+             ,nte_end_mp
+             ,nte_cardinality
+             ,nte_seq_no
+             ,nte_route_ne_id)
+       SELECT lv_job_id
+             ,np.pl_ne_id
+             ,np.pl_start
+             ,np.pl_end
+             ,CASE WHEN np.pl_start <= np.pl_end THEN 1 ELSE -1 END
+             ,ROWNUM ind
+             ,NULL
+         FROM TABLE(awlrs_sdo.get_pl_by_xy(lv_datum_theme_id
+                                          ,pi_start_x
+                                          ,pi_start_y
+                                          ,pi_end_x
+                                          ,pi_end_y
+                                          ,'N').npa_placement_array) np
+            ;
+       --
+       OPEN po_cursor FOR
+       SELECT ne.ne_id
+             ,CASE ne.ne_nt_type
+                WHEN 'ESU' THEN ne.ne_name_1
+                WHEN 'NSGN' THEN ne.ne_number
+                ELSE ne.ne_unique
+              END ne_unique
+             ,ne.ne_descr
+             ,ne.ne_nt_type
+             ,ne.ne_gty_group_type
+             ,ne.ne_type
+             ,locs.from_offset
+             ,locs.to_offset
+             ,nt.nt_length_unit unit_id
+             ,nu.un_unit_name   unit_name
+             ,awlrs_sdo.get_location_geometry_wkt(pi_element_id  => ne.ne_id
+                                                 ,pi_from_offset => locs.from_offset
+                                                 ,pi_to_offset   => locs.to_offset) geom_wkt
+             ,nau.nau_name ne_admin_unit
+         FROM nm_units nu
+             ,nm_types nt
+             ,nm_admin_units_all nau
+             ,nm_elements ne
+             ,(SELECT pl.pl_ne_id ne_id
+                     ,pl.pl_start from_offset
+                     ,pl.pl_end   to_offset
+                     ,rownum      ind
+                 FROM TABLE(nm3pla.get_connected_chunks(p_nte_job_id => lv_job_id
+                                                       ,p_route_id   => NULL
+                                                       ,p_obj_type   => lv_target_group_type).npa_placement_array) pl) locs
+        WHERE locs.ne_id = ne.ne_id
+          AND ne.ne_admin_unit = nau.nau_admin_unit
+          AND ne.ne_nt_type = nt.nt_type
+          AND nt.nt_length_unit = nu.un_unit_id
+        GROUP
+           BY ne.ne_id
+             ,CASE ne.ne_nt_type
+                WHEN 'ESU' THEN ne.ne_name_1
+                WHEN 'NSGN' THEN ne.ne_number
+                ELSE ne.ne_unique
+              END
+             ,ne.ne_descr
+             ,ne.ne_nt_type
+             ,ne.ne_gty_group_type
+             ,locs.from_offset
+             ,locs.to_offset
+             ,nt.nt_length_unit
+             ,nu.un_unit_name
+             ,nt.nt_node_type
+             ,ne.ne_type
+             ,nau.nau_name
+             ,locs.ind
+        ORDER
+           BY locs.ind
+            ;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_path;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE create_path(pi_theme_name           IN  nm_themes_all.nth_theme_name%TYPE
+                       ,pi_start_element_id     IN  nm_elements_all.ne_id%TYPE
+                       ,pi_start_element_offset IN  NUMBER
+                       ,pi_end_element_id       IN  nm_elements_all.ne_id%TYPE
+                       ,pi_end_element_offset   IN  NUMBER
+                       ,pi_buffer_perc          IN  NUMBER DEFAULT NULL
+                       ,pi_min_buffer           IN  NUMBER DEFAULT NULL
+                       ,pi_restrict_to_ne_id    IN  nm_elements_all.ne_id%TYPE DEFAULT NULL
+                       ,pi_return_datums        IN  VARCHAR2 DEFAULT 'Y'
+                       ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor       OUT sys_refcursor
+                       ,po_cursor               OUT sys_refcursor)
+    IS
+    --
+    lr_theme              nm_themes_all%ROWTYPE;
+    --
+    lv_datum_theme_id     nm_themes_all.nth_theme_id%TYPE;
+    --
+    lv_start_x  NUMBER;
+    lv_start_y  NUMBER;
+    lv_end_x    NUMBER;
+    lv_end_y    NUMBER;
+    --
+    lv_message_severity  hig_codes.hco_code%TYPE;
+    lv_message_cursor    sys_refcursor;
+    lv_cursor            sys_refcursor;
+    --
+  BEGIN
+    /*
+    ||Get the Theme Id and SRID.
+    */
+    lr_theme := nm3get.get_nth(pi_nth_theme_name => pi_theme_name);
+    /*
+    ||Get the Datum theme we want to path through.
+    */
+    IF nm3net.is_nt_linear(p_nt_type => nm3net.get_ne(pi_start_element_id).ne_nt_type) != 'Y'
+     THEN
+        raise_application_error(-20001,'Theme must be linear');
+    END IF;
+    --
+    /*
+    ||Get the start coordinates.
+    */
+    get_point_from_element_offset(pi_theme_id => lr_theme.nth_theme_id
+                                 ,pi_ne_id    => pi_start_element_id
+                                 ,pi_offset   => pi_start_element_offset
+                                 ,po_x        => lv_start_x
+                                 ,po_y        => lv_start_y);
+    /*
+    ||Get the end coordinates.
+    */
+    get_point_from_element_offset(pi_theme_id => lr_theme.nth_theme_id
+                                 ,pi_ne_id    => pi_end_element_id
+                                 ,pi_offset   => pi_end_element_offset
+                                 ,po_x        => lv_end_x
+                                 ,po_y        => lv_end_y);
+    /*
+    ||Create the path.
+    */
+    create_path(pi_theme_name           => pi_theme_name
+               ,pi_start_x              => lv_start_x
+               ,pi_start_y              => lv_start_y
+               ,pi_end_x                => lv_end_x
+               ,pi_end_y                => lv_end_y
+               ,pi_buffer_perc          => pi_buffer_perc
+               ,pi_min_buffer           => pi_min_buffer
+               ,pi_restrict_to_ne_id    => pi_restrict_to_ne_id
+               ,pi_return_datums        => pi_return_datums
+               ,po_message_severity     => lv_message_severity
+               ,po_message_cursor       => lv_message_cursor
+               ,po_cursor               => lv_cursor);
+    --
+    po_cursor := lv_cursor;
+    po_message_severity := lv_message_severity;
+    po_message_cursor := lv_message_cursor;
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_path;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE get_element_vertices_nlgod(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                      ,pi_element_id       IN  nm_elements_all.ne_id%TYPE
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor
+                                      ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lr_group_theme         nm_themes_all%ROWTYPE;
+    lr_datum_theme         nm_themes_all%ROWTYPE;
+    lv_group_type          nm_group_types_all.ngt_group_type%TYPE;
+    lv_element_group_type  nm_group_types_all.ngt_group_type%TYPE;
+    lv_datum_theme_id      nm_themes_all.nth_theme_id%TYPE;
+    --
+  BEGIN
+    --
+    lr_group_theme := nm3get.get_nth(pi_nth_theme_name => pi_theme_name);
+    /*
+    ||Check Theme is non linear group
+    */
+    BEGIN
+      --
+      SELECT nat_gty_group_type
+        INTO lv_group_type
+        FROM nm_area_types
+       WHERE nat_id = (SELECT nath_nat_id
+                         FROM nm_area_themes
+                        WHERE nath_nth_theme_id = lr_group_theme.nth_theme_id)
+           ;
+      --
+    EXCEPTION
+      WHEN no_data_found
+       THEN
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 55);
+    END;
+    /*
+    ||Check element Group Type and theme Group Type are the same.
+    */
+    SELECT ne_gty_group_type
+      INTO lv_element_group_type
+      FROM nm_elements
+     WHERE ne_id = pi_element_id
+         ;
+    --
+    IF lv_group_type <> lv_element_group_type
+     THEN
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 56);
+    END IF;
+    /*
+    ||Get Base Theme and Units for the Datum Network
+    ||Type from the given Group Type.
+    */
+    SELECT nth_theme_id
+      INTO lv_datum_theme_id
+      FROM nm_themes_all
+          ,nm_nw_themes
+          ,nm_linear_types
+          ,nm_nt_groupings_all
+     WHERE nng_group_type = lv_group_type
+       AND nng_nt_type = nlt_nt_type
+       AND nlt_id = nnth_nlt_id
+       AND nnth_nth_theme_id = nth_theme_id
+       AND nth_base_table_theme IS NULL
+         ;
+    --
+    lr_datum_theme := nm3get.get_nth(pi_nth_theme_id => lv_datum_theme_id);
+    --
+    OPEN po_cursor FOR 'WITH element_shapes AS(SELECT f.'||lr_datum_theme.nth_feature_shape_column||' geom'
+            ||CHR(10)||'                             ,f.'||lr_datum_theme.nth_pk_column||' pkcol'
+            ||CHR(10)||'                             ,e.ne_id ne_id'
+            ||CHR(10)||'                             ,CASE e.ne_nt_type'
+            ||CHR(10)||'                                WHEN ''ESU'' THEN e.ne_name_1'
+            ||CHR(10)||'                                WHEN ''NSGN'' THEN e.ne_number'
+            ||CHR(10)||'                                ELSE e.ne_unique'
+            ||CHR(10)||'                              END ne_unique'
+            ||CHR(10)||'                             ,nt.nt_length_unit unit_id'
+            ||CHR(10)||'                             ,nu.un_unit_name   unit_name'
+            ||CHR(10)||'                         FROM '||lr_datum_theme.nth_feature_table||' f '
+            ||CHR(10)||'                             ,nm_units nu'
+            ||CHR(10)||'                             ,nm_types nt'
+            ||CHR(10)||'                             ,nm_elements e'
+            ||CHR(10)||'                             ,nm_members m'
+            ||CHR(10)||'                        WHERE m.nm_ne_id_in = :pi_element_id '
+            ||CHR(10)||'                          AND m.nm_ne_id_of = e.ne_id'
+            ||CHR(10)||'                          AND e.ne_nt_type = nt.nt_type'
+            ||CHR(10)||'                          AND nt.nt_length_unit = nu.un_unit_id(+)'
+            ||CHR(10)||'                          AND e.ne_id = f.'||lr_datum_theme.nth_feature_pk_column||')'
+            ||CHR(10)||'SELECT a.id'
+            ||CHR(10)||'      ,a.x x'
+            ||CHR(10)||'      ,a.y y'
+            ||CHR(10)||'      ,TO_NUMBER(nm3unit.get_formatted_value(a.z,element_shapes.unit_id)) m '
+            ||CHR(10)||'      ,element_shapes.ne_id'
+            ||CHR(10)||'      ,element_shapes.ne_unique'
+            ||CHR(10)||'      ,element_shapes.unit_id'
+            ||CHR(10)||'      ,element_shapes.unit_name'
+            ||CHR(10)||'      ,:theme_name theme_name'
+            ||CHR(10)||'  FROM element_shapes'
+            ||CHR(10)||'      ,TABLE(sdo_util.getvertices(geom)) a'
+            ||CHR(10)||' ORDER'
+            ||CHR(10)||'    BY element_shapes.ne_id'
+            ||CHR(10)||'      ,a.id'
+    USING pi_element_id,lr_datum_theme.nth_theme_name
+    ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_element_vertices_nlgod;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_batch_of_base_nn(pi_theme    IN NUMBER
+                               ,pi_geom     IN mdsys.sdo_geometry
+                               ,pi_ne_array IN nm_cnct_ne_array_type)
+    RETURN ptr_array IS
+    --
+    lr_nth       nm_themes_all%ROWTYPE;
+    lr_base_nth  nm_themes_all%ROWTYPE;
+    lr_usgm      user_sdo_geom_metadata%ROWTYPE;
+    --
+    lt_retval ptr_array := nm3array.init_ptr_array;
+    --
+    lv_sql VARCHAR2(2000);
+    --
+    FUNCTION join_ncne(pi_pa   IN ptr_array_type
+                      ,pi_ncne IN nm_cnct_ne_array_type)
+      RETURN ptr_array_type IS
+      --
+      CURSOR c1(c_pa   IN ptr_array_type
+               ,c_ncne IN nm_cnct_ne_array_type)
+          IS
+      SELECT ptr(a.ptr_id
+                ,a.ptr_value)
+        FROM TABLE(c_pa) a
+            ,TABLE(c_ncne) b
+       WHERE a.ptr_value = b.ne_id
+       ORDER
+          BY a.ptr_id
+           ;
+      --
+      lt_retval ptr_array_type := ptr_array_type(ptr(NULL,NULL));
+      --
+    BEGIN
+      --
+      OPEN  c1(pi_pa
+              ,pi_ncne);
+      FETCH c1
+       BULK COLLECT
+       INTO lt_retval;
+      CLOSE c1;
+      --
+      RETURN lt_retval;
+      --
+    END join_ncne;
+    --
+  BEGIN
+    --
+    lr_nth := nm3get.get_nth(pi_theme);
+    lr_base_nth := lr_nth;
+    --
+    IF lr_base_nth.nth_base_table_theme IS NOT NULL
+     THEN
+        lr_nth := nm3get.get_nth(lr_nth.nth_base_table_theme);
+    END IF;
+    --
+    lr_usgm := nm3sdo.get_theme_metadata(pi_theme);
+    --
+    lv_sql := 'SELECT ptr(rownum, ne_id)'
+   ||CHR(10)||'  FROM (SELECT ft.'||lr_nth.nth_feature_pk_column||' ne_id'
+   ||CHR(10)||'              ,mdsys.SDO_NN_DISTANCE(1) dist'
+   ||CHR(10)||'          FROM '||lr_nth.nth_feature_table||' ft '
+   ||CHR(10)||'         WHERE sdo_nn('||lr_nth.nth_feature_shape_column
+   ||CHR(10)||'                     ,:p_geom'
+   ||CHR(10)||'                     ,''SDO_BATCH_SIZE=10'', 1) = ''TRUE'''
+   ||CHR(10)||'           AND rownum <= 50)'
+   ||CHR(10)||' WHERE dist <= '||NVL(lr_nth.nth_tolerance,10)
+    ;
+    --
+    EXECUTE IMMEDIATE lv_sql BULK COLLECT INTO lt_retval.pa USING pi_geom;
+    --
+    IF lt_retval.pa.LAST IS NOT NULL
+     THEN
+        lt_retval.pa := join_ncne(pi_pa   => lt_retval.pa
+                                 ,pi_ncne => pi_ne_array );
+    END IF;
+    --
+    RETURN lt_retval;
+    --
+  END get_batch_of_base_nn;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_path(pi_no_st  IN INTEGER
+                   ,pi_no_end IN INTEGER)
+    RETURN nm_placement_array IS
+    --
+    lv_link                nm_cnct_link;
+    lv_st                  INTEGER;
+    lv_end                 INTEGER;
+    lv_current_node_index  INTEGER;
+    lv_cost                NUMBER;
+    lv_ne_row              INTEGER;
+    lv_ne                  INTEGER;
+    lv_row_id              NUMBER;
+    lv_st_off              NUMBER;
+    lv_end_off             NUMBER;
+    lv_direction           NUMBER;
+    --
+    lt_no_considered  ptr_array := nm_cncts.g_cnct.nc_no_ptr;
+    --
+    lv_retval nm_placement_array;
+    --
+    FUNCTION get_min_cost_no(pi_considered_tab IN OUT NOCOPY ptr_array)
+      RETURN INTEGER IS
+      --
+      lv_min NUMBER := nm3type.c_big_number;
+      lv_id  INTEGER;
+      --
+    BEGIN
+      --
+      --nm_debug.debug('Min cost');
+      --
+      FOR i IN 1..nm_cncts.g_cnct.nc_no_ptr.pa.LAST LOOP
+        --
+        --nm_debug.debug('Check value = '||to_char(pi_considered_tab.pa(i).ptr_value)||' min = '||to_char(l_min));
+        --
+        IF pi_considered_tab.pa(i).ptr_value > 0
+         THEN
+            IF nm_cncts.g_cnct.nc_link.ncla_link(i).cost < lv_min
+             THEN
+                --
+                --nm_debug.debug('New min = '||to_char(i));
+                --
+                lv_min := nm_cncts.g_cnct.nc_link.ncla_link(i).cost;
+                lv_id := i;
+                --
+            END IF;
+        END IF;
+      END LOOP;
+      --
+      RETURN lv_id;
+      --
+    END get_min_cost_no;
+    --
+    FUNCTION get_element_between_nodes(pi_node_index_1 IN INTEGER
+                                      ,pi_node_index_2 IN INTEGER)
+      RETURN NUMBER IS
+      --
+      lv_retval     NUMBER;
+      lv_node_id_1  INTEGER;
+      lv_node_id_2  INTEGER;
+      --
+    BEGIN
+      --
+      lv_node_id_1 := nm_cncts.g_cnct.nc_no_ptr.pa(pi_node_index_1).ptr_value;
+      lv_node_id_2 := nm_cncts.g_cnct.nc_no_ptr.pa(pi_node_index_2).ptr_value;
+      --
+      FOR i IN 1..nm_cncts.g_cnct.nc_ne_array.ncne_array.LAST LOOP
+        --
+        IF (nm_cncts.g_cnct.nc_ne_array.ncne_array(i).no_st = lv_node_id_1
+            AND nm_cncts.g_cnct.nc_ne_array.ncne_array(i).no_end = lv_node_id_2)
+         OR (nm_cncts.g_cnct.nc_ne_array.ncne_array(i).no_st = lv_node_id_2
+             AND nm_cncts.g_cnct.nc_ne_array.ncne_array(i).no_end = lv_node_id_1)
+         THEN
+            --
+            lv_retval := nm_cncts.g_cnct.nc_ne_array.ncne_array(i).row_id;
+            EXIT;
+            --
+        END IF;
+        --
+      END LOOP;
+      --
+      RETURN lv_retval;
+      --
+    END get_element_between_nodes;
+    --
+  BEGIN
+    --
+    lv_st := nm_cncts.g_cnct.nc_no_array.no_in_array(pi_no_st);
+    lv_end := nm_cncts.g_cnct.nc_no_array.no_in_array(pi_no_end);
+    --
+    --nm_debug.debug('Init the considered array '||to_char(l_no_considered.pa.last));
+    --
+    lt_no_considered.pa(lv_st).ptr_value := -1;
+    --
+    --nm_debug.debug('Top loop');
+    --
+    lv_current_node_index := get_min_cost_no(pi_considered_tab => lt_no_considered);
+    --
+    WHILE lv_current_node_index IS NOT NULL LOOP
+      --
+      lt_no_considered.pa(lv_current_node_index).ptr_value := -1;
+      --
+      --nm_debug.debug('Min cost id = '||to_char(lv_current_node_index));
+      --
+      FOR potential_next_node_index IN 1..nm_cncts.g_cnct.nc_no_ptr.pa.LAST LOOP
+        --
+        IF potential_next_node_index != lv_st
+         AND potential_next_node_index != lv_current_node_index
+         THEN
+            --
+            lv_ne_row := get_element_between_nodes(pi_node_index_1 => lv_current_node_index
+                                                  ,pi_node_index_2 => potential_next_node_index);
+            --
+            --nm_debug.debug('Testing link between '||to_char(lv_current_node_index)||' and '||to_char(potential_next_node_index)||' = '||to_char(l_ne_row));
+            --
+            IF lv_ne_row IS NOT NULL
+             THEN
+                --
+                --nm_debug.debug('Passed the not null test');
+                --
+                lv_cost := nm_cncts.g_cnct.nc_ne_array.ncne_array(lv_ne_row).ne_length;
+                --
+                IF nm_cncts.g_cnct.nc_link.ncla_link(potential_next_node_index).cost IS NULL
+                 OR nm_cncts.g_cnct.nc_link.ncla_link(potential_next_node_index).cost > lv_cost + nm_cncts.g_cnct.nc_link.ncla_link(lv_current_node_index).cost
+                 THEN
+                    /*
+                    ||For an ordered path we need to know the direction of the individual elements relative to the path
+                    ||so that the measures can be assigned appropriately, to work within the confines of the types
+                    ||used here an element in the reverse direction is indicated with a negative id, this is picked up
+                    ||and corrected later before the path is returned.
+                    */
+                    lv_direction := CASE WHEN nm_cncts.g_cnct.nc_ne_array.ncne_array(lv_ne_row).no_st = lv_current_node_index THEN 1 ELSE -1 END;
+                    lv_link := nm_cnct_link(lv_st
+                                           ,potential_next_node_index
+                                           ,lv_cost + nm_cncts.g_cnct.nc_link.ncla_link(lv_current_node_index).cost
+                                           ,nm_cncts.g_cnct.nc_link.ncla_link(lv_current_node_index).path.append(int_array(int_array_type(nm_cncts.g_cnct.nc_ne_array.ncne_array(lv_ne_row).row_id*lv_direction))));
+                    --
+                    nm_cncts.g_cnct.nc_link.ncla_link(potential_next_node_index) := lv_link;
+                    --
+                --ELSE
+                --    nm_debug.debug('No link');
+                END IF;
+            END IF;
+        END IF;
+        --
+      END LOOP;
+      --
+      lv_current_node_index := get_min_cost_no(pi_considered_tab => lt_no_considered);
+      --
+      --nm_debug.debug('Next for consideration is '||to_char(w));
+      --
+    END LOOP;
+    --
+    --nm_debug.debug('End of loop - end = '||to_char(l_end));
+    --
+    IF nm_cncts.g_cnct.nc_link.ncla_link(lv_end).cost IS NULL
+     THEN
+        raise_application_error(-20001, 'No path');
+    ELSE
+        lv_link := nm_cncts.g_cnct.nc_link.ncla_link(lv_end);
+    END IF;
+    --
+    FOR i IN 1..lv_link.path.ia.LAST LOOP
+      --
+      IF lv_link.path.ia(i) < 0
+       THEN
+          /*
+          ||Element is in reverse direction relative to the path
+          ||so set the offsets appropriately and correct the ne_id.
+          */
+          lv_row_id := lv_link.path.ia(i) * -1;
+          lv_ne := nm_cncts.g_cnct.nc_ne_array.ncne_array(lv_row_id).ne_id;
+          lv_st_off := nm_cncts.g_cnct.nc_ne_array.ncne_array(lv_row_id).ne_length;
+          lv_end_off := 0;
+      ELSE
+          lv_row_id := lv_link.path.ia(i);
+          lv_ne := nm_cncts.g_cnct.nc_ne_array.ncne_array(lv_row_id).ne_id;
+          lv_st_off := 0;
+          lv_end_off := nm_cncts.g_cnct.nc_ne_array.ncne_array(lv_row_id).ne_length;
+      END IF;
+      --
+      IF i = 1
+       THEN
+          lv_retval := nm_placement_array(nm_placement_array_type(nm_placement(lv_ne,lv_st_off,lv_end_off,0)));
+      ELSE
+          lv_retval := lv_retval.add_element(lv_ne,lv_st_off,lv_end_off);
+      END IF;
+      --
+    END LOOP;
+    --
+    --nm_debug.debug('Returning path...');
+    --nm3pla.dump_placement_array(p_pl_arr => retval);
+    --
+    RETURN lv_retval;
+    --
+  END get_path;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION join_ne_array(pi_ptr  IN ptr_array
+                        ,pi_ncne IN nm_cnct_ne_array_type)
+    RETURN ptr_array IS
+    --
+    CURSOR c1(c_ptr  IN ptr_array
+             ,c_ncne IN nm_cnct_ne_array_type)
+        IS
+    SELECT ptr(c.ptr_id,c.ptr_value)
+      FROM TABLE(c_ptr.pa) c
+          ,TABLE(c_ncne) b
+     WHERE c.ptr_value = b.ne_id
+       AND ROWNUM = 1
+     ORDER
+        BY c.ptr_id
+         ;
+    --
+    lt_retval ptr_array := nm3array.init_ptr_array;
+    --
+  BEGIN
+    --
+    OPEN  c1(pi_ptr
+            ,pi_ncne);
+    FETCH c1
+     BULK COLLECT
+     INTO lt_retval.pa;
+    CLOSE c1;
+    --
+    RETURN lt_retval;
+    --
+  END join_ne_array;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_nearest(pi_nth_id IN INTEGER
+                      ,pi_x      IN NUMBER
+                      ,pi_y      IN NUMBER)
+    RETURN nm_lref IS
+    --
+    lt_ne  ptr_array:= nm3array.init_ptr_array;
+    --
+    lv_geom  mdsys.sdo_geometry;
+    --
+  BEGIN
+    --
+    lt_ne := get_batch_of_base_nn(pi_theme    => pi_nth_id
+                                 ,pi_geom     => nm3sdo.get_2d_pt(pi_x,pi_y)
+                                 ,pi_ne_array => nm_cncts.g_cnct.nc_ne_array.ncne_array);
+    --
+    IF lt_ne.pa.LAST IS NULL OR lt_ne.pa.LAST = 0
+     THEN
+        --
+        --nm_debug.debug('Probs ne.pa.last is '||TO_CHAR(lt_ne.pa.LAST ));
+        --
+        raise_application_error(-20001, 'No street elements close enough to the xy co-ordinates');
+    END IF;
+    --
+    lv_geom := nm3sdo.get_projection(p_layer => pi_nth_id
+                                    ,p_ne_id => lt_ne.pa(1).ptr_value
+                                    ,p_x     => pi_x
+                                    ,p_y     => pi_y );
+    --
+    RETURN nm_lref(lt_ne.pa(1).ptr_value
+                  ,nm3unit.get_formatted_value(p_value   => lv_geom.sdo_ordinates(3)
+                                              ,p_unit_id => nm3net.get_nt_units_from_ne(lt_ne.pa(1).ptr_value)));
+    --
+  END get_nearest;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_nearest_node(pi_lref IN nm_lref)
+    RETURN INTEGER IS
+    --
+    lv_retval INTEGER;
+    --
+  BEGIN
+    --
+    FOR i IN 1..nm_cncts.g_cnct.nc_ne_array.ncne_array.LAST LOOP
+      --
+      IF nm_cncts.g_cnct.nc_ne_array.ncne_array(i).ne_id = pi_lref.lr_ne_id
+       THEN
+          --
+          lv_retval := nm_cncts.g_cnct.nc_ne_array.ncne_array(i).no_st;
+          --
+          IF nm_cncts.g_cnct.nc_ne_array.ncne_array(i).ne_length - pi_lref.lr_offset <  pi_lref.lr_offset
+           THEN
+              lv_retval := nm_cncts.g_cnct.nc_ne_array.ncne_array(i).no_end;
+          END IF;
+          --
+          EXIT;
+          --
+      END IF;
+      --
+    END LOOP;
+    --
+    RETURN lv_retval;
+    --
+  END get_nearest_node;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION add_start_element(pi_pla IN nm_placement_array
+                            ,pi_pl  IN nm_placement)
+    RETURN nm_placement_array IS
+    --
+    lv_retval  nm_placement_array;
+    --
+  BEGIN
+    --
+    lv_retval := nm_placement_array(nm_placement_array_type(pi_pl));
+    --
+    FOR i IN 1..pi_pla.npa_placement_array.COUNT LOOP
+      --
+      lv_retval.npa_placement_array.extend;
+      lv_retval.npa_placement_array(lv_retval.npa_placement_array.LAST) := pi_pla.npa_placement_array(i);
+      --
+    END LOOP;
+    --
+    RETURN lv_retval;
+    --
+  END add_start_element;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_pl_by_xy(pi_layer      IN NUMBER
+                       ,pi_x1         IN NUMBER
+                       ,pi_y1         IN NUMBER
+                       ,pi_x2         IN NUMBER
+                       ,pi_y2         IN NUMBER
+                       ,pi_compl_flag IN VARCHAR2 DEFAULT 'N')
+    RETURN nm_placement_array IS
+    --
+    lv_retval       nm_placement_array;
+    lv_start        nm_lref;
+    lv_end          nm_lref;
+    lv_no_st        INTEGER;
+    lv_no_end       INTEGER;
+    lt_end_bits     nm_cnct_ne_array;
+    lv_st_in_path   BOOLEAN;
+    lv_end_in_path  BOOLEAN;
+    --
+  BEGIN
+    --
+    IF nm_cncts.is_cnct_instantiated = 0
+     THEN
+        raise_application_error(-20001, 'Network not instantiated, cannot compute the connectivity');
+    END IF;
+    --
+    --nm_debug.debug_on;
+    --nm_debug.debug('get_pl_by_xy start - first get the nearest element to xy');
+    lv_start := get_nearest(pi_nth_id => pi_layer
+                           ,pi_x      => pi_x1
+                           ,pi_y      => pi_y1);
+    --
+    lv_end := get_nearest(pi_nth_id => pi_layer
+                         ,pi_x      => pi_x2
+                         ,pi_y      => pi_y2);
+    --nm_debug.debug( 'st = '||TO_CHAR( lv_start.lr_ne_id)||' - '||TO_CHAR(lv_start.lr_offset));
+    --nm_debug.debug( 'end= '||TO_CHAR( lv_end.lr_ne_id)||' - '||TO_CHAR(lv_end.lr_offset));
+    --
+    IF lv_start.lr_ne_id = lv_end.lr_ne_id
+     THEN
+        /*
+        ||Start and End are on the Same Element so return a placement array between the two offsets.
+        */
+        --nm_debug.debug('same element so no need for walking');
+        IF lv_start.lr_offset < lv_end.lr_offset
+         THEN
+            RETURN nm_placement_array(nm_placement_array_type(nm_placement(lv_start.lr_ne_id
+                                                                          ,lv_start.lr_offset
+                                                                          ,lv_end.lr_offset
+                                                                          ,0 )));
+        ELSIF lv_start.lr_offset > lv_end.lr_offset
+         THEN
+            RETURN nm_placement_array(nm_placement_array_type(nm_placement(lv_start.lr_ne_id
+                                                                          ,lv_end.lr_offset
+                                                                          ,lv_start.lr_offset
+                                                                          ,0)));
+        ELSE
+            raise_application_error(-20001, 'points are the same - no distance between them');
+        END IF;
+    ELSE
+        --nm_debug.debug('different element - need for walking');
+        IF nm_cncts.g_cnct IS NULL
+         THEN
+            --nm_debug.debug('not instantiated, instantiate from buffer around line joining points');
+            nm_cncts.make_cnct_from_line(l_theme_id => pi_layer
+                                        ,p_geom     => mdsys.sdo_geometry(2002
+                                                                         ,NULL
+                                                                         ,NULL
+                                                                         ,mdsys.sdo_elem_info_array(1,2,1)
+                                                                         ,mdsys.sdo_ordinate_array(pi_x1,pi_y1,pi_x2,pi_y2))
+                                        ,p_scale    => 0.2);
+        END IF;
+        --
+        lv_no_st := get_nearest_node(lv_start);
+        lv_no_end := get_nearest_node(lv_end);
+        --
+        --nm_debug.debug('st no = '||TO_CHAR(lv_no_st));
+        --nm_debug.debug('end no= '||TO_CHAR(lv_no_end));
+        --
+        IF pi_compl_flag = 'Y'
+         THEN
+            /*
+            ||Caller has asked for Complete Elements in the path.
+            */
+            IF NOT nm_cncts.g_cnct_complete
+             THEN
+                nm_cncts.instantiate_link_array;
+                nm_cncts.complete_link_table;
+            END IF;
+            --
+            --nm_debug.debug('using a completed link');
+            --
+            lv_retval := nm_cncts.get_path_from_complete_link(p_no_st  => lv_no_st
+                                                             ,p_no_end => lv_no_end);
+            --
+        ELSE
+            IF nm_cncts.g_cnct_complete
+             THEN
+                /*
+                ||Global says the path should contain Complete Elements.
+                */
+                --nm_debug.debug('Get path between nodes '||TO_CHAR(lv_no_st)||' and '||TO_CHAR(lv_no_end));
+                lv_retval := nm_cncts.get_path_from_complete_link(p_no_st  => lv_no_st
+                                                                 ,p_no_end => lv_no_end);
+                --
+            ELSE
+                IF lv_no_st != lv_no_end
+                 THEN
+                    /*
+                    ||Path can contain Partial Elements at the Start and End.
+                    */
+                    --nm_debug.debug('using a single node - from '||TO_CHAR(lv_no_st)||' to '||TO_CHAR(lv_no_end));
+                    nm_cncts.init_link_from_node(lv_no_st);
+                    lv_retval := awlrs_sdo.get_path(pi_no_st  => lv_no_st
+                                                   ,pi_no_end => lv_no_end);
+                    --
+                ELSE
+                    /*
+                    ||Start and End Nodes are the same so return an empty placement array.
+                    */
+                    lv_retval := nm_placement_array(nm_placement_array_type(nm_placement(NULL,NULL,NULL,NULL)));
+                    --
+                END IF;
+            END IF;
+        END IF;
+        /*
+        ||Now assess the fragments from the initial start/end point to the start/end node.
+        */
+        lv_st_in_path := (lv_retval.find_element(pl_ne_id => lv_start.lr_ne_id) > 0 );
+        lv_end_in_path := (lv_retval.find_element(pl_ne_id => lv_end.lr_ne_id) > 0 );
+        --
+        --nm_debug.DEBUG('Find start element in path '||TO_CHAR(lv_start.lr_ne_id));
+        --IF lv_st_in_path
+        -- THEN
+        --    nm_debug.DEBUG('Found');
+        --ELSE
+        --    nm_debug.DEBUG('not Found');
+        --END IF;
+        --nm_debug.DEBUG('Find end element in path '||TO_CHAR(lv_end.lr_ne_id ));
+        --IF lv_end_in_path
+        -- THEN
+        --    nm_debug.DEBUG('Found');
+        --ELSE
+        --    nm_debug.DEBUG('not Found');
+        --END IF;
+        --
+        lt_end_bits := nm_cncts.g_cnct.nc_ne_array.get_elements_in_array(int_array(int_array_type(lv_start.lr_ne_id,lv_end.lr_ne_id)));
+        --
+        --FOR i IN 1..lt_end_bits.ncne_array.LAST LOOP
+        --  nm_debug.debug(TO_CHAR(lt_end_bits.ncne_array(i).row_id)
+        --                 ||', '||TO_CHAR(lt_end_bits.ncne_array(i).ne_id)
+        --                 ||', '||TO_CHAR(lt_end_bits.ncne_array(i).no_st)
+        --                 ||', '||TO_CHAR(lt_end_bits.ncne_array(i).no_end));
+        --END LOOP;
+        --
+        IF NOT lv_st_in_path
+         THEN
+            /*
+            ||The starting element is not already in the path - we may need to add some.
+            */
+            IF lv_no_st = lt_end_bits.ncne_array(1).no_st
+             THEN
+                /*
+                ||The start node is the start of the path so the fragment from the start node to the starting measure needs to be added.
+                */
+                --nm_debug.debug( 'start/start - offset (add) = '||TO_CHAR(lv_start.lr_offset));
+                --
+                IF lv_start.lr_offset > 0
+                 THEN
+                    lv_retval := add_start_element(pi_pla => lv_retval
+                                                  ,pi_pl  => nm_placement(lv_start.lr_ne_id
+                                                                         ,lv_start.lr_offset
+                                                                         ,0
+                                                                         ,0));
+                END IF;
+                --
+            ELSIF lv_no_st = lt_end_bits.ncne_array(1).no_end
+             THEN
+                /*
+                ||The start node is the end of the first element so the fragment from the starting measure to the end node needs to be added.
+                */
+                --nm_debug.debug( 'start/end - offset (add) = '||TO_CHAR(lv_start.lr_offset)||' length = '||TO_CHAR(lt_end_bits.ncne_array(1).ne_length));
+                --
+                IF lv_start.lr_offset < lt_end_bits.ncne_array(1).ne_length
+                 THEN
+                    lv_retval := add_start_element(pi_pla => lv_retval
+                                                  ,pi_pl  => nm_placement(lv_start.lr_ne_id
+                                                                         ,lv_start.lr_offset
+                                                                         ,lt_end_bits.ncne_array(1).ne_length
+                                                                         ,0));
+                END IF;
+                --
+            END IF;
+            --
+        ELSE
+            /*
+            ||The starting element is already included in the path - we may need to subtract some.
+            */
+            --nm_debug.debug('Start element is in the path from: '
+            --               ||lv_retval.npa_placement_array(lv_retval.npa_placement_array.FIRST).pl_start
+            --               ||' to: '||lv_retval.npa_placement_array(lv_retval.npa_placement_array.FIRST).pl_end);
+            --
+            IF lv_no_st = lt_end_bits.ncne_array(1).no_st
+             THEN
+                /*
+                ||The start node of the path is the start node of the first element in the path
+                ||so the bit we need is from the start offset to the length of the element.
+                */
+                --nm_debug.debug( 'start/start - offset (minus) => Keep chunk from '||TO_CHAR(lv_start.lr_offset)||' to '||lt_end_bits.ncne_array(1).ne_length);
+                --
+                IF lv_start.lr_offset > 0
+                 THEN
+                    nm_debug.debug('Removing chunk');
+                    lv_retval.npa_placement_array(lv_retval.npa_placement_array.FIRST).pl_start := lv_start.lr_offset;
+                    lv_retval.npa_placement_array(lv_retval.npa_placement_array.FIRST).pl_end := lt_end_bits.ncne_array(1).ne_length;
+                END IF;
+                --
+            ELSIF lv_no_st = lt_end_bits.ncne_array(1).no_end
+             THEN
+                /*
+                ||The start node of the path is the end node of the first element in the path
+                ||so the bit we need is from the start offset to 0.
+                */
+                --nm_debug.debug( 'start/end - offset (minus) => Keep chunk from '||TO_CHAR(lv_start.lr_offset)||' to 0');
+                --
+                IF lv_start.lr_offset < lt_end_bits.ncne_array(1).ne_length
+                 THEN
+                    nm_debug.debug('Removing chunk');
+                    lv_retval.npa_placement_array(lv_retval.npa_placement_array.FIRST).pl_start := lv_start.lr_offset;
+                    lv_retval.npa_placement_array(lv_retval.npa_placement_array.FIRST).pl_end := 0;
+                END IF;
+                --
+            END IF;
+        END IF;
+        --
+        IF NOT lv_end_in_path
+         THEN
+            /*
+            ||the end element is not already in the path - we may need to add some
+            */
+            IF lv_no_end = lt_end_bits.ncne_array(2).no_st
+             THEN
+                /*
+                ||The end node of the path is the start node of the missing
+                ||element so add a fragment from 0 to the end offset.
+                */
+                --nm_debug.debug( 'end/start - offset (add) = '||TO_CHAR(lv_end.lr_offset));
+                --
+                IF lv_end.lr_offset > 0
+                 THEN
+                    lv_retval := lv_retval.add_element(pl_ne_id   => lv_end.lr_ne_id
+                                                      ,pl_start   => 0
+                                                      ,pl_end     => lv_end.lr_offset
+                                                      ,pl_measure => 0
+                                                      ,pl_mrg_mem => FALSE );
+                END IF;
+                --
+            ELSIF lv_no_end = lt_end_bits.ncne_array(2).no_end
+             THEN
+                /*
+                ||The end node of the path is the end node of the missing
+                ||element so add a fragment from the element length to the end offset.
+                */
+                --nm_debug.debug( 'end/end - offset (add) = '||TO_CHAR(lv_end.lr_offset)||' length = '||TO_CHAR(lt_end_bits.ncne_array(2).ne_length));
+                --
+                IF lv_end.lr_offset < lt_end_bits.ncne_array(2).ne_length
+                 THEN
+                    lv_retval := lv_retval.add_element(pl_ne_id   => lv_end.lr_ne_id
+                                                      ,pl_start   => lt_end_bits.ncne_array(2).ne_length
+                                                      ,pl_end     => lv_end.lr_offset
+                                                      ,pl_measure => 0
+                                                      ,pl_mrg_mem => FALSE );
+                END IF;
+            END IF;
+        ELSE
+            /*
+            ||The last element is already included in the path - we may need to subtract some.
+            */
+            --nm_debug.debug('End element is in the path from: '
+            --               ||lv_retval.npa_placement_array(lv_retval.npa_placement_array.LAST).pl_start
+            --               ||' to: '||lv_retval.npa_placement_array(lv_retval.npa_placement_array.LAST).pl_end);
+            --
+            IF lv_no_end = lt_end_bits.ncne_array(2).no_st
+             THEN
+                /*
+                ||The end node of the path is the start node of the last element in the path
+                ||so the bit we need is from the element length to the end offset.
+                */
+                --nm_debug.debug( 'end/start - offset (minus) => Keep chunk from: '||lt_end_bits.ncne_array(2).ne_length||' to: '||lv_end.lr_offset);
+                --
+                IF lv_end.lr_offset > 0
+                 THEN
+                    lv_retval.npa_placement_array(lv_retval.npa_placement_array.LAST).pl_start := lt_end_bits.ncne_array(2).ne_length;
+                    lv_retval.npa_placement_array(lv_retval.npa_placement_array.LAST).pl_end := lv_end.lr_offset;
+                END IF;
+                --
+            ELSIF lv_no_end = lt_end_bits.ncne_array(2).no_end
+             THEN
+                /*
+                ||The end node of the path is the end node of the last element in the path
+                ||so the bit we need is from the 0 to the end offset.
+                */
+                --nm_debug.debug( 'end/end - offset (minus) = '||TO_CHAR(lv_end.lr_offset)||' length = '||TO_CHAR(lt_end_bits.ncne_array(2).ne_length));
+                --
+                IF lv_end.lr_offset < lt_end_bits.ncne_array(2).ne_length
+                 THEN
+                    lv_retval.npa_placement_array(lv_retval.npa_placement_array.LAST).pl_start := 0;
+                    lv_retval.npa_placement_array(lv_retval.npa_placement_array.LAST).pl_end := lv_end.lr_offset;
+                END IF;
+                --
+            END IF;
+        END IF;
+    END IF;
+    --
+    --nm_debug.debug('end of get_pl_by_xy');
+    --
+    RETURN lv_retval;
+    --
+  END get_pl_by_xy;
+
 --
 ------------------------------------------------------------------------------
 --
