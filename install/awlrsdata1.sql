@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.10   Mar 08 2018 17:43:44   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.11   May 08 2018 21:21:54   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   Mar 08 2018 17:43:44  $
---       Date fetched Out : $Modtime:   Mar 08 2018 12:21:24  $
---       Version          : $Revision:   1.10  $
+--       Date into PVCS   : $Date:   May 08 2018 21:21:54  $
+--       Date fetched Out : $Modtime:   May 08 2018 21:16:50  $
+--       Version          : $Revision:   1.11  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 08-MAR-2018 12:21
+--       Generation Date  : 08-MAY-2018 21:16
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -185,6 +185,56 @@ INSERT
       ,HOL_MIXED_CASE
       ,HOL_USER_OPTION
       ,HOL_MAX_LENGTH)
+SELECT 'AWLPTHMINB'
+      ,'AWLRS'
+      ,'Path Buffer Min Size'
+      ,'The minimum size (in Metres) of the buffer around the mbr of the two points used to generate a path when building a list of potential candidate network elements.'
+      ,''
+      ,'NUMBER'
+      ,'N'
+      ,'N'
+      ,10
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_LIST
+                   WHERE HOL_ID = 'AWLPTHMINB');
+--
+INSERT
+  INTO HIG_OPTION_LIST
+      (HOL_ID
+      ,HOL_PRODUCT
+      ,HOL_NAME
+      ,HOL_REMARKS
+      ,HOL_DOMAIN
+      ,HOL_DATATYPE
+      ,HOL_MIXED_CASE
+      ,HOL_USER_OPTION
+      ,HOL_MAX_LENGTH)
+SELECT 'AWLPTHPERC'
+      ,'AWLRS'
+      ,'Path Buffer Percentage'
+      ,'The percentage by which to increase the mbr of the two points used to generate a path when building a list of potential candidate network elements.'
+      ,''
+      ,'NUMBER'
+      ,'N'
+      ,'N'
+      ,10
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_LIST
+                   WHERE HOL_ID = 'AWLPTHPERC');
+--
+INSERT
+  INTO HIG_OPTION_LIST
+      (HOL_ID
+      ,HOL_PRODUCT
+      ,HOL_NAME
+      ,HOL_REMARKS
+      ,HOL_DOMAIN
+      ,HOL_DATATYPE
+      ,HOL_MIXED_CASE
+      ,HOL_USER_OPTION
+      ,HOL_MAX_LENGTH)
 SELECT 'AWLRECALHS'
       ,'AWLRS'
       ,'AWLRS Recalibrate With History'
@@ -278,6 +328,28 @@ SELECT 'AWLMAPSRID'
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_OPTION_VALUES
                    WHERE HOV_ID = 'AWLMAPSRID');
+--
+INSERT
+  INTO HIG_OPTION_VALUES
+      (HOV_ID
+      ,HOV_VALUE)
+SELECT 'AWLPTHMINB'
+      ,'1000'
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_VALUES
+                   WHERE HOV_ID = 'AWLPTHMINB');
+--
+INSERT
+  INTO HIG_OPTION_VALUES
+      (HOV_ID
+      ,HOV_VALUE)
+SELECT 'AWLPTHPERC'
+      ,'20'
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_VALUES
+                   WHERE HOV_ID = 'AWLPTHPERC');
 --
 INSERT
   INTO HIG_OPTION_VALUES
