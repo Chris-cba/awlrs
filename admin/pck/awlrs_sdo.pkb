@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.15   May 08 2018 20:51:48   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.16   May 08 2018 21:10:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   May 08 2018 20:51:48  $
-  --       Date fetched Out : $Modtime:   May 08 2018 17:59:34  $
-  --       Version          : $Revision:   1.15  $
+  --       Date into PVCS   : $Date:   May 08 2018 21:10:36  $
+  --       Date fetched Out : $Modtime:   May 08 2018 21:07:28  $
+  --       Version          : $Revision:   1.16  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -1339,8 +1339,9 @@ AS
         --
         IF get_base_theme%NOTFOUND
          THEN
-            hig.raise_ner(pi_appl => 'AWLRS'
-                         ,pi_id   => 53);
+            hig.raise_ner(pi_appl               => 'AWLRS'
+                         ,pi_id                 => 53
+                         ,pi_supplementary_info => pi_theme_name);
         END IF;
         --
         CLOSE get_base_theme;
@@ -1424,8 +1425,9 @@ AS
     EXCEPTION
       WHEN no_data_found
        THEN
-        hig.raise_ner(pi_appl => 'AWLRS'
-                     ,pi_id   => 54);
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 54
+                     ,pi_supplementary_info => pi_theme_name);
       WHEN others
        THEN
           RAISE;
@@ -1766,8 +1768,9 @@ AS
     EXCEPTION
       WHEN no_data_found
        THEN
-          hig.raise_ner(pi_appl => 'AWLRS'
-                       ,pi_id   => 55);
+          hig.raise_ner(pi_appl               => 'AWLRS'
+                       ,pi_id                 => 55
+                       ,pi_supplementary_info => pi_theme_name);
     END;
     /*
     ||Check element Group Type and theme Group Type are the same.
