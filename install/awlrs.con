@@ -1,15 +1,15 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.8   Mar 08 2018 17:32:14   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.9   May 09 2018 11:15:24   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.con  $
---       Date into PVCS   : $Date:   Mar 08 2018 17:32:14  $
---       Date fetched Out : $Modtime:   Mar 08 2018 15:13:12  $
---       Version          : $Revision:   1.8  $
+--       Date into PVCS   : $Date:   May 09 2018 11:15:24  $
+--       Date fetched Out : $Modtime:   May 09 2018 11:09:44  $
+--       Version          : $Revision:   1.9  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Thu Mar 08  14:20:08 2018 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Tue May 08  21:52:23 2018 by Server Generator 10.1.2.9.28
   
 PROMPT Creating Primary Key on 'AWLRS_FILE_DATUM_ATTRIB_MAP'
 ALTER TABLE AWLRS_FILE_DATUM_ATTRIB_MAP
@@ -27,6 +27,12 @@ PROMPT Creating Primary Key on 'AWLRS_FILE_GRP_ATTRIB_MAP'
 ALTER TABLE AWLRS_FILE_GRP_ATTRIB_MAP
  ADD (CONSTRAINT AFGAM_PK PRIMARY KEY 
   (AFGAM_ID))
+/
+
+PROMPT Creating Primary Key on 'AWLRS_PATH_GROUP_THEMES'
+ALTER TABLE AWLRS_PATH_GROUP_THEMES
+ ADD (CONSTRAINT APGT_PK PRIMARY KEY 
+  (APGT_GROUP_THEME_NAME))
 /
 
 PROMPT Creating Primary Key on 'AWLRS_PERSISTENCE'
@@ -122,6 +128,20 @@ ALTER TABLE AWLRS_FILE_GRP_ATTRIB_MAP ADD (CONSTRAINT
   (NT_TYPE) ON DELETE CASCADE)
 /
 
+PROMPT Creating Foreign Key on 'AWLRS_PATH_GROUP_THEMES'
+ALTER TABLE AWLRS_PATH_GROUP_THEMES ADD (CONSTRAINT
+ APGT_FK_DATUM_NTH FOREIGN KEY 
+  (APGT_DATUM_THEME_NAME) REFERENCES NM_THEMES_ALL
+  (NTH_THEME_NAME))
+/
+
+PROMPT Creating Foreign Key on 'AWLRS_PATH_GROUP_THEMES'
+ALTER TABLE AWLRS_PATH_GROUP_THEMES ADD (CONSTRAINT
+ APGT_FK_GROUP_NTH FOREIGN KEY 
+  (APGT_GROUP_THEME_NAME) REFERENCES NM_THEMES_ALL
+  (NTH_THEME_NAME))
+/
+
 PROMPT Creating Foreign Key on 'AWLRS_PERSISTENCE'
 ALTER TABLE AWLRS_PERSISTENCE ADD (CONSTRAINT
  AP_FK_HUS FOREIGN KEY 
@@ -156,3 +176,5 @@ ALTER TABLE AWLRS_SAVED_SEARCH_CRITERIA ADD (CONSTRAINT
   (ASSC_THEME_NAME) REFERENCES NM_THEMES_ALL
   (NTH_THEME_NAME) ON DELETE CASCADE)
 /
+
+
