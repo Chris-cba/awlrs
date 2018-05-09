@@ -1,15 +1,15 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.7   Mar 08 2018 17:32:14   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.8   May 09 2018 11:15:28   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.tab  $
---       Date into PVCS   : $Date:   Mar 08 2018 17:32:14  $
---       Date fetched Out : $Modtime:   Mar 08 2018 15:15:06  $
---       Version          : $Revision:   1.7  $
+--       Date into PVCS   : $Date:   May 09 2018 11:15:28  $
+--       Date fetched Out : $Modtime:   May 09 2018 11:13:06  $
+--       Version          : $Revision:   1.8  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Thu Mar 08  14:20:08 2018 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Tue May 08  21:52:23 2018 by Server Generator 10.1.2.9.28
 
 PROMPT Creating Table 'AWLRS_FILE_DATUM_ATTRIB_MAP'
 CREATE TABLE AWLRS_FILE_DATUM_ATTRIB_MAP
@@ -36,6 +36,13 @@ CREATE TABLE AWLRS_FILE_GRP_ATTRIB_MAP
  ,AFGAM_TARGET_GTY VARCHAR2(4) NOT NULL
  ,AFGAM_FILE_ATTRIB VARCHAR2(30) NOT NULL
  ,AFGAM_TARGET_ATTRIB VARCHAR2(30) NOT NULL
+ )
+/
+
+PROMPT Creating Table 'AWLRS_PATH_GROUP_THEMES'
+CREATE TABLE AWLRS_PATH_GROUP_THEMES
+ (APGT_GROUP_THEME_NAME VARCHAR2(30) NOT NULL
+ ,APGT_DATUM_THEME_NAME VARCHAR2(30) NOT NULL
  )
 /
 
@@ -77,4 +84,4 @@ CREATE TABLE AWLRS_SAVED_SEARCH_CRITERIA
  ,ASSC_DESCRIPTION VARCHAR2(1000)
  ,ASSC_CRITERIA XMLTYPE NOT NULL
  )
-/
+/
