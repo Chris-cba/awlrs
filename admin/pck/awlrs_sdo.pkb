@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.16   May 08 2018 21:10:36   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.17   May 23 2018 16:13:16   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   May 08 2018 21:10:36  $
-  --       Date fetched Out : $Modtime:   May 08 2018 21:07:28  $
-  --       Version          : $Revision:   1.16  $
+  --       Date into PVCS   : $Date:   May 23 2018 16:13:16  $
+  --       Date fetched Out : $Modtime:   May 23 2018 16:09:22  $
+  --       Version          : $Revision:   1.17  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -2305,18 +2305,12 @@ AS
         ||Start and End are on the Same Element so return a placement array between the two offsets.
         */
         --nm_debug.debug('same element so no need for walking');
-        IF lv_start.lr_offset < lv_end.lr_offset
+		IF lv_start.lr_offset <> lv_end.lr_offset
          THEN
             RETURN nm_placement_array(nm_placement_array_type(nm_placement(lv_start.lr_ne_id
                                                                           ,lv_start.lr_offset
                                                                           ,lv_end.lr_offset
                                                                           ,0 )));
-        ELSIF lv_start.lr_offset > lv_end.lr_offset
-         THEN
-            RETURN nm_placement_array(nm_placement_array_type(nm_placement(lv_start.lr_ne_id
-                                                                          ,lv_end.lr_offset
-                                                                          ,lv_start.lr_offset
-                                                                          ,0)));
         ELSE
             raise_application_error(-20001, 'points are the same - no distance between them');
         END IF;
