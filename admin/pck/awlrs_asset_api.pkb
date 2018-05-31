@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.29   Feb 09 2018 15:49:18   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.30   May 31 2018 14:24:50   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 09 2018 15:49:18  $
-  --       Date fetched Out : $Modtime:   Feb 07 2018 11:10:32  $
-  --       Version          : $Revision:   1.29  $
+  --       Date into PVCS   : $Date:   May 31 2018 14:24:50  $
+  --       Date fetched Out : $Modtime:   May 31 2018 14:17:00  $
+  --       Version          : $Revision:   1.30  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.29  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.30  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -49,6 +49,7 @@ AS
     g_db_iit_rec := lv_empty_rec;
     g_old_iit_rec := lv_empty_rec;
     g_new_iit_rec := lv_empty_rec;
+    g_iit_rec := lv_empty_rec;
     --
   END init_asset_globals;
 
@@ -805,6 +806,10 @@ AS
   BEGIN
     --
     SAVEPOINT create_asset_sp;
+    /*
+    ||Init globals.
+    */
+    init_asset_globals;
     /*
     ||Create the asset.
     */
