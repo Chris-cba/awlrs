@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.3   23 Mar 2017 14:47:58   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.4   Jun 04 2018 14:15:44   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkh  $
-  --       Date into PVCS   : $Date:   23 Mar 2017 14:47:58  $
-  --       Date fetched Out : $Modtime:   23 Mar 2017 13:05:06  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   Jun 04 2018 14:15:44  $
+  --       Date fetched Out : $Modtime:   Jun 01 2018 15:25:30  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
   --
   TYPE group_expression_rec IS RECORD(group_operation        VARCHAR2(100)
                                      ,group_expressions_xml  XMLTYPE
@@ -31,6 +31,8 @@ AS
   TYPE single_expression_tab IS TABLE OF single_expression_rec INDEX BY BINARY_INTEGER;
   --
   TYPE columns_tab IS TABLE OF awlrs_quick_search_columns.aqsc_column%TYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE id_tab IS TABLE OF PLS_INTEGER INDEX BY BINARY_INTEGER;
   --
   -----------------------------------------------------------------------------
   --
@@ -127,6 +129,33 @@ AS
                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
                                     ,po_message_cursor   OUT sys_refcursor
                                     ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_results_by_id(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                             ,pi_ids              IN  id_tab
+                             ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                             ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                             ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                             ,pi_max_rows         IN  NUMBER DEFAULT NULL
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_results_by_id(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                   ,pi_ids              IN  id_tab
+                                   ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                                   ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                                   ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                                   ,pi_skip_n_rows      IN  PLS_INTEGER
+                                   ,pi_pagesize         IN  PLS_INTEGER
+                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
