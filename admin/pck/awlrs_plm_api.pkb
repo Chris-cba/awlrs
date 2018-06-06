@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.0   May 31 2018 15:25:34   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.1   Jun 06 2018 14:46:06   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-  --       Date into PVCS   : $Date:   May 31 2018 15:25:34  $
-  --       Date fetched Out : $Modtime:   May 31 2018 15:23:52  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Jun 06 2018 14:46:06  $
+  --       Date fetched Out : $Modtime:   Jun 06 2018 14:37:16  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
   --
   -----------------------------------------------------------------------------
@@ -313,10 +313,10 @@ AS
                                        ,pi_ne_ids                   IN     iit_ne_id_tab
                                        ,pi_begin_mps                IN     location_from_offset_tab
                                        ,pi_end_mps                  IN     location_to_offset_tab
-					                             ,pi_layer_attrib_idx         IN     iit_ne_id_tab											  
-					                             ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
+                                       ,pi_layer_attrib_idx         IN     iit_ne_id_tab                        
+                                       ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
                                        ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
-                                       ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab												  
+                                       ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab                         
                                        ,po_iit_ne_ids               IN OUT iit_ne_id_tab
                                        ,po_message_severity            OUT hig_codes.hco_code%TYPE
                                        ,po_message_cursor              OUT sys_refcursor)
@@ -325,50 +325,50 @@ AS
     lv_severity   hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
     lv_inv_type   nm_inv_items_all.iit_inv_type%TYPE := get_cons_rec_type;
     lv_iit_ne_id  nm_inv_items.iit_ne_id%TYPE;
-	  lv_pcl_iit_ne_id  nm_inv_items.iit_ne_id%TYPE;
+    lv_pcl_iit_ne_id  nm_inv_items.iit_ne_id%TYPE;
     --
     lt_pcl_iit_ne_ids           iit_ne_id_tab;
     lt_messages                 awlrs_message_tab := awlrs_message_tab();
     lt_layer_iit_ne_ids         iit_ne_id_tab;
-    lt_layer_attrib_idx         iit_ne_id_tab;									  
+    lt_layer_attrib_idx         iit_ne_id_tab;                    
     lt_layer_attrib_names       awlrs_asset_api.attrib_name_tab;
     lt_layer_attrib_scrn_texts  awlrs_asset_api.attrib_scrn_text_tab;
     lt_layer_attrib_char_values awlrs_asset_api.attrib_value_tab;
-	  lt_iit_ne_ids               iit_ne_id_tab;
-    lv_message_cursor           sys_refcursor;	
+    lt_iit_ne_ids               iit_ne_id_tab;
+    lv_message_cursor           sys_refcursor;  
     --
   BEGIN
     --
-	  SAVEPOINT add_con_records_sp;
-	  /*
+    SAVEPOINT add_con_records_sp;
+    /*
     ||Check row counts
     */
-	  IF pi_layer_attrib_idx.COUNT != pi_layer_attrib_names.COUNT
-	   OR pi_layer_attrib_idx.COUNT != pi_layer_attrib_scrn_texts.COUNT
-	   OR pi_layer_attrib_idx.COUNT != pi_layer_attrib_char_values.COUNT
+    IF pi_layer_attrib_idx.COUNT != pi_layer_attrib_names.COUNT
+     OR pi_layer_attrib_idx.COUNT != pi_layer_attrib_scrn_texts.COUNT
+     OR pi_layer_attrib_idx.COUNT != pi_layer_attrib_char_values.COUNT
      OR pi_attrib_names.COUNT != pi_attrib_scrn_texts.COUNT
      OR pi_attrib_names.COUNT != pi_attrib_char_values.COUNT
-	    THEN
+      THEN
         --
         hig.raise_ner(pi_appl => 'AWLRS'
                      ,pi_id   => 5);
-	  	  --
-	  END IF;
-	  --
-	  FOR j in 1..pi_ne_ids.COUNT LOOP
-	    --
+        --
+    END IF;
+    --
+    FOR j in 1..pi_ne_ids.COUNT LOOP
+      --
       IF lv_severity != awlrs_util.c_msg_cat_success
        THEN
           EXIT;
-      END IF;	  
-	    --
+      END IF;   
+      --
       FOR i IN 1..pi_xsps.COUNT LOOP
         --
-	  	  IF lv_severity != awlrs_util.c_msg_cat_success
-	  	   THEN
-	  	      EXIT;
-	  	  END IF;
-	  	  --
+        IF lv_severity != awlrs_util.c_msg_cat_success
+         THEN
+            EXIT;
+        END IF;
+        --
         lv_severity := awlrs_util.c_msg_cat_success;
         lt_messages.DELETE;
         --
@@ -389,25 +389,25 @@ AS
                                ,pi_end_mp             => pi_end_mps(j)
                                ,po_iit_ne_id          => lv_iit_ne_id
                                ,po_message_severity   => lv_severity
-                               ,po_message_tab        => lt_messages);						   
-	  	  --
-	      IF lv_severity = awlrs_util.c_msg_cat_success
+                               ,po_message_tab        => lt_messages);               
+        --
+        IF lv_severity = awlrs_util.c_msg_cat_success
          THEN
            --
-	  	     lt_iit_ne_ids(lt_iit_ne_ids.COUNT+1) := lv_iit_ne_id;
-	  	     --
-	  	     FOR l in 1..pi_layer_attrib_idx.COUNT LOOP
+           lt_iit_ne_ids(lt_iit_ne_ids.COUNT+1) := lv_iit_ne_id;
+           --
+           FOR l in 1..pi_layer_attrib_idx.COUNT LOOP
              -- 
-	  	       lt_layer_attrib_names(lt_layer_attrib_names.COUNT+1) := pi_layer_attrib_names(l);
-	  	       lt_layer_attrib_scrn_texts(lt_layer_attrib_scrn_texts.COUNT+1) := pi_layer_attrib_scrn_texts(l);
-	  	       lt_layer_attrib_char_values(lt_layer_attrib_char_values.COUNT+1) := pi_layer_attrib_char_values(l);
+             lt_layer_attrib_names(lt_layer_attrib_names.COUNT+1) := pi_layer_attrib_names(l);
+             lt_layer_attrib_scrn_texts(lt_layer_attrib_scrn_texts.COUNT+1) := pi_layer_attrib_scrn_texts(l);
+             lt_layer_attrib_char_values(lt_layer_attrib_char_values.COUNT+1) := pi_layer_attrib_char_values(l);
              -- 
              IF l = pi_layer_attrib_idx.COUNT --last record in array
-	  	       OR pi_layer_attrib_idx(l) <> pi_layer_attrib_idx(l+1) --next value is new layer number
+             OR pi_layer_attrib_idx(l) <> pi_layer_attrib_idx(l+1) --next value is new layer number
               THEN
                 /*
                 ||add layer 
-                */				 
+                */         
                 add_layer(pi_parent_id          => lv_iit_ne_id
                          ,pi_start_date         => pi_start_date
                          ,pi_notes              => null
@@ -420,38 +420,38 @@ AS
                 --
                 lt_layer_attrib_names.DELETE;
                 lt_layer_attrib_scrn_texts.DELETE;
-                lt_layer_attrib_char_values.DELETE;	                  
-	  	 	        --
+                lt_layer_attrib_char_values.DELETE;                   
+                --
                 IF lv_severity = awlrs_util.c_msg_cat_success
                  THEN 
-	  	 	           --
+                   --
                    lt_pcl_iit_ne_ids(lt_pcl_iit_ne_ids.COUNT+1) := lv_pcl_iit_ne_id; 
-	  	 		         --
+                   --
                 ELSE 
-	  	 	          --
+                  --
                   get_messages(pi_message_cursor => lv_message_cursor
                               ,po_message_tab    => lt_messages);
-	  	 	          --
+                  --
                   ROLLBACK TO add_con_records_sp;
                   EXIT; 
                   --     
-	  	 	        END IF;
-                --			 
-	  	       END IF;
-	  	       --
-	  	     END LOOP;
+                END IF;
+                --       
+             END IF;
+             --
+           END LOOP;
             --
         ELSE
-	  	    --
+          --
           ROLLBACK TO add_con_records_sp;
           EXIT;
-	  	    --
+          --
         END IF;
         --
       END LOOP;
       --
-	  END LOOP;
-	  /*
+    END LOOP;
+    /*
     ||If there are any messages to return then create a cursor for them.
     */
     IF lt_messages.COUNT > 0
@@ -701,7 +701,7 @@ AS
                 ,po_iit_ne_id          => lv_iit_ne_id
                 ,po_message_severity   => lv_severity
                 ,po_message_tab        => lt_messages);
-	/*
+  /*
     ||If errors occurred rollback.
     */
     IF lv_severity != awlrs_util.c_msg_cat_success
@@ -1412,6 +1412,7 @@ AS
             ,iit_end_date                                  end_date
             ,iit_note                                      note
             ,iit_foreign_key                               foreign_key
+            ,iit_position                                  layer
         FROM nm_inv_items_all iit
        WHERE iit.iit_ne_id IN(SELECT ne_id FROM TABLE(CAST(lt_ids AS nm_ne_id_array)))
            ;
@@ -1624,7 +1625,7 @@ AS
                                 ,po_message_cursor         => po_message_cursor);
   --
   END update_contruction_layer;
-  --TO DO amend so can stop certain attributes coming out.
+  --
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_flex_attribs(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
@@ -1639,13 +1640,26 @@ AS
     lv_severity        hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
     lv_message_cursor  sys_refcursor;
     lv_cursor          sys_refcursor;
+    lt_restrict_cols   awlrs_asset_api.view_col_names_tab;
     --
   BEGIN
+    /*
+    || Restrict returning columns to exclude some PCR and PCL atributes.
+    */
+    lt_restrict_cols.DELETE;
+    --
+    IF pi_inv_type = get_layer_type 
+     THEN
+        --
+        lt_restrict_cols(1) := 'LAYER';
+        --
+    END IF;
     --
     awlrs_asset_api.get_flex_attribs(pi_iit_ne_id        => pi_iit_ne_id
                                     ,pi_inv_type         => pi_inv_type
                                     ,pi_disp_derived     => pi_disp_derived
                                     ,pi_disp_inherited   => pi_disp_inherited
+                                    ,pi_exclude_cols     => lt_restrict_cols
                                     ,po_message_severity => lv_severity
                                     ,po_message_cursor   => lv_message_cursor
                                     ,po_cursor           => lv_cursor);
