@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.0   May 31 2018 15:25:34   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.1   Jun 06 2018 14:46:06   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkh  $
-  --       Date into PVCS   : $Date:   May 31 2018 15:25:34  $
-  --       Date fetched Out : $Modtime:   May 31 2018 12:04:08  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Jun 06 2018 14:46:06  $
+  --       Date fetched Out : $Modtime:   Jun 06 2018 12:57:26  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   --
   TYPE iit_ne_id_tab IS TABLE OF nm_inv_items_all.iit_ne_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -49,10 +49,10 @@ AS
                                        ,pi_ne_ids                   IN     iit_ne_id_tab
                                        ,pi_begin_mps                IN     location_from_offset_tab
                                        ,pi_end_mps                  IN     location_to_offset_tab
-					                             ,pi_layer_attrib_idx         IN     iit_ne_id_tab											  
-					                             ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
+                                       ,pi_layer_attrib_idx         IN     iit_ne_id_tab                        
+                                       ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
                                        ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
-                                       ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab												  
+                                       ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab                         
                                        ,po_iit_ne_ids               IN OUT iit_ne_id_tab
                                        ,po_message_severity            OUT hig_codes.hco_code%TYPE
                                        ,po_message_cursor              OUT sys_refcursor)  ;
@@ -187,6 +187,16 @@ AS
   --
   -----------------------------------------------------------------------------
   --                                    
+  PROCEDURE get_flex_attribs(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                            ,pi_inv_type         IN  nm_inv_items_all.iit_inv_type%TYPE
+                            ,pi_disp_derived     IN  BOOLEAN DEFAULT TRUE
+                            ,pi_disp_inherited   IN  BOOLEAN DEFAULT TRUE
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --                                  
   PROCEDURE enddate_construction_record(pi_iit_id           IN     nm_inv_items_all.iit_ne_id%TYPE
                                        ,pi_effective_date   IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                                        ,pi_run_checks       IN     VARCHAR2 DEFAULT 'Y'
