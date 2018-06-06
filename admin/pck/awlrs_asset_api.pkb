@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.30   May 31 2018 14:24:50   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.31   Jun 06 2018 14:45:26   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   May 31 2018 14:24:50  $
-  --       Date fetched Out : $Modtime:   May 31 2018 14:17:00  $
-  --       Version          : $Revision:   1.30  $
+  --       Date into PVCS   : $Date:   Jun 06 2018 14:45:26  $
+  --       Date fetched Out : $Modtime:   Jun 06 2018 14:24:18  $
+  --       Version          : $Revision:   1.31  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.30  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.31  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -638,6 +638,7 @@ AS
                             ,pi_inv_type         IN  nm_inv_items_all.iit_inv_type%TYPE
                             ,pi_disp_derived     IN  BOOLEAN DEFAULT TRUE
                             ,pi_disp_inherited   IN  BOOLEAN DEFAULT TRUE
+                            ,pi_exclude_cols     IN  view_col_names_tab DEFAULT CAST (null as view_col_names_tab)
                             ,po_message_severity OUT hig_codes.hco_code%TYPE
                             ,po_message_cursor   OUT sys_refcursor
                             ,po_cursor           OUT sys_refcursor)
@@ -646,8 +647,16 @@ AS
     lv_disp_derived VARCHAR2(1) := CASE WHEN pi_disp_derived THEN 'Y' ELSE 'N' END;
     lv_disp_inherited VARCHAR2(1) := CASE WHEN pi_disp_inherited THEN 'Y' ELSE 'N' END;
     lt_columns  nm3flx.tab_type_columns;
+    lt_column_names  nm_max_varchar_tbl := nm_max_varchar_tbl();    
     --
   BEGIN
+    --
+    FOR i IN 1..pi_exclude_cols.COUNT LOOP
+      --
+      lt_column_names.extend;
+      lt_column_names(i) := pi_exclude_cols(i);
+      --
+    END LOOP;    
     --
     OPEN po_cursor FOR
     SELECT column_name
@@ -696,7 +705,8 @@ AS
                   ,'Y'               updateable
                   ,ita_disp_seq_no   seq_no
               FROM nm_inv_type_attribs
-             WHERE ita_inv_type = pi_inv_type)
+             WHERE ita_inv_type = pi_inv_type
+               AND ita_view_col_name NOT IN (SELECT * FROM TABLE(CAST(lt_column_names AS nm_max_varchar_tbl))))
      ORDER
         BY seq_no
           ,column_name

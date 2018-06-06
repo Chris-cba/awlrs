@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.13   Sep 27 2017 11:49:36   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.14   Jun 06 2018 14:45:26   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   Sep 27 2017 11:49:36  $
-  --       Date fetched Out : $Modtime:   Sep 19 2017 13:01:22  $
-  --       Version          : $Revision:   1.13  $
+  --       Date into PVCS   : $Date:   Jun 06 2018 14:45:26  $
+  --       Date fetched Out : $Modtime:   Jun 06 2018 14:23:00  $
+  --       Version          : $Revision:   1.14  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.14  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -41,6 +41,7 @@ AS
   TYPE attrib_value_tab IS TABLE OF VARCHAR2(500) INDEX BY BINARY_INTEGER;
   --
   TYPE domain_names_tab IS TABLE OF hig_domains.hdo_domain%TYPE INDEX BY BINARY_INTEGER;
+  TYPE view_col_names_tab IS TABLE OF nm_inv_type_attribs.ita_view_col_name%TYPE INDEX BY BINARY_INTEGER;
   --
   -----------------------------------------------------------------------------
   --
@@ -76,6 +77,7 @@ AS
                             ,pi_inv_type         IN  nm_inv_items_all.iit_inv_type%TYPE
                             ,pi_disp_derived     IN  BOOLEAN DEFAULT TRUE
                             ,pi_disp_inherited   IN  BOOLEAN DEFAULT TRUE
+                            ,pi_exclude_cols     IN  view_col_names_tab DEFAULT CAST(NULL AS view_col_names_tab)
                             ,po_message_severity OUT hig_codes.hco_code%TYPE
                             ,po_message_cursor   OUT sys_refcursor
                             ,po_cursor           OUT sys_refcursor);
