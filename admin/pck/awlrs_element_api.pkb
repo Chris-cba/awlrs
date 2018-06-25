@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.28   Apr 06 2018 17:49:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.29   Jun 25 2018 11:34:42   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Apr 06 2018 17:49:12  $
-  --       Date fetched Out : $Modtime:   Mar 26 2018 16:29:14  $
-  --       Version          : $Revision:   1.28  $
+  --       Date into PVCS   : $Date:   Jun 25 2018 11:34:42  $
+  --       Date fetched Out : $Modtime:   Jun 25 2018 10:27:36  $
+  --       Version          : $Revision:   1.29  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.28  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.29  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -199,6 +199,33 @@ AS
         hig.raise_ner(pi_appl => 'AWLRS'
                      ,pi_id   => 2
                      ,pi_supplementary_info => pi_element_name);
+  END get_ne_id;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_ne_id(pi_ad_id IN nm_inv_items_all.iit_ne_id%TYPE)
+    RETURN nm_elements_all.ne_id%TYPE IS
+    --
+    lv_retval nm_inv_items_all.iit_ne_id%TYPE;
+    --
+  BEGIN
+    --
+    SELECT nad_ne_id
+      INTO lv_retval
+      FROM nm_nw_ad_link
+     WHERE nad_iit_ne_id = pi_ad_id
+         ;
+    --
+    RETURN lv_retval;
+    --
+  EXCEPTION
+    WHEN no_data_found
+     THEN
+        --Invalid Asset Id supplied
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 37
+                     ,pi_supplementary_info => pi_ad_id);
   END get_ne_id;
 
   --
