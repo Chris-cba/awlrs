@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.16   17 Mar 2017 18:08:00   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.17   Jun 25 2018 11:34:44   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   17 Mar 2017 18:08:00  $
-  --       Date fetched Out : $Modtime:   17 Mar 2017 13:17:38  $
-  --       Version          : $Revision:   1.16  $
+  --       Date into PVCS   : $Date:   Jun 25 2018 11:34:44  $
+  --       Date fetched Out : $Modtime:   Jun 25 2018 10:26:34  $
+  --       Version          : $Revision:   1.17  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
   --
   g_db_element   nm_elements_all%ROWTYPE;
   g_old_element  nm_elements_all%ROWTYPE;
@@ -122,6 +122,12 @@ AS
   -----------------------------------------------------------------------------
   --
   FUNCTION get_ne_id(pi_element_name IN VARCHAR2)
+    RETURN nm_elements_all.ne_id%TYPE;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_ne_id(pi_ad_id IN nm_inv_items_all.iit_ne_id%TYPE)
     RETURN nm_elements_all.ne_id%TYPE;
 
   --
