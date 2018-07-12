@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.11   May 08 2018 21:21:54   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.12   Jul 12 2018 16:41:22   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   May 08 2018 21:21:54  $
---       Date fetched Out : $Modtime:   May 08 2018 21:16:50  $
---       Version          : $Revision:   1.11  $
+--       Date into PVCS   : $Date:   Jul 12 2018 16:41:22  $
+--       Date fetched Out : $Modtime:   Jul 12 2018 16:36:10  $
+--       Version          : $Revision:   1.12  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 08-MAY-2018 21:16
+--       Generation Date  : 12-JUL-2018 16:36
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -407,14 +407,14 @@ INSERT
       ,HSA_COLUMN_NAME
       ,HSA_SEQUENCE_NAME
       ,HSA_LAST_REBUILD_DATE)
-SELECT 'AWLRS_FILE_FEATURE_MAP'
+SELECT 'AWLRS_FILE_FEATURE_MAPS'
       ,'AFFM_ID'
       ,'AFFM_ID_SEQ'
       ,null
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_SEQUENCE_ASSOCIATIONS
-                   WHERE HSA_TABLE_NAME = 'AWLRS_FILE_FEATURE_MAP'
+                   WHERE HSA_TABLE_NAME = 'AWLRS_FILE_FEATURE_MAPS'
                      AND HSA_COLUMN_NAME = 'AFFM_ID');
 --
 INSERT
