@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.15   Jun 04 2018 14:15:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.16   Jul 16 2018 15:22:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 04 2018 14:15:46  $
-  --       Date fetched Out : $Modtime:   Jun 01 2018 15:25:30  $
-  --       Version          : $Revision:   1.15  $
+  --       Date into PVCS   : $Date:   Jul 16 2018 15:22:20  $
+  --       Date fetched Out : $Modtime:   Jul 16 2018 14:06:34  $
+  --       Version          : $Revision:   1.16  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.15  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.16  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -581,7 +581,7 @@ AS
   ||CHR(10)||'                 WHEN ''NO_CREATED_BY''     THEN ''Created By'''
   ||CHR(10)||'                 WHEN ''NO_DATE_MODIFIED''  THEN ''Date Modified'''
   ||CHR(10)||'                 WHEN ''NO_MODIFIED_BY''    THEN ''Modified By'''
-  ||CHR(10)||'                 WHEN ''NO_NODE_ID''        THEN ''Node Id'''  
+  ||CHR(10)||'                 WHEN ''NO_NODE_ID''        THEN ''Node Id'''
   ||CHR(10)||'                 WHEN ''NO_NP_ID''          THEN ''Point Id'''
   ||CHR(10)||'                 WHEN ''NPL_ID''            THEN ''Point Location Id'''
   ||CHR(10)||'               END prompt'
@@ -626,7 +626,7 @@ AS
   ||CHR(10)||'                 WHEN ''NO_CREATED_BY''     THEN 8'
   ||CHR(10)||'                 WHEN ''NO_DATE_MODIFIED''  THEN 9'
   ||CHR(10)||'                 WHEN ''NO_MODIFIED_BY''    THEN 10'
-  ||CHR(10)||'                 WHEN ''NO_NODE_ID''        THEN 11'  
+  ||CHR(10)||'                 WHEN ''NO_NODE_ID''        THEN 11'
   ||CHR(10)||'                 WHEN ''NO_NP_ID''          THEN 12'
   ||CHR(10)||'                 WHEN ''NPL_ID''            THEN 14'
   ||CHR(10)||'               END display_sequence'
@@ -2529,16 +2529,16 @@ AS
     --
     IF pi_paged
      THEN
-        lv_pagecols := 'rownum ind'
-            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+        lv_pagecols := 'rownum "ind"'
+            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) "row_count"'
             ||CHR(10)||'      ,';
     END IF;
     --
     IF pi_order_column IS NOT NULL
      THEN
-        lv_order_by := pi_order_column||' '||NVL(LOWER(pi_order_asc_desc),'asc');
+        lv_order_by := '"'||LOWER(pi_order_column)||'" '||NVL(LOWER(pi_order_asc_desc),'asc');
     ELSE
-        lv_order_by := 'match_quality ,unique_';
+        lv_order_by := '"match_quality" ,"unique_"';
     END IF;
     --
     FOR i IN 1..pi_like_cols.COUNT LOOP
@@ -2556,22 +2556,22 @@ AS
     --
     lv_match_cases := lv_match_cases||CHR(10)||'                          ELSE '||TO_CHAR((pi_like_cols.COUNT * 2) + 1);
     --
-    lv_retval := 'WITH elements AS(SELECT ne_id result_id'
-      ||CHR(10)||'                       ,ne_nt_type network_type'
-      ||CHR(10)||'                       ,ne_gty_group_type group_type'
+    lv_retval := 'WITH elements AS(SELECT ne_id "result_id"'
+      ||CHR(10)||'                       ,ne_nt_type "network_type"'
+      ||CHR(10)||'                       ,ne_gty_group_type "group_type"'
       ||CHR(10)||'                       ,CASE ne_nt_type'
       ||CHR(10)||'                          WHEN ''ESU'' THEN ne_name_1'
       ||CHR(10)||'                          WHEN ''NSGN'' THEN ne_number'
       ||CHR(10)||'                          ELSE ne_unique'
-      ||CHR(10)||'                        END unique_'
-      ||CHR(10)||'                       ,ne_descr description'
-      ||CHR(10)||'                       ,ne_start_date start_date'
-      ||CHR(10)||'                       ,ne_end_date end_date'
-      ||CHR(10)||'                       ,nm3net.get_ne_length(ne_id) length'
-      ||CHR(10)||'                       ,nau_name admin_unit'
+      ||CHR(10)||'                        END "unique_"'
+      ||CHR(10)||'                       ,ne_descr "description"'
+      ||CHR(10)||'                       ,ne_start_date "start_date"'
+      ||CHR(10)||'                       ,ne_end_date "end_date"'
+      ||CHR(10)||'                       ,nm3net.get_ne_length(ne_id) "length"'
+      ||CHR(10)||'                       ,nau_name "admin_unit"'
                ||pi_select_list
       ||CHR(10)||'                       ,CASE'||lv_match_cases
-      ||CHR(10)||'                        END match_quality'
+      ||CHR(10)||'                        END "match_quality"'
       ||CHR(10)||'                   FROM nm_admin_units_all'
       ||CHR(10)||'                       ,nm_elements_all'
       ||CHR(10)||'                  WHERE ne_type != ''D'''
@@ -2585,15 +2585,15 @@ AS
       ||CHR(10)||'                    AND ne_admin_unit = nau_admin_unit'
       ||CHR(10)||'                  ORDER BY '||lv_order_by||')'
       ||CHR(10)||'SELECT '||lv_pagecols
-                      ||'result_id'
-      ||CHR(10)||'      ,network_type'
-      ||CHR(10)||'      ,group_type'
-      ||CHR(10)||'      ,unique_'
-      ||CHR(10)||'      ,description'
-      ||CHR(10)||'      ,start_date'
-      ||CHR(10)||'      ,end_date'
-      ||CHR(10)||'      ,length'
-      ||CHR(10)||'      ,admin_unit'
+                      ||'"result_id"'
+      ||CHR(10)||'      ,"network_type"'
+      ||CHR(10)||'      ,"group_type"'
+      ||CHR(10)||'      ,"unique_"'
+      ||CHR(10)||'      ,"description"'
+      ||CHR(10)||'      ,"start_date"'
+      ||CHR(10)||'      ,"end_date"'
+      ||CHR(10)||'      ,"length"'
+      ||CHR(10)||'      ,"admin_unit"'
                ||pi_alias_list
       ||CHR(10)||'  FROM elements'
     ;
@@ -2726,7 +2726,7 @@ AS
     lv_search_string := UPPER(pi_search_string);
     lv_like_string := '%'||lv_search_string||'%';
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -2820,20 +2820,20 @@ AS
     --
     IF pi_paged
      THEN
-        lv_pagecols := 'rownum ind'
-            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+        lv_pagecols := 'rownum "ind"'
+            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) "row_count"'
             ||CHR(10)||'      ,';
     END IF;
     --
     IF pi_order_column IS NOT NULL
      THEN
-        lv_order_by := pi_order_column||' '||NVL(LOWER(pi_order_asc_desc),'asc');
+        lv_order_by := '"'||LOWER(pi_order_column)||'" '||NVL(LOWER(pi_order_asc_desc),'asc');
     ELSE
-        lv_order_by := 'match_quality, primary_key'||CASE
-                                                       WHEN pi_nit_rec.nit_table_name IS NULL
-                                                        THEN
-                                                           ', description'
-                                                     END;
+        lv_order_by := '"match_quality", "primary_key"'||CASE
+                                                           WHEN pi_nit_rec.nit_table_name IS NULL
+                                                            THEN
+                                                               ', "description"'
+                                                         END;
     END IF;
     --
     FOR i IN 1..pi_like_cols.COUNT LOOP
@@ -2854,29 +2854,29 @@ AS
     IF pi_nit_rec.nit_table_name IS NOT NULL
      THEN
         --
-        lv_retval :=  'WITH assets AS(SELECT '||pi_nit_rec.nit_foreign_pk_column||' result_id'
-           ||CHR(10)||'                     ,'||pi_nit_rec.nit_foreign_pk_column||' primary_key'
+        lv_retval :=  'WITH assets AS(SELECT '||pi_nit_rec.nit_foreign_pk_column||' "result_id"'
+           ||CHR(10)||'                     ,'||pi_nit_rec.nit_foreign_pk_column||' "primary_key"'
                                               ||pi_select_list
            ||CHR(10)||'                     ,CASE'||lv_match_cases
-           ||CHR(10)||'                      END match_quality'
+           ||CHR(10)||'                      END "match_quality"'
            ||CHR(10)||'                 FROM '||pi_nit_rec.nit_table_name||' iit'
            ||CHR(10)||'                WHERE UPPER('||NVL(lv_like_cols,pi_nit_rec.nit_foreign_pk_column)||') LIKE :like_string'
            ||CHR(10)||'                ORDER BY '||lv_order_by||')'
            ||CHR(10)||'SELECT '||lv_pagecols
-                           ||'result_id'
-           ||CHR(10)||'      ,primary_key'
+                           ||'"result_id"'
+           ||CHR(10)||'      ,"primary_key"'
                             ||pi_alias_list
            ||CHR(10)||'  FROM assets'
         ;
         --
     ELSE
-        lv_retval :=  'WITH assets AS(SELECT iit_ne_id result_id'
-           ||CHR(10)||'                     ,iit_primary_key primary_key'
-           ||CHR(10)||'                     ,iit_descr description'
-           ||CHR(10)||'                     ,nau_name admin_unit'
+        lv_retval :=  'WITH assets AS(SELECT iit_ne_id "result_id"'
+           ||CHR(10)||'                     ,iit_primary_key "primary_key"'
+           ||CHR(10)||'                     ,iit_descr "description"'
+           ||CHR(10)||'                     ,nau_name "admin_unit"'
                     ||pi_select_list
            ||CHR(10)||'                     ,CASE'||lv_match_cases
-           ||CHR(10)||'                      END match_quality'
+           ||CHR(10)||'                      END "match_quality"'
            ||CHR(10)||'                 FROM nm_inv_items_all iit'
            ||CHR(10)||'                     ,nm_admin_units_all nau'
            ||CHR(10)||'                WHERE iit.iit_inv_type = :inv_type'
@@ -2888,10 +2888,10 @@ AS
            ||CHR(10)||'                  AND iit.iit_admin_unit = nau.nau_admin_unit'
            ||CHR(10)||'                ORDER BY '||lv_order_by||')'
            ||CHR(10)||'SELECT '||lv_pagecols
-                           ||'result_id'
-           ||CHR(10)||'      ,primary_key'
-           ||CHR(10)||'      ,description'
-           ||CHR(10)||'      ,admin_unit'
+                           ||'"result_id"'
+           ||CHR(10)||'      ,"primary_key"'
+           ||CHR(10)||'      ,"description"'
+           ||CHR(10)||'      ,"admin_unit"'
                             ||pi_alias_list
            ||CHR(10)||'  FROM assets'
         ;
@@ -3024,7 +3024,7 @@ AS
     lv_search_string := UPPER(pi_search_string);
     lv_like_string := '%'||lv_search_string||'%';
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -3117,16 +3117,16 @@ AS
     --
     IF pi_paged
      THEN
-        lv_pagecols := 'rownum ind'
-            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+        lv_pagecols := 'rownum "ind"'
+            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) "row_count"'
             ||CHR(10)||'      ,';
     END IF;
     --
     IF pi_order_column IS NOT NULL
      THEN
-        lv_order_by := pi_order_column||' '||NVL(LOWER(pi_order_asc_desc),'asc');
+        lv_order_by := '"'||LOWER(pi_order_column)||'" '||NVL(LOWER(pi_order_asc_desc),'asc');
     ELSE
-        lv_order_by := 'match_quality, name';
+        lv_order_by := '"match_quality", "name"';
     END IF;
     --
     FOR i IN 1..pi_like_cols.COUNT LOOP
@@ -3145,36 +3145,36 @@ AS
     lv_match_cases := lv_match_cases||CHR(10)||'                          ELSE '||TO_CHAR((pi_like_cols.COUNT * 2) + 1);
     --
     lv_retval :=  'SELECT '||lv_pagecols
-                           ||'result_id'
-       ||CHR(10)||'      ,name'
-       ||CHR(10)||'      ,description'
-       ||CHR(10)||'      ,purpose'
-       ||CHR(10)||'      ,start_date'
-       ||CHR(10)||'      ,end_date'
-       ||CHR(10)||'      ,node_type'
-       ||CHR(10)||'      ,date_created'
-       ||CHR(10)||'      ,created_by'
-       ||CHR(10)||'      ,date_modified'
-       ||CHR(10)||'      ,modified_by'
-       ||CHR(10)||'      ,node_id'  
-       ||CHR(10)||'      ,point_id'
-       ||CHR(10)||'      ,point_location_id'
-       ||CHR(10)||'  FROM (SELECT no_node_id result_id'
-       ||CHR(10)||'              ,no_node_name name'
-       ||CHR(10)||'              ,no_descr description'
-       ||CHR(10)||'              ,no_purpose purpose'
-       ||CHR(10)||'              ,no_start_date start_date'
-       ||CHR(10)||'              ,no_end_date end_date'
-       ||CHR(10)||'              ,no_node_type node_type'
-       ||CHR(10)||'              ,no_date_created date_created'
-       ||CHR(10)||'              ,no_created_by created_by'
-       ||CHR(10)||'              ,no_date_modified date_modified'
-       ||CHR(10)||'              ,no_modified_by modified_by'
-       ||CHR(10)||'              ,no_node_id node_id'  
-       ||CHR(10)||'              ,no_np_id point_id'
-       ||CHR(10)||'              ,npl_id point_location_id'
+                           ||'"result_id"'
+       ||CHR(10)||'      ,"name"'
+       ||CHR(10)||'      ,"description"'
+       ||CHR(10)||'      ,"purpose"'
+       ||CHR(10)||'      ,"start_date"'
+       ||CHR(10)||'      ,"end_date"'
+       ||CHR(10)||'      ,"node_type"'
+       ||CHR(10)||'      ,"date_created"'
+       ||CHR(10)||'      ,"created_by"'
+       ||CHR(10)||'      ,"date_modified"'
+       ||CHR(10)||'      ,"modified_by"'
+       ||CHR(10)||'      ,"node_id"'
+       ||CHR(10)||'      ,"point_id"'
+       ||CHR(10)||'      ,"point_location_id"'
+       ||CHR(10)||'  FROM (SELECT no_node_id "result_id"'
+       ||CHR(10)||'              ,no_node_name "name"'
+       ||CHR(10)||'              ,no_descr "description"'
+       ||CHR(10)||'              ,no_purpose "purpose"'
+       ||CHR(10)||'              ,no_start_date "start_date"'
+       ||CHR(10)||'              ,no_end_date "end_date"'
+       ||CHR(10)||'              ,no_node_type "node_type"'
+       ||CHR(10)||'              ,no_date_created "date_created"'
+       ||CHR(10)||'              ,no_created_by "created_by"'
+       ||CHR(10)||'              ,no_date_modified "date_modified"'
+       ||CHR(10)||'              ,no_modified_by "modified_by"'
+       ||CHR(10)||'              ,no_node_id "node_id"'
+       ||CHR(10)||'              ,no_np_id "point_id"'
+       ||CHR(10)||'              ,npl_id "point_location_id"'
        ||CHR(10)||'              ,CASE'||lv_match_cases
-       ||CHR(10)||'               END match_quality'
+       ||CHR(10)||'               END "match_quality"'
        ||CHR(10)||'          FROM '||pi_feature_table
        ||CHR(10)||'         WHERE UPPER('||NVL(lv_like_cols,'no_node_name||'' ''||no_descr')||') LIKE :like_string'
        ||CASE
@@ -3293,7 +3293,7 @@ AS
     lv_search_string := UPPER(pi_search_string);
     lv_like_string := '%'||lv_search_string||'%';
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -3371,16 +3371,16 @@ AS
     --
     IF pi_paged
      THEN
-        lv_pagecols := 'rownum ind'
-            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+        lv_pagecols := 'rownum "ind"'
+            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) "row_count"'
             ||CHR(10)||'      ,';
     END IF;
     --
     IF pi_order_column IS NOT NULL
      THEN
-        lv_order_by := pi_order_column||' '||NVL(LOWER(pi_order_asc_desc),'asc');
+        lv_order_by := '"'||LOWER(pi_order_column)||'" '||NVL(LOWER(pi_order_asc_desc),'asc');
     ELSE
-        lv_order_by := pi_feature_pk_column;
+        lv_order_by := '"match_quality", "'||pi_feature_pk_column||'"';
     END IF;
     --
     FOR i IN 1..pi_like_cols.COUNT LOOP
@@ -3398,15 +3398,15 @@ AS
     --
     lv_match_cases := lv_match_cases||CHR(10)||'                          ELSE '||TO_CHAR((pi_like_cols.COUNT * 2) + 1);
     --
-    lv_retval := 'WITH records AS(SELECT '||pi_feature_pk_column||' result_id'
+    lv_retval := 'WITH records AS(SELECT '||pi_feature_pk_column||' "result_id"'
                ||pi_select_list
       ||CHR(10)||'                       ,CASE'||lv_match_cases
-      ||CHR(10)||'                        END match_quality'
+      ||CHR(10)||'                        END "match_quality"'
       ||CHR(10)||'                   FROM '||pi_feature_table
       ||CHR(10)||'                  WHERE UPPER('||NVL(lv_like_cols,pi_feature_pk_column)||') LIKE :like_string'
       ||CHR(10)||'                  ORDER BY '||lv_order_by||')'
       ||CHR(10)||'SELECT '||lv_pagecols
-               ||'result_id'
+               ||'"result_id"'
                ||pi_alias_list
       ||CHR(10)||'  FROM records'
     ;
@@ -3529,7 +3529,7 @@ AS
     lv_search_string := UPPER(pi_search_string);
     lv_like_string := '%'||lv_search_string||'%';
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -3896,8 +3896,8 @@ AS
     --
     IF pi_paged
      THEN
-        lv_pagecols := 'rownum ind'
-            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+        lv_pagecols := 'rownum "ind"'
+            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) "row_count"'
             ||CHR(10)||'      ,';
     END IF;
     --
@@ -4025,7 +4025,7 @@ AS
     --
   BEGIN
     --
-    lv_where := pi_theme_types.feature_pk_column||' IN(SELECT ne_id FROM TABLE(CAST(:ids AS nm_ne_id_array)))';
+    lv_where := 'ne_id IN(SELECT ne_id FROM TABLE(CAST(:ids AS nm_ne_id_array)))';
     --
     IF pi_max_rows IS NOT NULL
      THEN
@@ -4095,7 +4095,7 @@ AS
     lv_where := generate_where_clause(pi_theme_types => pi_theme_types
                                      ,pi_criteria    => pi_criteria);
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -4162,7 +4162,7 @@ AS
     --
   BEGIN
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -4173,7 +4173,7 @@ AS
                                 ,po_alias_list  => lv_alias_list
                                 ,po_select_list => lv_select_list);
     --
-    lv_where := pi_theme_types.feature_pk_column||' IN(SELECT ne_id FROM TABLE(CAST(:ids AS nm_ne_id_array)))';
+    lv_where := 'ne_id IN(SELECT ne_id FROM TABLE(CAST(:ids AS nm_ne_id_array)))';
     --
     lv_sql := 'SELECT *'
    ||CHR(10)||'  FROM ('||get_network_search_sql(pi_select_list      => lv_select_list
@@ -4229,8 +4229,8 @@ AS
     --
     IF pi_paged
      THEN
-        lv_pagecols := 'rownum ind'
-            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+        lv_pagecols := 'rownum "ind"'
+            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) "row_count"'
             ||CHR(10)||'      ,';
     END IF;
     --
@@ -4386,7 +4386,16 @@ AS
     */
     lr_nit := nm3get.get_nit(pi_theme_types.asset_type);
     --
-    lv_where := pi_theme_types.feature_pk_column||' IN(SELECT ne_id FROM TABLE(CAST(:ids AS nm_ne_id_array)))';
+    IF lr_nit.nit_table_name IS NOT NULL
+     THEN
+        --
+        lv_where := pi_theme_types.feature_pk_column||' IN(SELECT ne_id FROM TABLE(CAST(:ids AS nm_ne_id_array)))';
+        --
+    ELSE
+        --
+        lv_where := 'iit_ne_id IN(SELECT ne_id FROM TABLE(CAST(:ids AS nm_ne_id_array)))';
+        --
+    END IF;
     --
     IF pi_max_rows IS NOT NULL
      THEN
@@ -4473,7 +4482,7 @@ AS
                                      ,pi_criteria         => pi_criteria
                                      ,pi_include_enddated => pi_include_enddated);
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -4560,7 +4569,7 @@ AS
     */
     lr_nit := nm3get.get_nit(pi_theme_types.asset_type);
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -4571,7 +4580,16 @@ AS
                               ,po_alias_list  => lv_alias_list
                               ,po_select_list => lv_select_list);
     --
-    lv_where := pi_theme_types.feature_pk_column||' IN(SELECT ne_id FROM TABLE(CAST(:ids AS nm_ne_id_array)))';
+    IF lr_nit.nit_table_name IS NOT NULL
+     THEN
+        --
+        lv_where := pi_theme_types.feature_pk_column||' IN(SELECT ne_id FROM TABLE(CAST(:ids AS nm_ne_id_array)))';
+        --
+    ELSE
+        --
+        lv_where := 'iit_ne_id IN(SELECT ne_id FROM TABLE(CAST(:ids AS nm_ne_id_array)))';
+        --
+    END IF;
     --
     lv_sql := 'SELECT *'
    ||CHR(10)||'  FROM ('||get_asset_search_sql(pi_nit_rec          => lr_nit
@@ -4642,8 +4660,8 @@ AS
     --
     IF pi_paged
      THEN
-        lv_pagecols := 'rownum ind'
-            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+        lv_pagecols := 'rownum "ind"'
+            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) "row_count"'
             ||CHR(10)||'      ,';
     END IF;
     --
@@ -4659,7 +4677,7 @@ AS
        ||CHR(10)||'      ,"created_by"'
        ||CHR(10)||'      ,"date_modified"'
        ||CHR(10)||'      ,"modified_by"'
-       ||CHR(10)||'      ,"node_id"'  
+       ||CHR(10)||'      ,"node_id"'
        ||CHR(10)||'      ,"point_id"'
        ||CHR(10)||'      ,"point_location_id"'
        ||CHR(10)||'  FROM (SELECT no_node_id "result_id"'
@@ -4816,7 +4834,7 @@ AS
     lv_where := generate_where_clause(pi_theme_types => pi_theme_types
                                      ,pi_criteria    => pi_criteria);
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -4868,7 +4886,7 @@ AS
     --
   BEGIN
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -4923,14 +4941,14 @@ AS
     --
     IF pi_paged
      THEN
-        lv_pagecols := 'rownum ind'
-            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+        lv_pagecols := 'rownum "ind"'
+            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) "row_count"'
             ||CHR(10)||'      ,';
     END IF;
     --
     IF pi_order_column IS NOT NULL
      THEN
-        lv_order_by := '"'||pi_order_column||'" '||NVL(LOWER(pi_order_asc_desc),'asc');
+        lv_order_by := '"'||LOWER(pi_order_column)||'" '||NVL(LOWER(pi_order_asc_desc),'asc');
     ELSE
         lv_order_by := '"'||pi_theme_types.feature_pk_column||'"';
     END IF;
@@ -5081,7 +5099,7 @@ AS
     lv_where := generate_where_clause(pi_theme_types => pi_theme_types
                                      ,pi_criteria    => pi_criteria);
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -5138,7 +5156,7 @@ AS
     --
   BEGIN
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
