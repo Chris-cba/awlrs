@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.16   Jul 16 2018 15:22:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.17   Jul 17 2018 14:31:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 16 2018 15:22:20  $
-  --       Date fetched Out : $Modtime:   Jul 16 2018 14:06:34  $
-  --       Version          : $Revision:   1.16  $
+  --       Date into PVCS   : $Date:   Jul 17 2018 14:31:58  $
+  --       Date fetched Out : $Modtime:   Jul 17 2018 14:19:18  $
+  --       Version          : $Revision:   1.17  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.16  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.17  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -1630,6 +1630,67 @@ AS
   -----------------------------------------------------------------------------
   --
   FUNCTION execute_gaz_query(pi_ne_id            IN nm_elements_all.ne_id%TYPE
+                            ,pi_from_offset      IN nm_gaz_query.ngq_begin_mp%TYPE DEFAULT NULL
+                            ,pi_to_offset        IN nm_gaz_query.ngq_end_mp%TYPE DEFAULT NULL
+                            ,pi_inv_type         IN nm_inv_types_all.nit_inv_type%TYPE
+                            ,pi_include_enddated IN VARCHAR2 DEFAULT 'N')
+    RETURN NUMBER IS
+    --
+    lv_job_id    NUMBER := nm3ddl.sequence_nextval('RTG_JOB_ID_SEQ');
+    lv_query_id  NUMBER;
+    --
+  BEGIN
+    --
+    INSERT
+      INTO nm_gaz_query
+          (ngq_id
+          ,ngq_source_id
+          ,ngq_source
+          ,ngq_open_or_closed
+          ,ngq_items_or_area
+          ,ngq_query_all_items
+          ,ngq_begin_mp
+          ,ngq_end_mp)
+    VALUES(lv_job_id
+          ,pi_ne_id
+          ,nm3extent.c_route
+          ,'C'
+          ,'I'
+          ,'N'
+          ,pi_from_offset
+          ,pi_to_offset)
+         ;
+    --
+    INSERT
+      INTO nm_gaz_query_types
+          (ngqt_ngq_id
+          ,ngqt_seq_no
+          ,ngqt_item_type_type
+          ,ngqt_item_type)
+    VALUES(lv_job_id
+          ,1
+          ,'I'
+          ,pi_inv_type);
+    --
+    IF pi_include_enddated = 'Y'
+     THEN
+        nm3gaz_qry.g_use_date_based_views := FALSE;
+    ELSE
+        nm3gaz_qry.g_use_date_based_views := TRUE;
+    END IF;
+    --
+    lv_query_id := nm3gaz_qry.perform_query (lv_job_id);
+    --
+    nm3gaz_qry.g_use_date_based_views := TRUE;
+    --
+    RETURN lv_query_id;
+    --
+  END execute_gaz_query;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION execute_gaz_query(pi_nse_id           IN nm_saved_extents.nse_id%TYPE
                             ,pi_inv_type         IN nm_inv_types_all.nit_inv_type%TYPE
                             ,pi_include_enddated IN VARCHAR2 DEFAULT 'N')
     RETURN NUMBER IS
@@ -1648,8 +1709,8 @@ AS
           ,ngq_items_or_area
           ,ngq_query_all_items)
     VALUES(lv_job_id
-          ,pi_ne_id
-          ,'ROUTE'
+          ,pi_nse_id
+          ,nm3extent.c_saved
           ,'C'
           ,'I'
           ,'N')
@@ -4216,6 +4277,7 @@ AS
                                ,pi_alias_list       IN VARCHAR2
                                ,pi_select_list      IN VARCHAR2
                                ,pi_where_clause     IN VARCHAR2
+                               ,pi_net_filter       IN VARCHAR2 DEFAULT NULL
                                ,pi_include_enddated IN VARCHAR2 DEFAULT 'N'
                                ,pi_order_column     IN VARCHAR2 DEFAULT NULL
                                ,pi_order_asc_desc   IN VARCHAR2 DEFAULT NULL
@@ -4242,6 +4304,10 @@ AS
                                               ||pi_select_list
            ||CHR(10)||'                 FROM '||pi_nit_rec.nit_table_name||' iit'
            ||CHR(10)||'                WHERE ('||pi_where_clause||')'
+           ||CASE
+               WHEN pi_net_filter IS NOT NULL
+                THEN CHR(10)||'                  AND '||pi_net_filter
+             END
            ||CHR(10)||'                ORDER BY "'||NVL(LOWER(pi_order_column),'primary_key')||'" '
                                                  ||NVL(LOWER(pi_order_asc_desc),'asc')||')'
            ||CHR(10)||'SELECT '||lv_pagecols
@@ -4271,6 +4337,10 @@ AS
                WHEN pi_include_enddated = 'N'
                 THEN CHR(10)||'                  AND iit.iit_end_date IS NULL'
              END
+           ||CASE
+               WHEN pi_net_filter IS NOT NULL
+                THEN CHR(10)||'                  AND '||pi_net_filter
+             END
            ||CHR(10)||'                  AND ('||pi_where_clause||')'
            ||CHR(10)||'                  AND iit.iit_admin_unit = nau.nau_admin_unit'
            ||CHR(10)||'         ORDER BY "'||NVL(LOWER(pi_order_column),'primary_key')||'" '
@@ -4289,19 +4359,148 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_assets_search(pi_theme_types      IN  awlrs_map_api.theme_types_rec
-                             ,pi_criteria         IN  XMLTYPE
-                             ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
-                             ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
-                             ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
-                             ,pi_max_rows         IN  NUMBER DEFAULT NULL
-                             ,po_cursor           OUT sys_refcursor)
+  PROCEDURE validate_offset(pi_ne_id  IN nm_elements_all.ne_id%TYPE
+                           ,pi_offset IN NUMBER)
+    IS
+    --
+    lv_min_offset  NUMBER;
+    lv_max_offset  NUMBER;
+    --
+    lr_ne  nm_elements_all%ROWTYPE;
+    --
+  BEGIN
+    --
+    lr_ne := nm3get.get_ne(pi_ne_id => pi_ne_id);
+    --
+    IF nm3net.is_nt_datum(p_nt_type => lr_ne.ne_nt_type) = 'Y'
+     THEN
+        lv_min_offset := 0;
+        lv_max_offset := lr_ne.ne_length;
+    ELSE
+        lv_min_offset := nm3net.get_min_slk(pi_ne_id);
+        lv_max_offset := nm3net.get_max_slk(pi_ne_id);
+    END IF;
+    --
+    IF pi_offset NOT BETWEEN lv_min_offset AND lv_max_offset
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info => ' ' || TO_CHAR(lv_min_offset) || ' -> ' || TO_CHAR(lv_max_offset));
+    END IF;
+    --
+  END validate_offset;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION generate_asset_net_filter(pi_nit_rec              IN nm_inv_types_all%ROWTYPE
+                                    ,pi_net_filter_ne_id     IN nm_elements_all.ne_id%TYPE DEFAULT NULL
+                                    ,pi_net_filter_marker_id IN nm_inv_items_all.iit_ne_id%TYPE DEFAULT NULL
+                                    ,pi_net_filter_from      IN NUMBER DEFAULT NULL
+                                    ,pi_net_filter_to        IN NUMBER DEFAULT NULL
+                                    ,pi_net_filter_nse_id    IN nm_saved_extents.nse_id%TYPE DEFAULT NULL
+                                    ,pi_include_enddated     IN VARCHAR2 DEFAULT 'N')
+    RETURN VARCHAR2 IS
+    --
+    lv_pk_column    VARCHAR2(30);
+    lv_from_offset  NUMBER;
+    lv_to_offset    NUMBER;
+    lv_sql          nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    IF pi_nit_rec.nit_table_name IS NULL
+     THEN
+        lv_pk_column := 'iit_ne_id';
+    ELSE
+        lv_pk_column := pi_nit_rec.nit_foreign_pk_column;
+    END IF;
+    --
+    IF pi_net_filter_ne_id IS NOT NULL
+     THEN
+        IF pi_net_filter_marker_id IS NULL
+         THEN
+            lv_from_offset := pi_net_filter_from;
+            lv_to_offset   := pi_net_filter_to;
+        ELSE
+            --
+            nm3mp_ref.validate_element(pi_ne_id => pi_net_filter_ne_id);
+            --
+            nm3mp_ref.validate_ref_item(pi_iit_ne_id => pi_net_filter_marker_id
+                                       ,pi_route_id  => pi_net_filter_ne_id);
+            --
+            lv_from_offset := nm3mp_ref.get_route_offset_for_ref_item(pi_route_id => pi_net_filter_ne_id
+                                                                     ,pi_ref_item => pi_net_filter_marker_id)
+                              + pi_net_filter_from;
+            lv_to_offset := nm3mp_ref.get_route_offset_for_ref_item(pi_route_id => pi_net_filter_ne_id
+                                                                   ,pi_ref_item => pi_net_filter_marker_id)
+                            + pi_net_filter_to;
+        END IF;
+        --
+        IF lv_from_offset IS NOT NULL
+         THEN
+            validate_offset(pi_ne_id  => pi_net_filter_ne_id
+                           ,pi_offset => lv_from_offset);
+        END IF;
+        --
+        IF lv_to_offset IS NOT NULL
+         THEN
+            validate_offset(pi_ne_id  => pi_net_filter_ne_id
+                           ,pi_offset => lv_to_offset);
+        END IF;
+        --
+        lv_sql := lv_pk_column||' IN(SELECT ngqi_item_id FROM nm_gaz_query_item_list WHERE ngqi_job_id = '
+                    ||execute_gaz_query(pi_ne_id            => pi_net_filter_ne_id
+                                       ,pi_from_offset      => lv_from_offset
+                                       ,pi_to_offset        => lv_to_offset
+                                       ,pi_inv_type         => pi_nit_rec.nit_inv_type
+                                       ,pi_include_enddated => pi_include_enddated)
+                    ||')';
+        --
+    END IF;
+    --
+    IF pi_net_filter_nse_id IS NOT NULL
+     THEN
+        --
+        IF lv_sql IS NOT NULL
+         THEN
+            lv_sql := lv_sql||' AND';
+        END IF;
+        --
+        lv_sql := lv_pk_column||' IN(SELECT ngqi_item_id FROM nm_gaz_query_item_list WHERE ngqi_job_id = '
+                    ||execute_gaz_query(pi_nse_id           => pi_net_filter_nse_id
+                                       ,pi_inv_type         => pi_nit_rec.nit_inv_type
+                                       ,pi_include_enddated => pi_include_enddated)
+                    ||')';
+        --
+    END IF;
+    --
+    RETURN lv_sql;
+    --
+  END generate_asset_net_filter;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_assets_search(pi_theme_types          IN  awlrs_map_api.theme_types_rec
+                             ,pi_criteria             IN  XMLTYPE
+                             ,pi_net_filter_ne_id     IN  nm_elements_all.ne_id%TYPE DEFAULT NULL
+                             ,pi_net_filter_marker_id IN  nm_inv_items_all.iit_ne_id%TYPE DEFAULT NULL
+                             ,pi_net_filter_from      IN  NUMBER DEFAULT NULL
+                             ,pi_net_filter_to        IN  NUMBER DEFAULT NULL
+                             ,pi_net_filter_nse_id    IN  nm_saved_extents.nse_id%TYPE DEFAULT NULL
+                             ,pi_include_enddated     IN  VARCHAR2 DEFAULT 'N'
+                             ,pi_order_column         IN  VARCHAR2 DEFAULT NULL
+                             ,pi_order_asc_desc       IN  VARCHAR2 DEFAULT NULL
+                             ,pi_max_rows             IN  NUMBER DEFAULT NULL
+                             ,po_cursor               OUT sys_refcursor)
     IS
     --
     lv_sql               nm3type.max_varchar2;
     lv_alias_list        nm3type.max_varchar2;
     lv_select_list       nm3type.max_varchar2;
     lv_where             nm3type.max_varchar2;
+    lv_net_filter        nm3type.max_varchar2;
     lv_additional_where  nm3type.max_varchar2;
     --
     lr_nit  nm_inv_types_all%ROWTYPE;
@@ -4318,6 +4517,14 @@ AS
                                      ,pi_criteria         => pi_criteria
                                      ,pi_include_enddated => pi_include_enddated);
     --
+    lv_net_filter := generate_asset_net_filter(pi_nit_rec              => lr_nit
+                                              ,pi_net_filter_ne_id     => pi_net_filter_ne_id
+                                              ,pi_net_filter_marker_id => pi_net_filter_marker_id
+                                              ,pi_net_filter_from      => pi_net_filter_from
+                                              ,pi_net_filter_to        => pi_net_filter_to
+                                              ,pi_net_filter_nse_id    => pi_net_filter_nse_id
+                                              ,pi_include_enddated     => pi_include_enddated);
+    --
     IF pi_max_rows IS NOT NULL
      THEN
         lv_additional_where := CHR(10)||' WHERE rownum <= :max_rows';
@@ -4331,6 +4538,7 @@ AS
                                   ,pi_alias_list       => lv_alias_list
                                   ,pi_select_list      => lv_select_list
                                   ,pi_where_clause     => lv_where
+                                  ,pi_net_filter       => lv_net_filter
                                   ,pi_include_enddated => pi_include_enddated
                                   ,pi_order_column     => pi_order_column
                                   ,pi_order_asc_desc   => pi_order_asc_desc)
@@ -4450,18 +4658,24 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_paged_assets_search(pi_theme_types      IN  awlrs_map_api.theme_types_rec
-                                   ,pi_criteria         IN  XMLTYPE
-                                   ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
-                                   ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
-                                   ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
-                                   ,pi_skip_n_rows      IN  PLS_INTEGER
-                                   ,pi_pagesize         IN  PLS_INTEGER
-                                   ,po_cursor           OUT sys_refcursor)
+  PROCEDURE get_paged_assets_search(pi_theme_types          IN  awlrs_map_api.theme_types_rec
+                                   ,pi_criteria             IN  XMLTYPE
+                                   ,pi_net_filter_ne_id     IN  nm_elements_all.ne_id%TYPE DEFAULT NULL
+                                   ,pi_net_filter_marker_id IN  nm_inv_items_all.iit_ne_id%TYPE DEFAULT NULL
+                                   ,pi_net_filter_from      IN  NUMBER DEFAULT NULL
+                                   ,pi_net_filter_to        IN  NUMBER DEFAULT NULL
+                                   ,pi_net_filter_nse_id    IN  nm_saved_extents.nse_id%TYPE DEFAULT NULL
+                                   ,pi_include_enddated     IN  VARCHAR2 DEFAULT 'N'
+                                   ,pi_order_column         IN  VARCHAR2 DEFAULT NULL
+                                   ,pi_order_asc_desc       IN  VARCHAR2 DEFAULT NULL
+                                   ,pi_skip_n_rows          IN  PLS_INTEGER
+                                   ,pi_pagesize             IN  PLS_INTEGER
+                                   ,po_cursor               OUT sys_refcursor)
     IS
     --
     lv_sql               nm3type.max_varchar2;
     lv_where             nm3type.max_varchar2;
+    lv_net_filter        nm3type.max_varchar2;
     lv_lower_index       PLS_INTEGER;
     lv_upper_index       PLS_INTEGER;
     lv_additional_where  nm3type.max_varchar2;
@@ -4482,6 +4696,14 @@ AS
                                      ,pi_criteria         => pi_criteria
                                      ,pi_include_enddated => pi_include_enddated);
     --
+    lv_net_filter := generate_asset_net_filter(pi_nit_rec              => lr_nit
+                                              ,pi_net_filter_ne_id     => pi_net_filter_ne_id
+                                              ,pi_net_filter_marker_id => pi_net_filter_marker_id
+                                              ,pi_net_filter_from      => pi_net_filter_from
+                                              ,pi_net_filter_to        => pi_net_filter_to
+                                              ,pi_net_filter_nse_id    => pi_net_filter_nse_id
+                                              ,pi_include_enddated     => pi_include_enddated);
+    --
     awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
@@ -4498,6 +4720,7 @@ AS
                                               ,pi_alias_list       => lv_alias_list
                                               ,pi_select_list      => lv_select_list
                                               ,pi_where_clause     => lv_where
+                                              ,pi_net_filter       => lv_net_filter
                                               ,pi_include_enddated => pi_include_enddated
                                               ,pi_order_column     => pi_order_column
                                               ,pi_order_asc_desc   => pi_order_asc_desc
@@ -5198,15 +5421,20 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_search_results(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
-                              ,pi_criteria         IN  XMLTYPE
-                              ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
-                              ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
-                              ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
-                              ,pi_max_rows         IN  NUMBER DEFAULT NULL
-                              ,po_message_severity OUT hig_codes.hco_code%TYPE
-                              ,po_message_cursor   OUT sys_refcursor
-                              ,po_cursor           OUT sys_refcursor)
+  PROCEDURE get_search_results(pi_theme_name           IN  nm_themes_all.nth_theme_name%TYPE
+                              ,pi_criteria             IN  XMLTYPE
+                              ,pi_net_filter_ne_id     IN  nm_elements_all.ne_id%TYPE DEFAULT NULL
+                              ,pi_net_filter_marker_id IN  nm_inv_items_all.iit_ne_id%TYPE DEFAULT NULL
+                              ,pi_net_filter_from      IN  NUMBER DEFAULT NULL
+                              ,pi_net_filter_to        IN  NUMBER DEFAULT NULL
+                              ,pi_net_filter_nse_id    IN  nm_saved_extents.nse_id%TYPE DEFAULT NULL
+                              ,pi_include_enddated     IN  VARCHAR2 DEFAULT 'N'
+                              ,pi_order_column         IN  VARCHAR2 DEFAULT NULL
+                              ,pi_order_asc_desc       IN  VARCHAR2 DEFAULT NULL
+                              ,pi_max_rows             IN  NUMBER DEFAULT NULL
+                              ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor       OUT sys_refcursor
+                              ,po_cursor               OUT sys_refcursor)
     IS
     --
     lt_theme_types  awlrs_map_api.theme_types_tab;
@@ -5233,13 +5461,18 @@ AS
           WHEN lt_theme_types(1).asset_type IS NOT NULL
            THEN
               --
-              get_assets_search(pi_theme_types      => lt_theme_types(1)
-                               ,pi_criteria         => pi_criteria
-                               ,pi_include_enddated => pi_include_enddated
-                               ,pi_order_column     => pi_order_column
-                               ,pi_order_asc_desc   => pi_order_asc_desc
-                               ,pi_max_rows         => pi_max_rows
-                               ,po_cursor           => po_cursor);
+              get_assets_search(pi_theme_types          => lt_theme_types(1)
+                               ,pi_criteria             => pi_criteria
+                               ,pi_net_filter_ne_id     => pi_net_filter_ne_id
+                               ,pi_net_filter_marker_id => pi_net_filter_marker_id
+                               ,pi_net_filter_from      => pi_net_filter_from
+                               ,pi_net_filter_to        => pi_net_filter_to
+                               ,pi_net_filter_nse_id    => pi_net_filter_nse_id
+                               ,pi_include_enddated     => pi_include_enddated
+                               ,pi_order_column         => pi_order_column
+                               ,pi_order_asc_desc       => pi_order_asc_desc
+                               ,pi_max_rows             => pi_max_rows
+                               ,po_cursor               => po_cursor);
               --
           ELSE
               --
@@ -5286,16 +5519,21 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_paged_search_results(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
-                                    ,pi_criteria         IN  XMLTYPE
-                                    ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
-                                    ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
-                                    ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
-                                    ,pi_skip_n_rows      IN  PLS_INTEGER
-                                    ,pi_pagesize         IN  PLS_INTEGER
-                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                    ,po_message_cursor   OUT sys_refcursor
-                                    ,po_cursor           OUT sys_refcursor)
+  PROCEDURE get_paged_search_results(pi_theme_name           IN  nm_themes_all.nth_theme_name%TYPE
+                                    ,pi_criteria             IN  XMLTYPE
+                                    ,pi_net_filter_ne_id     IN  nm_elements_all.ne_id%TYPE DEFAULT NULL
+                                    ,pi_net_filter_marker_id IN  nm_inv_items_all.iit_ne_id%TYPE DEFAULT NULL
+                                    ,pi_net_filter_from      IN  NUMBER DEFAULT NULL
+                                    ,pi_net_filter_to        IN  NUMBER DEFAULT NULL
+                                    ,pi_net_filter_nse_id    IN  nm_saved_extents.nse_id%TYPE DEFAULT NULL
+                                    ,pi_include_enddated     IN  VARCHAR2 DEFAULT 'N'
+                                    ,pi_order_column         IN  VARCHAR2 DEFAULT NULL
+                                    ,pi_order_asc_desc       IN  VARCHAR2 DEFAULT NULL
+                                    ,pi_skip_n_rows          IN  PLS_INTEGER
+                                    ,pi_pagesize             IN  PLS_INTEGER
+                                    ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor       OUT sys_refcursor
+                                    ,po_cursor               OUT sys_refcursor)
     IS
     --
     lv_lower_index       PLS_INTEGER;
@@ -5327,14 +5565,19 @@ AS
           WHEN lt_theme_types(1).asset_type IS NOT NULL
            THEN
               --
-              get_paged_assets_search(pi_theme_types      => lt_theme_types(1)
-                                     ,pi_criteria         => pi_criteria
-                                     ,pi_include_enddated => pi_include_enddated
-                                     ,pi_order_column     => pi_order_column
-                                     ,pi_order_asc_desc   => pi_order_asc_desc
-                                     ,pi_skip_n_rows      => pi_skip_n_rows
-                                     ,pi_pagesize         => pi_pagesize
-                                     ,po_cursor           => po_cursor);
+              get_paged_assets_search(pi_theme_types          => lt_theme_types(1)
+                                     ,pi_criteria             => pi_criteria
+                                     ,pi_net_filter_ne_id     => pi_net_filter_ne_id
+                                     ,pi_net_filter_marker_id => pi_net_filter_marker_id
+                                     ,pi_net_filter_from      => pi_net_filter_from
+                                     ,pi_net_filter_to        => pi_net_filter_to
+                                     ,pi_net_filter_nse_id    => pi_net_filter_nse_id
+                                     ,pi_include_enddated     => pi_include_enddated
+                                     ,pi_order_column         => pi_order_column
+                                     ,pi_order_asc_desc       => pi_order_asc_desc
+                                     ,pi_skip_n_rows          => pi_skip_n_rows
+                                     ,pi_pagesize             => pi_pagesize
+                                     ,po_cursor               => po_cursor);
               --
           ELSE
               --
@@ -5584,6 +5827,730 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_paged_results_by_id;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_network_types(pi_filter           IN  VARCHAR2
+                                     ,pi_skip_n_rows      IN  PLS_INTEGER
+                                     ,pi_pagesize         IN  PLS_INTEGER
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    lv_cursor_sql       nm3type.max_varchar2 := 'WITH filter_tab AS (SELECT UPPER(:filter) filter_value FROM dual)'
+                                     ||CHR(10)||'SELECT nt_type'
+                                     ||CHR(10)||'      ,name'
+                                     ||CHR(10)||'      ,row_count'
+                                     ||CHR(10)||'  FROM (SELECT rownum ind'
+                                     ||CHR(10)||'              ,nt_type nt_type'
+                                     ||CHR(10)||'              ,nt_unique||'' - ''||nt_descr name'
+                                     ||CHR(10)||'              ,CASE'
+                                     ||CHR(10)||'                 WHEN f.filter_value IS NULL THEN 0'
+                                     ||CHR(10)||'                 WHEN UPPER(nt_unique) = f.filter_value THEN 1'
+                                     ||CHR(10)||'                 WHEN UPPER(nt_descr) = f.filter_value THEN 2'
+                                     ||CHR(10)||'                 WHEN UPPER(nt_unique) LIKE f.filter_value||''%'' THEN 3'
+                                     ||CHR(10)||'                 WHEN UPPER(nt_descr) LIKE f.filter_value||''%'' THEN 4'
+                                     ||CHR(10)||'                 ELSE 5'
+                                     ||CHR(10)||'               END match_quality'
+                                     ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                     ||CHR(10)||'          FROM nm_types'
+                                     ||CHR(10)||'              ,filter_tab f'
+    ;
+    --
+  BEGIN
+    /*
+    ||Set the filter.
+    */
+    IF pi_filter IS NOT NULL
+     THEN
+        --
+        lv_filter := CHR(10)||'         WHERE UPPER(nt_unique||'' - ''||nt_descr) LIKE ''%''||f.filter_value||''%''';
+        --
+    END IF;
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||lv_filter
+                     ||CHR(10)||'         ORDER BY match_quality,nt_unique)'
+                     ||CHR(10)||lv_row_restriction;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_filter
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_filter
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_list_of_network_types;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_group_types(pi_nt_type          IN  nm_types.nt_type%TYPE
+                                   ,pi_filter           IN  VARCHAR2
+                                   ,pi_skip_n_rows      IN  PLS_INTEGER
+                                   ,pi_pagesize         IN  PLS_INTEGER
+                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    lv_cursor_sql       nm3type.max_varchar2 := 'WITH filter_tab AS (SELECT UPPER(:filter) filter_value FROM dual)'
+                                     ||CHR(10)||'SELECT group_type'
+                                     ||CHR(10)||'      ,name'
+                                     ||CHR(10)||'      ,row_count'
+                                     ||CHR(10)||'  FROM (SELECT rownum ind'
+                                     ||CHR(10)||'              ,ngt_group_type group_type'
+                                     ||CHR(10)||'              ,ngt_descr name'
+                                     ||CHR(10)||'              ,CASE'
+                                     ||CHR(10)||'                 WHEN f.filter_value IS NULL THEN 0'
+                                     ||CHR(10)||'                 WHEN UPPER(ngt_descr) = f.filter_value THEN 1'
+                                     ||CHR(10)||'                 WHEN UPPER(ngt_descr) LIKE f.filter_value||''%'' THEN 2'
+                                     ||CHR(10)||'                 ELSE 3'
+                                     ||CHR(10)||'               END match_quality'
+                                     ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                     ||CHR(10)||'          FROM nm_group_types'
+                                     ||CHR(10)||'              ,filter_tab f'
+                                     ||CHR(10)||'         WHERE ngt_nt_type = :nt_type'
+    ;
+    --
+  BEGIN
+    /*
+    ||Set the filter.
+    */
+    IF pi_filter IS NOT NULL
+     THEN
+        --
+        lv_filter := CHR(10)||'           AND UPPER(ngt_descr) LIKE ''%''||f.filter_value||''%''';
+        --
+    END IF;
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||lv_filter
+                     ||CHR(10)||'         ORDER BY match_quality,ngt_search_group_no)'
+                     ||CHR(10)||lv_row_restriction;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_filter
+             ,pi_nt_type
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_filter
+             ,pi_nt_type
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_list_of_group_types;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_marker_types(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                    ,pi_filter           IN  VARCHAR2
+                                    ,pi_skip_n_rows      IN  PLS_INTEGER
+                                    ,pi_pagesize         IN  PLS_INTEGER
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    lv_cursor_sql       nm3type.max_varchar2 := 'WITH params AS(SELECT hig.get_user_or_sys_opt(pi_option => ''DEFITEMTYP'') def_type'
+                                     ||CHR(10)||'                     ,UPPER(:filter) filter_value'
+                                     ||CHR(10)||'                 FROM dual)'
+                                     ||CHR(10)||'SELECT inv_type'
+                                     ||CHR(10)||'      ,inv_type_name'
+                                     ||CHR(10)||'      ,row_count'
+                                     ||CHR(10)||'  FROM (SELECT rownum ind'
+                                     ||CHR(10)||'              ,nit.nit_inv_type inv_type'
+                                     ||CHR(10)||'              ,nit.nit_inv_type||'' - ''||nit.nit_descr    inv_type_name'
+                                     ||CHR(10)||'              ,CASE'
+                                     ||CHR(10)||'                 WHEN nit.nit_inv_type = p.def_type THEN 0'
+                                     ||CHR(10)||'                 WHEN p.filter_value IS NULL THEN 1'
+                                     ||CHR(10)||'                 WHEN UPPER(nit.nit_inv_type) = p.filter_value THEN 2'
+                                     ||CHR(10)||'                 WHEN UPPER(nit.nit_descr) = p.filter_value THEN 3'
+                                     ||CHR(10)||'                 WHEN UPPER(nit.nit_inv_type) LIKE p.filter_value||''%'' THEN 4'
+                                     ||CHR(10)||'                 WHEN UPPER(nit.nit_descr) LIKE p.filter_value||''%'' THEN 5'
+                                     ||CHR(10)||'                 ELSE 6'
+                                     ||CHR(10)||'               END match_quality'
+                                     ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                     ||CHR(10)||'          FROM nm_inv_types nit'
+                                     ||CHR(10)||'              ,nm_inv_nw nin'
+                                     ||CHR(10)||'              ,nm_nt_groupings nng'
+                                     ||CHR(10)||'              ,nm_elements'
+                                     ||CHR(10)||'              ,params p'
+                                     ||CHR(10)||'         WHERE ne_id = :ne_id'
+                                     ||CHR(10)||'           AND ne_gty_group_type = nng.nng_group_type'
+                                     ||CHR(10)||'           AND nng.nng_nt_type = nin.nin_nw_type'
+                                     ||CHR(10)||'           AND nin.nin_nit_inv_code = nit.nit_inv_type'
+                                     ||CHR(10)||'           AND nit.nit_pnt_or_cont = ''P'''
+                                     ||CHR(10)||'           AND nit.nit_category in (''I'', ''F'', ''D'')'
+    ;
+    --
+  BEGIN
+    /*
+    ||Set the filter.
+    */
+    IF pi_filter IS NOT NULL
+     THEN
+        --
+        lv_filter := CHR(10)||'           AND UPPER(nit.nit_inv_type||'' - ''||nit.nit_descr) LIKE ''%''||p.filter_value||''%''';
+        --
+    END IF;
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||lv_filter
+                     ||CHR(10)||'         ORDER BY match_quality, nit.nit_descr)'
+                     ||CHR(10)||lv_row_restriction;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_filter
+             ,pi_ne_id
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_filter
+             ,pi_ne_id
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_list_of_marker_types;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_marker_items(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                    ,pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                                    ,pi_filter           IN  VARCHAR2
+                                    ,pi_skip_n_rows      IN  PLS_INTEGER
+                                    ,pi_pagesize         IN  PLS_INTEGER
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    lv_cursor_sql       nm3type.max_varchar2 := 'WITH filter_tab AS (SELECT UPPER(:filter) filter_value FROM dual)'
+                                     ||CHR(10)||'SELECT id'
+                                     ||CHR(10)||'      ,item_name'
+                                     ||CHR(10)||'      ,offset'
+                                     ||CHR(10)||'      ,row_count'
+                                     ||CHR(10)||'  FROM (SELECT rownum ind'
+                                     ||CHR(10)||'              ,id'
+                                     ||CHR(10)||'              ,SUBSTR(iit_descr||'' @ ''||offset||'' ''||unit_name,1,2000) item_name'
+                                     ||CHR(10)||'              ,offset'
+                                     ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                     ||CHR(10)||'          FROM (SELECT iit.iit_ne_id id'
+                                     ||CHR(10)||'                      ,iit.iit_descr'
+                                     ||CHR(10)||'                      ,un_grp.un_unit_name unit_name'
+                                     ||CHR(10)||'                      ,TO_NUMBER(nm3unit.get_formatted_value(CASE'
+                                     ||CHR(10)||'                                                               WHEN nm_r.nm_cardinality = 1 THEN nm3unit.convert_unit(nt_dat.nt_length_unit,nt_grp.nt_length_unit,nm_i.nm_begin_mp)'
+                                     ||CHR(10)||'                                                               ELSE nm3unit.convert_unit(nt_dat.nt_length_unit,nt_grp.nt_length_unit,ne_dat.ne_length - nm_i.nm_begin_mp)'
+                                     ||CHR(10)||'                                                             END + nm_r.nm_slk'
+                                     ||CHR(10)||'                                                            ,nt_grp.nt_length_unit)) offset'
+                                     ||CHR(10)||'                      ,CASE'
+                                     ||CHR(10)||'                         WHEN f.filter_value IS NULL THEN 0'
+                                     ||CHR(10)||'                         WHEN UPPER(iit.iit_descr) = f.filter_value THEN 1'
+                                     ||CHR(10)||'                         WHEN UPPER(iit.iit_descr) LIKE f.filter_value||''%'' THEN 2'
+                                     ||CHR(10)||'                       END match_quality'
+                                     ||CHR(10)||'                  FROM nm_members nm_r'
+                                     ||CHR(10)||'                      ,nm_elements ne_grp'
+                                     ||CHR(10)||'                      ,nm_types nt_grp'
+                                     ||CHR(10)||'                      ,nm_units un_grp'
+                                     ||CHR(10)||'                      ,nm_elements ne_dat'
+                                     ||CHR(10)||'                      ,nm_types nt_dat'
+                                     ||CHR(10)||'                      ,nm_members nm_i'
+                                     ||CHR(10)||'                      ,nm_inv_items iit'
+                                     ||CHR(10)||'                      ,filter_tab f'
+                                     ||CHR(10)||'                 WHERE nm_r.nm_ne_id_in = :pi_ne_id'
+                                     ||CHR(10)||'                   AND nm_r.nm_ne_id_in = ne_grp.ne_id'
+                                     ||CHR(10)||'                   AND ne_grp.ne_nt_type = nt_grp.nt_type'
+                                     ||CHR(10)||'                   AND nt_grp.nt_length_unit = un_grp.un_unit_id'
+                                     ||CHR(10)||'                   AND nm_r.nm_ne_id_of = ne_dat.ne_id'
+                                     ||CHR(10)||'                   AND ne_dat.ne_nt_type = nt_dat.nt_type'
+                                     ||CHR(10)||'                   AND nm_r.nm_ne_id_of = nm_i.nm_ne_id_of'
+                                     ||CHR(10)||'                   AND nm_i.nm_obj_type = :pi_inv_type'
+                                     ||CHR(10)||'                   AND nm_i.nm_ne_id_in = iit.iit_ne_id'
+    ;
+    --
+  BEGIN
+    /*
+    ||Set the filter.
+    */
+    IF pi_filter IS NOT NULL
+     THEN
+        --
+        lv_filter := CHR(10)||'           AND UPPER(iit.iit_descr) LIKE ''%''||f.filter_value||''%''';
+        --
+    END IF;
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||lv_filter
+                     ||CHR(10)||'         ORDER BY match_quality, iit.iit_descr))'
+                     ||CHR(10)||lv_row_restriction;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_filter
+             ,pi_ne_id
+             ,pi_inv_type
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_filter
+             ,pi_ne_id
+             ,pi_inv_type
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_list_of_marker_items;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_elements(pi_nt_type          IN  nm_types.nt_type%TYPE
+                                ,pi_group_type       IN  nm_group_types_all.ngt_group_type%TYPE DEFAULT NULL
+                                ,pi_filter           IN  VARCHAR2
+                                ,pi_skip_n_rows      IN  PLS_INTEGER
+                                ,pi_pagesize         IN  PLS_INTEGER
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    lv_cursor_sql       nm3type.max_varchar2 := 'WITH filter_tab AS (SELECT UPPER(:filter) filter_value FROM dual)'
+                                     ||CHR(10)||'SELECT id'
+                                     ||CHR(10)||'      ,name'
+                                     ||CHR(10)||'      ,min_offset'
+                                     ||CHR(10)||'      ,max_offset'
+                                     ||CHR(10)||'      ,row_count'
+                                     ||CHR(10)||'  FROM (SELECT rownum ind'
+                                     ||CHR(10)||'              ,ne_id id'
+                                     ||CHR(10)||'              ,ne_unique||'' - ''||ne_descr name'
+                                     ||CHR(10)||'              ,CASE'
+                                     ||CHR(10)||'                 WHEN ne_gty_group_type IS NULL THEN 0'
+                                     ||CHR(10)||'                 WHEN ne_gty_group_type IS NOT NULL AND ngt_linear_flag = ''Y'' THEN (SELECT MIN(nm_slk) FROM nm_members WHERE nm_ne_id_in = ne_id)'
+                                     ||CHR(10)||'                 ELSE NULL'
+                                     ||CHR(10)||'               END min_offset'
+                                     ||CHR(10)||'              ,CASE'
+                                     ||CHR(10)||'                 WHEN ne_gty_group_type IS NULL THEN ne_length'
+                                     ||CHR(10)||'                 WHEN ne_gty_group_type IS NOT NULL AND ngt_linear_flag = ''Y'' THEN (SELECT MAX(nm_end_slk) FROM nm_members WHERE nm_ne_id_in = ne_id)'
+                                     ||CHR(10)||'                 ELSE NULL'
+                                     ||CHR(10)||'               END max_offset'
+                                     ||CHR(10)||'              ,CASE'
+                                     ||CHR(10)||'                 WHEN f.filter_value IS NULL THEN 0'
+                                     ||CHR(10)||'                 WHEN UPPER(ne_unique) = f.filter_value THEN 1'
+                                     ||CHR(10)||'                 WHEN UPPER(ne_descr) = f.filter_value THEN 2'
+                                     ||CHR(10)||'                 WHEN UPPER(ne_unique) LIKE f.filter_value||''%'' THEN 3'
+                                     ||CHR(10)||'                 WHEN UPPER(ne_descr) LIKE f.filter_value||''%'' THEN 4'
+                                     ||CHR(10)||'                 ELSE 5'
+                                     ||CHR(10)||'               END match_quality'
+                                     ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                     ||CHR(10)||'          FROM nm_group_types'
+                                     ||CHR(10)||'              ,nm_elements'
+                                     ||CHR(10)||'              ,filter_tab f'
+                                     ||CHR(10)||'         WHERE ne_nt_type = :nt_type'
+                                     ||CHR(10)||'           AND ne_gty_group_type = ngt_group_type(+)'
+    ;
+    --
+  BEGIN
+    /*
+    ||Set the group type.
+    */
+    IF pi_group_type IS NOT NULL
+     THEN
+        lv_cursor_sql := lv_cursor_sql||CHR(10)||'           AND ne_gty_group_type = :grp_type';
+    END IF;
+    /*
+    ||Set the filter.
+    */
+    IF pi_filter IS NOT NULL
+     THEN
+        --
+        lv_filter := CHR(10)||'           AND UPPER(ne_unique||'' - ''||ne_descr) LIKE ''%''||f.filter_value||''%''';
+        --
+    END IF;
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||lv_filter
+                     ||CHR(10)||'         ORDER BY match_quality,ne_unique)'
+                     ||CHR(10)||lv_row_restriction;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        IF pi_group_type IS NOT NULL
+         THEN
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,pi_nt_type
+                 ,pi_group_type
+                 ,lv_lower_index
+                 ,lv_upper_index;
+        ELSE
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,pi_nt_type
+                 ,lv_lower_index
+                 ,lv_upper_index;
+        END IF;
+    ELSE
+        IF pi_group_type IS NOT NULL
+         THEN
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,pi_nt_type
+                 ,pi_group_type
+                 ,lv_lower_index;
+        ELSE
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,pi_nt_type
+                 ,lv_lower_index;
+        END IF;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_list_of_elements;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_extents(pi_filter           IN  VARCHAR2
+                               ,pi_skip_n_rows      IN  PLS_INTEGER
+                               ,pi_pagesize         IN  PLS_INTEGER
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    lv_cursor_sql       nm3type.max_varchar2 := 'WITH filter_tab AS (SELECT UPPER(:filter) filter_value FROM dual)'
+                                     ||CHR(10)||'SELECT id'
+                                     ||CHR(10)||'      ,name'
+                                     ||CHR(10)||'      ,row_count'
+                                     ||CHR(10)||'  FROM (SELECT rownum ind'
+                                     ||CHR(10)||'              ,nse_id id'
+                                     ||CHR(10)||'              ,nse_name||'' - ''||nse_descr name'
+                                     ||CHR(10)||'              ,CASE'
+                                     ||CHR(10)||'                 WHEN f.filter_value IS NULL THEN 0'
+                                     ||CHR(10)||'                 WHEN UPPER(nse_name) = f.filter_value THEN 1'
+                                     ||CHR(10)||'                 WHEN UPPER(nse_descr) = f.filter_value THEN 2'
+                                     ||CHR(10)||'                 WHEN UPPER(nse_name) LIKE f.filter_value||''%'' THEN 3'
+                                     ||CHR(10)||'                 WHEN UPPER(nse_descr) LIKE f.filter_value||''%'' THEN 4'
+                                     ||CHR(10)||'                 ELSE 5'
+                                     ||CHR(10)||'               END match_quality'
+                                     ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                     ||CHR(10)||'          FROM nm_saved_extents'
+                                     ||CHR(10)||'              ,filter_tab f'
+                                     ||CHR(10)||'         WHERE (nse_owner = ''PUBLIC'''
+                                     ||CHR(10)||'                OR nse_owner = SYS_CONTEXT(''NM3_SECURITY_CTX'',''USERNAME''))'
+    ;
+    --
+  BEGIN
+    /*
+    ||Set the filter.
+    */
+    IF pi_filter IS NOT NULL
+     THEN
+        --
+        lv_filter := CHR(10)||'           AND UPPER(nse_name||'' - ''||nse_descr) LIKE ''%''||f.filter_value||''%''';
+        --
+    END IF;
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||lv_filter
+                     ||CHR(10)||'         ORDER BY match_quality,nse_name)'
+                     ||CHR(10)||lv_row_restriction;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_filter
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_filter
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_list_of_extents;
+
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_element_and_extent(pi_filter           IN  VARCHAR2
+                                          ,pi_skip_n_rows      IN  PLS_INTEGER
+                                          ,pi_pagesize         IN  PLS_INTEGER
+                                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor   OUT sys_refcursor
+                                          ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_net_filter       nm3type.max_varchar2;
+    lv_ext_filter       nm3type.max_varchar2;
+    lv_cursor_sql       nm3type.max_varchar2;
+    lv_net_cursor_sql   nm3type.max_varchar2 := 'SELECT id'
+                                     ||CHR(10)||'      ,item_type'
+                                     ||CHR(10)||'      ,item_name'
+                                     ||CHR(10)||'      ,min_offset'
+                                     ||CHR(10)||'      ,max_offset'
+                                     ||CHR(10)||'      ,row_count'
+                                     ||CHR(10)||'  FROM (SELECT rownum ind'
+                                     ||CHR(10)||'              ,id'
+                                     ||CHR(10)||'              ,item_type'
+                                     ||CHR(10)||'              ,item_name'
+                                     ||CHR(10)||'              ,min_offset'
+                                     ||CHR(10)||'              ,max_offset'
+                                     ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                     ||CHR(10)||'          FROM (WITH filter_tab AS (SELECT :filter filter_value FROM dual)'
+                                     ||CHR(10)||'                SELECT ne_id id'
+                                     ||CHR(10)||'                      ,ne_unique order_name'
+                                     ||CHR(10)||'                      ,CASE'
+                                     ||CHR(10)||'                         WHEN ne_gty_group_type IS NULL THEN ''DATUM'''
+                                     ||CHR(10)||'                         WHEN ngt_linear_flag = ''Y'' THEN ''ROUTE'''
+                                     ||CHR(10)||'                         ELSE ''GROUP'''
+                                     ||CHR(10)||'                       END item_type'
+                                     ||CHR(10)||'                      ,CASE '
+                                     ||CHR(10)||'                         WHEN ne_gty_group_type IS NULL THEN nt_unique'
+                                     ||CHR(10)||'                         ELSE ngt_descr'
+                                     ||CHR(10)||'                       END||'' - ''||ne_unique||'' - ''||ne_descr item_name'
+                                     ||CHR(10)||'                      ,CASE'
+                                     ||CHR(10)||'                         WHEN ne_gty_group_type IS NULL THEN 0'
+                                     ||CHR(10)||'                         WHEN ne_gty_group_type IS NOT NULL AND ngt_linear_flag = ''Y'' THEN (SELECT MIN(nm_slk) FROM nm_members WHERE nm_ne_id_in = ne_id)'
+                                     ||CHR(10)||'                         ELSE NULL'
+                                     ||CHR(10)||'                       END min_offset'
+                                     ||CHR(10)||'                      ,CASE'
+                                     ||CHR(10)||'                         WHEN ne_gty_group_type IS NULL THEN ne_length'
+                                     ||CHR(10)||'                         WHEN ne_gty_group_type IS NOT NULL AND ngt_linear_flag = ''Y'' THEN (SELECT MAX(nm_end_slk) FROM nm_members WHERE nm_ne_id_in = ne_id)'
+                                     ||CHR(10)||'                         ELSE NULL'
+                                     ||CHR(10)||'                       END max_offset'
+                                     ||CHR(10)||'                      ,CASE'
+                                     ||CHR(10)||'                         WHEN f.filter_value IS NULL THEN 0'
+                                     ||CHR(10)||'                         WHEN UPPER(ne_unique) = UPPER(f.filter_value) THEN 1'
+                                     ||CHR(10)||'                         WHEN UPPER(ne_descr) = UPPER(f.filter_value) THEN 2'
+                                     ||CHR(10)||'                         WHEN UPPER(ne_unique) LIKE UPPER(f.filter_value)||''%'' THEN 3'
+                                     ||CHR(10)||'                         WHEN UPPER(ne_descr) LIKE UPPER(f.filter_value)||''%'' THEN 4'
+                                     ||CHR(10)||'                         ELSE 5'
+                                     ||CHR(10)||'                       END match_quality'
+                                     ||CHR(10)||'                  FROM nm_group_types'
+                                     ||CHR(10)||'                      ,nm_elements'
+                                     ||CHR(10)||'                      ,nm_types'
+                                     ||CHR(10)||'                      ,filter_tab f'
+                                     ||CHR(10)||'                 WHERE nt_type = ne_nt_type'
+                                     ||CHR(10)||'                   AND ne_gty_group_type = ngt_group_type(+)'
+    ;
+    lv_ext_cursor_sql   nm3type.max_varchar2 := '                UNION ALL'
+                                     ||CHR(10)||'                SELECT nse_id id'
+                                     ||CHR(10)||'                      ,nse_name order_name'
+                                     ||CHR(10)||'                      ,''EXTENT'' item_type'
+                                     ||CHR(10)||'                      ,''Saved Extent - ''||nse_name||'' - ''||nse_descr item_name'
+                                     ||CHR(10)||'                      ,CAST(NULL AS NUMBER) min_offset'
+                                     ||CHR(10)||'                      ,CAST(NULL AS NUMBER) max_offset'
+                                     ||CHR(10)||'                      ,CASE'
+                                     ||CHR(10)||'                         WHEN f.filter_value IS NULL THEN 0'
+                                     ||CHR(10)||'                         WHEN UPPER(nse_name) = UPPER(f.filter_value) THEN 1'
+                                     ||CHR(10)||'                         WHEN UPPER(nse_descr) = UPPER(f.filter_value) THEN 2'
+                                     ||CHR(10)||'                         WHEN UPPER(nse_name) LIKE UPPER(f.filter_value)||''%'' THEN 3'
+                                     ||CHR(10)||'                         WHEN UPPER(nse_descr) LIKE UPPER(f.filter_value)||''%'' THEN 4'
+                                     ||CHR(10)||'                         ELSE 5'
+                                     ||CHR(10)||'                       END match_quality'
+                                     ||CHR(10)||'                  FROM nm_saved_extents'
+                                     ||CHR(10)||'                      ,filter_tab f'
+                                     ||CHR(10)||'                 WHERE (nse_owner = ''PUBLIC'''
+                                     ||CHR(10)||'                        OR nse_owner = SYS_CONTEXT(''NM3_SECURITY_CTX'',''USERNAME''))'
+    ;
+    --
+  BEGIN
+    /*
+    ||Set the filter.
+    */
+    IF pi_filter IS NOT NULL
+     THEN
+        --
+        lv_net_filter := CHR(10)||'                   AND UPPER(ne_unique||'' - ''||ne_descr) LIKE UPPER(''%''||f.filter_value||''%'')';
+        lv_ext_filter := CHR(10)||'                   AND UPPER(nse_name||'' - ''||nse_descr) LIKE UPPER(''%''||f.filter_value||''%'')';
+        --
+    END IF;
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    --
+    lv_cursor_sql := lv_net_cursor_sql
+                     ||lv_net_filter
+                     ||CHR(10)||lv_ext_cursor_sql
+                     ||lv_ext_filter
+                     ||CHR(10)||'                 ORDER BY match_quality,order_name))'
+                     ||CHR(10)||lv_row_restriction;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_filter
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_filter
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_list_of_element_and_extent;
 
   --
   -----------------------------------------------------------------------------
