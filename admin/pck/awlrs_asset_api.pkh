@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.14   Jun 06 2018 14:45:26   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.15   Jul 20 2018 13:23:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   Jun 06 2018 14:45:26  $
-  --       Date fetched Out : $Modtime:   Jun 06 2018 14:23:00  $
-  --       Version          : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   Jul 20 2018 13:23:16  $
+  --       Date fetched Out : $Modtime:   Jul 19 2018 19:14:52  $
+  --       Version          : $Revision:   1.15  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.14  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.15  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -220,6 +220,18 @@ AS
   --
   PROCEDURE get_locations(pi_iit_ne_id IN  nm_inv_items_all.iit_ne_id%TYPE
                          ,po_cursor    OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_loc_types(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                                 ,pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                                 ,pi_filter           IN  VARCHAR2
+                                 ,pi_skip_n_rows      IN  PLS_INTEGER
+                                 ,pi_pagesize         IN  PLS_INTEGER
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
