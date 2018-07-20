@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.13   10 Apr 2017 18:30:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.14   Jul 20 2018 13:16:18   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   10 Apr 2017 18:30:32  $
-  --       Date fetched Out : $Modtime:   10 Apr 2017 18:00:48  $
-  --       Version          : $Revision:   1.13  $
+  --       Date into PVCS   : $Date:   Jul 20 2018 13:16:18  $
+  --       Date fetched Out : $Modtime:   Jul 19 2018 18:23:04  $
+  --       Version          : $Revision:   1.14  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -38,6 +38,9 @@ AS
   c_msg_cat_ask_continue   CONSTANT hig_codes.hco_code%TYPE := 'ASK_CONTINUE';
   c_msg_cat_circular_route CONSTANT hig_codes.hco_code%TYPE := 'CIRCULAR_ROUTE';
   c_msg_cat_error          CONSTANT hig_codes.hco_code%TYPE := 'ERROR';
+  --
+  c_all_lrms_code   CONSTANT VARCHAR2(10) := 'ALL LRMS';
+  c_all_lrms_descr  CONSTANT VARCHAR2(10) := 'All LRMS';
   --
   c_awlrs_module  CONSTANT hig_modules.hmo_module%TYPE := 'AWLRS0001';
   --
@@ -127,9 +130,33 @@ AS
                                  ,po_cursor           OUT sys_refcursor);
 
   --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_preferred_lrm
+    RETURN VARCHAR2;
+
+  --
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_preferred_lrm(po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_lrms(pi_filter           IN  VARCHAR2
+                            ,pi_skip_n_rows      IN  PLS_INTEGER
+                            ,pi_pagesize         IN  PLS_INTEGER
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE set_preferred_lrm(pi_group_type       IN  VARCHAR2
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
                              ,po_message_cursor   OUT sys_refcursor
                              ,po_cursor           OUT sys_refcursor);
 
