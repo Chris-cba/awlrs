@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.17   May 23 2018 16:13:16   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.18   Jul 20 2018 13:19:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   May 23 2018 16:13:16  $
-  --       Date fetched Out : $Modtime:   May 23 2018 16:09:22  $
-  --       Version          : $Revision:   1.17  $
+  --       Date into PVCS   : $Date:   Jul 20 2018 13:19:48  $
+  --       Date fetched Out : $Modtime:   Jul 20 2018 10:30:02  $
+  --       Version          : $Revision:   1.18  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -924,14 +924,15 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_linear_elements_at_point(pi_x                IN  NUMBER
+  PROCEDURE get_linear_elements_at_point(pi_map_name         IN  hig_option_values.hov_value%TYPE DEFAULT NULL
+                                        ,pi_x                IN  NUMBER
                                         ,pi_y                IN  NUMBER
                                         ,po_message_severity OUT hig_codes.hco_code%TYPE
                                         ,po_message_cursor   OUT sys_refcursor
                                         ,po_cursor           OUT sys_refcursor)
     IS
     --
-    lv_map_name  hig_option_values.hov_value%TYPE := hig.get_sysopt('AWLMAPNAME');
+    lv_map_name  hig_option_values.hov_value%TYPE := NVL(pi_map_name,hig.get_sysopt('AWLMAPNAME'));
     lv_point     mdsys.sdo_geometry;
     --
   BEGIN
@@ -946,9 +947,7 @@ AS
                          ,nt_type
                          ,nt_unique
                          ,nlt_gty_type
-                         ,(SELECT ngt_descr
-                             FROM nm_group_types
-                            WHERE ngt_group_type = nlt_gty_type) ngt_descr
+                         ,ngt_descr
                          ,un_unit_id
                          ,un_unit_name
                      FROM nm_themes_all
@@ -956,6 +955,7 @@ AS
                          ,nm_linear_types
                          ,nm_types
                          ,nm_units
+                         ,nm_group_types
                     WHERE nth_theme_name IN(SELECT vnmd_theme_name
                                               FROM v_nm_msv_map_def
                                              WHERE vnmd_name = lv_map_name)
@@ -969,7 +969,8 @@ AS
                       AND nth_theme_id = nnth_nth_theme_id
                       AND nnth_nlt_id = nlt_id
                       AND nlt_nt_type = nt_type
-                      AND nt_length_unit = un_unit_id)
+                      AND nt_length_unit = un_unit_id
+                      AND nlt_gty_type = ngt_group_type(+))
     SELECT /*+ index(nm_elements ne_pk) */
            element_id
           ,element_network_type
@@ -982,12 +983,20 @@ AS
           ,distance_from_point
           ,element_length_unit_name
           ,ne_start_date element_start_date
-      FROM (SELECT a.ntd_pk_id element_id
-                  ,nt_type     element_network_type
-                  ,nt_unique   element_network_type_unique
+          ,CASE
+             WHEN element_group_type IS NOT NULL
+              AND element_group_type = NVL(SYS_CONTEXT('NM3CORE','PREFERRED_LRM'),nm3type.c_nvl)
+              THEN
+                 'Y'
+             ELSE
+                 'N'
+           END is_preferred_lrm
+      FROM (SELECT a.ntd_pk_id  element_id
+                  ,nt_type      element_network_type
+                  ,nt_unique    element_network_type_unique
                   ,nlt_gty_type element_group_type
-                  ,ngt_descr      element_group_type_descr
-                  ,a.ntd_name  element_unique
+                  ,ngt_descr    element_group_type_descr
+                  ,a.ntd_name   element_unique
                   ,TO_NUMBER(nm3unit.get_formatted_value(a.ntd_measure,un_unit_id)) element_offset
                   ,nm3unit.convert_unit(1,un_unit_id,a.ntd_distance) distance_from_point
                   ,un_unit_name element_length_unit_name
@@ -1001,7 +1010,12 @@ AS
           ,nm_elements
      WHERE element_id = ne_id
      ORDER
-        BY distance_from_point
+        BY CASE
+             WHEN NVL(element_group_type,nm3type.c_nvl) = NVL(SYS_CONTEXT('NM3CORE','PREFERRED_LRM'),'ALL LRMS')
+              THEN 1
+             ELSE 2
+           END
+          ,distance_from_point
           ,ne_gty_group_type NULLS FIRST
          ;
     --
