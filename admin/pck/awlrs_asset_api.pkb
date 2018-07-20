@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.31   Jun 06 2018 14:45:26   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.32   Jul 20 2018 13:24:10   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 06 2018 14:45:26  $
-  --       Date fetched Out : $Modtime:   Jun 06 2018 14:24:18  $
-  --       Version          : $Revision:   1.31  $
+  --       Date into PVCS   : $Date:   Jul 20 2018 13:24:10  $
+  --       Date fetched Out : $Modtime:   Jul 20 2018 11:31:38  $
+  --       Version          : $Revision:   1.32  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.31  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.32  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -1992,6 +1992,188 @@ AS
          ;
     --
   END get_locations;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_loc_types(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                                 ,pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                                 ,pi_filter           IN  VARCHAR2
+                                 ,pi_skip_n_rows      IN  PLS_INTEGER
+                                 ,pi_pagesize         IN  PLS_INTEGER
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    lv_plrm_check       nm3type.max_varchar2;
+    lv_im_sql           nm3type.max_varchar2;
+    lv_cursor_sql       nm3type.max_varchar2;
+    --
+    lr_nit  nm_inv_types_all%ROWTYPE;
+    --
+    lt_pla         nm_placement_array := nm3pla.initialise_placement_array;
+    lt_datum_locs  nm3asset.tab_rec_datum_loc_dets;
+    --
+  BEGIN
+    /*
+    ||Get the asset type record.
+    */
+    lr_nit := nm3get.get_nit(pi_nit_inv_type => pi_inv_type);
+    /*
+    ||Set the filter.
+    */
+    IF pi_filter IS NOT NULL
+     THEN
+        --
+        lv_filter := CHR(10)||'                 WHERE UPPER(description) LIKE ''%''||f.filter_value||''%''';
+        --
+    END IF;
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    /*
+    ||If Preferred LRM is set then make the relevant group type
+    ||come to the top of the list.
+    */
+    IF awlrs_util.get_preferred_lrm != awlrs_util.c_all_lrms_code
+     THEN
+        lv_plrm_check := '                         WHEN group_type IS NOT NULL AND group_type = SYS_CONTEXT(''NM3CORE'',''PREFERRED_LRM'') THEN 0';
+    END IF;
+    /*
+    ||Set the query that will return the assets datum locations.
+    */
+    IF lr_nit.nit_table_name IS NULL
+     THEN
+        lv_im_sql := '    ,im AS(SELECT nm_ne_id_of ne_id FROM nm_members WHERE nm_ne_id_in = :pi_iit_ne_id)';
+    ELSE
+        /*
+        ||Get Datums.
+        */
+        nm3asset.get_inv_datum_location_details(pi_iit_ne_id          => pi_iit_ne_id
+                                               ,pi_nit_inv_type       => pi_inv_type
+                                               ,po_tab_datum_loc_dets => lt_datum_locs);
+        /*
+        ||Build a placement array of datums.
+        */
+        FOR i IN 1..lt_datum_locs.COUNT LOOP
+          --
+          nm3pla.add_element_to_pl_arr(pio_pl_arr => lt_pla
+                                      ,pi_ne_id   => lt_datum_locs(i).datum_ne_id
+                                      ,pi_start   => lt_datum_locs(i).nm_begin_mp
+                                      ,pi_end     => lt_datum_locs(i).nm_end_mp);
+          --
+        END LOOP;
+        /*
+        ||Set the query.
+        */
+        lv_im_sql := '    ,im AS(SELECT pl_ne_id ne_id FROM TABLE(:pla))';
+        --
+    END IF;
+    /*
+    ||Build the cursor.
+    */
+    lv_cursor_sql := 'WITH filter_tab AS (SELECT UPPER(:filter) filter_value FROM dual)'
+          ||CHR(10)||lv_im_sql
+          ||CHR(10)||'SELECT network_type'
+          ||CHR(10)||'      ,group_type'
+          ||CHR(10)||'      ,description'
+          ||CHR(10)||'      ,row_count'
+          ||CHR(10)||'  FROM (SELECT rownum ind'
+          ||CHR(10)||'              ,network_type'
+          ||CHR(10)||'              ,group_type'
+          ||CHR(10)||'              ,CASE WHEN group_type IS NOT NULL AND group_type = SYS_CONTEXT(''NM3CORE'',''PREFERRED_LRM'') THEN ''* '' ELSE NULL END||description description'
+          ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+          ||CHR(10)||'          FROM (SELECT network_type'
+          ||CHR(10)||'                      ,group_type'
+          ||CHR(10)||'                      ,description'
+          ||CHR(10)||'                      ,CASE'
+          ||CHR(10)||lv_plrm_check
+          ||CHR(10)||'                         WHEN f.filter_value IS NULL AND is_linear_group = ''Y'' THEN 2'
+          ||CHR(10)||'                         WHEN f.filter_value IS NULL THEN 3'
+          ||CHR(10)||'                         WHEN UPPER(description) = f.filter_value THEN 4'
+          ||CHR(10)||'                         WHEN UPPER(description) LIKE f.filter_value||''%'' THEN 5'
+          ||CHR(10)||'                         ELSE 6'
+          ||CHR(10)||'                       END match_quality'
+          ||CHR(10)||'                  FROM (SELECT ngt_linear_flag is_linear_group'
+          ||CHR(10)||'                              ,ngt_nt_type     network_type'
+          ||CHR(10)||'                              ,ngt_group_type  group_type'
+          ||CHR(10)||'                              ,ngt_descr       description'
+          ||CHR(10)||'                          FROM nm_nt_groupings_all'
+          ||CHR(10)||'                              ,nm_group_types_all'
+          ||CHR(10)||'                         WHERE nng_group_type IN(SELECT rm.nm_obj_type'
+          ||CHR(10)||'                                                   FROM im'
+          ||CHR(10)||'                                                       ,nm_members rm'
+          ||CHR(10)||'                                                  WHERE im.ne_id = rm.nm_ne_id_of'
+          ||CHR(10)||'                                                    AND rm.nm_type = ''G'''
+          ||CHR(10)||'                                                    AND nng_group_type = ngt_group_type)'
+          ||CHR(10)||'                        UNION ALL'
+          ||CHR(10)||'                        SELECT ''N''     is_linear_group'
+          ||CHR(10)||'                              ,nt_type   network_type'
+          ||CHR(10)||'                              ,NULL      group_type'
+          ||CHR(10)||'                              ,nt_unique description'
+          ||CHR(10)||'                          FROM nm_types'
+          ||CHR(10)||'                         WHERE nt_type IN(SELECT ne.ne_nt_type'
+          ||CHR(10)||'                                                FROM im'
+          ||CHR(10)||'                                                    ,nm_elements ne'
+          ||CHR(10)||'                                               WHERE im.ne_id = ne.ne_id)'
+          ||CHR(10)||'                         ORDER BY 4)'
+          ||CHR(10)||'                      ,filter_tab f'
+                   ||lv_filter
+          ||CHR(10)||'                 ORDER BY match_quality,description))'
+          ||CHR(10)||lv_row_restriction
+    ;
+    --
+    IF lr_nit.nit_table_name IS NULL
+     THEN
+        IF pi_pagesize IS NOT NULL
+         THEN
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,pi_iit_ne_id
+                 ,lv_lower_index
+                 ,lv_upper_index;
+        ELSE
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,pi_iit_ne_id
+                 ,lv_lower_index;
+        END IF;
+    ELSE
+        IF pi_pagesize IS NOT NULL
+         THEN
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,lt_pla.npa_placement_array
+                 ,lv_lower_index
+                 ,lv_upper_index;
+        ELSE
+            OPEN po_cursor FOR lv_cursor_sql
+            USING pi_filter
+                 ,lt_pla.npa_placement_array
+                 ,lv_lower_index;
+        END IF;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_list_of_loc_types;
 
   --
   -----------------------------------------------------------------------------
