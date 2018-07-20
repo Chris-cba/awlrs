@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.6   May 08 2018 20:51:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.7   Jul 20 2018 13:18:18   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkh  $
-  --       Date into PVCS   : $Date:   May 08 2018 20:51:46  $
-  --       Date fetched Out : $Modtime:   May 08 2018 11:03:00  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   Jul 20 2018 13:18:18  $
+  --       Date fetched Out : $Modtime:   Jul 20 2018 10:29:50  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
   --
   TYPE gtype_rec IS RECORD(theme_id  nm_theme_gtypes.ntg_theme_id%TYPE
                           ,gtype     nm_theme_gtypes.ntg_gtype%TYPE);
@@ -206,7 +206,8 @@ AS
   --
   ------------------------------------------------------------------------------
   --
-  PROCEDURE get_linear_elements_at_point(pi_x                IN  NUMBER
+  PROCEDURE get_linear_elements_at_point(pi_map_name         IN  hig_option_values.hov_value%TYPE DEFAULT NULL
+                                        ,pi_x                IN  NUMBER
                                         ,pi_y                IN  NUMBER
                                         ,po_message_severity OUT hig_codes.hco_code%TYPE
                                         ,po_message_cursor   OUT sys_refcursor
