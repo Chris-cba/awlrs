@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.16   27 Jul 2017 22:30:10   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.17   Jul 20 2018 13:17:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   27 Jul 2017 22:30:10  $
-  --       Date fetched Out : $Modtime:   27 Jul 2017 22:20:02  $
-  --       Version          : $Revision:   1.16  $
+  --       Date into PVCS   : $Date:   Jul 20 2018 13:17:16  $
+  --       Date fetched Out : $Modtime:   Jul 19 2018 18:47:38  $
+  --       Version          : $Revision:   1.17  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -49,7 +49,7 @@ AS
     RETURN lv_retval;
     --
   END set_effective_date;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -500,6 +500,18 @@ AS
   END get_hig_option_values;
 
   --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_preferred_lrm
+    RETURN VARCHAR2 IS
+    --
+  BEGIN
+    --
+    RETURN NVL(SYS_CONTEXT('NM3CORE','PREFERRED_LRM'),c_all_lrms_code);
+    --
+  END get_preferred_lrm;
+  
+  --
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_preferred_lrm(po_message_severity OUT hig_codes.hco_code%TYPE
@@ -509,9 +521,13 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT CAST(SYS_CONTEXT('NM3CORE','PREFERRED_LRM') AS VARCHAR2(10)) plrm
-      FROM dual
-         ;
+    WITH plrm AS (SELECT CAST(NVL(SYS_CONTEXT('NM3CORE','PREFERRED_LRM'),c_all_lrms_code) AS VARCHAR2(10)) plrm_code FROM dual)
+    SELECT plrm_code
+          ,CAST(NVL(ngt_descr,c_all_lrms_descr) AS VARCHAR2(40)) plrm_descr
+      FROM plrm
+          ,nm_group_types
+     WHERE plrm_code = ngt_group_type(+)
+     ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -522,7 +538,131 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_preferred_lrm;
-  
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_lrms(pi_filter           IN  VARCHAR2
+                            ,pi_skip_n_rows      IN  PLS_INTEGER
+                            ,pi_pagesize         IN  PLS_INTEGER
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    lv_cursor_sql       nm3type.max_varchar2 := 'WITH filter_tab AS (SELECT UPPER(:filter) filter_value FROM dual)'
+                                     ||CHR(10)||'SELECT group_type'
+                                     ||CHR(10)||'      ,group_type_descr'
+                                     ||CHR(10)||'      ,row_count'
+                                     ||CHR(10)||'  FROM (SELECT rownum ind'
+                                     ||CHR(10)||'              ,group_type'
+                                     ||CHR(10)||'              ,group_type_descr'
+                                     ||CHR(10)||'              ,CASE'
+                                     ||CHR(10)||'                 WHEN f.filter_value IS NULL THEN 0'
+                                     ||CHR(10)||'                 WHEN UPPER(group_type_descr) = f.filter_value THEN 1'
+                                     ||CHR(10)||'                 WHEN UPPER(group_type_descr) LIKE f.filter_value||''%'' THEN 2'
+                                     ||CHR(10)||'                 ELSE 3'
+                                     ||CHR(10)||'               END match_quality'
+                                     ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                     ||CHR(10)||'          FROM (SELECT ngt.ngt_group_type group_type'
+                                     ||CHR(10)||'                      ,ngt.ngt_descr group_type_descr'
+                                     ||CHR(10)||'                  FROM nm_group_types ngt'
+                                     ||CHR(10)||'                 WHERE ngt.ngt_linear_flag = ''Y'''
+                                     ||CHR(10)||'                 UNION ALL'
+                                     ||CHR(10)||'                SELECT :all_lrms_code group_type'
+                                     ||CHR(10)||'                      ,:all_lrms_descr group_type_descr'
+                                     ||CHR(10)||'                  FROM dual'
+                                     ||CHR(10)||'                 ORDER BY 2)'
+                                     ||CHR(10)||'              ,filter_tab f'
+    ;
+    --
+  BEGIN
+    /*
+    ||Set the filter.
+    */
+    IF pi_filter IS NOT NULL
+     THEN
+        --
+        lv_filter := CHR(10)||'         WHERE UPPER(group_type_descr) LIKE ''%''||f.filter_value||''%''';
+        --
+    END IF;
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||lv_filter
+                     ||CHR(10)||'         ORDER BY match_quality,group_type_descr)'
+                     ||CHR(10)||lv_row_restriction;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_filter
+             ,c_all_lrms_code
+             ,c_all_lrms_descr
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_filter
+             ,c_all_lrms_code
+             ,c_all_lrms_descr
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_list_of_lrms;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE set_preferred_lrm(pi_group_type       IN  VARCHAR2
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_group_type  nm_group_types_all.ngt_group_type%TYPE;
+    --
+  BEGIN
+    --
+    IF NVL(pi_group_type,c_all_lrms_code) = c_all_lrms_code
+     THEN
+        lv_group_type := NULL;
+    ELSE
+        lv_group_type := pi_group_type;
+    END IF;
+    --
+    nm3user.set_preferred_lrm(pi_group_type => lv_group_type);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END set_preferred_lrm;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -683,7 +823,7 @@ AS
     po_message_severity := lv_severity;
     --
   END get_highest_severity;
-  
+
   --
   -----------------------------------------------------------------------------
   --
