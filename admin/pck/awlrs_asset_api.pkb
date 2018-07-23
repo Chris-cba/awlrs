@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.32   Jul 20 2018 13:24:10   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.33   Jul 23 2018 10:01:34   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 20 2018 13:24:10  $
-  --       Date fetched Out : $Modtime:   Jul 20 2018 11:31:38  $
-  --       Version          : $Revision:   1.32  $
+  --       Date into PVCS   : $Date:   Jul 23 2018 10:01:34  $
+  --       Date fetched Out : $Modtime:   Jul 23 2018 10:00:32  $
+  --       Version          : $Revision:   1.33  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.32  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.33  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -2092,7 +2092,7 @@ AS
           ||CHR(10)||'  FROM (SELECT rownum ind'
           ||CHR(10)||'              ,network_type'
           ||CHR(10)||'              ,group_type'
-          ||CHR(10)||'              ,CASE WHEN group_type IS NOT NULL AND group_type = SYS_CONTEXT(''NM3CORE'',''PREFERRED_LRM'') THEN ''* '' ELSE NULL END||description description'
+          ||CHR(10)||'              ,description||CASE WHEN group_type IS NOT NULL AND group_type = SYS_CONTEXT(''NM3CORE'',''PREFERRED_LRM'') THEN '' *'' ELSE NULL END description'
           ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
           ||CHR(10)||'          FROM (SELECT network_type'
           ||CHR(10)||'                      ,group_type'
