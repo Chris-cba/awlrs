@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.33   Jul 23 2018 10:01:34   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.34   Jul 26 2018 13:01:00   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 23 2018 10:01:34  $
-  --       Date fetched Out : $Modtime:   Jul 23 2018 10:00:32  $
-  --       Version          : $Revision:   1.33  $
+  --       Date into PVCS   : $Date:   Jul 26 2018 13:01:00  $
+  --       Date fetched Out : $Modtime:   Jul 26 2018 12:10:58  $
+  --       Version          : $Revision:   1.34  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.33  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.34  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -599,14 +599,18 @@ AS
     --
   BEGIN
     /*
-    ||Set The Value.
+    ||When an Asset Type has no attributes defined the UI sends a single
+    ||row with no values to check for NULL then set the value.
     */
-    awlrs_util.set_attribute(pi_obj_type    => pi_inv_type
-                            ,pi_inv_or_ne   => 'INV'
-                            ,pi_global      => pi_global
-                            ,pi_column_name => pi_attrib_name
-                            ,pi_prompt      => pi_scrn_text
-                            ,pi_value       => pi_value);
+    IF pi_attrib_name IS NOT NULL
+     THEN
+        awlrs_util.set_attribute(pi_obj_type    => pi_inv_type
+                                ,pi_inv_or_ne   => 'INV'
+                                ,pi_global      => pi_global
+                                ,pi_column_name => pi_attrib_name
+                                ,pi_prompt      => pi_scrn_text
+                                ,pi_value       => pi_value);
+    END IF;
     --
   END set_attribute;
 
