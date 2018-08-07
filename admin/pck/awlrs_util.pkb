@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.17   Jul 20 2018 13:17:16   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.18   Aug 07 2018 15:35:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Jul 20 2018 13:17:16  $
-  --       Date fetched Out : $Modtime:   Jul 19 2018 18:47:38  $
-  --       Version          : $Revision:   1.17  $
+  --       Date into PVCS   : $Date:   Aug 07 2018 15:35:16  $
+  --       Date fetched Out : $Modtime:   Aug 07 2018 15:31:52  $
+  --       Version          : $Revision:   1.18  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -634,10 +634,8 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE set_preferred_lrm(pi_group_type       IN  VARCHAR2
-                             ,po_message_severity OUT hig_codes.hco_code%TYPE
-                             ,po_message_cursor   OUT sys_refcursor
-                             ,po_cursor           OUT sys_refcursor)
+  PROCEDURE set_preferred_lrm(pi_group_type   IN VARCHAR2
+                             ,pi_set_user_opt IN BOOLEAN DEFAULT TRUE)
     IS
     --
     lv_group_type  nm_group_types_all.ngt_group_type%TYPE;
@@ -651,7 +649,21 @@ AS
         lv_group_type := pi_group_type;
     END IF;
     --
-    nm3user.set_preferred_lrm(pi_group_type => lv_group_type);
+    nm3user.set_preferred_lrm(pi_group_type   => lv_group_type
+                             ,pi_set_user_opt => pi_set_user_opt);
+    --
+  END set_preferred_lrm;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE set_preferred_lrm(pi_group_type       IN  VARCHAR2
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    set_preferred_lrm(pi_group_type => pi_group_type);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);

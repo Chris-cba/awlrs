@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.14   Jul 20 2018 13:16:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.15   Aug 07 2018 15:35:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   Jul 20 2018 13:16:18  $
-  --       Date fetched Out : $Modtime:   Jul 19 2018 18:23:04  $
-  --       Version          : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   Aug 07 2018 15:35:16  $
+  --       Date fetched Out : $Modtime:   Aug 07 2018 15:31:52  $
+  --       Version          : $Revision:   1.15  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -155,10 +155,15 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE set_preferred_lrm(pi_group_type   IN VARCHAR2
+                             ,pi_set_user_opt IN BOOLEAN DEFAULT TRUE);
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE set_preferred_lrm(pi_group_type       IN  VARCHAR2
                              ,po_message_severity OUT hig_codes.hco_code%TYPE
-                             ,po_message_cursor   OUT sys_refcursor
-                             ,po_cursor           OUT sys_refcursor);
+                             ,po_message_cursor   OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
