@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.18   Jul 20 2018 13:19:48   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.19   Aug 10 2018 13:14:54   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Jul 20 2018 13:19:48  $
-  --       Date fetched Out : $Modtime:   Jul 20 2018 10:30:02  $
-  --       Version          : $Revision:   1.18  $
+  --       Date into PVCS   : $Date:   Aug 10 2018 13:14:54  $
+  --       Date fetched Out : $Modtime:   Aug 10 2018 11:42:04  $
+  --       Version          : $Revision:   1.19  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -1536,6 +1536,8 @@ AS
               ,un_unit_name   unit_name
               ,awlrs_sdo.sdo_geom_to_wkt(nm3sdo.get_placement_geometry(nm_placement_array(CAST(COLLECT(nm_placement(ne_id,pl_start,pl_end,0)) AS nm_placement_array_type)))) geom_wkt
               ,nau_name ne_admin_unit
+              ,GREATEST(pl_start,pl_end) - LEAST(pl_start,pl_end) path_segment_length
+              ,nm3net.get_ne_length(ne_id) element_length
           FROM nm_units
               ,nm_types
               ,nm_admin_units_all
