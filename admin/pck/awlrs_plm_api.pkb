@@ -3,27 +3,24 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.2   Aug 13 2018 09:25:56   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.3   Aug 13 2018 10:17:34   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 13 2018 09:25:56  $
-  --       Date fetched Out : $Modtime:   Jul 24 2018 20:04:36  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   Aug 13 2018 10:17:34  $
+  --       Date fetched Out : $Modtime:   Aug 13 2018 10:10:48  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
   /*
-  ||PB TO DO what about max layers and max depth?
+  ||TO DO if needed
   */
   g_max_layers      PLS_INTEGER;
   g_xsp_labels_tab  NM3TYPE.TAB_VARCHAR30;
-  g_max_depth       NUMBER; --PB
-  --looks like its related to get_max_depth. which in form is used to populate :parameter.max_depth_of_data
-  --this is then used for the graph in STP.
-  c_max_xsps          CONSTANT pls_integer := 20; --pb what is this max 20 is this ok for HE? if we go with arrays we can remove this.
+  g_max_depth       NUMBER; 
   --
   -----------------------------------------------------------------------------
   --
@@ -1777,12 +1774,12 @@ AS
   EXCEPTION
     WHEN no_data_found
      THEN
-        hig.raise_ner(pi_appl => nm3type.c_stp
-                     ,pi_id   => 17);
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 58);
     WHEN too_many_rows
      THEN
-        hig.raise_ner(pi_appl => nm3type.c_stp
-                     ,pi_id   => 18);
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 59);
   END get_col_mrg_attrib_name;
 
   --
@@ -1908,9 +1905,11 @@ AS
     lr_longops        nm3sql.longops_rec;
     lv_sqlcount       PLS_INTEGER;
     lv_admin_unit_id  INTEGER;
-    --
-    PROCEDURE get_extent_nw_details(pi_nte_job_id IN  nm_nw_temp_extents.nte_job_id%TYPE
-                                   ,po_nt_type    OUT nm_types.nt_type%TYPE
+    /*
+    ||brought over from stp and removed first parameter as never used
+    */
+    
+    PROCEDURE get_extent_nw_details(po_nt_type    OUT nm_types.nt_type%TYPE
                                    ,po_subclass   OUT nm_elements.ne_sub_class%TYPE)
       IS
       --
@@ -1928,9 +1927,6 @@ AS
       --
     BEGIN
       --
-      /*
-      ||TODO - MH what is the parameter pi_nte_job_id for?
-      */
       OPEN  cs_nw;
       FETCH cs_nw
        INTO po_nt_type
@@ -1982,11 +1978,8 @@ AS
                                       ,p_nse_id     => pi_roi_id
                                       ,p_sqlcount   => lv_sqlcount);
     END IF;
-    /*
-    || stp note - the get_extent_nw_details has been fixed for nm_datum_criteria_tmp
-    */
-    get_extent_nw_details(pi_nte_job_id => lv_nte_job_id
-                         ,po_nt_type    => po_nt_type
+    --
+    get_extent_nw_details(po_nt_type    => po_nt_type
                          ,po_subclass   => po_subclass);
     --
     IF po_subclass IS NULL
@@ -2158,7 +2151,7 @@ AS
     END IF;
     --
     /*
-    ||Not sure what scenerio would result in this. Need to investigate. But for now leave in
+    ||TO DO Not sure what scenerio would result in this. Need to investigate. But for now leave in
     */
     FOR l_i IN 1..lt_data_tab.COUNT
      LOOP
@@ -2313,10 +2306,6 @@ AS
         lv_xsp_depth := lv_xsp_depth + NVL(lv_depth, 0);
         --
       END LOOP;
-      /*
-      ||pb to investigate below. not needed if we always return all values in returning arrays.
-      ||need to write refcursor returning all this for depth and graphs?
-      */
       --
       IF lv_xsp_has_data
        THEN
@@ -2334,15 +2323,6 @@ AS
           lv_col_no := lv_col_no - 1;
       END IF;
       --
-      /*
-      ||TODO - MH check with PB, the code below should be redundant as this
-      ||       version of the procedure is supposed to remove the xsp limit.
-      */
-      --IF lv_col_no = c_max_xsps
-      -- THEN
-      --   EXIT;
-      --END IF;
-      --
     END LOOP;
     /*
     ||retun type as sys ref cursor
@@ -2351,12 +2331,6 @@ AS
     SELECT *
       FROM TABLE(CAST(lt_plm_layer_asset AS awlrs_plm_layer_label_tab))
     ;
-    --SELECT *
-    -- FROM (SELECT *
-    --         FROM
-    --        TABLE(CAST(lt_plm_layer_asset AS awlrs_plm_layer_label_tab)))layer_plc
-    --;
-    --
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -2366,300 +2340,7 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END get_merge_data;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_merge_data(pi_mrg_job_id     IN     nm_mrg_sections.nms_mrg_job_id%TYPE
-                          ,pi_mrg_section_id IN     nm_mrg_sections.nms_mrg_section_id%TYPE
-                          ,pi_nw_type        IN     nm_types.nt_type%TYPE
-                          ,pi_sub_class      IN     nm_type_subclass.nsc_sub_class%TYPE
-                          ,pi_all_xsps       IN     VARCHAR2 DEFAULT 'N'
-                          ,pio_rc_data_tab   IN OUT t_rc_data_tab)
-    IS
-    --
-    c_max_layers  CONSTANT PLS_INTEGER := get_max_layers(pi_mrg_job_id     => pi_mrg_job_id
-                                                        ,pi_mrg_section_id => pi_mrg_section_id
-                                                        ,pi_reset          => TRUE);
-    --
-    lv_rc_data_tab  t_rc_data_tab := g_rc_data_tab;
-    --
-    lv_xsp_count  PLS_INTEGER := 0;
-    lv_col_no     PLS_INTEGER := 0;
-    --
-    lv_grid_data  t_rc_data_cell;
-    lv_material   t_rc_material;
-    lv_depth      t_rc_depth;
-    lv_xsp        VARCHAR2(255);
-    --
-    lv_xsp_has_data BOOLEAN;
-    --
-    lv_table_variable     VARCHAR2(2000);
-    lv_table_xspvariable  VARCHAR2(2000);
-    lv_plsql              nm3type.max_varchar2;
-    --
-    lv_xsp_depth  NUMBER;
-    --
-    lv_asset_type  nm_inv_types_all.nit_inv_type%TYPE := get_layer_type;
-    --
-    CURSOR get_xsps(cp_nw_type   IN nm_types.nt_type%TYPE
-                   ,cp_inv_type  IN nm_inv_types_all.nit_inv_type%TYPE
-                   ,cp_sub_class IN nm_type_subclass.nsc_sub_class%TYPE)
-        IS
-    SELECT xsr.xsr_x_sect_value xsp
-      FROM nm_xsp nwx
-          ,xsp_restraints xsr
-     WHERE xsr.xsr_nw_type = cp_nw_type
-       AND nwx.nwx_nw_type = xsr.xsr_nw_type
-       AND xsr.xsr_ity_inv_code = cp_inv_type
-       AND xsr.xsr_scl_class = cp_sub_class
-       AND nwx.nwx_nsc_sub_class = xsr.xsr_scl_class
-       AND nwx.nwx_x_sect = xsr.xsr_x_sect_value
-     ORDER
-        BY nwx.nwx_seq
-          ,xsr.xsr_x_sect_value
-         ;
-    --
-    TYPE xsp_tab IS TABLE OF xsp_restraints.xsr_x_sect_value%TYPE;
-    lt_xsps  xsp_tab;
-    --
-  BEGIN
-    --
-    g_xsp_labels_tab.DELETE;
-    g_max_depth := 0;
-    /*
-    ||Loop through XSPs
-    */
-    OPEN  get_xsps(pi_nw_type,lv_asset_type,pi_sub_class);
-    FETCH get_xsps
-     BULK COLLECT
-     INTO lt_xsps;
-    CLOSE get_xsps;
-    --
-    FOR i IN 1..lt_xsps.COUNT LOOP
-      --
-      lv_xsp_has_data := FALSE;
-      --
-      lv_xsp_depth := 0;
-      --
-      lv_col_no := lv_col_no + 1;
-      /*
-      ||Loop through the layers.
-      */
-      FOR j IN 1..c_max_layers LOOP
-        --
-        DECLARE
-          --
-          no_data EXCEPTION;
-          PRAGMA EXCEPTION_INIT(no_data,-20770);
-          --
-        BEGIN
-          /*
-          ||moved from stp custom function to dynamic sql
-          */
-          lv_grid_data := get_plm_rc_grid_data(pi_mrg_job_id     => pi_mrg_job_id
-                                              ,pi_mrg_section_id => pi_mrg_section_id
-                                              ,pi_inv_type       => lv_asset_type
-                                              ,pi_xsp            => lt_xsps(i)
-                                              ,pi_layer          => j
-                                              ,po_material       => lv_material
-                                              ,po_depth          => lv_depth);
-          --
-          lv_xsp_has_data := TRUE;
-          --
-          lv_xsp := lt_xsps(i);
-          --
-        EXCEPTION
-          WHEN no_data
-           THEN
-              lv_grid_data := NULL;
-              lv_material  := NULL;
-              lv_depth     := NULL;
-              lv_xsp       := NULL;
-        END;
-        --
-        lv_table_variable := g_package_name||'.g_rc_data_tab('||j||').col'||lv_col_no;
-        lv_table_xspvariable := g_package_name||'.g_rc_data_tab('||j||').xsp'||lv_col_no;
-        --
-        lv_plsql := 'BEGIN'
-         ||CHR(10)||'  '||lv_table_xspvariable||':= :p_xsp;'
-         ||CHR(10)||'  '||lv_table_variable||' := :p_grid_data;'
-         ||CHR(10)||'  '||lv_table_variable||'_material := :p_material;'
-         ||CHR(10)||'  '||lv_table_variable||'_depth := :p_depth;'
-         ||CHR(10)||'END;';
-        --
-        EXECUTE IMMEDIATE lv_plsql USING lv_xsp,lv_grid_data,lv_material,lv_depth;
-        --
-        lv_xsp_depth := lv_xsp_depth + NVL(lv_depth,0);
-        --
-      END LOOP;
-      --
-      IF lv_xsp_has_data
-       THEN
-          --
-          g_xsp_labels_tab(lv_col_no) := lt_xsps(i);
-          --
-          g_max_depth := GREATEST(g_max_depth,lv_xsp_depth);
-          --
-      ELSIF pi_all_xsps = 'Y'
-       THEN
-          --no data but displaying all so move on to next column anyway
-          g_xsp_labels_tab(lv_col_no) := lt_xsps(i);
-      ELSE
-          lv_col_no := lv_col_no - 1;
-      END IF;
-      --
-      IF lv_col_no = c_max_xsps
-       THEN
-         EXIT;
-      END IF;
-      --
-    END LOOP;
-    /*
-    ||Assign our data to the outtput param.
-    */
-    pio_rc_data_tab := g_rc_data_tab;
-    /*
-    ||Restore g_rc_data_tab to its initial state.
-    */
-    g_rc_data_tab := lv_rc_data_tab;
-    --
-  END get_merge_data;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_merge_data_old(pi_mrg_job_id       IN     nm_mrg_sections.nms_mrg_job_id%TYPE
-                              ,pi_mrg_section_id   IN     nm_mrg_sections.nms_mrg_section_id%TYPE
-                              ,pi_nw_type          IN     nm_types.nt_type%TYPE
-                              ,pi_sub_class        IN     nm_type_subclass.nsc_sub_class%TYPE
-                              ,pi_all_xsps         IN     VARCHAR2 DEFAULT 'N'
-                              ,po_message_severity OUT hig_codes.hco_code%TYPE
-                              ,po_message_cursor   OUT sys_refcursor
-                              ,po_cursor           OUT sys_refcursor)
-  IS
-  --
-  lt_rc_data_tab  t_rc_data_tab := g_rc_data_tab;
-  --
-  --pb testing
-  lt_plm_layer_asset awlrs_plm_layer_asset_tab := awlrs_plm_layer_asset_tab();
-  --
-  BEGIN
-    --
-    get_merge_data(pi_mrg_job_id     => pi_mrg_job_id
-                  ,pi_mrg_section_id => pi_mrg_section_id
-                  ,pi_nw_type        => pi_nw_type
-                  ,pi_sub_class      => pi_sub_class
-                  ,pi_all_xsps       => pi_all_xsps
-                  ,pio_rc_data_tab   => lt_rc_data_tab);
-    --
-    FOR i in 1..lt_rc_data_tab.COUNT LOOP
-      lt_plm_layer_asset.EXTEND;
-      lt_plm_layer_asset(lt_plm_layer_asset.count) :=
-        awlrs_plm_layer_asset(lt_rc_data_tab(i).xsp1
-                             ,lt_rc_data_tab(i).col1
-                             ,lt_rc_data_tab(i).col1_material
-                             ,lt_rc_data_tab(i).col1_depth
-                             ,lt_rc_data_tab(i).xsp2
-                             ,lt_rc_data_tab(i).col2
-                             ,lt_rc_data_tab(i).col2_material
-                             ,lt_rc_data_tab(i).col2_depth
-                             ,lt_rc_data_tab(i).xsp3
-                             ,lt_rc_data_tab(i).col3
-                             ,lt_rc_data_tab(i).col3_material
-                             ,lt_rc_data_tab(i).col3_depth
-                             ,lt_rc_data_tab(i).xsp4
-                             ,lt_rc_data_tab(i).col4
-                             ,lt_rc_data_tab(i).col4_material
-                             ,lt_rc_data_tab(i).col4_depth
-                             ,lt_rc_data_tab(i).xsp5
-                             ,lt_rc_data_tab(i).col5
-                             ,lt_rc_data_tab(i).col5_material
-                             ,lt_rc_data_tab(i).col5_depth
-                             ,lt_rc_data_tab(i).xsp6
-                             ,lt_rc_data_tab(i).col6
-                             ,lt_rc_data_tab(i).col6_material
-                             ,lt_rc_data_tab(i).col6_depth
-                             ,lt_rc_data_tab(i).xsp7
-                             ,lt_rc_data_tab(i).col7
-                             ,lt_rc_data_tab(i).col7_material
-                             ,lt_rc_data_tab(i).col7_depth
-                             ,lt_rc_data_tab(i).xsp8
-                             ,lt_rc_data_tab(i).col8
-                             ,lt_rc_data_tab(i).col8_material
-                             ,lt_rc_data_tab(i).col8_depth
-                             ,lt_rc_data_tab(i).xsp9
-                             ,lt_rc_data_tab(i).col9
-                             ,lt_rc_data_tab(i).col9_material
-                             ,lt_rc_data_tab(i).col9_depth
-                             ,lt_rc_data_tab(i).xsp10
-                             ,lt_rc_data_tab(i).col10
-                             ,lt_rc_data_tab(i).col10_material
-                             ,lt_rc_data_tab(i).col10_depth
-                             ,lt_rc_data_tab(i).xsp11
-                             ,lt_rc_data_tab(i).col11
-                             ,lt_rc_data_tab(i).col11_material
-                             ,lt_rc_data_tab(i).col11_depth
-                             ,lt_rc_data_tab(i).xsp12
-                             ,lt_rc_data_tab(i).col12
-                             ,lt_rc_data_tab(i).col12_material
-                             ,lt_rc_data_tab(i).col12_depth
-                             ,lt_rc_data_tab(i).xsp13
-                             ,lt_rc_data_tab(i).col13
-                             ,lt_rc_data_tab(i).col13_material
-                             ,lt_rc_data_tab(i).col13_depth
-                             ,lt_rc_data_tab(i).xsp14
-                             ,lt_rc_data_tab(i).col14
-                             ,lt_rc_data_tab(i).col14_material
-                             ,lt_rc_data_tab(i).col14_depth
-                             ,lt_rc_data_tab(i).xsp15
-                             ,lt_rc_data_tab(i).col15
-                             ,lt_rc_data_tab(i).col15_material
-                             ,lt_rc_data_tab(i).col15_depth
-                             ,lt_rc_data_tab(i).xsp16
-                             ,lt_rc_data_tab(i).col16
-                             ,lt_rc_data_tab(i).col16_material
-                             ,lt_rc_data_tab(i).col16_depth
-                             ,lt_rc_data_tab(i).xsp17
-                             ,lt_rc_data_tab(i).col17
-                             ,lt_rc_data_tab(i).col17_material
-                             ,lt_rc_data_tab(i).col17_depth
-                             ,lt_rc_data_tab(i).xsp18
-                             ,lt_rc_data_tab(i).col18
-                             ,lt_rc_data_tab(i).col18_material
-                             ,lt_rc_data_tab(i).col18_depth
-                             ,lt_rc_data_tab(i).xsp19
-                             ,lt_rc_data_tab(i).col19
-                             ,lt_rc_data_tab(i).col19_material
-                             ,lt_rc_data_tab(i).col19_depth
-                             ,lt_rc_data_tab(i).xsp20
-                             ,lt_rc_data_tab(i).col20
-                             ,lt_rc_data_tab(i).col20_material
-                             ,lt_rc_data_tab(i).col20_depth);
-      --
-    END LOOP;
-    --
-    OPEN po_cursor FOR
-    SELECT *
-      FROM TABLE(CAST(lt_plm_layer_asset AS awlrs_plm_layer_asset_tab))
-         ;
-    --SELECT *
-    -- FROM (SELECT *
-    --         FROM
-    --        TABLE(CAST(lt_plm_layer_asset AS awlrs_plm_layer_asset_tab)))asset_plc
-    --;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-     THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END get_merge_data_old;
-  
+  END get_merge_data;  
   --
   --------------
   --
