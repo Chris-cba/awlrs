@@ -3,24 +3,129 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.1   Jun 06 2018 14:46:06   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.2   Aug 13 2018 09:26:00   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkh  $
-  --       Date into PVCS   : $Date:   Jun 06 2018 14:46:06  $
-  --       Date fetched Out : $Modtime:   Jun 06 2018 12:57:26  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Aug 13 2018 09:26:00  $
+  --       Date fetched Out : $Modtime:   Jul 24 2018 20:00:10  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
   --
   TYPE iit_ne_id_tab IS TABLE OF nm_inv_items_all.iit_ne_id%TYPE INDEX BY BINARY_INTEGER;
   --
   TYPE xsp_tab IS TABLE OF nm_nw_xsp.nwx_x_sect%TYPE INDEX BY BINARY_INTEGER;
   --
   TYPE location_from_offset_tab IS TABLE OF nm_members_all.nm_begin_mp%TYPE INDEX BY BINARY_INTEGER;
-  TYPE location_to_offset_tab IS TABLE OF nm_members_all.nm_end_mp%TYPE INDEX BY BINARY_INTEGER;  
+  TYPE location_to_offset_tab IS TABLE OF nm_members_all.nm_end_mp%TYPE INDEX BY BINARY_INTEGER;
+  --pb new temp
+  SUBTYPE t_rc_data_cell IS varchar2(80);
+  SUBTYPE t_rc_material  IS nm_inv_items.iit_material%TYPE;
+  SUBTYPE t_rc_depth     IS nm_inv_items.iit_length%TYPE;
+
+  TYPE t_rc_data_rec IS RECORD(xsp1           t_rc_data_cell
+                              ,col1           t_rc_data_cell
+                              ,col1_material  t_rc_material
+                              ,col1_depth     t_rc_depth
+                              ,xsp2           t_rc_data_cell
+                              ,col2           t_rc_data_cell
+                              ,col2_material  t_rc_material
+                              ,col2_depth     t_rc_depth
+                              ,xsp3           t_rc_data_cell
+                              ,col3           t_rc_data_cell
+                              ,col3_material  t_rc_material
+                              ,col3_depth     t_rc_depth
+                              ,xsp4           t_rc_data_cell
+                              ,col4           t_rc_data_cell
+                              ,col4_material  t_rc_material
+                              ,col4_depth     t_rc_depth
+                              ,xsp5           t_rc_data_cell
+                              ,col5           t_rc_data_cell
+                              ,col5_material  t_rc_material
+                              ,col5_depth     t_rc_depth
+                              ,xsp6           t_rc_data_cell
+                              ,col6           t_rc_data_cell
+                              ,col6_material  t_rc_material
+                              ,col6_depth     t_rc_depth
+                              ,xsp7           t_rc_data_cell
+                              ,col7           t_rc_data_cell
+                              ,col7_material  t_rc_material
+                              ,col7_depth     t_rc_depth
+                              ,xsp8           t_rc_data_cell
+                              ,col8           t_rc_data_cell
+                              ,col8_material  t_rc_material
+                              ,col8_depth     t_rc_depth
+                              ,xsp9           t_rc_data_cell
+                              ,col9           t_rc_data_cell
+                              ,col9_material  t_rc_material
+                              ,col9_depth     t_rc_depth
+                              ,xsp10          t_rc_data_cell
+                              ,col10          t_rc_data_cell
+                              ,col10_material t_rc_material
+                              ,col10_depth    t_rc_depth
+                              ,xsp11          t_rc_data_cell
+                              ,col11          t_rc_data_cell
+                              ,col11_material t_rc_material
+                              ,col11_depth    t_rc_depth
+                              ,xsp12          t_rc_data_cell
+                              ,col12          t_rc_data_cell
+                              ,col12_material t_rc_material
+                              ,col12_depth    t_rc_depth
+                              ,xsp13          t_rc_data_cell
+                              ,col13          t_rc_data_cell
+                              ,col13_material t_rc_material
+                              ,col13_depth    t_rc_depth
+                              ,xsp14          t_rc_data_cell
+                              ,col14          t_rc_data_cell
+                              ,col14_material t_rc_material
+                              ,col14_depth    t_rc_depth
+                              ,xsp15          t_rc_data_cell
+                              ,col15          t_rc_data_cell
+                              ,col15_material t_rc_material
+                              ,col15_depth    t_rc_depth
+                              ,xsp16          t_rc_data_cell
+                              ,col16          t_rc_data_cell
+                              ,col16_material t_rc_material
+                              ,col16_depth    t_rc_depth
+                              ,xsp17          t_rc_data_cell
+                              ,col17          t_rc_data_cell
+                              ,col17_material t_rc_material
+                              ,col17_depth    t_rc_depth
+                              ,xsp18          t_rc_data_cell
+                              ,col18          t_rc_data_cell
+                              ,col18_material t_rc_material
+                              ,col18_depth    t_rc_depth
+                              ,xsp19          t_rc_data_cell
+                              ,col19          t_rc_data_cell
+                              ,col19_material t_rc_material
+                              ,col19_depth    t_rc_depth
+                              ,xsp20          t_rc_data_cell
+                              ,col20          t_rc_data_cell
+                              ,col20_material t_rc_material
+                              ,col20_depth    t_rc_depth);
+  --
+  TYPE t_rc_data_tab IS TABLE OF t_rc_data_rec INDEX BY binary_integer;
+  --
+  TYPE t_plm_data_rec IS RECORD(xsp       t_rc_data_cell
+                               ,layer     t_rc_depth
+                               ,label     t_rc_material
+                               ,material  t_rc_data_cell
+                               ,depth     t_rc_depth);
+  --
+  TYPE t_plm_data_tab IS TABLE OF t_plm_data_rec INDEX BY binary_integer;
+  --
+  g_rc_data_tab t_rc_data_tab;
+  /*
+  ||Specify Product Option which points to PLM RC Merge Query ID.
+  */
+  c_rc_mrg_qry_option    CONSTANT hig_options.hop_id%TYPE := 'AWL_RCMRGQ';--'
+  c_rc_mrg_qry           CONSTANT nm_mrg_query.nmq_id%TYPE := hig.get_sysopt(p_option_id => c_rc_mrg_qry_option);
+  c_layer_attrib_name    CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := 'IIT_POSITION';
+  c_depth_attrib_name    CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := 'IIT_NUM_ATTRIB16';
+  c_material_attrib_name CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := 'IIT_CHR_ATTRIB27';
   --
   -----------------------------------------------------------------------------
   --
@@ -34,6 +139,7 @@ AS
   -- This function returns the current SCCS version of the package body
   FUNCTION get_body_version
     RETURN VARCHAR2;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -49,13 +155,15 @@ AS
                                        ,pi_ne_ids                   IN     iit_ne_id_tab
                                        ,pi_begin_mps                IN     location_from_offset_tab
                                        ,pi_end_mps                  IN     location_to_offset_tab
-                                       ,pi_layer_attrib_idx         IN     iit_ne_id_tab                        
+                                       ,pi_layer_attrib_idx         IN     iit_ne_id_tab
                                        ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
                                        ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
-                                       ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab                         
+                                       ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab
+                                       ,pi_depth_removed            IN     NUMBER DEFAULT NULL
                                        ,po_iit_ne_ids               IN OUT iit_ne_id_tab
                                        ,po_message_severity            OUT hig_codes.hco_code%TYPE
                                        ,po_message_cursor              OUT sys_refcursor)  ;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -106,6 +214,7 @@ AS
                      ,po_iit_ne_id          IN OUT nm_inv_items.iit_ne_id%TYPE
                      ,po_message_severity      OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor        OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
   --
@@ -149,44 +258,50 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_construction_records(pi_iit_ne_ids IN     iit_ne_id_tab
-                                    ,po_cursor        OUT sys_refcursor);
+  PROCEDURE get_construction_records(pi_iit_ne_ids IN  iit_ne_id_tab
+                                    ,po_cursor     OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_construction_records(pi_iit_ne_ids       IN     iit_ne_id_tab
-                                    ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                                    ,po_message_cursor      OUT sys_refcursor
-                                    ,po_cursor              OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --  
-  PROCEDURE get_construction_record(pi_iit_ne_id          IN     nm_inv_items_all.iit_ne_id%TYPE
-                                   ,po_message_severity      OUT hig_codes.hco_code%TYPE
-                                   ,po_message_cursor        OUT sys_refcursor
-                                   ,po_cursor                OUT sys_refcursor);        
+  PROCEDURE get_construction_records(pi_iit_ne_ids       IN  iit_ne_id_tab
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_construction_layers(pi_iit_ne_ids IN     iit_ne_id_tab
-                                   ,po_cursor        OUT sys_refcursor);
+  PROCEDURE get_construction_record(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_cursor           OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_construction_layers(pi_iit_ne_ids       IN     iit_ne_id_tab
-                                   ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                                   ,po_message_cursor      OUT sys_refcursor
-                                   ,po_cursor              OUT sys_refcursor);
+  PROCEDURE get_construction_layers(pi_iit_ne_ids IN  iit_ne_id_tab
+                                   ,po_cursor     OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
-  --  
-  PROCEDURE get_construction_layer(pi_iit_ne_id          IN     nm_inv_items_all.iit_ne_id%TYPE
-                                  ,po_message_severity      OUT hig_codes.hco_code%TYPE
-                                  ,po_message_cursor        OUT sys_refcursor
-                                  ,po_cursor                OUT sys_refcursor);                                           
+  --
+  PROCEDURE get_construction_layers(pi_iit_ne_ids       IN  iit_ne_id_tab
+                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_cursor           OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
-  --                                    
+  --
+  PROCEDURE get_construction_layer(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor
+                                  ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_flex_attribs(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
                             ,pi_inv_type         IN  nm_inv_items_all.iit_inv_type%TYPE
                             ,pi_disp_derived     IN  BOOLEAN DEFAULT TRUE
@@ -194,17 +309,64 @@ AS
                             ,po_message_severity OUT hig_codes.hco_code%TYPE
                             ,po_message_cursor   OUT sys_refcursor
                             ,po_cursor           OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
-  --                                  
-  PROCEDURE enddate_construction_record(pi_iit_id           IN     nm_inv_items_all.iit_ne_id%TYPE
-                                       ,pi_effective_date   IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                                       ,pi_run_checks       IN     VARCHAR2 DEFAULT 'Y'
-                                       ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                                       ,po_message_cursor      OUT sys_refcursor);
-                  
+  --
+  PROCEDURE enddate_construction_record(pi_iit_id           IN  nm_inv_items_all.iit_ne_id%TYPE
+                                       ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                                       ,pi_run_checks       IN  VARCHAR2 DEFAULT 'Y'
+                                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor   OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
+  --
+  PROCEDURE execute_merge(pi_roi_id           IN  NUMBER
+                         ,pi_roi_name         IN  VARCHAR2
+                         ,pi_roi_type         IN  VARCHAR2
+                         ,pi_roi_begin_mp     IN  NUMBER DEFAULT NULL
+                         ,pi_roi_end_mp       IN  NUMBER DEFAULT NULL
+                         ,po_mrg_job_id       OUT nm_mrg_query_results.nqr_mrg_job_id%TYPE
+                         ,po_nt_type          OUT nm_types.nt_type%TYPE
+                         ,po_subclass         OUT nm_elements.ne_sub_class%TYPE
+                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_merge_sections(pi_mrg_job_id       IN  NUMBER
+                              ,pi_roi_begin_mp     IN  NUMBER
+                              ,pi_roi_end_mp       IN  NUMBER
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_merge_data(pi_mrg_job_id       IN  nm_mrg_sections.nms_mrg_job_id%TYPE
+                          ,pi_mrg_section_id   IN  nm_mrg_sections.nms_mrg_section_id%TYPE
+                          ,pi_nw_type          IN  nm_types.nt_type%TYPE
+                          ,pi_sub_class        IN  nm_type_subclass.nsc_sub_class%TYPE
+                          ,pi_all_xsps         IN  VARCHAR2 DEFAULT 'N'
+                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor   OUT sys_refcursor
+                          ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_merge_data_old(pi_mrg_job_id       IN  nm_mrg_sections.nms_mrg_job_id%TYPE
+                              ,pi_mrg_section_id   IN  nm_mrg_sections.nms_mrg_section_id%TYPE
+                              ,pi_nw_type          IN  nm_types.nt_type%TYPE
+                              ,pi_sub_class        IN  nm_type_subclass.nsc_sub_class%TYPE
+                              ,pi_all_xsps         IN  VARCHAR2 DEFAULT 'N'
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor);
+
   --
 END awlrs_plm_api;
 /
