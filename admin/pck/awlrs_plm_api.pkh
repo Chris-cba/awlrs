@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.3   Aug 13 2018 10:17:32   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.4   Sep 06 2018 07:41:34   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkh  $
-  --       Date into PVCS   : $Date:   Aug 13 2018 10:17:32  $
-  --       Date fetched Out : $Modtime:   Aug 13 2018 09:40:30  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   Sep 06 2018 07:41:34  $
+  --       Date fetched Out : $Modtime:   Aug 24 2018 15:38:04  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
   --
   TYPE iit_ne_id_tab IS TABLE OF nm_inv_items_all.iit_ne_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -21,7 +21,7 @@ AS
   --
   TYPE location_from_offset_tab IS TABLE OF nm_members_all.nm_begin_mp%TYPE INDEX BY BINARY_INTEGER;
   TYPE location_to_offset_tab IS TABLE OF nm_members_all.nm_end_mp%TYPE INDEX BY BINARY_INTEGER;
-  --pb new temp
+  --
   SUBTYPE t_rc_data_cell IS varchar2(80);
   SUBTYPE t_rc_material  IS nm_inv_items.iit_material%TYPE;
   SUBTYPE t_rc_depth     IS nm_inv_items.iit_length%TYPE;
@@ -37,11 +37,11 @@ AS
   /*
   ||Specify Product Option which points to PLM RC Merge Query ID.
   */
-  c_rc_mrg_qry_option    CONSTANT hig_options.hop_id%TYPE := 'AWL_RCMRGQ';--'
-  c_rc_mrg_qry           CONSTANT nm_mrg_query.nmq_id%TYPE := hig.get_sysopt(p_option_id => c_rc_mrg_qry_option);
-  c_layer_attrib_name    CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := 'IIT_POSITION';
-  c_depth_attrib_name    CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := 'IIT_NUM_ATTRIB16';
-  c_material_attrib_name CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := 'IIT_CHR_ATTRIB27';
+  c_rc_mrg_qry_option      CONSTANT hig_options.hop_id%TYPE := 'AWL_RCMRGQ';--'
+  c_rc_mrg_qry             CONSTANT nm_mrg_query.nmq_id%TYPE := hig.get_sysopt(p_option_id => c_rc_mrg_qry_option);
+  c_layer_attrib_name      CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := 'IIT_POSITION';
+  c_thickness_attrib_name  CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := 'IIT_NUM_ATTRIB16';
+  c_material_attrib_name   CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := 'IIT_CHR_ATTRIB27';
   --
   -----------------------------------------------------------------------------
   --
@@ -68,7 +68,7 @@ AS
                                        ,pi_attrib_scrn_texts        IN     awlrs_asset_api.attrib_scrn_text_tab
                                        ,pi_attrib_char_values       IN     awlrs_asset_api.attrib_value_tab
                                        ,pi_xsps                     IN     xsp_tab
-                                       ,pi_ne_ids                   IN     iit_ne_id_tab
+                                       ,pi_ne_ids                   IN     awlrs_util.ne_id_tab
                                        ,pi_begin_mps                IN     location_from_offset_tab
                                        ,pi_end_mps                  IN     location_to_offset_tab
                                        ,pi_layer_attrib_idx         IN     iit_ne_id_tab
@@ -156,6 +156,19 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE preview_replacement_changes(pi_layers_added       IN     NUMBER
+                                       ,pi_depth_removed      IN     NUMBER
+                                       ,pi_xsps               IN     xsp_tab
+                                       ,pi_ne_ids             IN     awlrs_util.ne_id_tab
+                                       ,pi_begin_mps          IN     location_from_offset_tab
+                                       ,pi_end_mps            IN     location_to_offset_tab
+                                       ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor        OUT sys_refcursor
+                                       ,po_cursor                OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE replace_construction_records(pi_description        IN     nm_inv_items_all.iit_descr%TYPE
                                         ,pi_start_date         IN     nm_inv_items_all.iit_start_date%TYPE
                                         ,pi_notes              IN     nm_inv_items_all.iit_note%TYPE
@@ -218,6 +231,14 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_groupings(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor
+                         ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_flex_attribs(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
                             ,pi_inv_type         IN  nm_inv_items_all.iit_inv_type%TYPE
                             ,pi_disp_derived     IN  BOOLEAN DEFAULT TRUE
@@ -270,6 +291,27 @@ AS
                           ,po_message_severity OUT hig_codes.hco_code%TYPE
                           ,po_message_cursor   OUT sys_refcursor
                           ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_pavement_data(pi_ne_id nm_elements.ne_id%TYPE)
+   RETURN VARCHAR2;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_network_elements(pi_ne_ids awlrs_util.ne_id_tab
+                                ,po_cursor OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_merge_cell_asset_id(pi_ne_id       IN nm_elements_all.ne_id%TYPE
+                                   ,pi_from_offset IN nm_gaz_query.ngq_begin_mp%TYPE DEFAULT NULL
+                                   ,pi_to_offset   IN nm_gaz_query.ngq_end_mp%TYPE DEFAULT NULL
+                                   ,pi_xsp         IN nm_inv_items.iit_x_sect%TYPE
+                                   ,pi_layer       IN NUMBER
+                                   ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor      OUT sys_refcursor
+                                   ,po_cursor              OUT sys_refcursor);
   --
 END awlrs_plm_api;
 /
