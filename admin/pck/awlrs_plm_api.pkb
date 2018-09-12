@@ -3,17 +3,17 @@
     -------------------------------------------------------------------------
     --   PVCS Identifiers :-
     --
-    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.4   Sep 06 2018 07:41:58   Peter.Bibby  $
+    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.5   Sep 12 2018 15:35:26   Peter.Bibby  $
     --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-    --       Date into PVCS   : $Date:   Sep 06 2018 07:41:58  $
-    --       Date fetched Out : $Modtime:   Aug 24 2018 16:13:38  $
-    --       Version          : $Revision:   1.4  $
+    --       Date into PVCS   : $Date:   Sep 12 2018 15:35:26  $
+    --       Date fetched Out : $Modtime:   Sep 11 2018 12:00:18  $
+    --       Version          : $Revision:   1.5  $
     -------------------------------------------------------------------------
     --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
     -------------------------------------------------------------------------
     --
     --g_body_sccsid is the SCCS ID for the package body
-    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
     g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
     --
     g_max_layers      PLS_INTEGER;
@@ -2330,16 +2330,18 @@
       SELECT nms_mrg_job_id
             ,nms_mrg_section_id
             ,nms_offset_ne_id
+            ,ne_unique
+            ,ne_nt_type            
             ,nms_begin_offset
             ,nms_end_offset
             ,nms_ne_id_first
             ,nms_begin_mp_first
             ,nms_ne_id_last
             ,nms_end_mp_last
-            ,nms_in_results
-            ,nms_orig_sect_id
         FROM nm_mrg_sections
+            ,nm_elements
        WHERE nms_mrg_job_id = pi_mrg_job_id
+         AND nms_offset_ne_id = ne_id
          AND nms_begin_offset < pi_roi_end_mp
          AND nms_end_offset > pi_roi_begin_mp
        ORDER
