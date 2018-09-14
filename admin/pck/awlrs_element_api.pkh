@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.17   Jun 25 2018 11:34:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.18   Sep 14 2018 11:18:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   Jun 25 2018 11:34:44  $
-  --       Date fetched Out : $Modtime:   Jun 25 2018 10:26:34  $
-  --       Version          : $Revision:   1.17  $
+  --       Date into PVCS   : $Date:   Sep 14 2018 11:18:28  $
+  --       Date fetched Out : $Modtime:   Sep 14 2018 11:04:34  $
+  --       Version          : $Revision:   1.18  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
   --
   g_db_element   nm_elements_all%ROWTYPE;
   g_old_element  nm_elements_all%ROWTYPE;
@@ -53,7 +53,9 @@ AS
                             ,end_node_descr              nm_nodes_all.no_descr%TYPE
                             ,end_node_x                  nm_points.np_grid_east%TYPE
                             ,end_node_y                  nm_points.np_grid_north%TYPE
-                            ,element_has_shape           VARCHAR2(1));
+                            ,element_has_shape           VARCHAR2(1)
+                            ,element_min_offset          NUMBER
+                            ,element_max_offset          NUMBER);
   --
   TYPE element_tab IS TABLE OF element_rec INDEX BY BINARY_INTEGER;
   --
