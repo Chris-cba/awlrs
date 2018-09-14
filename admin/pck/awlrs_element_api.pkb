@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.29   Jun 25 2018 11:34:42   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.30   Sep 14 2018 11:18:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 25 2018 11:34:42  $
-  --       Date fetched Out : $Modtime:   Jun 25 2018 10:27:36  $
-  --       Version          : $Revision:   1.29  $
+  --       Date into PVCS   : $Date:   Sep 14 2018 11:18:30  $
+  --       Date fetched Out : $Modtime:   Sep 14 2018 11:15:00  $
+  --       Version          : $Revision:   1.30  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.29  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.30  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1371,6 +1371,22 @@ AS
              ELSE
                  'N'
            END element_has_shape
+          ,CASE
+             WHEN nt_length_unit IS NOT NULL
+              AND ne_type = 'G'
+              THEN
+                 nm3unit.convert_unit(nt_length_unit,un_unit_id,nm3net.get_min_slk(ne_id))
+             ELSE
+                 NULL
+           END               element_min_offset
+          ,CASE
+             WHEN nt_length_unit IS NOT NULL
+              AND ne_type = 'G'
+              THEN
+                 nm3unit.convert_unit(nt_length_unit,un_unit_id,nm3net.get_max_slk(ne_id))
+             ELSE
+                 NULL
+           END               element_max_offset
       FROM nm_elements_all
           ,nm_types
           ,nm_admin_units_all
