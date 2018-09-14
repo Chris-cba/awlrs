@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.17   Jul 17 2018 14:31:58   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.18   Sep 14 2018 11:52:02   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 17 2018 14:31:58  $
-  --       Date fetched Out : $Modtime:   Jul 17 2018 14:19:18  $
-  --       Version          : $Revision:   1.17  $
+  --       Date into PVCS   : $Date:   Sep 14 2018 11:52:02  $
+  --       Date fetched Out : $Modtime:   Sep 14 2018 11:42:30  $
+  --       Version          : $Revision:   1.18  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.17  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.18  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -6039,7 +6039,8 @@ AS
                                      ||CHR(10)||'           AND nng.nng_nt_type = nin.nin_nw_type'
                                      ||CHR(10)||'           AND nin.nin_nit_inv_code = nit.nit_inv_type'
                                      ||CHR(10)||'           AND nit.nit_pnt_or_cont = ''P'''
-                                     ||CHR(10)||'           AND nit.nit_category in (''I'', ''F'', ''D'')'
+                                     --||CHR(10)||'           AND nit.nit_category in (''I'', ''F'', ''D'')'  -- Forms App doesn't support FT Assets but does let you pick FT Types.
+                                     ||CHR(10)||'           AND nit.nit_category in (''I'', ''D'')'
     ;
     --
   BEGIN
@@ -6555,13 +6556,18 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE save_criteria(pi_theme_name         IN  nm_themes_all.nth_theme_name%TYPE
-                         ,pi_name               IN  awlrs_saved_search_criteria.assc_name%TYPE
-                         ,pi_description        IN  awlrs_saved_search_criteria.assc_description%TYPE
-                         ,pi_criteria           IN  awlrs_saved_search_criteria.assc_criteria%TYPE
-                         ,pi_overwrite_existing IN  VARCHAR2 DEFAULT 'N'
-                         ,po_message_severity   OUT hig_codes.hco_code%TYPE
-                         ,po_message_cursor     OUT sys_refcursor)
+  PROCEDURE save_criteria(pi_theme_name           IN  nm_themes_all.nth_theme_name%TYPE
+                         ,pi_name                 IN  awlrs_saved_search_criteria.assc_name%TYPE
+                         ,pi_description          IN  awlrs_saved_search_criteria.assc_description%TYPE
+                         ,pi_criteria             IN  awlrs_saved_search_criteria.assc_criteria%TYPE
+                         ,pi_net_filter_ne_id     IN  nm_elements_all.ne_id%TYPE DEFAULT NULL
+                         ,pi_net_filter_nse_id    IN  nm_saved_extents.nse_id%TYPE DEFAULT NULL
+                         ,pi_net_filter_marker_id IN  nm_inv_items_all.iit_ne_id%TYPE DEFAULT NULL
+                         ,pi_net_filter_from      IN  NUMBER DEFAULT NULL
+                         ,pi_net_filter_to        IN  NUMBER DEFAULT NULL
+                         ,pi_overwrite_existing   IN  VARCHAR2 DEFAULT 'N'
+                         ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor       OUT sys_refcursor)
     IS
     --
     lv_ass_id  awlrs_saved_search_criteria.assc_id%TYPE;
@@ -6605,13 +6611,28 @@ AS
          THEN
             MERGE
              INTO awlrs_saved_search_criteria
-            USING (SELECT sys_context('NM3CORE', 'USER_ID') user_id, pi_theme_name theme_name, pi_name name, pi_description descr, pi_criteria criteria FROM DUAL) param
+            USING (SELECT sys_context('NM3CORE', 'USER_ID') user_id
+                         ,pi_theme_name theme_name
+                         ,pi_name name
+                         ,pi_description descr
+                         ,pi_criteria criteria
+                         ,pi_net_filter_ne_id     net_filter_ne_id
+                         ,pi_net_filter_nse_id    net_filter_nse_id
+                         ,pi_net_filter_marker_id net_filter_marker_id
+                         ,pi_net_filter_from      net_filter_from
+                         ,pi_net_filter_to        net_filter_to
+                     FROM DUAL) param
                ON (assc_name = param.name AND assc_user_id = param.user_id)
              WHEN MATCHED
               THEN
                  UPDATE SET assc_theme_name = param.theme_name
                            ,assc_description = param.descr
                            ,assc_criteria = param.criteria
+                           ,assc_net_filter_ne_id = param.net_filter_ne_id
+                           ,assc_net_filter_nse_id = param.net_filter_nse_id
+                           ,assc_net_filter_marker_id = param.net_filter_marker_id
+                           ,assc_net_filter_from = param.net_filter_from
+                           ,assc_net_filter_to = param.net_filter_to
              WHEN NOT MATCHED
               THEN
                  INSERT(assc_id
@@ -6619,13 +6640,24 @@ AS
                        ,assc_theme_name
                        ,assc_name
                        ,assc_description
-                       ,assc_criteria)
+                       ,assc_criteria
+                       ,assc_net_filter_ne_id
+                       ,assc_net_filter_nse_id
+                       ,assc_net_filter_marker_id
+                       ,assc_net_filter_from
+                       ,assc_net_filter_to
+                       )
                  VALUES(assc_id_seq.NEXTVAL
                        ,param.user_id
                        ,param.theme_name
                        ,param.name
                        ,param.descr
-                       ,param.criteria)
+                       ,param.criteria
+                       ,param.net_filter_ne_id
+                       ,param.net_filter_nse_id
+                       ,param.net_filter_marker_id
+                       ,param.net_filter_from
+                       ,param.net_filter_to)
             ;
         END IF;
         --
@@ -6687,17 +6719,144 @@ AS
                         ,po_message_cursor   OUT sys_refcursor
                         ,po_cursor           OUT sys_refcursor)
     IS
+    --
+    CURSOR get_assc(cp_assc_id IN awlrs_saved_search_criteria.assc_id%TYPE)
+        IS
+    SELECT assc_id                   id
+          ,assc_theme_name           theme_name
+          ,assc_name                 name
+          ,assc_description          description
+          ,assc_criteria             criteria
+          ,assc_net_filter_ne_id     net_filter_ne_id
+          ,assc_net_filter_nse_id    net_filter_nse_id
+          ,nit_inv_type              net_filter_marker_type
+          ,nit_inv_type||' - '||nit_descr  net_filter_marker_type_name
+          ,assc_net_filter_marker_id net_filter_marker_id
+          ,assc_net_filter_from      net_filter_from
+          ,assc_net_filter_to        net_filter_to
+      FROM awlrs_saved_search_criteria
+          ,nm_inv_items
+          ,nm_inv_types
+     WHERE assc_id = cp_assc_id
+       AND assc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
+       AND assc_net_filter_marker_id = iit_ne_id(+)
+       AND iit_inv_type = nit_inv_type(+)
+         ;
+    --
+    lr_assc  get_assc%ROWTYPE;
+    --
+    CURSOR get_ne_nse(cp_ne_id  IN nm_elements_all.ne_id%TYPE
+                     ,cp_nse_id IN nm_saved_extents.nse_id%TYPE)
+        IS
+    SELECT CASE
+             WHEN ne_gty_group_type IS NULL THEN 'DATUM'
+             WHEN ngt_linear_flag = 'Y' THEN 'ROUTE'
+             ELSE 'GROUP'
+           END net_filter_item_type
+          ,CASE 
+             WHEN ne_gty_group_type IS NULL THEN nt_unique
+             ELSE ngt_descr
+           END||' - '||ne_unique||' - '||ne_descr net_filter_item_name
+          ,CASE
+             WHEN ne_gty_group_type IS NULL THEN 0
+             WHEN ne_gty_group_type IS NOT NULL AND ngt_linear_flag = 'Y' THEN (SELECT MIN(nm_slk) FROM nm_members WHERE nm_ne_id_in = ne_id)
+             ELSE NULL
+           END net_filter_item_min_offset
+          ,CASE
+             WHEN ne_gty_group_type IS NULL THEN ne_length
+             WHEN ne_gty_group_type IS NOT NULL AND ngt_linear_flag = 'Y' THEN (SELECT MAX(nm_end_slk) FROM nm_members WHERE nm_ne_id_in = ne_id)
+             ELSE NULL
+           END net_filter_item_max_offset
+      FROM nm_group_types
+          ,nm_elements
+          ,nm_types
+     WHERE nt_type = ne_nt_type
+       AND ne_id = cp_ne_id
+       AND ne_gty_group_type = ngt_group_type(+)
+    UNION ALL
+    SELECT 'EXTENT' net_filter_item_type
+          ,'Saved Extent - '||nse_name||' - '||nse_descr net_filter_item_name
+          ,CAST(NULL AS NUMBER) net_filter_item_min_offset
+          ,CAST(NULL AS NUMBER) net_filter_item_max_offset
+      FROM nm_saved_extents
+     WHERE nse_id = cp_nse_id
+         ;
+    --
+    lr_ne_nse  get_ne_nse%ROWTYPE;
+    --
+    CURSOR get_marker(cp_ne_id     IN nm_elements_all.ne_id%TYPE
+                     ,cp_iit_ne_id IN nm_inv_items_all.iit_ne_id%TYPE)
+        IS
+    SELECT SUBSTR(iit_descr||' @ '||offset||' '||unit_name,1,2000) net_filter_marker_name
+          ,offset net_filter_marker_offset
+      FROM (SELECT iit.iit_ne_id id
+                  ,iit.iit_descr
+                  ,un_grp.un_unit_name unit_name
+                  ,TO_NUMBER(nm3unit.get_formatted_value(CASE
+                                                           WHEN nm_r.nm_cardinality = 1 THEN nm3unit.convert_unit(nt_dat.nt_length_unit,nt_grp.nt_length_unit,nm_i.nm_begin_mp)
+                                                           ELSE nm3unit.convert_unit(nt_dat.nt_length_unit,nt_grp.nt_length_unit,ne_dat.ne_length - nm_i.nm_begin_mp)
+                                                         END + nm_r.nm_slk
+                                                        ,nt_grp.nt_length_unit)) offset
+              FROM nm_members nm_r
+                  ,nm_elements ne_grp
+                  ,nm_types nt_grp
+                  ,nm_units un_grp
+                  ,nm_elements ne_dat
+                  ,nm_types nt_dat
+                  ,nm_members nm_i
+                  ,nm_inv_items iit
+             WHERE nm_r.nm_ne_id_in = cp_ne_id
+               AND nm_r.nm_ne_id_in = ne_grp.ne_id
+               AND ne_grp.ne_nt_type = nt_grp.nt_type
+               AND nt_grp.nt_length_unit = un_grp.un_unit_id
+               AND nm_r.nm_ne_id_of = ne_dat.ne_id
+               AND ne_dat.ne_nt_type = nt_dat.nt_type
+               AND nm_r.nm_ne_id_of = nm_i.nm_ne_id_of
+               AND nm_i.nm_ne_id_in = iit.iit_ne_id
+               AND iit.iit_ne_id = cp_iit_ne_id)
+         ;
+    --
+    lr_marker  get_marker%ROWTYPE;
+    --
   BEGIN
     --
+    OPEN  get_assc(pi_assc_id);
+    FETCH get_assc
+     INTO lr_assc;
+    CLOSE get_assc;
+    --
+    OPEN  get_ne_nse(lr_assc.net_filter_ne_id
+                    ,lr_assc.net_filter_nse_id);
+    FETCH get_ne_nse
+     INTO lr_ne_nse;
+    CLOSE get_ne_nse;
+    --
+    OPEN  get_marker(lr_assc.net_filter_ne_id
+                    ,lr_assc.net_filter_marker_id);
+    FETCH get_marker
+     INTO lr_marker;
+    CLOSE get_marker;
+    --
     OPEN po_cursor FOR
-    SELECT assc_id          id
-          ,assc_theme_name  theme_name
-          ,assc_name        name
-          ,assc_description description
-          ,assc_criteria    criteria
-      FROM awlrs_saved_search_criteria
-     WHERE assc_id = pi_assc_id
-       AND assc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
+    SELECT lr_assc.id
+          ,lr_assc.theme_name
+          ,lr_assc.name
+          ,lr_assc.description
+          ,lr_assc.criteria
+          ,lr_assc.net_filter_ne_id
+          ,lr_assc.net_filter_nse_id
+          ,lr_ne_nse.net_filter_item_type
+          ,lr_ne_nse.net_filter_item_name
+          ,lr_ne_nse.net_filter_item_min_offset
+          ,lr_ne_nse.net_filter_item_max_offset
+          ,lr_assc.net_filter_marker_type
+          ,lr_assc.net_filter_marker_type_name
+          ,lr_assc.net_filter_marker_id
+          ,lr_marker.net_filter_marker_name
+          ,lr_marker.net_filter_marker_offset
+          ,lr_assc.net_filter_from
+          ,lr_assc.net_filter_to
+      FROM dual
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -6720,10 +6879,10 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT assc_id          id
-          ,assc_theme_name  theme_name
-          ,assc_name        name
-          ,assc_description description
+    SELECT assc_id                   id
+          ,assc_theme_name           theme_name
+          ,assc_name                 name
+          ,assc_description          description
       FROM awlrs_saved_search_criteria
      WHERE assc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
      ORDER
