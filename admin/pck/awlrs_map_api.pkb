@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.34   26 Jan 2018 16:52:26   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.35   Sep 14 2018 16:11:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   26 Jan 2018 16:52:26  $
-  --       Date fetched Out : $Modtime:   26 Jan 2018 16:46:14  $
-  --       Version          : $Revision:   1.34  $
+  --       Date into PVCS   : $Date:   Sep 14 2018 16:11:30  $
+  --       Date fetched Out : $Modtime:   Sep 14 2018 16:09:40  $
+  --       Version          : $Revision:   1.35  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.34  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.35  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -121,6 +121,7 @@ AS
           ,nit_category asset_category
           ,CASE WHEN nit_table_name IS NOT NULL THEN 'Y' ELSE 'N' END ft_asset_type
           ,nit_multiple_allowed multiple_locs_allowed
+          ,nit_x_sect_allow_flag xsp_allowed
           ,nit_top top_of_hierarchy
           ,(SELECT itg_relation
               FROM nm_inv_type_groupings
@@ -1538,11 +1539,11 @@ AS
             lv_retval := lv_retval
               ||CHR(10)||'        GAP -'||(lv_marker_size*10)
               ||CHR(10)||'        INITIALGAP '||(lv_marker_size+1)
-            ;                     
+            ;
         ELSE
             lv_retval := lv_retval
               ||CHR(10)||'        GEOMTRANSFORM "labelpnt"'
-            ;          
+            ;
         END IF;
         --
         IF lv_marker_style_def.existsnode('/svg/g/image') = 1
@@ -1619,11 +1620,11 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_label_style(pi_style_name   IN VARCHAR2
-                          ,pi_text_column  IN VARCHAR2
-                          ,pi_min_scale    IN VARCHAR2
-                          ,pi_max_scale    IN VARCHAR2
-                          ,pi_layer_type   IN VARCHAR2)
+  FUNCTION get_label_style(pi_style_name    IN VARCHAR2
+                          ,pi_text_column   IN VARCHAR2
+                          ,pi_min_scale     IN VARCHAR2
+                          ,pi_max_scale     IN VARCHAR2
+                          ,pi_layer_type    IN VARCHAR2)
     RETURN VARCHAR2 IS
     --
     lv_retval  nm3type.max_varchar2;
@@ -1780,16 +1781,17 @@ AS
                          ,pi_label_style     IN VARCHAR2 DEFAULT NULL
                          ,pi_label_min_scale IN VARCHAR2 DEFAULT NULL
                          ,pi_label_max_scale IN VARCHAR2 DEFAULT NULL)
-    RETURN nm3type.max_varchar2 IS
+    RETURN VARCHAR2 IS
     --
     lv_retval  nm3type.max_varchar2;
     --
-    lv_fill            nm3type.max_varchar2;
-    lv_fill_opacity    nm3type.max_varchar2;
-    lv_stroke          nm3type.max_varchar2;
-    lv_stroke_width    nm3type.max_varchar2;
-    lv_stroke_opacity  nm3type.max_varchar2;
-    lv_width           nm3type.max_varchar2;
+    lv_fill               nm3type.max_varchar2;
+    lv_fill_opacity       nm3type.max_varchar2;
+    lv_stroke             nm3type.max_varchar2;
+    lv_stroke_width       nm3type.max_varchar2;
+    lv_stroke_opacity     nm3type.max_varchar2;
+    lv_width              nm3type.max_varchar2;
+    lv_line_marker_style  nm3type.max_varchar2;
     --
     lv_style_def  XMLTYPE;
     --
@@ -1883,9 +1885,10 @@ AS
                                             ,pi_layer_type  => pi_layer_type
                                             ,pi_style       => lr_svg_data.g_style);
           ELSE
-              lv_retval := get_line_style(pi_class => lr_svg_data.g_class
-                                         ,pi_style => lr_svg_data.g_style
-                                         ,pi_dash  => lr_svg_data.g_dash);
+              lv_retval := get_line_style(pi_class         => lr_svg_data.g_class
+                                         ,pi_style         => lr_svg_data.g_style
+                                         ,pi_dash          => lr_svg_data.g_dash);
+                                         --,pi_offset_column => pi_offset_column);
               --
               OPEN  get_svg_lines(lv_style_def);
               FETCH get_svg_lines
@@ -1904,6 +1907,7 @@ AS
                         lv_retval := get_line_style(pi_class         => lt_svg_line_data(i).line_class
                                                    ,pi_style         => lt_svg_line_data(i).line_style
                                                    ,pi_dash          => lt_svg_line_data(i).line_dash
+                                                   --,pi_offset_column => pi_offset_column
                                                    ,pi_base_linecap  => NVL(get_style_value(pi_style => lr_svg_data.g_style
                                                                                            ,pi_field => 'stroke-linecap:')
                                                                            ,'ROUND')
@@ -1915,9 +1919,10 @@ AS
                                      ||CHR(10)||lv_retval;
                     ELSE
                         lv_retval := lv_retval
-                          ||CHR(10)||get_line_style(pi_class      => lt_svg_line_data(i).line_class
-                                                   ,pi_style      => lt_svg_line_data(i).line_style
-                                                   ,pi_dash       => lt_svg_line_data(i).line_dash
+                          ||CHR(10)||get_line_style(pi_class         => lt_svg_line_data(i).line_class
+                                                   ,pi_style         => lt_svg_line_data(i).line_style
+                                                   ,pi_dash          => lt_svg_line_data(i).line_dash
+                                                   --,pi_offset_column => pi_offset_column
                                                    ,pi_base_linecap  => NVL(get_style_value(pi_style => lr_svg_data.g_style
                                                                                            ,pi_field => 'stroke-linecap:')
                                                                            ,'ROUND')
@@ -1930,7 +1935,13 @@ AS
               /*
               ||If an arrow is defined process it.
               */
-              lv_retval := lv_retval||CHR(10)||get_line_marker_style(pi_style => lr_svg_data.g_style);
+              lv_line_marker_style := get_line_marker_style(pi_style => lr_svg_data.g_style);
+              --
+              IF lv_line_marker_style IS NOT NULL
+               THEN
+                  lv_retval := lv_retval||CHR(10)||lv_line_marker_style;
+              END IF;
+              --
           END IF;
           --
       WHEN 'MARKER'
@@ -2050,20 +2061,22 @@ AS
             /*
             ||Get the Symbolizer data.
             */
-            lv_retval := lv_retval||CHR(10)||get_geom_style(pi_style_name  => lt_adv_style_data(i).bucket_style
-                                                           ,pi_geom_column => pi_geom_column
-                                                           ,pi_layer_type  => pi_layer_type);
+            lv_retval := lv_retval||CHR(10)||get_geom_style(pi_style_name    => lt_adv_style_data(i).bucket_style
+                                                           ,pi_geom_column   => pi_geom_column
+                                                           ,pi_layer_type    => pi_layer_type);
+                                                           --,pi_offset_column => pi_offset_column);
             /*
             ||Write the label data if required.
             */
             IF pi_label_column IS NOT NULL
              AND pi_label_style IS NOT NULL
              THEN
-                lv_retval := lv_retval||CHR(10)||get_label_style(pi_style_name  => pi_label_style
-                                                                ,pi_text_column => pi_label_column
-                                                                ,pi_min_scale   => pi_label_min_scale
-                                                                ,pi_max_scale   => pi_label_max_scale
-                                                                ,pi_layer_type  => pi_layer_type);
+                lv_retval := lv_retval||CHR(10)||get_label_style(pi_style_name    => pi_label_style
+                                                                ,pi_text_column   => pi_label_column
+                                                                --,pi_offset_column => pi_offset_column
+                                                                ,pi_min_scale     => pi_label_min_scale
+                                                                ,pi_max_scale     => pi_label_max_scale
+                                                                ,pi_layer_type    => pi_layer_type);
             END IF;
             /*
             ||Close the Class.
@@ -2085,8 +2098,8 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION generate_layer_class(pi_theme IN themes_rec
-                               ,pi_gtype IN NUMBER)
+  FUNCTION generate_layer_class(pi_theme         IN themes_rec
+                               ,pi_gtype         IN NUMBER)
     RETURN VARCHAR2 IS
     --
     lt_layer_class  nm3type.tab_varchar32767;
@@ -2165,11 +2178,11 @@ AS
           */
           IF lr_rule_data.label_column IS NOT NULL
            THEN
-              lv_layer_text := lv_layer_text||CHR(10)||get_label_style(pi_style_name  => lr_rule_data.label_style
-                                                                      ,pi_text_column => lr_rule_data.label_column
-                                                                      ,pi_min_scale   => pi_theme.label_min_scale
-                                                                      ,pi_max_scale   => pi_theme.label_max_scale
-                                                                      ,pi_layer_type  => gtype_to_layer_type(pi_gtype => pi_gtype));
+              lv_layer_text := lv_layer_text||CHR(10)||get_label_style(pi_style_name    => lr_rule_data.label_style
+                                                                      ,pi_text_column   => lr_rule_data.label_column
+                                                                      ,pi_min_scale     => pi_theme.label_min_scale
+                                                                      ,pi_max_scale     => pi_theme.label_max_scale
+                                                                      ,pi_layer_type    => gtype_to_layer_type(pi_gtype => pi_gtype));
           END IF;
           /*
           ||Close the Class.
@@ -2187,43 +2200,47 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION generate_layers(pi_definition     IN CLOB
-                          ,pi_all_ft_cols    IN VARCHAR2 DEFAULT 'N'
-                          ,pi_effective_date IN DATE DEFAULT NULL)
+  FUNCTION generate_layers(pi_definition         IN CLOB
+                          ,pi_all_ft_cols        IN VARCHAR2 DEFAULT 'N'
+                          ,pi_effective_date     IN DATE DEFAULT NULL)
     RETURN clob_tab IS
     --
-    lt_layer_text   clob_tab;
-    lt_themes       themes_tab;
-    lt_gtypes       awlrs_sdo.gtype_tab;
-    lt_theme_types  theme_types_tab;
+    lt_layer_text    clob_tab;
+    lt_themes        themes_tab;
+    lt_gtypes        awlrs_sdo.gtype_tab;
+    lt_theme_types   theme_types_tab;
     --
     lr_theme_types  theme_types_rec;
     --
-    lv_layer_text                  CLOB;
-    lv_layer_type                  VARCHAR2(100);
-    lv_theme_extent                VARCHAR2(500);
-    lv_gml_msGeometry_type         VARCHAR2(100);
-    lv_wfs_featureid               VARCHAR2(100);
-    lv_group                       VARCHAR2(200);
-    lv_group_name                  VARCHAR2(200);
-    lv_name                        VARCHAR2(200);
-    lv_title                       VARCHAR2(200);
-    lv_theme_extra_cols            nm3type.max_varchar2;
-    lv_epsg                        NUMBER;
-    lv_srid                        NUMBER;
-    lv_using_srid                  VARCHAR2(20);
-    lv_group_memb_types            nm3type.max_varchar2;
-    lv_layer_node_layer            nm_themes_all.nth_theme_name%TYPE;
-    lv_layer_asset_loc_types       nm3type.max_varchar2;
-    lv_layer_child_inv_types       nm3type.max_varchar2;
-    lv_layer_show_in_map           VARCHAR2(10);
-    lv_displayed_on_startup        VARCHAR2(10);
-    lv_displayed_in_legend         VARCHAR2(10);
-    lv_legend_group                nm3type.max_varchar2;
-    lv_tooltip_template_defined    BOOLEAN;
-    lv_tooltip_columns             nm3type.max_varchar2;
-    lv_gtype_restriction           VARCHAR2(100);
-    lv_where_and                   VARCHAR2(10) := ' WHERE ';
+    lv_layer_text                CLOB;
+    lv_tmp                       CLOB;
+    lv_layer_type                VARCHAR2(100);
+    lv_theme_extent              VARCHAR2(500);
+    lv_gml_msGeometry_type       VARCHAR2(100);
+    lv_wfs_featureid             VARCHAR2(100);
+    lv_group                     VARCHAR2(200);
+    lv_group_name                VARCHAR2(200);
+    lv_name                      VARCHAR2(200);
+    lv_title                     VARCHAR2(200);
+    lv_theme_extra_cols          nm3type.max_varchar2;
+    lv_feature_table             nm3type.max_varchar2;
+    lv_epsg                      NUMBER;
+    lv_srid                      NUMBER;
+    lv_using_srid                VARCHAR2(20);
+    lv_using_index_hint          VARCHAR2(5);
+    lv_group_memb_types          nm3type.max_varchar2;
+    lv_layer_node_layer          nm_themes_all.nth_theme_name%TYPE;
+    lv_layer_asset_loc_types     nm3type.max_varchar2;
+    lv_layer_child_inv_types     nm3type.max_varchar2;
+    lv_layer_show_in_map         VARCHAR2(10);
+    lv_displayed_on_startup      VARCHAR2(10);
+    lv_displayed_in_legend       VARCHAR2(10);
+    lv_legend_group              nm3type.max_varchar2;
+    lv_theme_offset_view         nm_theme_offset_views.ntov_offset_view_name%TYPE;
+    lv_gtype_restriction         VARCHAR2(100);
+    lv_where_and                 VARCHAR2(10) := ' WHERE ';
+    --
+    TYPE nit_tab IS TABLE OF nm_inv_types_all.nit_inv_type%TYPE;
     --
     ---------------------------------------------------------------------------
     --
@@ -2377,7 +2394,7 @@ AS
           IF lr_theme_types.asset_type IS NOT NULL
            THEN
               lv_layer_child_inv_types := get_child_inv_types(pi_inv_type => lr_theme_types.asset_type);
-              lv_layer_asset_loc_types := get_asset_loc_types(pi_inv_type => lr_theme_types.asset_type);         
+              lv_layer_asset_loc_types := get_asset_loc_types(pi_inv_type => lr_theme_types.asset_type);
           ELSE
               lv_layer_child_inv_types := NULL;
               lv_layer_asset_loc_types := NULL;
@@ -2403,7 +2420,9 @@ AS
                        ,pi_column_name => lt_themes(i).nth_feature_shape_column
                        ,po_srid        => lv_srid
                        ,po_epsg        => lv_epsg);
+      --
       add_map_epsg(pi_epsg => lv_epsg);
+      --
       IF lv_srid IS NOT NULL
        THEN
           lv_using_srid := ' SRID '||lv_srid;
@@ -2417,19 +2436,11 @@ AS
                                                  ,pi_pk_column  => lt_themes(i).nth_feature_pk_column
                                                  ,pi_alias      => 'ft.');
       /*
-      ||Determine whether a tooltip template is defined.
+      ||If this is a Node Theme add some required columns.
       */
-      lv_tooltip_template_defined := (get_custom_tag_value(pi_theme_name => lt_themes(i).name
-                                                          ,pi_tag_name   => 'TooltipTemplate') IS NOT NULL);
-      /*
-      ||Get the tooltip columns.
-      */
-      lv_tooltip_columns := get_custom_tag_value(pi_theme_name => lt_themes(i).name
-                                                ,pi_tag_name   => 'TooltipColumns');
-      --
-      IF lv_tooltip_columns IS NOT NULL
+      IF is_node_layer(pi_feature_table => lt_themes(i).nth_feature_table)
        THEN
-          lv_theme_extra_cols := lv_theme_extra_cols||','||lv_tooltip_columns;
+          lv_theme_extra_cols := lv_theme_extra_cols||',ft.no_node_id,ft.no_node_name,ft.no_descr';
       END IF;
       /*
       ||Get the key_column for the wfs_featureid.
@@ -2499,11 +2510,11 @@ AS
         ;
         IF lv_group IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'    GROUP "'||lv_group||'"';
+            lv_tmp := CHR(10)||'    GROUP "'||lv_group||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
-        lv_layer_text := lv_layer_text
-              ||CHR(10)||'    METADATA'
+        lv_tmp := CHR(10)||'    METADATA'
               ||CHR(10)||'      "wms_title"                   "'||lv_title||'"'
               ||CHR(10)||'      "wms_enable_request"          "*"'
               ||CHR(10)||'      "wms_extent"                  "'||lv_theme_extent||'"'
@@ -2516,150 +2527,184 @@ AS
               ||CHR(10)||'      "gml_geometries"              "msGeometry"'
               ||CHR(10)||'      "gml_msGeometry_type"         "'||lv_gml_msGeometry_type||'"'
         ;
+        lv_layer_text := lv_layer_text||lv_tmp;
         --
         IF lv_group_name IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "layer_group_name"            "'||lv_group_name||'"';
+            lv_tmp := CHR(10)||'      "layer_group_name"            "'||lv_group_name||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.admin_type IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "admin_type"                  "'||lr_theme_types.admin_type||'"';
+            lv_tmp := CHR(10)||'      "admin_type"                  "'||lr_theme_types.admin_type||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.network_type IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "network_type"                "'||lr_theme_types.network_type||'"';
+            lv_tmp := CHR(10)||'      "network_type"                "'||lr_theme_types.network_type||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.network_element_type IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "network_element_type"        "'||lr_theme_types.network_element_type||'"';
+            lv_tmp := CHR(10)||'      "network_element_type"        "'||lr_theme_types.network_element_type||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.network_is_linear IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "network_is_linear"           "'||lr_theme_types.network_is_linear||'"';
+            lv_tmp := CHR(10)||'      "network_is_linear"           "'||lr_theme_types.network_is_linear||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.network_is_incl_parent_type IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "network_is_incl_parent_type" "'||lr_theme_types.network_is_incl_parent_type||'"';
+            lv_tmp := CHR(10)||'      "network_is_incl_parent_type" "'||lr_theme_types.network_is_incl_parent_type||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.network_group_type IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "network_group_type"          "'||lr_theme_types.network_group_type||'"';
+            lv_tmp := CHR(10)||'      "network_group_type"          "'||lr_theme_types.network_group_type||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lv_group_memb_types IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "network_group_memb_types"    "'||lv_group_memb_types||'"';
+            lv_tmp := CHR(10)||'      "network_group_memb_types"    "'||lv_group_memb_types||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.network_partial_memb IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "network_partial_members"     "'||lr_theme_types.network_partial_memb||'"';
+            lv_tmp := CHR(10)||'      "network_partial_members"     "'||lr_theme_types.network_partial_memb||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.unit_id IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "network_units"               "'||lr_theme_types.unit_id||'"';
+            lv_tmp := CHR(10)||'      "network_units"               "'||lr_theme_types.unit_id||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.node_type IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "network_node_type"           "'||lr_theme_types.node_type||'"';
+            lv_tmp := CHR(10)||'      "network_node_type"           "'||lr_theme_types.node_type||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lv_layer_node_layer IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "node_layer_name"             "'||lv_layer_node_layer||'"';
+            lv_tmp := CHR(10)||'      "node_layer_name"             "'||lv_layer_node_layer||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.asset_type IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "asset_type"                  "'||lr_theme_types.asset_type||'"';
+            lv_tmp := CHR(10)||'      "asset_type"                  "'||lr_theme_types.asset_type||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.asset_category IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "asset_category"              "'||lr_theme_types.asset_category||'"';
+            lv_tmp := CHR(10)||'      "asset_category"              "'||lr_theme_types.asset_category||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.asset_type IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "ft_asset_type"               "'||lr_theme_types.ft_asset_type||'"';
+            lv_tmp := CHR(10)||'      "ft_asset_type"               "'||lr_theme_types.ft_asset_type||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lv_layer_asset_loc_types IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "asset_loc_types"             "'||lv_layer_asset_loc_types||'"';
+            lv_tmp := CHR(10)||'      "asset_loc_types"             "'||lv_layer_asset_loc_types||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.multiple_locs_allowed IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "multiple_locs_allowed"       "'||lr_theme_types.multiple_locs_allowed||'"';
+            lv_tmp := CHR(10)||'      "multiple_locs_allowed"       "'||lr_theme_types.multiple_locs_allowed||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
+        END IF;
+        --
+        IF lr_theme_types.xsp_allowed IS NOT NULL
+         THEN
+            lv_tmp := CHR(10)||'      "xsp_allowed"                 "'||lr_theme_types.xsp_allowed||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.top_of_hierarchy IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "top_of_hierarchy"            "'||lr_theme_types.top_of_hierarchy||'"';
+            lv_tmp := CHR(10)||'      "top_of_hierarchy"            "'||lr_theme_types.top_of_hierarchy||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.hierarchy_relation IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "hierarchy_relation"          "'||lr_theme_types.hierarchy_relation||'"';
+            lv_tmp := CHR(10)||'      "hierarchy_relation"          "'||lr_theme_types.hierarchy_relation||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lv_layer_child_inv_types IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "child_inv_types"             "'||lv_layer_child_inv_types||'"';
+            lv_tmp := CHR(10)||'      "child_inv_types"             "'||lv_layer_child_inv_types||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lr_theme_types.asset_type IS NOT NULL
          AND lr_theme_types.dependent_geometry IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "dependent_geometry"          "'||lr_theme_types.dependent_geometry||'"';
+            lv_tmp := CHR(10)||'      "dependent_geometry"          "'||lr_theme_types.dependent_geometry||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
-        --
         --
         IF lr_theme_types.asset_type IS NOT NULL
          AND lr_theme_types.location_updatable IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'      "location_updatable"          "'||lr_theme_types.location_updatable||'"';
+            lv_tmp := CHR(10)||'      "location_updatable"          "'||lr_theme_types.location_updatable||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
-        --        
-        lv_layer_text := lv_layer_text
-              ||CHR(10)||'      "is_editable"                 "'||NVL(lr_theme_types.editable,'N')||'"'
-              ||CHR(10)||'      "show_in_map"                 "'||lv_layer_show_in_map||'"'
-              ||CHR(10)||'      "displayed_at_startup"        "'||lv_displayed_on_startup||'"'
-              ||CHR(10)||'      "displayed_in_legend"         "'||lv_displayed_in_legend||'"'
-              ||CHR(10)||'      "legend_group"                "'||lv_legend_group||'"'
-              ||CHR(10)||'    END'
-              ||CASE g_debug WHEN 'Y' THEN CHR(10)||'    DEBUG 5' ELSE NULL END
-              ||CHR(10)||'    TYPE '||lv_layer_type
-              ||CHR(10)||'    STATUS OFF'
-              ||CHR(10)||'    CONNECTIONTYPE PLUGIN'
-              ||CHR(10)||'    PROCESSING "CLOSE_CONNECTION=DEFER"'
-              ||CHR(10)||'    PLUGIN "msplugin_oracle.dll"'
-              ||CHR(10)||'    CONNECTION "%user%/%pwd%@%dbhost%"'
+        --
+        lv_theme_offset_view := awlrs_sdo_offset.get_theme_offset_view(pi_theme_id => lt_themes(i).nth_theme_id);
+        IF lv_theme_offset_view IS NOT NULL
+         THEN
+            lv_tmp := CHR(10)||'      "offset_allowed"              "Y"';
+            lv_layer_text := lv_layer_text||lv_tmp;
+        END IF;
+        --
+        lv_tmp := CHR(10)||'      "is_editable"                 "'||NVL(lr_theme_types.editable,'N')||'"'
+                ||CHR(10)||'      "show_in_map"                 "'||lv_layer_show_in_map||'"'
+                ||CHR(10)||'      "displayed_at_startup"        "'||lv_displayed_on_startup||'"'
+                ||CHR(10)||'      "displayed_in_legend"         "'||lv_displayed_in_legend||'"'
+                ||CHR(10)||'      "legend_group"                "'||lv_legend_group||'"'
+                ||CHR(10)||'    END'
+                ||CASE g_debug WHEN 'Y' THEN CHR(10)||'    DEBUG 5' ELSE NULL END
+                ||CHR(10)||'    TYPE '||lv_layer_type
+                ||CHR(10)||'    STATUS OFF'
+                ||CHR(10)||'    CONNECTIONTYPE PLUGIN'
+                ||CHR(10)||'    PROCESSING "CLOSE_CONNECTION=DEFER"'
+                ||CHR(10)||'    PLUGIN "msplugin_oracle.dll"'
+                ||CHR(10)||'    CONNECTION "%user%/%pwd%@%dbhost%"'
         ;
+        lv_layer_text := lv_layer_text||lv_tmp;
+        --
         IF pi_all_ft_cols = 'Y'
          THEN
-            lv_layer_text := lv_layer_text
-              ||CHR(10)||'    DATA "'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM (SELECT ft.*'
-            ;
+            lv_tmp := CHR(10)||'    DATA "'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM (SELECT ft.*';
         ELSE
-            lv_layer_text := lv_layer_text
-              ||CHR(10)||'    DATA "'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM (SELECT ft.'||LOWER(lt_themes(i).nth_feature_pk_column)
-            ;
+            lv_tmp := CHR(10)||'    DATA "'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM (SELECT ft.'||LOWER(lt_themes(i).nth_feature_pk_column);
         END IF;
+        lv_layer_text := lv_layer_text||lv_tmp;
         --
         IF pi_all_ft_cols != 'Y'
          AND lv_theme_extra_cols IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||lv_theme_extra_cols;
+            lv_tmp := lv_theme_extra_cols;
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         /*
         ||If the layer represents Datums we need to be sure we have
@@ -2667,42 +2712,63 @@ AS
         */
         IF lr_theme_types.network_element_type = 'S'
          THEN
-            lv_layer_text := lv_layer_text||', nl.ne_length element_length, nl.ne_no_start start_node, nl.ne_no_end end_node';
+            lv_tmp := ', nl.ne_length element_length, nl.ne_no_start start_node, nl.ne_no_end end_node';
+            lv_layer_text := lv_layer_text||lv_tmp;
+        END IF;
+        /*
+        ||Set defaults before checking for offset request.
+        */
+        lv_feature_table := LOWER(lt_themes(i).nth_feature_table);
+        lv_using_index_hint := NULL;
+        --
+        IF lv_theme_offset_view IS NOT NULL
+         AND pi_all_ft_cols != 'Y'
+         THEN
+            --
+            lv_feature_table := '(SELECT * FROM '||LOWER(lv_theme_offset_view)||' WHERE awlrs_sdo_offset.set_context(''%offsetbyxsp%'',%offsetval%,''%bbox%'') = 1)';
+            --
+            lv_using_index_hint := ' NONE';
+            --
         END IF;
         --
         IF pi_all_ft_cols = 'Y'
          THEN
-            lv_layer_text := lv_layer_text||' FROM '||LOWER(lt_themes(i).nth_feature_table)||' ft';
+            lv_tmp := ' FROM '||lv_feature_table||' ft';
         ELSE
-            lv_layer_text := lv_layer_text||', ft.'||LOWER(lt_themes(i).nth_feature_shape_column)
-                               ||' FROM '||LOWER(lt_themes(i).nth_feature_table)||' ft';
+            lv_tmp := ', ft.'||LOWER(lt_themes(i).nth_feature_shape_column)||' FROM '||lv_feature_table||' ft';
         END IF;
+        lv_layer_text := lv_layer_text||lv_tmp;
         /*
         ||If the layer represents Datums we need to be sure we have
         ||the start and end node in the select statement.
         */
         IF lr_theme_types.network_element_type = 'S'
          THEN
-            lv_layer_text := lv_layer_text||', nm_elements_all nl WHERE nl.ne_id = ft.'||LOWER(lt_themes(i).nth_feature_pk_column);
+            lv_tmp := ', nm_elements_all nl WHERE nl.ne_id = ft.'||LOWER(lt_themes(i).nth_feature_pk_column);
+            lv_layer_text := lv_layer_text||lv_tmp;
             lv_where_and := ' AND ';
         END IF;
         --
         IF lv_gtype_restriction IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||lv_where_and||lv_gtype_restriction;
+            lv_tmp := lv_where_and||lv_gtype_restriction;
+            lv_layer_text := lv_layer_text||lv_tmp;
             lv_where_and := ' AND ';
         END IF;
         --
         IF pi_effective_date IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||lv_where_and||'awlrs_util.set_effective_date(TO_DATE('''||TO_CHAR(TRUNC(pi_effective_date),'DD-MM-YYYY')||''',''DD-MM-YYYY'')) = 1';
+            lv_tmp := lv_where_and||'awlrs_util.set_effective_date(TO_DATE('''||TO_CHAR(TRUNC(pi_effective_date),'DD-MM-YYYY')||''',''DD-MM-YYYY'')) = 1';
             lv_where_and := ' AND ';
         ELSE
-            lv_layer_text := lv_layer_text||lv_where_and||'awlrs_util.set_effective_date(SYSDATE) = 1';
+            lv_tmp := lv_where_and||'awlrs_util.set_effective_date(SYSDATE) = 1';
             lv_where_and := ' AND ';
         END IF;
+        lv_layer_text := lv_layer_text||lv_tmp;
         --
-        lv_layer_text := lv_layer_text||') USING UNIQUE '||lt_themes(i).nth_feature_pk_column||lv_using_srid||'"'
+        lv_tmp := ') USING UNIQUE '||lt_themes(i).nth_feature_pk_column
+                                                         ||lv_using_srid
+                                                         ||lv_using_index_hint||'"'
               ||CHR(10)||'    VALIDATION'
               ||CHR(10)||'      "user"                     "^.*"'
               ||CHR(10)||'      "pwd"                      "^.*"'
@@ -2712,36 +2778,62 @@ AS
               ||CHR(10)||'      "default_featurekey"       "1"'
               ||CHR(10)||'      "default_featurekeyvalues" "1"'
               ||CHR(10)||'      "default_spatialfilter"    ""'
-              ||CHR(10)||'    END'
         ;
+        lv_layer_text := lv_layer_text||lv_tmp;
         --
-        lv_layer_text := lv_layer_text||generate_layer_class(pi_theme => lt_themes(i)
-                                                            ,pi_gtype => lt_gtypes(j).gtype);
+        IF lv_using_index_hint IS NOT NULL
+         THEN
+            lv_tmp := CHR(10)||'      "default_offsetval"        "0"'
+              ||CHR(10)||'      "default_offsetbyxsp"      "Y"'
+              ||CHR(10)||'      "default_bbox"             "'||REPLACE(lv_theme_extent,' ',',')||'"'
+              ||CHR(10)||'      "offsetval"                "-?[0-9]{0,10}"'
+              ||CHR(10)||'      "offsetbyxsp"              "[YN]"'
+              ||CHR(10)||'      "bbox"                     "-?[0-9]+(,[0-9]+)*"'
+            ;
+            lv_layer_text := lv_layer_text||lv_tmp;
+        END IF;
+        --
+        lv_tmp := CHR(10)||'    END';
+        lv_layer_text := lv_layer_text||lv_tmp;
+        --
+        lv_tmp := generate_layer_class(pi_theme         => lt_themes(i)
+                                                            ,pi_gtype         => lt_gtypes(j).gtype);
+                                                            --,pi_offset_column => lv_offset_column);
+        lv_layer_text := lv_layer_text||lv_tmp;
         --
         IF lt_themes(i).max_scale IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'    MAXSCALEDENOM '||lt_themes(i).max_scale;
+            lv_tmp := CHR(10)||'    MAXSCALEDENOM '||lt_themes(i).max_scale;
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         IF lt_themes(i).min_scale IS NOT NULL
          THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'    MINSCALEDENOM '||lt_themes(i).min_scale;
+            lv_tmp := CHR(10)||'    MINSCALEDENOM '||lt_themes(i).min_scale;
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
-        IF lv_tooltip_template_defined
-         THEN
-            lv_layer_text := lv_layer_text||CHR(10)||'    TEMPLATE "'||lt_themes(i).trimmed_name||'Template.html"';
-        END IF;
-        --
-        lv_layer_text := lv_layer_text
-              ||CHR(10)||'    PROJECTION'
+        lv_tmp := CHR(10)||'    PROJECTION'
               ||CHR(10)||'      "init=epsg:'||lv_epsg||'"'
               ||CHR(10)||'    END'
               ||CHR(10)||'    PROCESSING "LABEL_NO_CLIP=on"'
               ||CHR(10)||'    PROCESSING "NATIVE_FILTER=(%featurekey% in (%featurekeyvalues%))"'
-              ||CHR(10)||'  END #layer'
+        ;
+        lv_layer_text := lv_layer_text||lv_tmp;
+        --
+        -- May not need this if offset is done in the data statement rather than in
+        -- Mapserver.
+        IF lv_layer_type = 'LINE'
+         AND lv_using_index_hint IS NOT NULL
+         THEN
+            lv_tmp := CHR(10)||'    PROCESSING "POLYLINE_NO_CLIP=True"';
+            lv_layer_text := lv_layer_text||lv_tmp;
+        END IF;
+        --
+        lv_tmp := CHR(10)||'  END #layer'
               ||CHR(10)||''
         ;
+        lv_layer_text := lv_layer_text||lv_tmp;
         --
         lt_layer_text(lt_layer_text.COUNT + 1) := lv_layer_text;
         --
@@ -3095,10 +3187,10 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION generate_map_file(pi_map_name       IN VARCHAR2
-                            ,pi_proj_lib       IN VARCHAR2
-                            ,pi_all_ft_cols    IN VARCHAR2 DEFAULT 'N'
-                            ,pi_effective_date IN DATE DEFAULT NULL)
+  FUNCTION generate_map_file(pi_map_name           IN VARCHAR2
+                            ,pi_proj_lib           IN VARCHAR2
+                            ,pi_all_ft_cols        IN VARCHAR2 DEFAULT 'N'
+                            ,pi_effective_date     IN DATE DEFAULT NULL)
     RETURN CLOB IS
     --
     lv_retval  CLOB;
@@ -3124,9 +3216,9 @@ AS
     ||Get the layer details.
     */
     lt_wms_layers := generate_wms_layers(pi_definition => lr_usm.definition);
-    lt_layers := generate_layers(pi_definition     => lr_usm.definition
-                                ,pi_all_ft_cols    => pi_all_ft_cols
-                                ,pi_effective_date => pi_effective_date);
+    lt_layers := generate_layers(pi_definition         => lr_usm.definition
+                                ,pi_all_ft_cols        => pi_all_ft_cols
+                                ,pi_effective_date     => pi_effective_date);
     /*
     ||Create the wms_srs text.
     */
@@ -3271,22 +3363,26 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_map_file(pi_map_name         IN  VARCHAR2
-                        ,pi_proj_lib         IN  VARCHAR2
-                        ,pi_all_ft_cols      IN  VARCHAR2 DEFAULT 'N'
-                        ,pi_effective_date   IN  DATE DEFAULT NULL
-                        ,po_message_severity OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor   OUT sys_refcursor
-                        ,po_cursor           OUT sys_refcursor)
+  PROCEDURE get_map_file(pi_map_name           IN  VARCHAR2
+                        ,pi_proj_lib           IN  VARCHAR2
+                        ,pi_all_ft_cols        IN  VARCHAR2 DEFAULT 'N'
+                        ,pi_effective_date     IN  DATE DEFAULT NULL
+                        ,po_message_severity   OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor     OUT sys_refcursor
+                        ,po_cursor             OUT sys_refcursor)
     IS
+    --
+    lv_map_file  CLOB;
     --
   BEGIN
     --
+    lv_map_file := awlrs_map_api.generate_map_file(pi_map_name           => pi_map_name
+                                                  ,pi_proj_lib           => pi_proj_lib
+                                                  ,pi_all_ft_cols        => pi_all_ft_cols
+                                                  ,pi_effective_date     => pi_effective_date);
+    --
     OPEN po_cursor FOR
-    SELECT awlrs_map_api.generate_map_file(pi_map_name       => pi_map_name
-                                          ,pi_proj_lib       => pi_proj_lib
-                                          ,pi_all_ft_cols    => pi_all_ft_cols
-                                          ,pi_effective_date => pi_effective_date)
+    SELECT lv_map_file
       FROM dual
          ;
     --
