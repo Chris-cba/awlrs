@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.19   Aug 10 2018 13:14:54   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.20   Sep 14 2018 15:49:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Aug 10 2018 13:14:54  $
-  --       Date fetched Out : $Modtime:   Aug 10 2018 11:42:04  $
-  --       Version          : $Revision:   1.19  $
+  --       Date into PVCS   : $Date:   Sep 14 2018 15:49:56  $
+  --       Date fetched Out : $Modtime:   Sep 14 2018 15:47:18  $
+  --       Version          : $Revision:   1.20  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.20  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -977,7 +977,11 @@ AS
           ,element_network_type_unique
           ,element_group_type
           ,element_group_type_descr
-          ,element_unique
+          ,CASE ne_nt_type
+             WHEN 'ESU' THEN ne_name_1
+             WHEN 'NSGN' THEN ne_number
+             ELSE ne_unique
+           END element_unique
           ,ne_descr element_description
           ,element_offset
           ,distance_from_point
@@ -2590,6 +2594,341 @@ AS
     RETURN lv_retval;
     --
   END get_pl_by_xy;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_datum_theme_rec(pi_nt_type IN nm_types.nt_type%TYPE)
+    RETURN nm_themes_all%ROWTYPE IS
+    --
+    lr_retval  nm_themes_all%ROWTYPE;
+    --
+    CURSOR get_nth(cp_nt_type IN NM_TYPES.nt_type%TYPE)
+        IS
+    SELECT nth.*
+      FROM nm_themes_all nth
+          ,nm_nw_themes
+          ,nm_linear_types
+     WHERE nth_theme_id = nnth_nth_theme_id
+       AND nnth_nlt_id = nlt_id
+       AND nlt_g_i_d = 'D'
+       AND nlt_nt_type = cp_nt_type
+       AND nth_dependency = 'I'
+       AND nth_base_table_theme IS NULL
+         ;
+    --
+  BEGIN
+    OPEN  get_nth(pi_nt_type);
+    FETCH get_nth
+     INTO lr_retval;
+    CLOSE get_nth;
+    --
+    RETURN lr_retval;
+    --
+  END;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_datum_theme(pi_nt_type IN nm_types.nt_type%TYPE)
+    RETURN nm_themes_all.nth_theme_id%TYPE IS
+    --
+  BEGIN
+    --
+    RETURN get_datum_theme_rec(pi_nt_type => pi_nt_type).nth_theme_id;
+    --
+  END get_datum_theme;
+
+  --
+  ---------------------------------------------------------------------------
+  --
+  FUNCTION get_inv_datum_themes(pi_inv_type IN nm_inv_types_all.nit_inv_type%TYPE)
+    RETURN nth_tab IS
+    --
+    TYPE theme_id_tab IS TABLE OF nm_themes_all.nth_theme_id%TYPE;
+    lt_theme_ids  theme_id_tab;
+    --
+    lt_nth  nth_tab;
+    --
+  BEGIN
+    --
+    SELECT awlrs_sdo.get_datum_theme(pi_nt_type => nin_nw_type)
+      BULK COLLECT
+      INTO lt_theme_ids
+      FROM nm_inv_nw
+     WHERE nin_nit_inv_code = pi_inv_type
+         ;
+    --
+    FOR i IN 1..lt_theme_ids.COUNT LOOP
+      --
+      lt_nth(lt_nth.COUNT+1) := nm3get.get_nth(lt_theme_ids(i));
+      --
+    END LOOP;
+    --
+    RETURN lt_nth;
+    --
+  END get_inv_datum_themes;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_aggr_geom_by_pk(pi_table_name  IN VARCHAR2
+                              ,pi_geom_column IN VARCHAR2
+                              ,pi_pk_column   IN VARCHAR2
+                              ,pi_pk_value    IN NUMBER)
+    RETURN mdsys.sdo_geometry IS
+    --
+    lv_retval  mdsys.sdo_geometry;
+    lv_mod     NUMBER;
+    lv_sql     nm3type.max_varchar2;
+    --
+    lt_mod  nm3type.tab_number;
+    --
+  BEGIN
+    /*
+    ||Get the initial group by modulus value.
+    ||This will be the next power of 2 above the number
+    ||of groups of 50 geometries we are dealing with.
+    */
+    lv_sql :=  'SELECT POWER(2,CEIL(LOG(2,COUNT(*)/50)))'
+    ||CHR(10)||'  FROM '||pi_table_name
+    ||CHR(10)||' WHERE '||pi_pk_column||' = :pk_val'
+    ;
+    EXECUTE IMMEDIATE lv_sql INTO lv_mod USING pi_pk_value;
+    /*
+    ||Create an array of group by modulus values.
+    */
+    LOOP
+      --
+      lt_mod(lt_mod.count+1) := lv_mod;
+      /*
+      ||Get the previous power of 2.
+      */
+      lv_mod := lv_mod/2;
+      /*
+      ||Skip every other power of 2 unless we have arrived at 2.
+      */
+      IF lv_mod > 2
+       THEN
+          lv_mod := lv_mod/2;
+      END IF;
+      --
+      IF lv_mod < 2
+       THEN
+          EXIT;
+      END IF;
+      --
+    END LOOP;
+    /*
+    ||Build the query.
+    */
+    IF lt_mod.COUNT = 1
+     AND lt_mod(1) <= 1
+     THEN
+        lv_sql :=  'SELECT sdo_aggr_union(mdsys.sdoaggrtype('||pi_geom_column||',0.5)) aggr_geom'
+        ||CHR(10)||'  FROM '||pi_table_name
+        ||CHR(10)||' WHERE '||pi_pk_column||' = :pk_val'
+        ;
+    ELSE
+        lv_sql :=  'SELECT sdo_aggr_union(mdsys.sdoaggrtype('||pi_geom_column||',0.5)) aggr_geom'
+        ||CHR(10)||'  FROM '||pi_table_name
+        ||CHR(10)||' WHERE '||pi_pk_column||' = :pk_val'
+        ||CHR(10)||' GROUP BY MOD(rownum,'||lt_mod(1)||')';
+        --
+        FOR i IN 2..lt_mod.COUNT LOOP
+          --
+          lv_sql :=  'SELECT sdo_aggr_union(mdsys.sdoaggrtype(aggr_geom,0.5)) aggr_geom'
+          ||CHR(10)||'  FROM ('||lv_sql||')'
+          ||CHR(10)||' GROUP BY MOD(rownum,'||lt_mod(i)||')';
+          --
+        END LOOP;
+        --
+        lv_sql :=  'SELECT sdo_aggr_union(sdoaggrtype(aggr_geom,0.5)) aggr_geom'
+        ||CHR(10)||'  FROM ('||lv_sql||')';
+        --
+    END IF;
+    /*
+    ||Execute the query.
+    */
+nm_debug.debug_on;
+nm_debug.debug(lv_sql);
+nm_debug.debug_off;
+    EXECUTE IMMEDIATE lv_sql INTO lv_retval USING pi_pk_value;
+    /*
+    ||Return the result.
+    */
+    RETURN lv_retval;
+    --
+  END get_aggr_geom_by_pk;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+--  FUNCTION get_aggr_geom_by_grp(pi_table_name  IN VARCHAR2
+--                               ,pi_geom_column IN VARCHAR2
+--                               ,pi_group_id    IN VARCHAR2
+--                               ,pi_pk_column   IN VARCHAR2
+--                               ,pi_pk_value    IN NUMBER)
+--    RETURN mdsys.sdo_geometry IS
+--    --
+--    lv_driving_sql  nm3type.max_varchar2 := 'SELECT sdo.'||LOWER(pi_geom_column)
+--                                           ||' FROM '||LOWER(pi_table_name)||' sdo,nm_members nm'
+--                                          ||' WHERE sdo.'||LOWER(pi_pk_column)||' = :pk_val'
+--                                            ||' AND sdo.ne_id_of = nm.nm_ne_id_of'
+--                                            ||' AND nm.nm_ne_id_in = :grp_id'
+--                                          ||' ORDER BY nm.nm_seq_no';
+--    lv_retval       mdsys.sdo_geometry;
+--    lv_mod          NUMBER;
+--    lv_sql          nm3type.max_varchar2;
+--    --
+--    lt_mod  nm3type.tab_number;
+--    --
+--  BEGIN
+--    /*
+--    ||Get the initial group by modulus value.
+--    ||This will be the next power of 2 above the number
+--    ||of groups of 50 geometries we are dealing with.
+--    */
+--    lv_sql :=  'SELECT POWER(2,CEIL(LOG(2,COUNT(*)/50)))'
+--    ||CHR(10)||'  FROM ('||lv_driving_sql||')'
+--    ;
+--    EXECUTE IMMEDIATE lv_sql INTO lv_mod USING pi_pk_value,pi_group_id;
+--    /*
+--    ||Create an array of group by modulus values.
+--    */
+--    LOOP
+--      --
+--      lt_mod(lt_mod.count+1) := lv_mod;
+--      /*
+--      ||Get the previous power of 2.
+--      */
+--      lv_mod := lv_mod/2;
+--      /*
+--      ||Skip every other power of 2 unless we have arrived at 2.
+--      */
+--      IF lv_mod > 2
+--       THEN
+--          lv_mod := lv_mod/2;
+--      END IF;
+--      --
+--      IF lv_mod < 2
+--       THEN
+--          EXIT;
+--      END IF;
+--      --
+--    END LOOP;
+--    /*
+--    ||Build the query.
+--    */
+--    IF lt_mod.COUNT = 1
+--     AND lt_mod(1) <= 1
+--     THEN
+--        lv_sql :=  'SELECT sdo_aggr_union(mdsys.sdoaggrtype('||pi_geom_column||',0.5)) aggr_geom'
+--        ||CHR(10)||'  FROM ('||lv_driving_sql||')'
+--        ;
+--    ELSE
+--        lv_sql :=  'SELECT sdo_aggr_union(mdsys.sdoaggrtype('||pi_geom_column||',0.5)) aggr_geom'
+--        ||CHR(10)||'  FROM ('||lv_driving_sql||')'
+--        ||CHR(10)||' GROUP BY MOD(rownum,'||lt_mod(1)||')';
+--        --
+--        FOR i IN 2..lt_mod.COUNT LOOP
+--          --
+--          lv_sql :=  'SELECT sdo_aggr_union(mdsys.sdoaggrtype(aggr_geom,0.5)) aggr_geom'
+--          ||CHR(10)||'  FROM ('||lv_sql||')'
+--          ||CHR(10)||' GROUP BY MOD(rownum,'||lt_mod(i)||')';
+--          --
+--        END LOOP;
+--        --
+--        lv_sql :=  'SELECT sdo_aggr_union(sdoaggrtype(aggr_geom,0.5)) aggr_geom'
+--        ||CHR(10)||'  FROM ('||lv_sql||')';
+--        --
+--    END IF;
+--    /*
+--    ||Execute the query.
+--    */
+--nm_debug.debug_on;
+--nm_debug.debug(lv_sql);
+--nm_debug.debug_off;
+--    EXECUTE IMMEDIATE lv_sql INTO lv_retval USING pi_pk_value,pi_group_id;
+--    /*
+--    ||Return the result.
+--    */
+--    RETURN lv_retval;
+--    --
+--  END get_aggr_geom_by_grp;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+--  FUNCTION get_aggr_geom_by_grp(pi_table_name  IN VARCHAR2
+--                               ,pi_geom_column IN VARCHAR2
+--                               ,pi_group_id    IN VARCHAR2
+--                               ,pi_pk_column   IN VARCHAR2
+--                               ,pi_pk_value    IN NUMBER)
+--    RETURN mdsys.sdo_geometry IS
+--    --
+--    lv_sql  nm3type.max_varchar2;
+--    --
+--    lt_geom  sdo_geometry_array := sdo_geometry_array();
+--    --
+--  BEGIN
+--    /*
+--    ||Get the geometries.
+--    */
+--    lv_sql := 'SELECT sdo.'||LOWER(pi_geom_column)
+--                     ||' FROM '||LOWER(pi_table_name)||' sdo,nm_members nm'
+--                    ||' WHERE sdo.'||LOWER(pi_pk_column)||' = :pk_val'
+--                      ||' AND sdo.ne_id_of = nm.nm_ne_id_of'
+--                      ||' AND nm.nm_ne_id_in = :grp_id'
+--                    ||' ORDER BY nm.nm_seq_no';
+--    --
+--    EXECUTE IMMEDIATE lv_sql BULK COLLECT INTO lt_geom USING pi_pk_value,pi_group_id;
+--    /*
+--    ||Return the result.
+--    */
+--    RETURN sdo_aggr_set_union(lt_geom,g_sdo_tolerance);
+--    --
+--  END get_aggr_geom_by_grp;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_aggr_geom_by_grp(pi_table_name  IN VARCHAR2
+                               ,pi_geom_column IN VARCHAR2
+                               ,pi_group_id    IN VARCHAR2
+                               ,pi_pk_column   IN VARCHAR2
+                               ,pi_pk_value    IN NUMBER)
+    RETURN mdsys.sdo_geometry IS
+    --
+    lv_sql     nm3type.max_varchar2;
+    lv_retval  mdsys.sdo_geometry;
+    --
+  BEGIN
+    /*
+    ||Get the geometries.
+    */
+    lv_sql := 'SELECT sdo_aggr_lrs_concat(mdsys.sdoaggrtype(geoloc,0.005)) aggr_geom'
+             ||' FROM (SELECT /*+ NO_MERGE */'
+                           ||'CASE'
+                            ||' WHEN nm.nm_cardinality = 1'
+                             ||' THEN'
+                                ||' sdo.'||LOWER(pi_geom_column)
+                            ||' ELSE'
+                                ||' sdo_lrs.reverse_geometry(sdo.'||LOWER(pi_geom_column)||')'
+                          ||' END geoloc'
+                     ||' FROM '||LOWER(pi_table_name)||' sdo,nm_members nm'
+                    ||' WHERE sdo.'||LOWER(pi_pk_column)||' = :pk_val'
+                      ||' AND sdo.ne_id_of = nm.nm_ne_id_of'
+                      ||' AND nm.nm_ne_id_in = :grp_id'
+                    ||' ORDER BY nm.nm_seq_no)';
+    --
+    EXECUTE IMMEDIATE lv_sql INTO lv_retval USING pi_pk_value,pi_group_id;
+    /*
+    ||Return the result.
+    */
+    RETURN lv_retval;
+    --
+  END get_aggr_geom_by_grp;
 
 --
 ------------------------------------------------------------------------------
