@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/typ/awlrstypes.sql-arc   1.1   02 Feb 2017 10:03:10   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/typ/awlrstypes.sql-arc   1.2   Sep 14 2018 13:13:08   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrstypes.sql  $
---       Date into PVCS   : $Date:   02 Feb 2017 10:03:10  $
---       Date fetched Out : $Modtime:   02 Feb 2017 09:50:40  $
---       Version          : $Revision:   1.1  $
+--       Date into PVCS   : $Date:   Sep 14 2018 13:13:08  $
+--       Date fetched Out : $Modtime:   Sep 14 2018 13:12:42  $
+--       Version          : $Revision:   1.2  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
@@ -25,6 +25,24 @@ END;
 --
 BEGIN
   EXECUTE IMMEDIATE('DROP TYPE AWLRS_MESSAGE');
+EXCEPTION
+  WHEN others
+   THEN
+      NULL;
+END;
+/
+--
+BEGIN
+  EXECUTE IMMEDIATE('DROP TYPE AWLRS_PLM_LAYER_LABEL_TAB');
+EXCEPTION
+  WHEN others
+   THEN
+      NULL;
+END;
+/
+--
+BEGIN
+  EXECUTE IMMEDIATE('DROP TYPE AWLRS_PLM_LAYER_LABEL');
 EXCEPTION
   WHEN others
    THEN
@@ -54,6 +72,32 @@ SET DEFINE ON
 SET FEEDBACK OFF
 SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'typ'
        ||'&terminator'||'awlrs_message_tab.tyh' run_file
+  FROM dual
+     ;
+START '&&run_file'
+--
+--------------------------------------------------------------------------------------------
+--
+SET TERM ON
+PROMPT awlrs_plm_layer_label header
+SET TERM OFF
+SET DEFINE ON
+SET FEEDBACK OFF
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'typ'
+       ||'&terminator'||'awlrs_plm_layer_label.tyh' run_file
+  FROM dual
+     ;
+START '&&run_file'
+--
+--------------------------------------------------------------------------------------------
+--
+SET TERM ON
+PROMPT awlrs_plm_layer_label_tab header
+SET TERM OFF
+SET DEFINE ON
+SET FEEDBACK OFF
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'typ'
+       ||'&terminator'||'awlrs_plm_layer_label_tab.tyh' run_file
   FROM dual
      ;
 START '&&run_file'
