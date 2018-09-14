@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.15   26 Jan 2018 16:52:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.16   Sep 14 2018 16:11:32   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkh  $
-  --       Date into PVCS   : $Date:   26 Jan 2018 16:52:28  $
-  --       Date fetched Out : $Modtime:   26 Jan 2018 16:38:32  $
-  --       Version          : $Revision:   1.15  $
+  --       Date into PVCS   : $Date:   Sep 14 2018 16:11:32  $
+  --       Date fetched Out : $Modtime:   Sep 14 2018 15:51:24  $
+  --       Version          : $Revision:   1.16  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
   --
   TYPE theme_types_rec IS RECORD(admin_type                   nm_au_types.nat_admin_type%TYPE
                                 ,network_type                 nm_types.nt_type%TYPE
@@ -27,7 +27,8 @@ AS
                                 ,asset_type                   nm_inv_types_all.nit_inv_type%TYPE
                                 ,asset_category               nm_inv_types_all.nit_category%TYPE
                                 ,ft_asset_type                VARCHAR2(1)
-                                ,multiple_locs_allowed        nm_inv_types_all.nit_multiple_allowed%TYPE
+                                ,multiple_locs_allowed        nm_inv_types_all.nit_multiple_allowed%TYPE 
+                                ,xsp_allowed                  VARCHAR2(1)
                                 ,top_of_hierarchy             nm_inv_types_all.nit_top%TYPE
                                 ,hierarchy_relation           nm_inv_type_groupings.itg_relation%TYPE
                                 ,dependent_geometry           nm_themes_all.nth_dependency%TYPE
@@ -74,6 +75,8 @@ AS
                            ,styling_rules             CLOB
                            ,geometry_column           VARCHAR2(30));
   TYPE themes_tab IS TABLE OF themes_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE theme_name_tab IS TABLE OF nm_themes_all.nth_theme_name%TYPE INDEX BY BINARY_INTEGER;
   --
   TYPE theme_styling_rules_rec IS RECORD(name             VARCHAR2(32)
                                         ,geometry_column  VARCHAR2(30)
@@ -129,22 +132,22 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION generate_map_file(pi_map_name       IN VARCHAR2
-                            ,pi_proj_lib       IN VARCHAR2
-                            ,pi_all_ft_cols    IN VARCHAR2 DEFAULT 'N'
-                            ,pi_effective_date IN DATE DEFAULT NULL)
+  FUNCTION generate_map_file(pi_map_name           IN VARCHAR2
+                            ,pi_proj_lib           IN VARCHAR2
+                            ,pi_all_ft_cols        IN VARCHAR2 DEFAULT 'N'
+                            ,pi_effective_date     IN DATE DEFAULT NULL)
     RETURN CLOB;
 
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_map_file(pi_map_name         IN  VARCHAR2
-                        ,pi_proj_lib         IN  VARCHAR2
-                        ,pi_all_ft_cols      IN  VARCHAR2 DEFAULT 'N'
-                        ,pi_effective_date   IN  DATE DEFAULT NULL
-                        ,po_message_severity OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor   OUT sys_refcursor
-                        ,po_cursor           OUT sys_refcursor);
+  PROCEDURE get_map_file(pi_map_name           IN  VARCHAR2
+                        ,pi_proj_lib           IN  VARCHAR2
+                        ,pi_all_ft_cols        IN  VARCHAR2 DEFAULT 'N'
+                        ,pi_effective_date     IN  DATE DEFAULT NULL
+                        ,po_message_severity   OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor     OUT sys_refcursor
+                        ,po_cursor             OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
