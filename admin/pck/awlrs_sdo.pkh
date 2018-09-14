@@ -3,17 +3,20 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.7   Jul 20 2018 13:18:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.8   Sep 14 2018 15:45:10   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkh  $
-  --       Date into PVCS   : $Date:   Jul 20 2018 13:18:18  $
-  --       Date fetched Out : $Modtime:   Jul 20 2018 10:29:50  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   Sep 14 2018 15:45:10  $
+  --       Date fetched Out : $Modtime:   Aug 15 2018 15:29:22  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
+  --
+  g_sdo_tolerance     NUMBER := 0.005;
+  g_sdo_arc_tolerance NUMBER := 0.05;
   --
   TYPE gtype_rec IS RECORD(theme_id  nm_theme_gtypes.ntg_theme_id%TYPE
                           ,gtype     nm_theme_gtypes.ntg_gtype%TYPE);
@@ -61,6 +64,8 @@ AS
                                  ,geom_wkt           CLOB
                                  ,admin_unit         nm_admin_units_all.nau_name%TYPE);
   TYPE path_results_tab IS TABLE OF path_results_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE nth_tab IS TABLE OF nm_themes_all%ROWTYPE INDEX BY BINARY_INTEGER;
   --
   ------------------------------------------------------------------------------
   --
@@ -282,6 +287,43 @@ AS
                        ,pi_y2 IN NUMBER
                        ,pi_compl_flag VARCHAR2 DEFAULT 'N')
     RETURN nm_placement_array;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_datum_theme_rec(pi_nt_type IN nm_types.nt_type%TYPE)
+    RETURN nm_themes_all%ROWTYPE;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_datum_theme(pi_nt_type IN nm_types.nt_type%TYPE)
+    RETURN nm_themes_all.nth_theme_id%TYPE;
+
+  --
+  ---------------------------------------------------------------------------
+  --
+  FUNCTION get_inv_datum_themes(pi_inv_type IN nm_inv_types_all.nit_inv_type%TYPE)
+    RETURN nth_tab;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_aggr_geom_by_pk(pi_table_name  IN VARCHAR2
+                              ,pi_geom_column IN VARCHAR2
+                              ,pi_pk_column   IN VARCHAR2
+                              ,pi_pk_value    IN NUMBER)
+    RETURN mdsys.sdo_geometry;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_aggr_geom_by_grp(pi_table_name  IN VARCHAR2
+                               ,pi_geom_column IN VARCHAR2
+                               ,pi_group_id    IN VARCHAR2
+                               ,pi_pk_column   IN VARCHAR2
+                               ,pi_pk_value    IN NUMBER)
+    RETURN mdsys.sdo_geometry;
 
 END awlrs_sdo;
 /
