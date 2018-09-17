@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.35   Sep 14 2018 16:11:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.36   Sep 17 2018 12:37:08   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 14 2018 16:11:30  $
-  --       Date fetched Out : $Modtime:   Sep 14 2018 16:09:40  $
-  --       Version          : $Revision:   1.35  $
+  --       Date into PVCS   : $Date:   Sep 17 2018 12:37:08  $
+  --       Date fetched Out : $Modtime:   Sep 17 2018 12:36:20  $
+  --       Version          : $Revision:   1.36  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.35  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.36  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -2784,7 +2784,7 @@ AS
         IF lv_using_index_hint IS NOT NULL
          THEN
             lv_tmp := CHR(10)||'      "default_offsetval"        "0"'
-              ||CHR(10)||'      "default_offsetbyxsp"      "Y"'
+              ||CHR(10)||'      "default_offsetbyxsp"      "N"'
               ||CHR(10)||'      "default_bbox"             "'||REPLACE(lv_theme_extent,' ',',')||'"'
               ||CHR(10)||'      "offsetval"                "-?[0-9]{0,10}"'
               ||CHR(10)||'      "offsetbyxsp"              "[YN]"'
