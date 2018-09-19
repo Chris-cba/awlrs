@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.13   May 08 2018 21:19:22   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.14   Sep 19 2018 12:03:48   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   May 08 2018 21:19:22  $
---       Date fetched Out : $Modtime:   May 08 2018 21:16:50  $
---       Version          : $Revision:   1.13  $
+--       Date into PVCS   : $Date:   Sep 19 2018 12:03:48  $
+--       Date fetched Out : $Modtime:   Sep 17 2018 16:39:14  $
+--       Version          : $Revision:   1.14  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 08-MAY-2018 21:16
+--       Generation Date  : 17-SEP-2018 16:39
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -1047,6 +1047,60 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 56);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,57
+      ,null
+      ,'Region of interest contains no datum elements'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 57);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,58
+      ,null
+      ,'Column not defined in pavement construction attributes'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 58);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,59
+      ,null
+      ,'Column defined more than once in pavement construction attributes'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 59);
 --
 ----------------------------------------------------------------------------------------
 --

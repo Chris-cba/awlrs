@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.12   Jul 12 2018 16:41:22   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.13   Sep 19 2018 12:03:48   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   Jul 12 2018 16:41:22  $
---       Date fetched Out : $Modtime:   Jul 12 2018 16:36:10  $
---       Version          : $Revision:   1.12  $
+--       Date into PVCS   : $Date:   Sep 19 2018 12:03:48  $
+--       Date fetched Out : $Modtime:   Sep 17 2018 16:39:14  $
+--       Version          : $Revision:   1.13  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 12-JUL-2018 16:36
+--       Generation Date  : 17-SEP-2018 16:39
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -185,6 +185,31 @@ INSERT
       ,HOL_MIXED_CASE
       ,HOL_USER_OPTION
       ,HOL_MAX_LENGTH)
+SELECT 'AWLOFFSLRM'
+      ,'AWLRS'
+      ,'Lateral Offset LRM'
+      ,'The LRM to use to aggregate geometries before creating the offset geometry. Aggregating by an LRM can help to eliminate gaps and overlaps in the resulting geometries. A value of ''<NA>'' will result in the aggregated views not being generated'
+      ,''
+      ,'VARCHAR2'
+      ,'N'
+      ,'N'
+      ,4
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_LIST
+                   WHERE HOL_ID = 'AWLOFFSLRM');
+--
+INSERT
+  INTO HIG_OPTION_LIST
+      (HOL_ID
+      ,HOL_PRODUCT
+      ,HOL_NAME
+      ,HOL_REMARKS
+      ,HOL_DOMAIN
+      ,HOL_DATATYPE
+      ,HOL_MIXED_CASE
+      ,HOL_USER_OPTION
+      ,HOL_MAX_LENGTH)
 SELECT 'AWLPTHMINB'
       ,'AWLRS'
       ,'Path Buffer Min Size'
@@ -274,6 +299,31 @@ SELECT 'AWLUIDBUG'
                     FROM HIG_OPTION_LIST
                    WHERE HOL_ID = 'AWLUIDBUG');
 --
+INSERT
+  INTO HIG_OPTION_LIST
+      (HOL_ID
+      ,HOL_PRODUCT
+      ,HOL_NAME
+      ,HOL_REMARKS
+      ,HOL_DOMAIN
+      ,HOL_DATATYPE
+      ,HOL_MIXED_CASE
+      ,HOL_USER_OPTION
+      ,HOL_MAX_LENGTH)
+SELECT 'AWL_RCMRGQ'
+      ,'AWLRS'
+      ,'Pavement Cons Merge Query'
+      ,'ID of merge query used to generate Pavement construction data.'
+      ,''
+      ,'VARCHAR2'
+      ,'N'
+      ,'N'
+      ,50
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_LIST
+                   WHERE HOL_ID = 'AWL_RCMRGQ');
+--
 ----------------------------------------------------------------------------------------
 -- HIG_OPTION_VALUES
 --
@@ -328,6 +378,17 @@ SELECT 'AWLMAPSRID'
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_OPTION_VALUES
                    WHERE HOV_ID = 'AWLMAPSRID');
+--
+INSERT
+  INTO HIG_OPTION_VALUES
+      (HOV_ID
+      ,HOV_VALUE)
+SELECT 'AWLOFFSLRM'
+      ,'<NA>'
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_VALUES
+                   WHERE HOV_ID = 'AWLOFFSLRM');
 --
 INSERT
   INTO HIG_OPTION_VALUES
