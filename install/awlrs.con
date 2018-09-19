@@ -1,15 +1,15 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.9   May 09 2018 11:15:24   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.10   Sep 19 2018 11:57:12   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.con  $
---       Date into PVCS   : $Date:   May 09 2018 11:15:24  $
---       Date fetched Out : $Modtime:   May 09 2018 11:09:44  $
---       Version          : $Revision:   1.9  $
+--       Date into PVCS   : $Date:   Sep 19 2018 11:57:12  $
+--       Date fetched Out : $Modtime:   Sep 19 2018 11:53:44  $
+--       Version          : $Revision:   1.10  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Tue May 08  21:52:23 2018 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Mon Sep 17  18:25:12 2018 by Server Generator 10.1.2.9.28
   
 PROMPT Creating Primary Key on 'AWLRS_FILE_DATUM_ATTRIB_MAP'
 ALTER TABLE AWLRS_FILE_DATUM_ATTRIB_MAP
@@ -41,6 +41,13 @@ ALTER TABLE AWLRS_PERSISTENCE
   (AP_ID))
 /
 
+PROMPT Creating Primary Key on 'AWLRS_PLM_MERGE_ATTRIBS'
+ALTER TABLE AWLRS_PLM_MERGE_ATTRIBS
+ ADD (CONSTRAINT APMA_PK PRIMARY KEY 
+  (APMA_INV_TYPE
+  ,APMA_ATTRIB_NAME))
+/
+
 PROMPT Creating Primary Key on 'AWLRS_QUICK_SEARCH_COLUMNS'
 ALTER TABLE AWLRS_QUICK_SEARCH_COLUMNS
  ADD (CONSTRAINT AQSC_PK PRIMARY KEY 
@@ -58,6 +65,12 @@ PROMPT Creating Primary Key on 'AWLRS_SAVED_SEARCH_CRITERIA'
 ALTER TABLE AWLRS_SAVED_SEARCH_CRITERIA
  ADD (CONSTRAINT ASSC_PK PRIMARY KEY 
   (ASSC_ID))
+/
+
+PROMPT Creating Primary Key on 'NM_THEME_OFFSET_VIEWS'
+ALTER TABLE NM_THEME_OFFSET_VIEWS
+ ADD (CONSTRAINT NTOV_PK PRIMARY KEY 
+  (NTOV_NTH_THEME_ID))
 /
 
 
@@ -91,7 +104,7 @@ ALTER TABLE AWLRS_SAVED_SEARCH_CRITERIA
   ,ASSC_NAME))
 /
 
-       
+          
 
 PROMPT Creating Foreign Key on 'AWLRS_FILE_DATUM_ATTRIB_MAP'
 ALTER TABLE AWLRS_FILE_DATUM_ATTRIB_MAP ADD (CONSTRAINT
@@ -149,6 +162,13 @@ ALTER TABLE AWLRS_PERSISTENCE ADD (CONSTRAINT
   (HUS_USER_ID) ON DELETE CASCADE)
 /
 
+PROMPT Creating Foreign Key on 'AWLRS_PLM_MERGE_ATTRIBS'
+ALTER TABLE AWLRS_PLM_MERGE_ATTRIBS ADD (CONSTRAINT
+ APMA_NIT_FK FOREIGN KEY 
+  (APMA_INV_TYPE) REFERENCES NM_INV_TYPES_ALL
+  (NIT_INV_TYPE) ON DELETE CASCADE)
+/
+
 PROMPT Creating Foreign Key on 'AWLRS_QUICK_SEARCH_COLUMNS'
 ALTER TABLE AWLRS_QUICK_SEARCH_COLUMNS ADD (CONSTRAINT
  AQSC_FK_NTH FOREIGN KEY 
@@ -177,4 +197,9 @@ ALTER TABLE AWLRS_SAVED_SEARCH_CRITERIA ADD (CONSTRAINT
   (NTH_THEME_NAME) ON DELETE CASCADE)
 /
 
-
+PROMPT Creating Foreign Key on 'NM_THEME_OFFSET_VIEWS'
+ALTER TABLE NM_THEME_OFFSET_VIEWS ADD (CONSTRAINT
+ NTOC_NTH_FK FOREIGN KEY 
+  (NTOV_NTH_THEME_ID) REFERENCES NM_THEMES_ALL
+  (NTH_THEME_ID) ON DELETE CASCADE)
+/

@@ -1,15 +1,15 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.ind-arc   1.6   May 09 2018 11:15:26   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.ind-arc   1.7   Sep 19 2018 11:57:12   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.ind  $
---       Date into PVCS   : $Date:   May 09 2018 11:15:26  $
---       Date fetched Out : $Modtime:   May 09 2018 11:10:44  $
---       Version          : $Revision:   1.6  $
+--       Date into PVCS   : $Date:   Sep 19 2018 11:57:12  $
+--       Date fetched Out : $Modtime:   Sep 19 2018 11:54:00  $
+--       Version          : $Revision:   1.7  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Tue May 08  21:52:23 2018 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Mon Sep 17  18:25:12 2018 by Server Generator 10.1.2.9.28
 
 PROMPT Creating Index 'AFDAM_FK_AFFM_IND'
 CREATE INDEX AFDAM_FK_AFFM_IND ON AWLRS_FILE_DATUM_ATTRIB_MAP
@@ -51,6 +51,11 @@ CREATE INDEX AP_FK_HUS_IND ON AWLRS_PERSISTENCE
  (AP_USER_ID)
 /
 
+PROMPT Creating Index 'APMA_NIT_FK_IND'
+CREATE INDEX APMA_NIT_FK_IND ON AWLRS_PLM_MERGE_ATTRIBS
+ (APMA_INV_TYPE)
+/
+
 PROMPT Creating Index 'AQSC_FK_NTH_IND'
 CREATE INDEX AQSC_FK_NTH_IND ON AWLRS_QUICK_SEARCH_COLUMNS
  (AQSC_THEME_NAME)
@@ -70,5 +75,3 @@ PROMPT Creating Index 'ASSC_FK_NTH_IND'
 CREATE INDEX ASSC_FK_NTH_IND ON AWLRS_SAVED_SEARCH_CRITERIA
  (ASSC_THEME_NAME)
 /
-
-

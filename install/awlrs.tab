@@ -1,15 +1,15 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.8   May 09 2018 11:15:28   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.9   Sep 19 2018 11:57:12   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.tab  $
---       Date into PVCS   : $Date:   May 09 2018 11:15:28  $
---       Date fetched Out : $Modtime:   May 09 2018 11:13:06  $
---       Version          : $Revision:   1.8  $
+--       Date into PVCS   : $Date:   Sep 19 2018 11:57:12  $
+--       Date fetched Out : $Modtime:   Sep 19 2018 11:54:24  $
+--       Version          : $Revision:   1.9  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Tue May 08  21:52:23 2018 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Mon Sep 17  18:25:12 2018 by Server Generator 10.1.2.9.28
 
 PROMPT Creating Table 'AWLRS_FILE_DATUM_ATTRIB_MAP'
 CREATE TABLE AWLRS_FILE_DATUM_ATTRIB_MAP
@@ -56,6 +56,16 @@ CREATE TABLE AWLRS_PERSISTENCE
  )
 /
 
+PROMPT Creating Table 'AWLRS_PLM_MERGE_ATTRIBS'
+CREATE TABLE AWLRS_PLM_MERGE_ATTRIBS
+ (APMA_INV_TYPE VARCHAR2(4) NOT NULL
+ ,APMA_ATTRIB_NAME VARCHAR2(30) NOT NULL
+ ,APMA_MRG_ATTRIB_NAME VARCHAR2(80) NOT NULL
+ ,APMA_FUNC_SEQ_NO NUMBER
+ ,APMA_UPDATABLE VARCHAR2(1) DEFAULT 'N' NOT NULL
+ )
+/
+
 PROMPT Creating Table 'AWLRS_QUICK_SEARCH_COLUMNS'
 CREATE TABLE AWLRS_QUICK_SEARCH_COLUMNS
  (AQSC_THEME_NAME VARCHAR2(30) NOT NULL
@@ -83,5 +93,17 @@ CREATE TABLE AWLRS_SAVED_SEARCH_CRITERIA
  ,ASSC_NAME VARCHAR2(200) NOT NULL
  ,ASSC_DESCRIPTION VARCHAR2(1000)
  ,ASSC_CRITERIA XMLTYPE NOT NULL
+ ,ASSC_NET_FILTER_NE_ID NUMBER(38)
+ ,ASSC_NET_FILTER_NSE_ID NUMBER(38)
+ ,ASSC_NET_FILTER_MARKER_ID NUMBER(38)
+ ,ASSC_NET_FILTER_FROM NUMBER
+ ,ASSC_NET_FILTER_TO NUMBER
  )
-/
+/
+
+PROMPT Creating Table 'NM_THEME_OFFSET_VIEWS'
+CREATE TABLE NM_THEME_OFFSET_VIEWS
+ (NTOV_NTH_THEME_ID NUMBER(38) NOT NULL
+ ,NTOV_OFFSET_VIEW_NAME VARCHAR2(30) NOT NULL
+ )
+/
