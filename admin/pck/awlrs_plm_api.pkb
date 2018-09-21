@@ -3,17 +3,17 @@
     -------------------------------------------------------------------------
     --   PVCS Identifiers :-
     --
-    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.5   Sep 12 2018 15:35:26   Peter.Bibby  $
+    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.6   Sep 21 2018 10:08:24   Peter.Bibby  $
     --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-    --       Date into PVCS   : $Date:   Sep 12 2018 15:35:26  $
-    --       Date fetched Out : $Modtime:   Sep 11 2018 12:00:18  $
-    --       Version          : $Revision:   1.5  $
+    --       Date into PVCS   : $Date:   Sep 21 2018 10:08:24  $
+    --       Date fetched Out : $Modtime:   Sep 21 2018 09:10:48  $
+    --       Version          : $Revision:   1.6  $
     -------------------------------------------------------------------------
     --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
     -------------------------------------------------------------------------
     --
     --g_body_sccsid is the SCCS ID for the package body
-    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
+    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
     g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
     --
     g_max_layers      PLS_INTEGER;
@@ -2750,6 +2750,79 @@
       ;
       --
     END get_network_elements;
+    --
+    --------------
+    --
+
+    PROCEDURE get_xsps(pi_ne_ids           awlrs_util.ne_id_tab
+                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                      ,po_message_cursor   OUT sys_refcursor
+                      ,po_cursor           OUT sys_refcursor)
+      IS
+      --
+      lv_inv_type   nm_inv_items_all.iit_inv_type%TYPE := get_cons_rec_type;    
+      lr_nit nm_inv_types%ROWTYPE;
+      --
+      lt_ids  nm_ne_id_array := nm_ne_id_array();
+      --
+    BEGIN
+      --
+      lr_nit := nm3get.get_nit(lv_inv_type);      
+      --
+      FOR i IN 1..pi_ne_ids.COUNT LOOP
+        --
+        lt_ids.extend;
+        lt_ids(i) := nm_ne_id_type(pi_ne_ids(i));
+        --
+      END LOOP;
+      --
+      IF lr_nit.nit_x_sect_allow_flag = 'Y'
+       THEN
+          OPEN po_cursor FOR
+            SELECT nwx_nw_type          nwtype
+                  ,nwx_nsc_sub_class    subclass
+                  ,nwx_x_sect           xsp
+                  ,nwx_descr            xspdesc
+              FROM nm_nw_xsp
+             WHERE nwx_x_sect IN
+              (SELECT nwx_x_sect                    
+                 FROM nm_nw_xsp
+                     ,nm_elements
+                     ,xsp_restraints
+                WHERE ne_id IN(SELECT ne_id FROM TABLE(CAST(lt_ids AS nm_ne_id_array)))
+                  AND ne_nt_type = nwx_nw_type
+                  AND ne_sub_class = nwx_nsc_sub_class
+                  AND xsr_ity_inv_code = lv_inv_type
+                  AND ne_sub_class = xsr_scl_class 
+                  AND ne_nt_type = xsr_nw_type
+               UNION ALL
+               SELECT nwx_x_sect      
+                 FROM nm_nw_xsp
+                     ,nm_elements
+                     ,nm_members
+                     ,xsp_restraints
+                WHERE nm_ne_id_in IN(SELECT ne_id FROM TABLE(CAST(lt_ids AS nm_ne_id_array)))
+                  AND nm_ne_id_of = ne_id
+                  AND ne_nt_type = nwx_nw_type
+                  AND ne_sub_class = nwx_nsc_sub_class
+                  AND xsr_ity_inv_code = lv_inv_type
+                  AND nwx_x_sect = xsr_x_sect_value 
+                  AND ne_sub_class = xsr_scl_class 
+                  AND ne_nt_type = xsr_nw_type)
+              ;
+        
+      END IF;
+      --
+      awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                           ,po_cursor           => po_message_cursor);
+      --
+    EXCEPTION
+      WHEN others
+       THEN
+          awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                     ,po_cursor           => po_message_cursor);
+    END get_xsps;
+    
     --
     -----------------------------------------------------------------------------
     --
