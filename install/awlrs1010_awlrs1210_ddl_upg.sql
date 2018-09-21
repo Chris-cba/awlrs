@@ -7,11 +7,11 @@
 --
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1210_ddl_upg.sql-arc   1.0   Sep 19 2018 11:52:14   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1210_ddl_upg.sql-arc   1.1   Sep 21 2018 12:10:46   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrs1010_awlrs1210_ddl_upg.sql  $
---       Date into PVCS   : $Date:   Sep 19 2018 11:52:14  $
---       Date fetched Out : $Modtime:   Sep 17 2018 16:23:40  $
---       Version          : $Revision:   1.0  $
+--       Date into PVCS   : $Date:   Sep 21 2018 12:10:46  $
+--       Date fetched Out : $Modtime:   Sep 21 2018 12:10:12  $
+--       Version          : $Revision:   1.1  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
@@ -110,6 +110,7 @@ EXCEPTION
   WHEN obj_exists THEN
     NULL;
 END;
+/
 
 ------------------------------------------------------------------
 SET TERM ON
