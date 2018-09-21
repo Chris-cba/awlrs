@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.4   Sep 06 2018 07:41:34   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.5   Sep 21 2018 10:08:00   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkh  $
-  --       Date into PVCS   : $Date:   Sep 06 2018 07:41:34  $
-  --       Date fetched Out : $Modtime:   Aug 24 2018 15:38:04  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   Sep 21 2018 10:08:00  $
+  --       Date fetched Out : $Modtime:   Sep 20 2018 16:27:22  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
   --
   TYPE iit_ne_id_tab IS TABLE OF nm_inv_items_all.iit_ne_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -291,16 +291,27 @@ AS
                           ,po_message_severity OUT hig_codes.hco_code%TYPE
                           ,po_message_cursor   OUT sys_refcursor
                           ,po_cursor           OUT sys_refcursor);
+                          
   --
   -----------------------------------------------------------------------------
   --
   FUNCTION is_pavement_data(pi_ne_id nm_elements.ne_id%TYPE)
    RETURN VARCHAR2;
+   
   --
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_network_elements(pi_ne_ids awlrs_util.ne_id_tab
                                 ,po_cursor OUT sys_refcursor);
+                                
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_xsps(pi_ne_ids           awlrs_util.ne_id_tab
+                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor   OUT sys_refcursor
+                    ,po_cursor           OUT sys_refcursor);     
+                    
   --
   -----------------------------------------------------------------------------
   --
