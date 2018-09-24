@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.34   Jul 26 2018 13:01:00   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.35   Sep 24 2018 14:25:54   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 26 2018 13:01:00  $
-  --       Date fetched Out : $Modtime:   Jul 26 2018 12:10:58  $
-  --       Version          : $Revision:   1.34  $
+  --       Date into PVCS   : $Date:   Sep 24 2018 14:25:54  $
+  --       Date fetched Out : $Modtime:   Sep 24 2018 14:20:24  $
+  --       Version          : $Revision:   1.35  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.34  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.35  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -2113,14 +2113,12 @@ AS
           ||CHR(10)||'                              ,ngt_nt_type     network_type'
           ||CHR(10)||'                              ,ngt_group_type  group_type'
           ||CHR(10)||'                              ,ngt_descr       description'
-          ||CHR(10)||'                          FROM nm_nt_groupings_all'
-          ||CHR(10)||'                              ,nm_group_types_all'
-          ||CHR(10)||'                         WHERE nng_group_type IN(SELECT rm.nm_obj_type'
+          ||CHR(10)||'                          FROM nm_group_types_all'
+          ||CHR(10)||'                         WHERE ngt_group_type IN(SELECT rm.nm_obj_type'
           ||CHR(10)||'                                                   FROM im'
           ||CHR(10)||'                                                       ,nm_members rm'
           ||CHR(10)||'                                                  WHERE im.ne_id = rm.nm_ne_id_of'
-          ||CHR(10)||'                                                    AND rm.nm_type = ''G'''
-          ||CHR(10)||'                                                    AND nng_group_type = ngt_group_type)'
+          ||CHR(10)||'                                                    AND rm.nm_type = ''G'')'
           ||CHR(10)||'                        UNION ALL'
           ||CHR(10)||'                        SELECT ''N''     is_linear_group'
           ||CHR(10)||'                              ,nt_type   network_type'
