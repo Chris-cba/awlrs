@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.20   Sep 14 2018 15:49:56   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.21   Sep 24 2018 11:10:46   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Sep 14 2018 15:49:56  $
-  --       Date fetched Out : $Modtime:   Sep 14 2018 15:47:18  $
-  --       Version          : $Revision:   1.20  $
+  --       Date into PVCS   : $Date:   Sep 24 2018 11:10:46  $
+  --       Date fetched Out : $Modtime:   Sep 24 2018 11:09:48  $
+  --       Version          : $Revision:   1.21  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.20  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -1395,6 +1395,8 @@ AS
     lv_target_group_type  nm_group_types_all.ngt_group_type%TYPE;
     lv_job_id             nm_nw_temp_extents.nte_job_id%TYPE;
     --
+    lt_placement  nm_placement_array;
+    --
     FUNCTION theme_is_datum(pi_theme_id IN nm_themes_all.nth_theme_id%TYPE)
       RETURN BOOLEAN IS
       --
@@ -1514,16 +1516,23 @@ AS
     IF pi_return_datums = 'Y'
      OR lv_target_group_type IS NULL
      THEN
+        /*
+        ||Get the placement array first so that any exceptions are
+        ||returned through the parameters rather than when the cursor
+        ||is fetched.
+        */
+        lt_placement := awlrs_sdo.get_pl_by_xy(lv_datum_theme_id
+                                              ,pi_start_x
+                                              ,pi_start_y
+                                              ,pi_end_x
+                                              ,pi_end_y
+                                              ,'N');
+        --
         OPEN po_cursor FOR
         WITH all_data
           AS (SELECT ROWNUM ind
                     ,np.*
-                FROM TABLE(awlrs_sdo.get_pl_by_xy(lv_datum_theme_id
-                                                 ,pi_start_x
-                                                 ,pi_start_y
-                                                 ,pi_end_x
-                                                 ,pi_end_y
-                                                 ,'N').npa_placement_array) np)
+                FROM TABLE(lt_placement.npa_placement_array) np)
         SELECT ne_id
               ,CASE ne_nt_type
                  WHEN 'ESU' THEN ne_name_1
@@ -2332,7 +2341,7 @@ AS
                                                                           ,lv_end.lr_offset
                                                                           ,0 )));
         ELSE
-            raise_application_error(-20001, 'points are the same - no distance between them');
+            raise_application_error(-20001, 'Points are the same - no distance between them');
         END IF;
     ELSE
         --nm_debug.debug('different element - need for walking');
