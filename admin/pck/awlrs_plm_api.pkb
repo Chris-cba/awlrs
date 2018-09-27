@@ -3,17 +3,17 @@
     -------------------------------------------------------------------------
     --   PVCS Identifiers :-
     --
-    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.6   Sep 21 2018 10:08:24   Peter.Bibby  $
+    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.7   Sep 27 2018 13:27:36   Peter.Bibby  $
     --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-    --       Date into PVCS   : $Date:   Sep 21 2018 10:08:24  $
-    --       Date fetched Out : $Modtime:   Sep 21 2018 09:10:48  $
-    --       Version          : $Revision:   1.6  $
+    --       Date into PVCS   : $Date:   Sep 27 2018 13:27:36  $
+    --       Date fetched Out : $Modtime:   Sep 27 2018 13:21:14  $
+    --       Version          : $Revision:   1.7  $
     -------------------------------------------------------------------------
     --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
     -------------------------------------------------------------------------
     --
     --g_body_sccsid is the SCCS ID for the package body
-    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
+    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
     g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
     --
     g_max_layers      PLS_INTEGER;
@@ -2754,6 +2754,29 @@
     --------------
     --
 
+  PROCEDURE get_network_elements(pi_ne_ids           IN  awlrs_util.ne_id_tab
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    get_network_elements(pi_ne_ids => pi_ne_ids
+                        ,po_cursor => po_cursor);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_network_elements;
+
+    --
+    --------------
+    --
     PROCEDURE get_xsps(pi_ne_ids           awlrs_util.ne_id_tab
                       ,po_message_severity OUT hig_codes.hco_code%TYPE
                       ,po_message_cursor   OUT sys_refcursor
