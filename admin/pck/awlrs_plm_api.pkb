@@ -3,17 +3,17 @@
     -------------------------------------------------------------------------
     --   PVCS Identifiers :-
     --
-    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.7   Sep 27 2018 13:27:36   Peter.Bibby  $
+    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.8   Sep 27 2018 17:48:50   Peter.Bibby  $
     --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-    --       Date into PVCS   : $Date:   Sep 27 2018 13:27:36  $
-    --       Date fetched Out : $Modtime:   Sep 27 2018 13:21:14  $
-    --       Version          : $Revision:   1.7  $
+    --       Date into PVCS   : $Date:   Sep 27 2018 17:48:50  $
+    --       Date fetched Out : $Modtime:   Sep 27 2018 17:46:38  $
+    --       Version          : $Revision:   1.8  $
     -------------------------------------------------------------------------
     --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
     -------------------------------------------------------------------------
     --
     --g_body_sccsid is the SCCS ID for the package body
-    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
+    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
     g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
     --
     g_max_layers      PLS_INTEGER;
@@ -2630,8 +2630,9 @@
           awlrs_util.handle_exception(po_message_severity => po_message_severity
                                      ,po_cursor           => po_message_cursor);
     END get_merge_data;
+
     --
-    --------------
+    -----------------------------------------------------------------------------
     --
     PROCEDURE get_merge_cell_asset_id(pi_ne_id       IN nm_elements_all.ne_id%TYPE
                                      ,pi_from_offset IN nm_gaz_query.ngq_begin_mp%TYPE DEFAULT NULL
@@ -2684,8 +2685,9 @@
           awlrs_util.handle_exception(po_message_severity => po_message_severity
                                      ,po_cursor           => po_message_cursor);
     END get_merge_cell_asset_id;
+
     --
-    --------------
+    -----------------------------------------------------------------------------
     --
     FUNCTION is_pavement_data(pi_ne_id nm_elements.ne_id%TYPE)
      RETURN VARCHAR2 IS
@@ -2719,10 +2721,10 @@
         RETURN 'N';
         --
     END is_pavement_data;
+    
     --
-    --------------
+    -----------------------------------------------------------------------------
     --
-
     PROCEDURE get_network_elements(pi_ne_ids awlrs_util.ne_id_tab
                                   ,po_cursor OUT sys_refcursor)
       IS
@@ -2743,39 +2745,42 @@
             ,ne_unique               element_name
             ,ne_descr                element_desc
             ,is_pavement_data(ne_id) pavement_data_exists
-            ,ne_admin_unit           admin_unit
+            ,ne_admin_unit           admin_unit_code
+            ,nau_name                admin_unit_name
             ,ne_length               element_length
         FROM nm_elements
+            ,nm_admin_units_all
        WHERE ne_id IN(SELECT ne_id FROM TABLE(CAST(lt_ids AS nm_ne_id_array)))
       ;
       --
     END get_network_elements;
+    
     --
-    --------------
+    -----------------------------------------------------------------------------
     --
+   
+    PROCEDURE get_network_elements(pi_ne_ids           IN  awlrs_util.ne_id_tab
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor
+                                  ,po_cursor           OUT sys_refcursor)
+      IS
+    BEGIN
+      --
+      get_network_elements(pi_ne_ids => pi_ne_ids
+                          ,po_cursor => po_cursor);
+      --
+      awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                           ,po_cursor           => po_message_cursor);
+      --
+    EXCEPTION
+      WHEN others
+       THEN
+          awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                     ,po_cursor           => po_message_cursor);
+    END get_network_elements;
 
-  PROCEDURE get_network_elements(pi_ne_ids           IN  awlrs_util.ne_id_tab
-                                ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                ,po_message_cursor   OUT sys_refcursor
-                                ,po_cursor           OUT sys_refcursor)
-    IS
-  BEGIN
     --
-    get_network_elements(pi_ne_ids => pi_ne_ids
-                        ,po_cursor => po_cursor);
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-     THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END get_network_elements;
-
-    --
-    --------------
+    -----------------------------------------------------------------------------
     --
     PROCEDURE get_xsps(pi_ne_ids           awlrs_util.ne_id_tab
                       ,po_message_severity OUT hig_codes.hco_code%TYPE
@@ -2849,5 +2854,5 @@
     --
     -----------------------------------------------------------------------------
     --
-    END awlrs_plm_api;
-    /
+  END awlrs_plm_api;
+  /
