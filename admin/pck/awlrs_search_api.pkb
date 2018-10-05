@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.18   Sep 14 2018 11:52:02   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.19   Oct 05 2018 14:40:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 14 2018 11:52:02  $
-  --       Date fetched Out : $Modtime:   Sep 14 2018 11:42:30  $
-  --       Version          : $Revision:   1.18  $
+  --       Date into PVCS   : $Date:   Oct 05 2018 14:40:04  $
+  --       Date fetched Out : $Modtime:   Oct 04 2018 15:54:50  $
+  --       Version          : $Revision:   1.19  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.18  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.19  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -2571,8 +2571,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_network_quick_search_sql(pi_alias_list       IN VARCHAR2
-                                       ,pi_select_list      IN VARCHAR2
+  FUNCTION get_network_quick_search_sql(pi_nt_type          IN nm_types.nt_type%TYPE
                                        ,pi_like_cols        IN columns_tab
                                        ,pi_include_enddated IN VARCHAR2 DEFAULT 'N'
                                        ,pi_order_column     IN VARCHAR2 DEFAULT NULL
@@ -2580,6 +2579,8 @@ AS
                                        ,pi_paged            IN BOOLEAN DEFAULT FALSE)
     RETURN VARCHAR2 IS
     --
+    lv_alias_list   nm3type.max_varchar2;
+    lv_select_list  nm3type.max_varchar2;
     lv_pagecols     VARCHAR2(200);
     lv_like_cols    nm3type.max_varchar2;
     lv_match_cases  nm3type.max_varchar2;
@@ -2587,6 +2588,10 @@ AS
     lv_order_by     VARCHAR2(200);
     --
   BEGIN
+    --
+    get_network_attributes_lists(pi_nt_type     => pi_nt_type
+                                ,po_alias_list  => lv_alias_list
+                                ,po_select_list => lv_select_list);
     --
     IF pi_paged
      THEN
@@ -2620,17 +2625,35 @@ AS
     lv_retval := 'WITH elements AS(SELECT ne_id "result_id"'
       ||CHR(10)||'                       ,ne_nt_type "network_type"'
       ||CHR(10)||'                       ,ne_gty_group_type "group_type"'
-      ||CHR(10)||'                       ,CASE ne_nt_type'
-      ||CHR(10)||'                          WHEN ''ESU'' THEN ne_name_1'
-      ||CHR(10)||'                          WHEN ''NSGN'' THEN ne_number'
-      ||CHR(10)||'                          ELSE ne_unique'
-      ||CHR(10)||'                        END "unique_"'
-      ||CHR(10)||'                       ,ne_descr "description"'
+      ||CHR(10)||'                       ,ne_unique "unique_"'
+    ;
+    --
+    IF pi_nt_type = 'NSGN'
+     THEN
+        lv_retval := lv_retval
+          ||CHR(10)||'                       ,ne_number "USRN"';
+    END IF;
+    --
+    CASE pi_nt_type
+      WHEN 'ESU'
+       THEN
+          lv_retval := lv_retval
+            ||CHR(10)||'                       ,ne_descr "ESU ID"';
+      WHEN 'NSGN'
+       THEN
+          lv_retval := lv_retval
+            ||CHR(10)||'                       ,ne_descr "Street Name"';
+      ELSE
+          lv_retval := lv_retval
+            ||CHR(10)||'                       ,ne_descr "description"';
+    END CASE;
+    --
+    lv_retval := lv_retval
       ||CHR(10)||'                       ,ne_start_date "start_date"'
       ||CHR(10)||'                       ,ne_end_date "end_date"'
       ||CHR(10)||'                       ,nm3net.get_ne_length(ne_id) "length"'
       ||CHR(10)||'                       ,nau_name "admin_unit"'
-               ||pi_select_list
+               ||lv_select_list
       ||CHR(10)||'                       ,CASE'||lv_match_cases
       ||CHR(10)||'                        END "match_quality"'
       ||CHR(10)||'                   FROM nm_admin_units_all'
@@ -2650,12 +2673,34 @@ AS
       ||CHR(10)||'      ,"network_type"'
       ||CHR(10)||'      ,"group_type"'
       ||CHR(10)||'      ,"unique_"'
-      ||CHR(10)||'      ,"description"'
+    ;
+    --
+    IF pi_nt_type = 'NSGN'
+     THEN
+        lv_retval := lv_retval
+          ||CHR(10)||'      ,"USRN"';
+    END IF;
+    --
+    CASE pi_nt_type
+      WHEN 'ESU'
+       THEN
+          lv_retval := lv_retval
+            ||CHR(10)||'      ,"ESU ID"';
+      WHEN 'NSGN'
+       THEN
+          lv_retval := lv_retval
+            ||CHR(10)||'      ,"Street Name"';
+      ELSE
+          lv_retval := lv_retval
+            ||CHR(10)||'      ,"description"';
+    END CASE;
+    --
+    lv_retval := lv_retval
       ||CHR(10)||'      ,"start_date"'
       ||CHR(10)||'      ,"end_date"'
       ||CHR(10)||'      ,"length"'
       ||CHR(10)||'      ,"admin_unit"'
-               ||pi_alias_list
+               ||lv_alias_list
       ||CHR(10)||'  FROM elements'
     ;
     --
@@ -2680,8 +2725,6 @@ AS
     lv_sql               nm3type.max_varchar2;
     lv_query             nm3type.max_varchar2;
     lv_using             nm3type.max_varchar2;
-    lv_alias_list        nm3type.max_varchar2;
-    lv_select_list       nm3type.max_varchar2;
     lv_additional_where  nm3type.max_varchar2;
     lv_search_string     nm3type.max_varchar2;
     lv_like_string       nm3type.max_varchar2;
@@ -2697,12 +2740,7 @@ AS
         lv_additional_where := CHR(10)||' WHERE rownum <= :max_rows';
     END IF;
     --
-    get_network_attributes_lists(pi_nt_type     => pi_nt_type
-                                ,po_alias_list  => lv_alias_list
-                                ,po_select_list => lv_select_list);
-    --
-    lv_query := get_network_quick_search_sql(pi_alias_list       => lv_alias_list
-                                            ,pi_select_list      => lv_select_list
+    lv_query := get_network_quick_search_sql(pi_nt_type          => pi_nt_type
                                             ,pi_like_cols        => pi_like_cols
                                             ,pi_include_enddated => pi_include_enddated
                                             ,pi_order_column     => pi_order_column
@@ -2772,8 +2810,6 @@ AS
     lv_sql               nm3type.max_varchar2;
     lv_query             nm3type.max_varchar2;
     lv_using             nm3type.max_varchar2;
-    lv_alias_list        nm3type.max_varchar2;
-    lv_select_list       nm3type.max_varchar2;
     lv_lower_index       PLS_INTEGER;
     lv_upper_index       PLS_INTEGER;
     lv_additional_where  nm3type.max_varchar2;
@@ -2794,13 +2830,8 @@ AS
                                   ,po_upper_index  => lv_upper_index
                                   ,po_statement    => lv_additional_where);
     --
-    get_network_attributes_lists(pi_nt_type     => pi_nt_type
-                                ,po_alias_list  => lv_alias_list
-                                ,po_select_list => lv_select_list);
-    --
     lv_query := 'SELECT *'
-     ||CHR(10)||'  FROM ('||get_network_quick_search_sql(pi_alias_list       => lv_alias_list
-                                                        ,pi_select_list      => lv_select_list
+     ||CHR(10)||'  FROM ('||get_network_quick_search_sql(pi_nt_type          => pi_nt_type
                                                         ,pi_like_cols        => pi_like_cols
                                                         ,pi_include_enddated => pi_include_enddated
                                                         ,pi_order_column     => pi_order_column
@@ -3839,7 +3870,7 @@ AS
               IF lt_like_cols.COUNT = 0
                THEN
                   lt_like_cols(1) := 'ne_unique';
-                  lt_like_cols(2) := 'ne_descr';
+                  --lt_like_cols(2) := 'ne_descr';
               END IF;
               --
               get_paged_network_quick_search(pi_search_string    => pi_search_string
@@ -3942,7 +3973,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_network_search_sql(pi_select_list      IN VARCHAR2
+  FUNCTION get_network_search_sql(pi_nt_type          IN nm_types.nt_type%TYPE
                                  ,pi_where_clause     IN VARCHAR2
                                  ,pi_include_enddated IN VARCHAR2 DEFAULT 'N'
                                  ,pi_order_column     IN VARCHAR2 DEFAULT NULL
@@ -3950,10 +3981,16 @@ AS
                                  ,pi_paged            IN BOOLEAN DEFAULT FALSE)
     RETURN VARCHAR2 IS
     --
-    lv_pagecols  VARCHAR2(200);
-    lv_retval    nm3type.max_varchar2;
+    lv_pagecols     VARCHAR2(200);
+    lv_retval       nm3type.max_varchar2;
+    lv_alias_list   nm3type.max_varchar2;
+    lv_select_list  nm3type.max_varchar2;
     --
   BEGIN
+    --
+    get_network_attributes_lists(pi_nt_type     => pi_nt_type
+                                ,po_alias_list  => lv_alias_list
+                                ,po_select_list => lv_select_list);
     --
     IF pi_paged
      THEN
@@ -3965,17 +4002,35 @@ AS
     lv_retval := 'WITH elements AS(SELECT ne_id "result_id"'
       ||CHR(10)||'                       ,ne_nt_type "network_type"'
       ||CHR(10)||'                       ,ne_gty_group_type "group_type"'
-      ||CHR(10)||'                       ,CASE ne_nt_type'
-      ||CHR(10)||'                          WHEN ''ESU'' THEN ne_name_1'
-      ||CHR(10)||'                          WHEN ''NSGN'' THEN ne_number'
-      ||CHR(10)||'                          ELSE ne_unique'
-      ||CHR(10)||'                        END "unique_"'
-      ||CHR(10)||'                       ,ne_descr "description"'
+      ||CHR(10)||'                       ,ne_unique "unique_"'
+    ;
+    --
+    IF pi_nt_type = 'NSGN'
+     THEN
+        lv_retval := lv_retval
+          ||CHR(10)||'                       ,ne_number "USRN"';
+    END IF;
+    --
+    CASE pi_nt_type
+      WHEN 'ESU'
+       THEN
+          lv_retval := lv_retval
+            ||CHR(10)||'                       ,ne_descr "ESU ID"';
+      WHEN 'NSGN'
+       THEN
+          lv_retval := lv_retval
+            ||CHR(10)||'                       ,ne_descr "Street Name"';
+      ELSE
+          lv_retval := lv_retval
+            ||CHR(10)||'                       ,ne_descr "description"';
+    END CASE;
+    --
+    lv_retval := lv_retval
       ||CHR(10)||'                       ,ne_start_date "start_date"'
       ||CHR(10)||'                       ,ne_end_date "end_date"'
       ||CHR(10)||'                       ,nm3net.get_ne_length(ne_id) "length"'
       ||CHR(10)||'                       ,(SELECT nau_name FROM nm_admin_units_all WHERE nau_admin_unit = ne_admin_unit) "admin_unit"'
-               ||pi_select_list
+               ||lv_select_list
       ||CHR(10)||'                   FROM nm_elements_all'
       ||CHR(10)||'                       ,nm_nw_ad_link'
       ||CHR(10)||'                       ,nm_inv_items'
@@ -4015,8 +4070,6 @@ AS
     IS
     --
     lv_sql               nm3type.max_varchar2;
-    lv_alias_list        nm3type.max_varchar2;
-    lv_select_list       nm3type.max_varchar2;
     lv_where             nm3type.max_varchar2;
     lv_additional_where  nm3type.max_varchar2;
     lv_nvl               VARCHAR2(10) := nm3type.get_nvl;
@@ -4033,11 +4086,7 @@ AS
         lv_additional_where := CHR(10)||' WHERE rownum <= :max_rows';
     END IF;
     --
-    get_network_attributes_lists(pi_nt_type     => pi_theme_types.network_type
-                                ,po_alias_list  => lv_alias_list
-                                ,po_select_list => lv_select_list);
-    --
-    lv_sql := get_network_search_sql(pi_select_list      => lv_select_list
+    lv_sql := get_network_search_sql(pi_nt_type          => pi_theme_types.network_type
                                     ,pi_where_clause     => lv_where
                                     ,pi_include_enddated => pi_include_enddated
                                     ,pi_order_column     => pi_order_column
@@ -4093,11 +4142,7 @@ AS
         lv_additional_where := CHR(10)||' WHERE rownum <= :max_rows';
     END IF;
     --
-    get_network_attributes_lists(pi_nt_type     => pi_theme_types.network_type
-                                ,po_alias_list  => lv_alias_list
-                                ,po_select_list => lv_select_list);
-    --
-    lv_sql := get_network_search_sql(pi_select_list      => lv_select_list
+    lv_sql := get_network_search_sql(pi_nt_type          => pi_theme_types.network_type
                                     ,pi_where_clause     => lv_where
                                     ,pi_include_enddated => pi_include_enddated
                                     ,pi_order_column     => pi_order_column
@@ -4163,12 +4208,8 @@ AS
                                   ,po_upper_index  => lv_upper_index
                                   ,po_statement    => lv_additional_where);
     --
-    get_network_attributes_lists(pi_nt_type     => pi_theme_types.network_type
-                                ,po_alias_list  => lv_alias_list
-                                ,po_select_list => lv_select_list);
-    --
     lv_sql := 'SELECT *'
-   ||CHR(10)||'  FROM ('||get_network_search_sql(pi_select_list      => lv_select_list
+   ||CHR(10)||'  FROM ('||get_network_search_sql(pi_nt_type          => pi_theme_types.network_type
                                                 ,pi_where_clause     => lv_where
                                                 ,pi_include_enddated => pi_include_enddated
                                                 ,pi_order_column     => pi_order_column
@@ -4230,14 +4271,10 @@ AS
                                   ,po_upper_index  => lv_upper_index
                                   ,po_statement    => lv_additional_where);
     --
-    get_network_attributes_lists(pi_nt_type     => pi_theme_types.network_type
-                                ,po_alias_list  => lv_alias_list
-                                ,po_select_list => lv_select_list);
-    --
     lv_where := 'ne_id IN(SELECT ne_id FROM TABLE(CAST(:ids AS nm_ne_id_array)))';
     --
     lv_sql := 'SELECT *'
-   ||CHR(10)||'  FROM ('||get_network_search_sql(pi_select_list      => lv_select_list
+   ||CHR(10)||'  FROM ('||get_network_search_sql(pi_nt_type          => pi_theme_types.network_type
                                                 ,pi_where_clause     => lv_where
                                                 ,pi_include_enddated => pi_include_enddated
                                                 ,pi_order_column     => pi_order_column
