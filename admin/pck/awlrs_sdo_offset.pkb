@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo_offset.pkb-arc   1.1   Oct 10 2018 16:33:54   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo_offset.pkb-arc   1.2   Oct 10 2018 18:48:08   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo_offset.pkb  $
-  --       Date into PVCS   : $Date:   Oct 10 2018 16:33:54  $
-  --       Date fetched Out : $Modtime:   Oct 10 2018 15:59:12  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Oct 10 2018 18:48:08  $
+  --       Date fetched Out : $Modtime:   Oct 10 2018 18:42:46  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_sdo_offset';
   --
@@ -64,7 +64,7 @@ AS
                        ,pi_offset      IN NUMBER)
     RETURN mdsys.sdo_ordinate_array IS
     --
-    lv_offset  NUMBER := NVL(pi_offset,0);
+    lv_offset  NUMBER := ABS(NVL(pi_offset,0));
     lv_retval  mdsys.sdo_ordinate_array;
     --
     lt_values  nm3type.tab_varchar32767;
