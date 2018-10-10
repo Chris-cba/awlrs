@@ -3,17 +3,17 @@
     -------------------------------------------------------------------------
     --   PVCS Identifiers :-
     --
-    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.8   Sep 27 2018 17:48:50   Peter.Bibby  $
+    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.9   Oct 10 2018 10:22:30   Peter.Bibby  $
     --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-    --       Date into PVCS   : $Date:   Sep 27 2018 17:48:50  $
-    --       Date fetched Out : $Modtime:   Sep 27 2018 17:46:38  $
-    --       Version          : $Revision:   1.8  $
+    --       Date into PVCS   : $Date:   Oct 10 2018 10:22:30  $
+    --       Date fetched Out : $Modtime:   Oct 04 2018 15:32:30  $
+    --       Version          : $Revision:   1.9  $
     -------------------------------------------------------------------------
     --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
     -------------------------------------------------------------------------
     --
     --g_body_sccsid is the SCCS ID for the package body
-    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
+    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
     g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
     --
     g_max_layers      PLS_INTEGER;
@@ -525,6 +525,62 @@
        THEN
           awlrs_util.handle_exception(po_message_severity => po_message_severity
                                      ,po_cursor           => po_message_cursor);
+    END create_construction_records;
+
+    --
+    -----------------------------------------------------------------------------
+    --
+    PROCEDURE create_construction_records(pi_admin_unit               IN     nm_admin_units_all.nau_admin_unit%TYPE
+                                         ,pi_description              IN     nm_inv_items_all.iit_descr%TYPE
+                                         ,pi_start_date               IN     nm_inv_items_all.iit_start_date%TYPE
+                                         ,pi_end_date                 IN     nm_inv_items_all.iit_end_date%TYPE
+                                         ,pi_notes                    IN     nm_inv_items_all.iit_note%TYPE
+                                         ,pi_attrib_names             IN     awlrs_asset_api.attrib_name_tab
+                                         ,pi_attrib_scrn_texts        IN     awlrs_asset_api.attrib_scrn_text_tab
+                                         ,pi_attrib_char_values       IN     awlrs_asset_api.attrib_value_tab
+                                         ,pi_xsps                     IN     xsp_tab
+                                         ,pi_ne_ids                   IN     awlrs_util.ne_id_tab
+                                         ,pi_begin_mps                IN     location_from_offset_tab
+                                         ,pi_end_mps                  IN     location_to_offset_tab
+                                         ,pi_layer_attrib_idx         IN     iit_ne_id_tab
+                                         ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
+                                         ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
+                                         ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab
+                                         ,pi_depth_removed            IN     NUMBER DEFAULT NULL
+                                         ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                                         ,po_message_cursor              OUT sys_refcursor)
+      IS
+      --
+      lt_iit_ne_ids iit_ne_id_tab;
+      --
+    BEGIN
+      --
+      create_construction_records(pi_admin_unit               => pi_admin_unit
+                                 ,pi_description              => pi_description
+                                 ,pi_start_date               => pi_start_date
+                                 ,pi_end_date                 => pi_end_date
+                                 ,pi_notes                    => pi_notes
+                                 ,pi_attrib_names             => pi_attrib_names
+                                 ,pi_attrib_scrn_texts        => pi_attrib_scrn_texts
+                                 ,pi_attrib_char_values       => pi_attrib_char_values
+                                 ,pi_xsps                     => pi_xsps
+                                 ,pi_ne_ids                   => pi_ne_ids
+                                 ,pi_begin_mps                => pi_begin_mps
+                                 ,pi_end_mps                  => pi_end_mps
+                                 ,pi_layer_attrib_idx         => pi_layer_attrib_idx
+                                 ,pi_layer_attrib_names       => pi_layer_attrib_names
+                                 ,pi_layer_attrib_scrn_texts  => pi_layer_attrib_scrn_texts
+                                 ,pi_layer_attrib_char_values => pi_layer_attrib_char_values
+                                 ,pi_depth_removed            => pi_depth_removed
+                                 ,po_iit_ne_ids               => lt_iit_ne_ids
+                                 ,po_message_severity         => po_message_severity
+                                 ,po_message_cursor           => po_message_cursor );
+      --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
     END create_construction_records;
 
     --
@@ -2821,6 +2877,7 @@
                   AND ne_nt_type = nwx_nw_type
                   AND ne_sub_class = nwx_nsc_sub_class
                   AND xsr_ity_inv_code = lv_inv_type
+                  AND nwx_x_sect = xsr_x_sect_value                   
                   AND ne_sub_class = xsr_scl_class 
                   AND ne_nt_type = xsr_nw_type
                UNION ALL
