@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.7   Sep 27 2018 17:48:50   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.8   Oct 10 2018 10:22:32   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkh  $
-  --       Date into PVCS   : $Date:   Sep 27 2018 17:48:50  $
-  --       Date fetched Out : $Modtime:   Sep 27 2018 17:44:48  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   Oct 10 2018 10:22:32  $
+  --       Date fetched Out : $Modtime:   Oct 04 2018 15:33:50  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
   --
   TYPE iit_ne_id_tab IS TABLE OF nm_inv_items_all.iit_ne_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -78,8 +78,30 @@ AS
                                        ,pi_depth_removed            IN     NUMBER DEFAULT NULL
                                        ,po_iit_ne_ids               IN OUT iit_ne_id_tab
                                        ,po_message_severity            OUT hig_codes.hco_code%TYPE
-                                       ,po_message_cursor              OUT sys_refcursor)  ;
+                                       ,po_message_cursor              OUT sys_refcursor);
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_construction_records(pi_admin_unit               IN     nm_admin_units_all.nau_admin_unit%TYPE
+                                       ,pi_description              IN     nm_inv_items_all.iit_descr%TYPE
+                                       ,pi_start_date               IN     nm_inv_items_all.iit_start_date%TYPE
+                                       ,pi_end_date                 IN     nm_inv_items_all.iit_end_date%TYPE
+                                       ,pi_notes                    IN     nm_inv_items_all.iit_note%TYPE
+                                       ,pi_attrib_names             IN     awlrs_asset_api.attrib_name_tab
+                                       ,pi_attrib_scrn_texts        IN     awlrs_asset_api.attrib_scrn_text_tab
+                                       ,pi_attrib_char_values       IN     awlrs_asset_api.attrib_value_tab
+                                       ,pi_xsps                     IN     xsp_tab
+                                       ,pi_ne_ids                   IN     awlrs_util.ne_id_tab
+                                       ,pi_begin_mps                IN     location_from_offset_tab
+                                       ,pi_end_mps                  IN     location_to_offset_tab
+                                       ,pi_layer_attrib_idx         IN     iit_ne_id_tab
+                                       ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
+                                       ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
+                                       ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab
+                                       ,pi_depth_removed            IN     NUMBER DEFAULT NULL
+                                       ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor              OUT sys_refcursor);
   --
   -----------------------------------------------------------------------------
   --
@@ -95,9 +117,9 @@ AS
                                        ,pi_ne_id              IN     nm_elements_all.ne_id%TYPE
                                        ,pi_begin_mp           IN     nm_members_all.nm_begin_mp%TYPE
                                        ,pi_end_mp             IN     nm_members_all.nm_end_mp%TYPE
-                                       ,po_iit_ne_ids         IN OUT iit_ne_id_tab
+                                       ,po_iit_ne_ids         IN OUT iit_ne_id_tab                                       
                                        ,po_message_severity      OUT hig_codes.hco_code%TYPE
-                                       ,po_message_cursor        OUT sys_refcursor);
+                                       ,po_message_cursor        OUT sys_refcursor);                                       
 
   --
   -----------------------------------------------------------------------------
