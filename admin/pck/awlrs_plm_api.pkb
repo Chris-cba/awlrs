@@ -3,17 +3,17 @@
     -------------------------------------------------------------------------
     --   PVCS Identifiers :-
     --
-    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.9   Oct 10 2018 10:22:30   Peter.Bibby  $
+    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.10   Oct 11 2018 15:39:10   Peter.Bibby  $
     --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-    --       Date into PVCS   : $Date:   Oct 10 2018 10:22:30  $
-    --       Date fetched Out : $Modtime:   Oct 04 2018 15:32:30  $
-    --       Version          : $Revision:   1.9  $
+    --       Date into PVCS   : $Date:   Oct 11 2018 15:39:10  $
+    --       Date fetched Out : $Modtime:   Oct 11 2018 14:58:58  $
+    --       Version          : $Revision:   1.10  $
     -------------------------------------------------------------------------
     --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
     -------------------------------------------------------------------------
     --
     --g_body_sccsid is the SCCS ID for the package body
-    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
+    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
     g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
     --
     g_max_layers      PLS_INTEGER;
@@ -1180,8 +1180,7 @@
       --
     BEGIN
       --
-      lv_preview := 'Number of layers to be added:'||pi_layers_added||chr(10)
-      || 'Depth removal of '||pi_depth_removed|| ' will result in the following amendments on existing records:'||chr(10)
+      lv_preview := 'Depth removal of '||pi_depth_removed|| ' will result in the following amendments on existing records:'||chr(10)
       ;
       --
       /*
@@ -1246,7 +1245,7 @@
              */
              DECLARE
                lv_depth_to_remove  NUMBER := pi_depth_removed;
-             BEGIN
+             BEGIN 
                --
                FOR j IN 1..lt_layers.COUNT LOOP
                  lv_preview := lv_preview
@@ -1278,7 +1277,7 @@
                        */
                        lv_depth_to_remove := 0;
                        lv_preview := lv_preview || ' Partially Removed.';
-
+               
                  END CASE;
                END LOOP;
              END;
@@ -1323,15 +1322,37 @@
           --
       END IF;
       --
+      lv_preview := 'Number of layers to be added:'||pi_layers_added||chr(10);
+      IF pi_depth_removed = 0 
+       THEN
+         lv_preview := lv_preview|| 'These will be added to the following locations:';
+      END IF;
+      --
       FOR i in 1..pi_ne_ids.COUNT LOOP
-         lv_preview := lv_preview
-         ||CHR(10)||preview_replacement_changes(pi_layers_added => pi_layers_added
-                                               ,pi_depth_removed => pi_depth_removed
-                                               ,pi_xsps          => pi_xsps --pass in all xsps. no distinction between xsp and ne as per mk
-                                               ,pi_ne_id         => pi_ne_ids(i)
-                                               ,pi_begin_mp      => pi_begin_mps(i)
-                                               ,pi_end_mp        => pi_end_mps(i))
-         ;
+        --
+        IF pi_depth_removed > 0 
+         THEN
+           /*
+           ||Function to work out what is being skimmed partially/fully.
+           */
+           lv_preview := lv_preview ||CHR(10)||preview_replacement_changes(pi_layers_added => pi_layers_added
+                                                                         ,pi_depth_removed => pi_depth_removed
+                                                                         ,pi_xsps          => pi_xsps --pass in all xsps. no distinction between xsp and ne as per mk
+                                                                         ,pi_ne_id         => pi_ne_ids(i)
+                                                                         ,pi_begin_mp      => pi_begin_mps(i)
+                                                                         ,pi_end_mp        => pi_end_mps(i));
+        ELSE
+          /*
+          ||Create new records will not need to return information on existing records.
+          */        
+          FOR j in 1..pi_xsps.COUNT LOOP
+            lv_preview := lv_preview ||CHR(10)
+                          ||'Network ID:'|| pi_ne_ids(i)
+                          ||'  XSP:'||pi_xsps(j)
+                          ||'  Begin Chainage:'||pi_begin_mps(i)
+                          ||'  End Chainage:'||pi_end_mps(i);
+          END LOOP;
+        END IF;
       END LOOP;
       --
       OPEN po_cursor FOR
