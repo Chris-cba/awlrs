@@ -3,17 +3,17 @@
     -------------------------------------------------------------------------
     --   PVCS Identifiers :-
     --
-    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.10   Oct 11 2018 15:39:10   Peter.Bibby  $
+    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.11   Oct 11 2018 17:22:06   Peter.Bibby  $
     --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-    --       Date into PVCS   : $Date:   Oct 11 2018 15:39:10  $
-    --       Date fetched Out : $Modtime:   Oct 11 2018 14:58:58  $
-    --       Version          : $Revision:   1.10  $
+    --       Date into PVCS   : $Date:   Oct 11 2018 17:22:06  $
+    --       Date fetched Out : $Modtime:   Oct 11 2018 17:21:10  $
+    --       Version          : $Revision:   1.11  $
     -------------------------------------------------------------------------
     --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
     -------------------------------------------------------------------------
     --
     --g_body_sccsid is the SCCS ID for the package body
-    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
+    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
     g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
     --
     g_max_layers      PLS_INTEGER;
@@ -355,6 +355,7 @@
       lt_existing_iit_ne_ids      iit_ne_id_tab;
       lv_message_cursor           sys_refcursor;
       lt_xsps                     xsp_tab;
+     
       --
     BEGIN
       --
@@ -505,6 +506,7 @@
         END LOOP;
         --
       END LOOP;
+    
       /*
       ||If there are any messages to return then create a cursor for them.
       */
@@ -520,6 +522,7 @@
                                                ,po_cursor           => po_message_cursor);
       END IF;
       --
+     
     EXCEPTION
       WHEN others
        THEN
@@ -553,7 +556,12 @@
       --
       lt_iit_ne_ids iit_ne_id_tab;
       --
+  lv_start timestamp;
+  lv_end   timestamp;      
+      --
     BEGIN
+      --
+  lv_start := systimestamp;      
       --
       create_construction_records(pi_admin_unit               => pi_admin_unit
                                  ,pi_description              => pi_description
@@ -576,6 +584,10 @@
                                  ,po_message_severity         => po_message_severity
                                  ,po_message_cursor           => po_message_cursor );
       --
+  lv_end := systimestamp;    
+  nm_debug.debug_on;
+nm_debug.debug('Execution time : '||TO_CHAR(lv_end - lv_start));
+nm_debug.debug_off;  
   EXCEPTION
     WHEN others
      THEN
@@ -2884,10 +2896,9 @@
       IF lr_nit.nit_x_sect_allow_flag = 'Y'
        THEN
           OPEN po_cursor FOR
-            SELECT nwx_nw_type          nwtype
-                  ,nwx_nsc_sub_class    subclass
-                  ,nwx_x_sect           xsp
+            SELECT DISTINCT nwx_x_sect  xsp
                   ,nwx_descr            xspdesc
+                  ,nwx_seq              seq
               FROM nm_nw_xsp
              WHERE nwx_x_sect IN
               (SELECT nwx_x_sect                    
@@ -2915,6 +2926,7 @@
                   AND nwx_x_sect = xsr_x_sect_value 
                   AND ne_sub_class = xsr_scl_class 
                   AND ne_nt_type = xsr_nw_type)
+             ORDER BY seq, xsp
               ;
         
       END IF;
