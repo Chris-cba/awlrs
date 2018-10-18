@@ -3,17 +3,17 @@
     -------------------------------------------------------------------------
     --   PVCS Identifiers :-
     --
-    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.12   Oct 18 2018 11:43:26   Peter.Bibby  $
+    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.13   Oct 18 2018 14:49:24   Peter.Bibby  $
     --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-    --       Date into PVCS   : $Date:   Oct 18 2018 11:43:26  $
-    --       Date fetched Out : $Modtime:   Oct 18 2018 11:34:48  $
-    --       Version          : $Revision:   1.12  $
+    --       Date into PVCS   : $Date:   Oct 18 2018 14:49:24  $
+    --       Date fetched Out : $Modtime:   Oct 18 2018 14:48:40  $
+    --       Version          : $Revision:   1.13  $
     -------------------------------------------------------------------------
     --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
     -------------------------------------------------------------------------
     --
     --g_body_sccsid is the SCCS ID for the package body
-    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
+    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
     g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
     --
     g_max_layers      PLS_INTEGER;
@@ -1403,7 +1403,7 @@ nm_debug.debug_off;
         ||'  End Chainage:'||pi_end_mp||chr(10);     
         lv_preview := lv_preview|| pi_layers_added|| ' new layers will be created:'
                       ||chr(10)
-                      ||'All existing layers will be removed' 
+                      ||'All existing layers will be end dated' 
                       ||chr(10);
         --
         /*
