@@ -3,17 +3,17 @@
     -------------------------------------------------------------------------
     --   PVCS Identifiers :-
     --
-    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.11   Oct 11 2018 17:22:06   Peter.Bibby  $
+    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.12   Oct 18 2018 11:43:26   Peter.Bibby  $
     --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-    --       Date into PVCS   : $Date:   Oct 11 2018 17:22:06  $
-    --       Date fetched Out : $Modtime:   Oct 11 2018 17:21:10  $
-    --       Version          : $Revision:   1.11  $
+    --       Date into PVCS   : $Date:   Oct 18 2018 11:43:26  $
+    --       Date fetched Out : $Modtime:   Oct 18 2018 11:34:48  $
+    --       Version          : $Revision:   1.12  $
     -------------------------------------------------------------------------
     --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
     -------------------------------------------------------------------------
     --
     --g_body_sccsid is the SCCS ID for the package body
-    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
+    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
     g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
     --
     g_max_layers      PLS_INTEGER;
@@ -1105,7 +1105,7 @@ nm_debug.debug_off;
               ,i
               ,pi_xsps(i));
         --
-      END LOOP;
+      END LOOP;     
       --
       lv_query_id := nm3gaz_qry.perform_query (lv_job_id);
       --
@@ -1116,7 +1116,7 @@ nm_debug.debug_off;
     --
     -----------------------------------------------------------------------------
     --
-    FUNCTION preview_replacement_changes(pi_layers_added       IN     NUMBER
+    FUNCTION preview_reconstruct_changes(pi_layers_added       IN     NUMBER
                                         ,pi_depth_removed      IN     NUMBER
                                         ,pi_xsps               IN     xsp_tab
                                         ,pi_ne_id              IN     nm_elements_all.ne_id%TYPE
@@ -1238,64 +1238,73 @@ nm_debug.debug_off;
            CLOSE lv_cursor;
            --
            FOR r IN 1..lt_results.COUNT LOOP
-             lv_preview := lv_preview
-             ||'Network ID:'|| lt_results(r).element_id
-             ||'  XSP:'||lt_cons_recs(i).iit_x_sect
-             ||'  Begin Chainage:'||lt_results(r).from_offset
-             ||'  End Chainage:'||lt_results(r).to_offset;
-             --
              /*
-             ||Get the Layers from the existing record.
-             */
-             OPEN  get_layers(lt_cons_recs(i).iit_ne_id, lv_layer_type);
-             FETCH get_layers
-              BULK COLLECT
-              INTO lt_layers;
-             CLOSE get_layers;
-             /*
-             ||Apply the depth removed to the Layers.
-             */
-             DECLARE
-               lv_depth_to_remove  NUMBER := pi_depth_removed;
-             BEGIN 
-               --
-               FOR j IN 1..lt_layers.COUNT LOOP
-                 lv_preview := lv_preview
-                 ||CHR(10)||'             Layer Number:'||lt_layers(j).iit_position;
-                 CASE
-                   WHEN lv_depth_to_remove = 0
-                    THEN
-                       /*
-                       ||The depth removed has been processed so
-                       ||just add the layer as it is.
-                       */
-                       --
-                       lv_preview := lv_preview || ' Nothing Removed.';
-                   WHEN lt_layers(j).iit_num_attrib16 <= lv_depth_to_remove
-                    THEN
-                       /*
-                       ||The depth of the layer is less than the
-                       ||depth still to be removed so do not add it.
-                       */
-                       lv_depth_to_remove := lv_depth_to_remove - lt_layers(j).iit_num_attrib16;
-                       --
-                       lv_preview := lv_preview || ' Removed.';
-                   WHEN lt_layers(j).iit_num_attrib16 > lv_depth_to_remove
-                    THEN
-                       /*
-                       ||The depth of the layer is greater than the
-                       ||depth still to be removed so add the layer
-                       ||with a reduced depth.
-                       */
-                       lv_depth_to_remove := 0;
-                       lv_preview := lv_preview || ' Partially Removed.';
-               
-                 END CASE;
-               END LOOP;
-             END;
-             --
-             lv_preview := lv_preview||CHR(10);
-             --
+             || check its not in whole location .
+             */         
+             IF lt_results(r).element_id = pi_ne_id 
+              THEN 
+               IF lt_results(r).from_offset >= pi_begin_mp AND  lt_results(r).to_offset <= pi_end_mp
+                THEN           
+                  lv_preview := lv_preview
+                  ||'Network ID:'|| lt_results(r).element_id
+                  ||'  XSP:'||lt_cons_recs(i).iit_x_sect
+                  ||'  Begin Chainage:'||GREATEST(lt_results(r).from_offset,pi_begin_mp)
+                  ||'  End Chainage:'||LEAST(lt_results(r).to_offset,pi_end_mp);
+                  --
+                  /*
+                  ||Get the Layers from the existing record.
+                  */
+                  OPEN  get_layers(lt_cons_recs(i).iit_ne_id, lv_layer_type);
+                  FETCH get_layers
+                   BULK COLLECT
+                   INTO lt_layers;
+                  CLOSE get_layers;
+                  /*
+                  ||Apply the depth removed to the Layers.
+                  */
+                  DECLARE
+                    lv_depth_to_remove  NUMBER := pi_depth_removed;
+                  BEGIN 
+                    --
+                    FOR j IN 1..lt_layers.COUNT LOOP
+                      lv_preview := lv_preview
+                      ||CHR(10)||'             Layer Number:'||lt_layers(j).iit_position;
+                      CASE
+                        WHEN lv_depth_to_remove = 0
+                         THEN
+                            /*
+                            ||The depth removed has been processed so
+                            ||just add the layer as it is.
+                            */
+                            --
+                            lv_preview := lv_preview || ' Nothing Removed.';
+                        WHEN lt_layers(j).iit_num_attrib16 <= lv_depth_to_remove
+                         THEN
+                            /*
+                            ||The depth of the layer is less than the
+                            ||depth still to be removed so do not add it.
+                            */
+                            lv_depth_to_remove := lv_depth_to_remove - lt_layers(j).iit_num_attrib16;
+                            --
+                            lv_preview := lv_preview || ' Removed.';
+                        WHEN lt_layers(j).iit_num_attrib16 > lv_depth_to_remove
+                         THEN
+                            /*
+                            ||The depth of the layer is greater than the
+                            ||depth still to be removed so add the layer
+                            ||with a reduced depth.
+                            */
+                            lv_depth_to_remove := 0;
+                            lv_preview := lv_preview || ' Partially Removed.';
+                    
+                      END CASE;
+                    END LOOP;
+                  END;
+                  --
+                  lv_preview := lv_preview||CHR(10);
+                  --
+                END IF;
+              END IF;
            END LOOP;
            --
         END IF;
@@ -1304,11 +1313,207 @@ nm_debug.debug_off;
       --
       RETURN lv_preview;
       --
-    END preview_replacement_changes;
+    END preview_reconstruct_changes;
 
     --
     -----------------------------------------------------------------------------
     --
+    FUNCTION preview_createreplace_changes(pi_layers_added       IN     NUMBER
+                                          ,pi_xsps               IN     xsp_tab
+                                          ,pi_ne_id              IN     nm_elements_all.ne_id%TYPE
+                                          ,pi_begin_mp           IN     nm_members_all.nm_begin_mp%TYPE
+                                          ,pi_end_mp             IN     nm_members_all.nm_end_mp%TYPE)
+    RETURN CLOB
+    IS
+      lv_severity         hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+      lv_message_cursor   sys_refcursor;
+      lv_cons_type        nm_inv_items_all.iit_inv_type%TYPE := get_cons_rec_type;
+      lv_layer_type       nm_inv_items_all.iit_inv_type%TYPE := get_layer_type;
+      lv_query_id         NUMBER;
+      lt_ne_ids           awlrs_util.ne_id_tab;
+      lv_preview          CLOB;
+      lv_cursor           sys_refcursor;
+      lv_nt_type          nm_elements.ne_nt_type%TYPE;
+      lv_grp_type         nm_elements.ne_gty_group_type%TYPE;
+      lt_messages         awlrs_message_tab := awlrs_message_tab();
+      TYPE iit_tab IS TABLE OF nm_inv_items_all%ROWTYPE INDEX BY BINARY_INTEGER;
+      lt_layers      iit_tab;
+      --Type for locations of assets
+      TYPE results_rec IS RECORD(asset_id            NUMBER
+                                ,element_id          NUMBER
+                                ,element_type        VARCHAR2(100)
+                                ,element_unique      VARCHAR2(100)
+                                ,element_descr       VARCHAR2(100)
+                                ,from_offset         NUMBER
+                                ,to_offset           NUMBER
+                                ,offset_length       NUMBER
+                                ,element_length      NUMBER
+                                ,element_unit_id     NUMBER
+                                ,element_unit_name   VARCHAR2(100)
+                                ,element_admin_unit  VARCHAR2(100)
+                                ,element_start_date  DATE
+                                ,member_start_date   DATE);
+      TYPE results_tab IS TABLE OF results_rec;
+      lt_results  results_tab;
+      --
+      CURSOR get_cons_recs(cp_query_id IN NUMBER)
+          IS
+      SELECT iit_ne_id
+            ,iit_admin_unit
+            ,iit_x_sect
+        FROM nm_inv_items
+       WHERE iit_ne_id IN(SELECT ngqi_item_id
+                            FROM nm_gaz_query_item_list
+                           WHERE ngqi_job_id = cp_query_id)
+           ;
+      --
+      CURSOR get_nw_grp_type(cp_ne_id IN nm_elements.ne_id%TYPE)
+          IS
+      SELECT ne_nt_type
+            ,ne_gty_group_type
+        FROM nm_elements
+       WHERE ne_id = cp_ne_id
+           ;
+      --
+      TYPE cons_rec_tab IS TABLE OF get_cons_recs%ROWTYPE;
+      lt_cons_recs  cons_rec_tab;
+      --
+      CURSOR get_layers(cp_parent_id  IN nm_inv_items_all.iit_ne_id%TYPE
+                       ,cp_layer_type IN nm_inv_types_all.nit_inv_type%TYPE)
+          IS
+      SELECT *
+        FROM nm_inv_items
+       WHERE iit_inv_type = cp_layer_type
+         AND iit_foreign_key = (SELECT iit_primary_key
+                                  FROM nm_inv_items
+                                 WHERE iit_ne_id = cp_parent_id)
+       ORDER
+          BY iit_position DESC
+           ;
+      --
+    BEGIN
+      --
+     -- lv_preview := lv_preview|| 'Create/Replace of  '||pi_layers_added|| ' layers will result in the following changes:'||chr(10)
+      --pb to do shouldnt be loop as only ever one?
+      FOR x in 1..pi_xsps.COUNT LOOP
+        lv_preview := lv_preview
+        ||'Network ID:'|| pi_ne_id
+        ||'  XSP:'||pi_xsps(x)
+        ||'  Begin Chainage:'||pi_begin_mp
+        ||'  End Chainage:'||pi_end_mp||chr(10);     
+        lv_preview := lv_preview|| pi_layers_added|| ' new layers will be created:'
+                      ||chr(10)
+                      ||'All existing layers will be removed' 
+                      ||chr(10);
+        --
+        /*
+        ||get nw and group type from passed in network elements
+        */
+        /*OPEN  get_nw_grp_type(pi_ne_id);
+        FETCH get_nw_grp_type
+         INTO lv_nt_type, lv_grp_type;
+        CLOSE get_nw_grp_type;
+        /*
+        ||Get the construction records on the network \ xsps indicated.
+        */  
+        /*lv_query_id := execute_gaz_query(pi_inv_type => lv_cons_type
+                                        ,pi_xsps     => pi_xsps
+                                        ,pi_ne_id    => pi_ne_id
+                                        ,pi_begin_mp => pi_begin_mp
+                                        ,pi_end_mp   => pi_end_mp);
+        --        
+       /* OPEN  get_cons_recs(lv_query_id);
+        FETCH get_cons_recs
+         BULK COLLECT
+         INTO lt_cons_recs;
+        CLOSE get_cons_recs;
+        --
+        FOR i IN 1..lt_cons_recs.COUNT LOOP
+          /*
+          ||get location at preferred lrm level in future but for now use passed in types.
+          */
+        /*  awlrs_asset_api.get_locations(pi_iit_ne_id        => lt_cons_recs(i).iit_ne_id
+                                       ,pi_iit_inv_type     => get_cons_rec_type
+                                       ,pi_nwtype           => lv_nt_type--
+                                       ,pi_grouptype        => lv_grp_type--nm3user.get_preferred_lrm
+                                       ,po_message_severity => lv_severity
+                                       ,po_message_cursor   => lv_message_cursor
+                                       ,po_cursor           => lv_cursor);
+          --
+          IF lv_severity = awlrs_util.c_msg_cat_success
+           THEN
+             --
+             FETCH lv_cursor
+              BULK COLLECT
+              INTO lt_results;
+             CLOSE lv_cursor;
+             --
+             FOR r IN 1..lt_results.COUNT LOOP    
+               /*
+               || check its not in whole location .
+               */         
+            /*   IF lt_results(r).element_id = pi_ne_id 
+                THEN 
+                 IF lt_results(r).from_offset >= pi_begin_mp AND lt_results(r).to_offset <= pi_end_mp
+                  THEN
+
+                     lv_preview := lv_preview
+                     ||'Existing Layers from begin chainage:'
+                     ||GREATEST(lt_results(r).from_offset,pi_begin_mp)
+                     ||lt_results(r).from_offset
+                     ||' '
+                     ||pi_begin_mp
+                     ||' to end chainage:'
+                     ||lt_results(r).to_offset
+                     ||' '
+                     ||pi_end_mp;
+                     ||LEAST(lt_results(r).to_offset,pi_end_mp) || '';
+                     --
+                     /*
+                     ||Get the Layers from the existing record.
+                     */
+                /*     OPEN  get_layers(lt_cons_recs(i).iit_ne_id, lv_layer_type);
+                     FETCH get_layers
+                      BULK COLLECT
+                      INTO lt_layers;
+                     CLOSE get_layers;
+                     /*
+                     ||Apply the depth removed to the Layers.
+                     */
+                     --
+                /*     FOR j IN 1..lt_layers.COUNT LOOP
+                       lv_preview := lv_preview
+                       ||CHR(10)||'             Layer Number:'||lt_layers(j).iit_position;
+                         IF pi_layers_added >= lt_layers(j).iit_position
+                          THEN
+                             /*
+                             ||The layer will be replaced
+                             */
+                             --
+                /*             lv_preview := lv_preview || ' Replaced';
+                         ELSE
+                             lv_preview := lv_preview || ' Removed';
+                         END IF;
+                     END LOOP;
+                     --
+                     lv_preview := lv_preview||CHR(10);
+                     --
+                 END IF;
+               END IF;               
+             END LOOP;
+             --
+          END IF;
+          --
+        END LOOP;*/
+      END LOOP;
+      --
+      RETURN lv_preview;
+      --
+    END preview_createreplace_changes;
+
+    --
+    -----------------------------------------------------------------------------
+    --    
     PROCEDURE preview_replacement_changes(pi_layers_added       IN     NUMBER
                                          ,pi_depth_removed      IN     NUMBER
                                          ,pi_xsps               IN     xsp_tab
@@ -1320,6 +1525,7 @@ nm_debug.debug_off;
                                          ,po_cursor                OUT sys_refcursor)
     IS
       lv_preview CLOB;
+      lt_xsps    xsp_tab;      
     BEGIN
       /*
       ||indexes for ne id and MPs should be the same so index 1 ne id is index 1 begin_mp,end_mp and so on
@@ -1335,35 +1541,35 @@ nm_debug.debug_off;
       END IF;
       --
       lv_preview := 'Number of layers to be added:'||pi_layers_added||chr(10);
-      IF pi_depth_removed = 0 
-       THEN
-         lv_preview := lv_preview|| 'These will be added to the following locations:';
-      END IF;
       --
       FOR i in 1..pi_ne_ids.COUNT LOOP
         --
-        IF pi_depth_removed > 0 
+        IF pi_depth_removed IS NOT NULL -- not null is overlay/reconstruct
          THEN
            /*
            ||Function to work out what is being skimmed partially/fully.
            */
-           lv_preview := lv_preview ||CHR(10)||preview_replacement_changes(pi_layers_added => pi_layers_added
-                                                                         ,pi_depth_removed => pi_depth_removed
-                                                                         ,pi_xsps          => pi_xsps --pass in all xsps. no distinction between xsp and ne as per mk
-                                                                         ,pi_ne_id         => pi_ne_ids(i)
-                                                                         ,pi_begin_mp      => pi_begin_mps(i)
-                                                                         ,pi_end_mp        => pi_end_mps(i));
-        ELSE
+           lv_preview := lv_preview ||CHR(10)||preview_reconstruct_changes(pi_layers_added => pi_layers_added
+                                                                          ,pi_depth_removed => pi_depth_removed
+                                                                          ,pi_xsps          => pi_xsps --pass in all xsps. no distinction between xsp and ne as per mk
+                                                                          ,pi_ne_id         => pi_ne_ids(i)
+                                                                          ,pi_begin_mp      => pi_begin_mps(i)
+                                                                          ,pi_end_mp        => pi_end_mps(i));
+        ELSE --null is create/replace
           /*
           ||Create new records will not need to return information on existing records.
           */        
-          FOR j in 1..pi_xsps.COUNT LOOP
-            lv_preview := lv_preview ||CHR(10)
-                          ||'Network ID:'|| pi_ne_ids(i)
-                          ||'  XSP:'||pi_xsps(j)
-                          ||'  Begin Chainage:'||pi_begin_mps(i)
-                          ||'  End Chainage:'||pi_end_mps(i);
+          FOR j in 1..pi_xsps.COUNT LOOP       
+            lt_xsps.DELETE;
+            lt_xsps(1) := pi_xsps(j);
+            lv_preview := lv_preview 
+                          ||CHR(10)||preview_createreplace_changes(pi_layers_added => pi_layers_added
+                                                                  ,pi_xsps          => lt_xsps --pass in all xsps. no distinction between xsp and ne as per mk
+                                                                  ,pi_ne_id         => pi_ne_ids(i)
+                                                                  ,pi_begin_mp      => pi_begin_mps(i)
+                                                                  ,pi_end_mp        => pi_end_mps(i));                          
           END LOOP;
+
         END IF;
       END LOOP;
       --
@@ -1371,7 +1577,7 @@ nm_debug.debug_off;
       SELECT lv_preview
         FROM dual
            ;
-      --
+      --  
       awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                            ,po_cursor           => po_message_cursor);
       --
@@ -2431,7 +2637,7 @@ nm_debug.debug_off;
             ,nm_elements
        WHERE nms_mrg_job_id = pi_mrg_job_id
          AND nms_offset_ne_id = ne_id
-         AND nms_begin_offset < pi_roi_end_mp
+         AND nms_begin_offset < pi_roi_end_mp 
          AND nms_end_offset > pi_roi_begin_mp
        ORDER
           BY nms_begin_offset
