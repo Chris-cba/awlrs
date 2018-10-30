@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.19   Oct 05 2018 14:40:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.20   Oct 30 2018 11:57:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 05 2018 14:40:04  $
-  --       Date fetched Out : $Modtime:   Oct 04 2018 15:54:50  $
-  --       Version          : $Revision:   1.19  $
+  --       Date into PVCS   : $Date:   Oct 30 2018 11:57:28  $
+  --       Date fetched Out : $Modtime:   Oct 30 2018 11:55:14  $
+  --       Version          : $Revision:   1.20  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.19  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.20  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -146,29 +146,8 @@ AS
        ||CHR(10)||'              ,''N''         sql_based_domain'
        ||CHR(10)||'              ,ita_disp_seq_no+1 display_sequence'
        ||CHR(10)||'          FROM nm_inv_type_attribs, nit'
-       ||CHR(10)||'         WHERE ita_inv_type = nit.nit_inv_type'
+       ||CHR(10)||'         WHERE ita_inv_type = nit.nit_inv_type)'
         ;
-        --
-        IF lr_nit.nit_lr_ne_column_name IS NOT NULL
-         THEN
-            lv_sql := lv_sql||CHR(10)||'        UNION ALL'
-                            ||CHR(10)||'        SELECT ''NetworkLocation'' column_name'
-                            ||CHR(10)||'              ,''Network Location'' prompt'
-                            ||CHR(10)||'              ,''VARCHAR2'' datatype'
-                            ||CHR(10)||'              ,NULL format_mask'
-                            ||CHR(10)||'              ,240 field_length'
-                            ||CHR(10)||'              ,NULL decimal_places'
-                            ||CHR(10)||'              ,NULL min_value'
-                            ||CHR(10)||'              ,NULL max_value'
-                            ||CHR(10)||'              ,''MIXED'' field_case'
-                            ||CHR(10)||'              ,NULL domain_id'
-                            ||CHR(10)||'              ,''N'' sql_based_domain'
-                            ||CHR(10)||'              ,10000 display_sequence'
-                            ||CHR(10)||'          FROM DUAL)'
-            ;
-        ELSE
-            lv_sql := lv_sql||')';
-        END IF;
         --
     ELSE
         lv_sql := 'SELECT CAST(column_name AS VARCHAR2(30)) column_name'
@@ -274,20 +253,6 @@ AS
        ||CHR(10)||'          FROM nm_inv_type_attribs'
        ||CHR(10)||'         WHERE ita_inv_type = :inv_type'
        ||CHR(10)||'           AND ita_queryable = ''Y'''
-       ||CHR(10)||'        UNION ALL'
-       ||CHR(10)||'        SELECT ''NetworkLocation'' column_name'
-       ||CHR(10)||'              ,''Network Location'' prompt'
-       ||CHR(10)||'              ,''VARCHAR2'' datatype'
-       ||CHR(10)||'              ,NULL format_mask'
-       ||CHR(10)||'              ,240 field_length'
-       ||CHR(10)||'              ,NULL decimal_places'
-       ||CHR(10)||'              ,NULL min_value'
-       ||CHR(10)||'              ,NULL max_value'
-       ||CHR(10)||'              ,''MIXED'' field_case'
-       ||CHR(10)||'              ,NULL domain_id'
-       ||CHR(10)||'              ,''N'' sql_based_domain'
-       ||CHR(10)||'              ,10000 display_sequence'
-       ||CHR(10)||'          FROM DUAL'
        ||CHR(10)||'        UNION ALL'
        ||CHR(10)||'        SELECT column_name column_name'
        ||CHR(10)||'              ,''iit_ne_id'' prompt'
@@ -2239,34 +2204,19 @@ AS
               ,po_format      => lv_datatype
               ,po_format_mask => lv_format_mask);
     --
-    CASE
-      WHEN pi_theme_types.asset_type IS NOT NULL
-       AND pi_expression.field_name = 'NetworkLocation'
-       THEN
-          --
-          po_sql := po_sql||' '||lv_operation||' iit_ne_id IN(SELECT ngqi_item_id FROM nm_gaz_query_item_list WHERE ngqi_job_id = '
-                    ||execute_gaz_query(pi_ne_id            => awlrs_element_api.get_ne_id(pi_element_name => pi_expression.value1)
-                                       ,pi_inv_type         => pi_theme_types.asset_type
-                                       ,pi_include_enddated => pi_include_enddated)
-                    ||')';
-          --
-      ELSE
-          --
-          lv_expression := pi_expression;
-          --
-          IF pi_theme_types.network_group_type IS NOT NULL
-           AND lv_expression.field_name = 'NE_LENGTH'
-           THEN
-              lv_expression.field_name := 'nm3net.get_ne_length(ne_id)';
-          END IF;
-          --
-          get_clause(pi_datatype    => lv_datatype
-                    ,pi_format_mask => lv_format_mask
-                    ,pi_operation   => lv_operation
-                    ,pi_expression  => lv_expression
-                    ,po_sql         => po_sql);
-          --
-    END CASE;
+    lv_expression := pi_expression;
+    --
+    IF pi_theme_types.network_group_type IS NOT NULL
+     AND lv_expression.field_name = 'NE_LENGTH'
+     THEN
+        lv_expression.field_name := 'nm3net.get_ne_length(ne_id)';
+    END IF;
+    --
+    get_clause(pi_datatype    => lv_datatype
+              ,pi_format_mask => lv_format_mask
+              ,pi_operation   => lv_operation
+              ,pi_expression  => lv_expression
+              ,po_sql         => po_sql);
     --
   END process_single_expression;
 
