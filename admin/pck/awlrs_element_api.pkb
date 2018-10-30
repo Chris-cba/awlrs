@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.31   Oct 29 2018 12:46:56   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.32   Oct 30 2018 15:58:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 29 2018 12:46:56  $
-  --       Date fetched Out : $Modtime:   Oct 29 2018 12:38:58  $
-  --       Version          : $Revision:   1.31  $
+  --       Date into PVCS   : $Date:   Oct 30 2018 15:58:04  $
+  --       Date fetched Out : $Modtime:   Oct 30 2018 15:56:00  $
+  --       Version          : $Revision:   1.32  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.31  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.32  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1313,6 +1313,52 @@ AS
   END build_ad_rec;
 
   --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_min_slk(pi_ne_id IN nm_elements_all.ne_id%TYPE)
+    RETURN NUMBER IS
+    /*
+    ||If the group cannot be found in the date tracked views
+    ||nm_elements and nm_members then the core function raises
+    ||an exception, we just want to return NULL.
+    */
+    group_not_exists EXCEPTION;
+    PRAGMA exception_init(group_not_exists,-20001);
+    --
+  BEGIN
+    --
+    RETURN nm3net.get_min_slk(pi_ne_id);
+    --
+  EXCEPTION
+    WHEN group_not_exists
+     THEN
+        RETURN NULL;
+  END get_min_slk;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_max_slk(pi_ne_id IN nm_elements_all.ne_id%TYPE)
+    RETURN NUMBER IS
+    /*
+    ||If the group cannot be found in the date tracked views
+    ||nm_elements and nm_members then the core function raises
+    ||an exception, we just want to return NULL.
+    */
+    group_not_exists EXCEPTION;
+    PRAGMA exception_init(group_not_exists,-20001);
+    --
+  BEGIN
+    --
+    RETURN nm3net.get_max_slk(pi_ne_id);
+    --
+  EXCEPTION
+    WHEN group_not_exists
+     THEN
+        RETURN NULL;
+  END get_max_slk;
+
+  --
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_elements(pi_ne_ids IN  awlrs_util.ne_id_tab
@@ -1374,18 +1420,16 @@ AS
           ,CASE
              WHEN nt_length_unit IS NOT NULL
               AND ne_type = 'G'
-              AND ne_end_date IS NULL
               THEN
-                 nm3unit.convert_unit(nt_length_unit,un_unit_id,nm3net.get_min_slk(ne_id))
+                 nm3unit.convert_unit(nt_length_unit,un_unit_id,awlrs_element_api.get_min_slk(ne_id))
              ELSE
                  NULL
            END               element_min_offset
           ,CASE
              WHEN nt_length_unit IS NOT NULL
               AND ne_type = 'G'
-              AND ne_end_date IS NULL
               THEN
-                 nm3unit.convert_unit(nt_length_unit,un_unit_id,nm3net.get_max_slk(ne_id))
+                 nm3unit.convert_unit(nt_length_unit,un_unit_id,awlrs_element_api.get_max_slk(ne_id))
              ELSE
                  NULL
            END               element_max_offset

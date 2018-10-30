@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.18   Sep 14 2018 11:18:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.19   Oct 30 2018 15:58:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   Sep 14 2018 11:18:28  $
-  --       Date fetched Out : $Modtime:   Sep 14 2018 11:04:34  $
-  --       Version          : $Revision:   1.18  $
+  --       Date into PVCS   : $Date:   Oct 30 2018 15:58:04  $
+  --       Date fetched Out : $Modtime:   Oct 30 2018 15:17:20  $
+  --       Version          : $Revision:   1.19  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
   --
   g_db_element   nm_elements_all%ROWTYPE;
   g_old_element  nm_elements_all%ROWTYPE;
@@ -257,6 +257,18 @@ AS
   PROCEDURE build_element_rec(pi_nt_type    IN nm_types.nt_type%TYPE
                              ,pi_global     IN VARCHAR2
                              ,pi_attributes IN flex_attr_tab);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_min_slk(pi_ne_id IN nm_elements_all.ne_id%TYPE)
+    RETURN NUMBER;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_max_slk(pi_ne_id IN nm_elements_all.ne_id%TYPE)
+    RETURN NUMBER;
 
   --
   -----------------------------------------------------------------------------
