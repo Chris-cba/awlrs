@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1140_upg.sql-arc   1.0   Oct 31 2018 15:00:20   Barbara.Odriscoll  $
---       Date into PVCS   : $Date:   Oct 31 2018 15:00:20  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1140_upg.sql-arc   1.1   Oct 31 2018 15:57:08   Barbara.Odriscoll  $
+--       Date into PVCS   : $Date:   Oct 31 2018 15:57:08  $
 --       Module Name      : $Workfile:   awlrs1010_awlrs1140_upg.sql  $
---       Date fetched Out : $Modtime:   Oct 31 2018 10:55:22  $
---       Version          : $Revision:   1.0  $
+--       Date fetched Out : $Modtime:   Oct 31 2018 15:55:30  $
+--       Version          : $Revision:   1.1  $
 --
 --   Product upgrade script
 --
@@ -46,46 +46,6 @@ begin
                           );
 END;
 /
-
--- Check that if NSG is installled that the relevant NSG fix has also been installed.  For example 1.1.4.1 requires NSG @4.7.0.1 and NSG 4700 Fix 17
---
-Declare
-  
-  l_nsg_exists Boolean;
-  n Varchar2(1);
-
-Begin
-  
-    Begin
-
-       hig2.product_exists_at_version(
-                                      p_product        => 'NSG',
-                                      p_version        => '4.7.0.1'
-                                     );
-       l_Nsg_Exists := TRUE;                              
-    Exception
-       When Others Then
-            l_Nsg_Exists := FALSE; -- Not all AWLRS users will have NSG installed --           
-    End; 
-    
-    If l_nsg_Exists Then 
-       Begin
-           Select  Null
-           Into    n
-           From    Hig_Upgrades
-           Where   Hup_Product     =   'NSG'
-           And     From_Version    =   '4.7.0.1'
-           And     Upgrade_Script  =   'exnsg04070037en_updt17.sql'
-           And     rownum          =   1;
-       Exception 
-           When No_Data_Found Then
-                Raise_Application_Error(-20000,'Please install NSG 4700 Fix 17 before proceding.');
-       End;
-    End if;   
-
-End;
-/
---
 
 WHENEVER SQLERROR CONTINUE
 --
