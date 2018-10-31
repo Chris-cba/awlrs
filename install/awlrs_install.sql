@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_install.sql-arc   1.23   Oct 18 2018 11:47:14   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_install.sql-arc   1.24   Oct 31 2018 15:06:22   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrs_install.sql  $
---       Date into PVCS   : $Date:   Oct 18 2018 11:47:14  $
---       Date fetched Out : $Modtime:   Oct 18 2018 11:46:12  $
---       Version          : $Revision:   1.23  $
+--       Date into PVCS   : $Date:   Oct 31 2018 15:06:22  $
+--       Date fetched Out : $Modtime:   Oct 30 2018 11:57:34  $
+--       Version          : $Revision:   1.24  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
@@ -96,6 +96,48 @@ BEGIN
                                 ,p_version => '4.7.0.0');
 END;
 /
+
+-- Check that if NSG is installled that the relevant NSG fix has also been installed.  For example 1.1.4.1 requires NSG @4.7.0.1 and NSG 4700 Fix 17
+--
+Declare
+  
+  l_nsg_exists Boolean;
+  n Varchar2(1);
+
+Begin
+  
+    Begin
+
+       hig2.product_exists_at_version(
+                                      p_product        => 'NSG',
+                                      p_version        => '4.7.0.1'
+                                     );
+       l_Nsg_Exists := TRUE;                              
+    Exception
+       When Others Then
+            l_Nsg_Exists := FALSE; -- Not all AWLRS users will have NSG installed --           
+    End; 
+    
+    If l_nsg_Exists Then 
+       Begin
+           Select  Null
+           Into    n
+           From    Hig_Upgrades
+           Where   Hup_Product     =   'NSG'
+           And     From_Version    =   '4.7.0.1'
+           And     Upgrade_Script  =   'exnsg04070037en_updt16.sql'
+           And     rownum          =   1;
+       Exception 
+           When No_Data_Found Then
+                Raise_Application_Error(-20000,'Please install NSG 4700 Fix 17 before proceding.');
+       End;
+    End if;   
+
+End;
+/
+--
+                               
+                                
 WHENEVER SQLERROR CONTINUE
 --
 ---------------------------------------------------------------------------------------------------
@@ -273,7 +315,7 @@ SET TERM ON
 Prompt Setting The Version Number...
 SET TERM OFF
 BEGIN
-  hig2.upgrade('AWLRS','awlrs_install.sql','Installed','1.2.2.2');
+  hig2.upgrade('AWLRS','awlrs_install.sql','Installed','1.1.4.1');
 END;
 /
 COMMIT;
