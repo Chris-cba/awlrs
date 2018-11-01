@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1140_upg.sql-arc   1.1   Oct 31 2018 15:57:08   Barbara.Odriscoll  $
---       Date into PVCS   : $Date:   Oct 31 2018 15:57:08  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1140_upg.sql-arc   1.2   Nov 01 2018 10:45:20   Barbara.Odriscoll  $
+--       Date into PVCS   : $Date:   Nov 01 2018 10:45:20  $
 --       Module Name      : $Workfile:   awlrs1010_awlrs1140_upg.sql  $
---       Date fetched Out : $Modtime:   Oct 31 2018 15:55:30  $
---       Version          : $Revision:   1.1  $
+--       Date fetched Out : $Modtime:   Nov 01 2018 10:44:56  $
+--       Version          : $Revision:   1.2  $
 --
 --   Product upgrade script
 --
@@ -48,6 +48,18 @@ END;
 /
 
 WHENEVER SQLERROR CONTINUE
+--
+--                        **************** TYPES   ****************
+--
+SET TERM OFF
+SET DEFINE ON
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||
+        '&terminator'||'typ'||'&terminator'||'awlrstypes.sql' run_file
+FROM dual
+/
+SET FEEDBACK ON
+start &&run_file
+SET FEEDBACK OFF
 --
 ---------------------------------------------------------------------------------------------------
 --                        ****************   DDL   *******************
