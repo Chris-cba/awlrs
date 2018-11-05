@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.18   23 Jun 2017 17:59:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.19   Nov 05 2018 16:54:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   23 Jun 2017 17:59:22  $
-  --       Date fetched Out : $Modtime:   23 Jun 2017 17:55:30  $
-  --       Version          : $Revision:   1.18  $
+  --       Date into PVCS   : $Date:   Nov 05 2018 16:54:30  $
+  --       Date fetched Out : $Modtime:   Nov 05 2018 10:39:34  $
+  --       Version          : $Revision:   1.19  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -138,7 +138,7 @@ AS
                                      ,pi_datum_units IN nm_units.un_unit_id%TYPE
                                      ,pi_route_units IN nm_units.un_unit_id%TYPE
                                      ,pi_offset      IN NUMBER
-                                     ,pi_tolerance   IN NUMBER) 
+                                     ,pi_tolerance   IN NUMBER)
     RETURN nm3lrs.tab_rec_nodes IS
     --
     lv_cursor  sys_refcursor;
@@ -387,21 +387,21 @@ AS
                                          ,pi_effective_date => TRUNC(pi_effective_date));
       --
     EXCEPTION
-		  WHEN others
+      WHEN others
        THEN
-		      IF SQLERRM LIKE '%Start point of group is ambiguous.%'
-		       THEN
+          IF SQLERRM LIKE '%Start point of group is ambiguous.%'
+           THEN
               --
-		      	  lv_group_split := FALSE;
-              --
-		      ELSIF UPPER(SQLERRM) LIKE '%NET-0361%'
-		      THEN
-		          -- Don't allow spilt of route if autoincluded into
               lv_group_split := FALSE;
-    		      --
-		      ELSE
-		      	  RAISE;
-		      END IF;
+              --
+          ELSIF UPPER(SQLERRM) LIKE '%NET-0361%'
+          THEN
+              -- Don't allow spilt of route if autoincluded into
+              lv_group_split := FALSE;
+              --
+          ELSE
+              RAISE;
+          END IF;
     END;
     /*
     ||If the above check has not already set lv_group_split to FLASE then
@@ -487,7 +487,7 @@ AS
       FROM v_node_proximity_check
      ORDER
         BY distance
-         ;    
+         ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -506,9 +506,9 @@ AS
                                       ,pi_node_id IN nm_nodes.no_node_id%TYPE)
     IS
     --
-  	CURSOR chk_node(cp_node_id IN nm_nodes.no_node_id%TYPE)
+    CURSOR chk_node(cp_node_id IN nm_nodes.no_node_id%TYPE)
         IS
-  	SELECT no_node_id
+    SELECT no_node_id
       FROM v_node_proximity_check
      WHERE no_node_id = cp_node_id
          ;
@@ -518,23 +518,23 @@ AS
      --
   BEGIN
     --
-  	IF pi_node_id IS NOT NULL
-  	 THEN
+    IF pi_node_id IS NOT NULL
+     THEN
         --
         nm3ctx.set_context('PROX_NE_ID', TO_CHAR(pi_ne_id));
-        --  	  
+        --
         OPEN  chk_node(pi_node_id);
         FETCH chk_node
          INTO lv_node_id;
         --
-        lv_node_found := chk_node%FOUND;        
+        lv_node_found := chk_node%FOUND;
         CLOSE chk_node;
         --
         IF NOT lv_node_found
          THEN
             hig.raise_ner(pi_appl => 'AWLRS'
                          ,pi_id   => 38);
-  	    END IF;	
+        END IF;
         --
     END IF;
   END validate_use_existing_node;
@@ -546,9 +546,9 @@ AS
                                   ,pi_node_id IN nm_nodes.no_node_id%TYPE)
     IS
     --
-  	CURSOR chk_node(cp_node_id IN nm_nodes.no_node_id%TYPE)
+    CURSOR chk_node(cp_node_id IN nm_nodes.no_node_id%TYPE)
         IS
-  	SELECT node_id
+    SELECT node_id
       FROM nm_route_nodes
      WHERE node_id = cp_node_id
        AND node_type != 'T'
@@ -558,8 +558,8 @@ AS
      lv_node_found  BOOLEAN;
      --
   BEGIN
-  	IF pi_node_id IS NOT NULL
-  	 THEN
+    IF pi_node_id IS NOT NULL
+     THEN
         IF nm3net.is_nt_datum(pi_ne_rec.ne_nt_type) = 'Y'
          THEN
             validate_use_existing_node(pi_ne_id   => pi_ne_rec.ne_id
@@ -567,19 +567,19 @@ AS
         ELSE
             --
             nm3net_o.set_g_ne_id_to_restrict_on(pi_ne_id => pi_ne_rec.ne_id);
-            --  	  
+            --
             OPEN  chk_node(pi_node_id);
             FETCH chk_node
              INTO lv_node_id;
             --
-            lv_node_found := chk_node%FOUND;        
+            lv_node_found := chk_node%FOUND;
             CLOSE chk_node;
             --
             IF NOT lv_node_found
              THEN
                 hig.raise_ner(pi_appl => 'AWLRS'
                              ,pi_id   => 38);
-  	        END IF;	
+            END IF;
             --
         END IF;
     END IF;
@@ -665,7 +665,44 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END validate_split_position;
-  
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE do_rescale(pi_ne_id            IN     nm_elements.ne_id%TYPE
+                      ,pi_offset_st        IN     NUMBER
+                      ,pi_use_history      IN     VARCHAR2
+                      ,po_message_severity IN OUT hig_codes.hco_code%TYPE
+                      ,po_message_tab      IN OUT NOCOPY awlrs_message_tab)
+    IS
+    --
+    lv_message_cursor  sys_refcursor;
+    --
+    lt_messages  awlrs_util.message_tab;
+    --
+  BEGIN
+    --
+    awlrs_group_api.rescale_route(pi_ne_id            => pi_ne_id
+                                 ,pi_offset_st        => pi_offset_st
+                                 ,pi_use_history      => pi_use_history
+                                 ,po_message_severity => po_message_severity
+                                 ,po_message_cursor   => lv_message_cursor);
+    --
+    FETCH lv_message_cursor
+     BULK COLLECT
+     INTO lt_messages;
+    CLOSE lv_message_cursor;
+    --
+    FOR i IN 1..lt_messages.COUNT LOOP
+      --
+      awlrs_util.add_message(pi_category    => lt_messages(i).category
+                            ,pi_message     => lt_messages(i).message
+                            ,po_message_tab => po_message_tab);
+      --
+    END LOOP;
+    --
+  END do_rescale;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -679,6 +716,7 @@ AS
                     ,pi_reason               IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                     ,pi_new_element1_attribs IN     awlrs_element_api.flex_attr_tab
                     ,pi_new_element2_attribs IN     awlrs_element_api.flex_attr_tab
+                    ,pi_do_rescale_parents   IN     VARCHAR2 DEFAULT 'N'
                     ,pi_effective_date       IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                     ,po_new_ne_ids           IN OUT awlrs_util.ne_id_tab
                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
@@ -695,6 +733,7 @@ AS
     lv_create_node   BOOLEAN := TRUE;
     lv_datum_only    VARCHAR2(1) := 'Y';
     lv_distance      NUMBER;
+    lv_severity      hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
     --
     lv_new_elements_cursor  sys_refcursor;
     --
@@ -724,7 +763,7 @@ AS
                          ,nm_types
                     WHERE nth_theme_name IN(SELECT vnmd_theme_name
                                               FROM v_nm_msv_map_def
-                                             WHERE vnmd_name = cp_map_name)      
+                                             WHERE vnmd_name = cp_map_name)
                       AND EXISTS(SELECT 1
                                    FROM nm_theme_roles
                                        ,hig_user_roles
@@ -755,6 +794,22 @@ AS
      ORDER
         BY distance_from_point
          ;
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
+    CURSOR get_linear_groups(cp_ne_id IN nm_elements_all.ne_id%TYPE)
+        IS
+    SELECT nm_ne_id_in group_id
+          ,nm3net.get_min_slk(pi_ne_id => nm_ne_id_in) min_slk
+      FROM nm_members 
+     WHERE nm_ne_id_of = cp_ne_id
+       AND nm_obj_type IN(SELECT ngt_group_type
+                            FROM nm_group_types
+                           WHERE ngt_linear_flag = 'Y')
+         ;
+    --
+    TYPE groups_tab IS TABLE OF get_linear_groups%ROWTYPE;
+    lt_groups  groups_tab;
     --
   BEGIN
     /*
@@ -809,7 +864,7 @@ AS
              THEN
                 hig.raise_ner(pi_appl => 'AWLRS'
                              ,pi_id   => 38);
-  	        END IF;	
+            END IF;
             CLOSE get_measure;
             --
         END IF;
@@ -886,9 +941,75 @@ AS
                                     ,pi_ne_nsg_ref_2           => g_new_element_2.ne_nsg_ref
                                     ,pi_ne_version_no_2        => g_new_element_2.ne_version_no
                                     ,pi_neh_descr              => pi_reason);
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
+    /*
+    ||Rescale any linear groups the element belongs to.
+    */
+    IF pi_do_rescale_parents = 'Y'
+     THEN
+        --
+        OPEN  get_linear_groups(po_new_ne_ids(1));
+        FETCH get_linear_groups
+         BULK COLLECT
+         INTO lt_groups;
+        CLOSE get_linear_groups;
+        --
+        FOR i IN 1..lt_groups.COUNT LOOP
+          --
+          lv_severity := awlrs_util.c_msg_cat_success;
+          lt_messages.DELETE;
+          --
+          do_rescale(pi_ne_id            => lt_groups(i).group_id
+                    ,pi_offset_st        => lt_groups(i).min_slk
+                    ,pi_use_history      => 'Y'
+                    ,po_message_severity => lv_severity
+                    ,po_message_tab      => lt_messages);
+          --
+          IF lv_severity = awlrs_util.c_msg_cat_ask_continue
+           THEN
+              --
+              lt_messages.DELETE;
+              --
+              do_rescale(pi_ne_id            => lt_groups(i).group_id
+                        ,pi_offset_st        => lt_groups(i).min_slk
+                        ,pi_use_history      => 'N'
+                        ,po_message_severity => lv_severity
+                        ,po_message_tab      => lt_messages);
+              --
+          END IF;
+          --
+          IF lv_severity != awlrs_util.c_msg_cat_success
+           THEN
+              /*
+              ||If an error has ocured rescaling a group end the whole operation.
+              */
+              EXIT;
+              --
+          END IF;
+          --
+        END LOOP;
+    END IF;
+    /*
+    ||If errors occurred rollback.
+    */
+    IF lv_severity IN(awlrs_util.c_msg_cat_error,awlrs_util.c_msg_cat_ask_continue)
+     THEN
+        ROLLBACK TO do_split_sp;
+        po_new_ne_ids(1) := NULL;
+        po_new_ne_ids(2) := NULL;
+    END IF;
+    /*
+    ||If there are any messages to return then create a cursor for them.
+    */
+    IF lt_messages.COUNT > 0
+     THEN
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+    ELSE
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+    END IF;
     --
   EXCEPTION
     WHEN others
@@ -916,6 +1037,7 @@ AS
                     ,pi_new_element2_column_names IN     awlrs_element_api.attrib_column_name_tab
                     ,pi_new_element2_prompts      IN     awlrs_element_api.attrib_prompt_tab
                     ,pi_new_element2_char_values  IN     awlrs_element_api.attrib_char_value_tab
+                    ,pi_do_rescale_parents        IN     VARCHAR2 DEFAULT 'N'
                     ,pi_effective_date            IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                     ,po_new_ne_ids                IN OUT awlrs_util.ne_id_tab
                     ,po_message_severity             OUT hig_codes.hco_code%TYPE
@@ -966,6 +1088,7 @@ AS
             ,pi_reason               => pi_reason
             ,pi_new_element1_attribs => lt_new_element1_attribs
             ,pi_new_element2_attribs => lt_new_element2_attribs
+            ,pi_do_rescale_parents   => pi_do_rescale_parents
             ,pi_effective_date       => pi_effective_date
             ,po_new_ne_ids           => po_new_ne_ids
             ,po_message_severity     => lv_message_severity

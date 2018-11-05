@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkh-arc   1.5   02 Feb 2017 10:02:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkh-arc   1.6   Nov 05 2018 16:54:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_merge_api.pkh  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:28  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   Nov 05 2018 16:54:30  $
+  --       Date fetched Out : $Modtime:   Nov 05 2018 10:38:04  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
   --
   g_element      nm_elements_all%ROWTYPE;
   g_new_element  nm_elements_all%ROWTYPE;
@@ -70,6 +70,7 @@ AS
                     ,pi_ne_id2              IN     nm_elements_all.ne_id%TYPE
                     ,pi_reason              IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                     ,pi_new_element_attribs IN     awlrs_element_api.flex_attr_tab
+                    ,pi_do_rescale_parents  IN     VARCHAR2 DEFAULT 'N'
                     ,pi_effective_date      IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                     ,pi_run_checks          IN     VARCHAR2 DEFAULT 'Y'
                     ,po_new_ne_id           IN OUT nm_elements_all.ne_id%TYPE
@@ -90,6 +91,7 @@ AS
                     ,pi_new_element_column_names IN     awlrs_element_api.attrib_column_name_tab
                     ,pi_new_element_prompts      IN     awlrs_element_api.attrib_prompt_tab
                     ,pi_new_element_char_values  IN     awlrs_element_api.attrib_char_value_tab
+                    ,pi_do_rescale_parents       IN     VARCHAR2 DEFAULT 'N'
                     ,pi_effective_date           IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                     ,pi_run_checks               IN     VARCHAR2 DEFAULT 'Y'
                     ,po_new_ne_id                IN OUT nm_elements_all.ne_id%TYPE
