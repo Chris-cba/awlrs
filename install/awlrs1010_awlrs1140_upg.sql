@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1140_upg.sql-arc   1.2   Nov 01 2018 10:45:20   Barbara.Odriscoll  $
---       Date into PVCS   : $Date:   Nov 01 2018 10:45:20  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1140_upg.sql-arc   1.3   Nov 12 2018 09:59:16   Barbara.Odriscoll  $
+--       Date into PVCS   : $Date:   Nov 12 2018 09:59:16  $
 --       Module Name      : $Workfile:   awlrs1010_awlrs1140_upg.sql  $
---       Date fetched Out : $Modtime:   Nov 01 2018 10:44:56  $
---       Version          : $Revision:   1.2  $
+--       Date fetched Out : $Modtime:   Nov 12 2018 09:55:04  $
+--       Version          : $Revision:   1.3  $
 --
 --   Product upgrade script
 --
@@ -43,6 +43,7 @@ begin
                           ,p_new_version           => '1.1.4.0'
                           ,p_allowed_old_version_1 => '1.0.1.0'
                           ,p_allowed_old_version_2 => '1.1.3.1'
+                          ,p_allowed_old_version_2 => '1.1.4.1'
                           );
 END;
 /
@@ -186,7 +187,7 @@ SET TERM ON
 Prompt Setting The Version Number...
 SET TERM OFF
 BEGIN
-      hig2.upgrade('AWLRS','awlrs1010_awlrs1140_upg.sql','Upgrade from 1.0.1.0 to 1.1.4.0','1.1.4.1');
+      hig2.upgrade('AWLRS','awlrs1010_awlrs1140_upg.sql','Upgrade from 1.0.1.0 to 1.1.4.0','1.1.4.2');
 END;
 /
 COMMIT;
