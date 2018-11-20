@@ -1,0 +1,138 @@
+CREATE OR REPLACE PACKAGE awlrs_node_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_node_api.pkh-arc   1.3   Nov 20 2018 12:12:00   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_node_api.pkh  $
+  --       Date into PVCS   : $Date:   Nov 20 2018 12:12:00  $
+  --       Date fetched Out : $Modtime:   Nov 15 2018 13:02:18  $
+  --       Version          : $Revision:   1.3  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_node_types(po_message_severity OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor   OUT sys_refcursor
+                          ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE node_in_use(pi_node_id          IN  nm_nodes.no_node_id%TYPE
+                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor
+                       ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_connected_element_ids(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_connected_element_ids(pi_node_id          IN  nm_nodes_all.no_node_id%TYPE
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nodes(pi_node_ids         IN  awlrs_util.ne_id_tab
+                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                     ,po_message_cursor   OUT sys_refcursor
+                     ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_node(pi_node_id          IN  nm_nodes_all.no_node_id%TYPE
+                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor   OUT sys_refcursor
+                    ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_node(pi_type       IN     nm_nodes.no_node_type%TYPE
+                       ,pi_name       IN     nm_nodes.no_node_name%TYPE
+                       ,pi_descr      IN     nm_nodes.no_descr%TYPE
+                       ,pi_purpose    IN     nm_nodes_all.no_purpose%TYPE
+                       ,pi_point_id   IN     nm_nodes.no_np_id%TYPE
+                       ,pi_point_x    IN     nm_points.np_grid_east%TYPE  DEFAULT NULL
+                       ,pi_point_y    IN     nm_points.np_grid_north%TYPE DEFAULT NULL
+                       ,pi_start_date IN     nm_nodes.no_start_date%TYPE
+                       ,po_node_id    IN OUT nm_nodes.no_node_id%TYPE);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_node(pi_type             IN     nm_nodes.no_node_type%TYPE
+                       ,pi_name             IN     nm_nodes.no_node_name%TYPE
+                       ,pi_descr            IN     nm_nodes.no_descr%TYPE
+                       ,pi_purpose          IN     nm_nodes_all.no_purpose%TYPE
+                       ,pi_point_id         IN     nm_nodes.no_np_id%TYPE
+                       ,pi_point_x          IN     nm_points.np_grid_east%TYPE  DEFAULT NULL
+                       ,pi_point_y          IN     nm_points.np_grid_north%TYPE DEFAULT NULL
+                       ,pi_start_date       IN     nm_nodes.no_start_date%TYPE
+                       ,po_node_id          IN OUT nm_nodes.no_node_id%TYPE
+                       ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor      OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_node(pi_node_id          IN  nm_nodes.no_node_id%TYPE
+                       ,pi_old_name         IN  nm_nodes.no_node_name%TYPE
+                       ,pi_old_descr        IN  nm_nodes.no_descr%TYPE
+                       ,pi_old_purpose      IN  nm_nodes_all.no_purpose%TYPE
+                       ,pi_new_name         IN  nm_nodes.no_node_name%TYPE
+                       ,pi_new_descr        IN  nm_nodes.no_descr%TYPE
+                       ,pi_new_purpose      IN  nm_nodes_all.no_purpose%TYPE
+                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE move_node(pi_node_id          IN  nm_nodes.no_node_id%TYPE
+                     ,pi_point_x          IN  nm_points.np_grid_east%TYPE
+                     ,pi_point_y          IN  nm_points.np_grid_north%TYPE
+                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                     ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE close_node(pi_no_node_id       IN  nm_nodes.no_node_id%TYPE
+                      ,pi_effective_date   IN  DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                      ,po_message_cursor   OUT sys_refcursor);
+
+END awlrs_node_api;
+/
