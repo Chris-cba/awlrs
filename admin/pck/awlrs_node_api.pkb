@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_node_api.pkb-arc   1.3   02 Feb 2017 10:02:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_node_api.pkb-arc   1.4   Nov 20 2018 12:11:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_node_api.pkb  $
-  --       Date into PVCS   : $Date:   02 Feb 2017 10:02:30  $
-  --       Date fetched Out : $Modtime:   02 Feb 2017 09:50:24  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   Nov 20 2018 12:11:58  $
+  --       Date fetched Out : $Modtime:   Nov 15 2018 13:02:18  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_node_api';
   --
@@ -112,6 +112,67 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END node_in_use;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_connected_element_ids(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT n1.nnu_no_node_id node_id
+          ,no_node_name      node_name
+          ,n2.nnu_ne_id      element_id
+      FROM nm_node_usages n1
+          ,nm_node_usages n2
+          ,nm_nodes
+     WHERE n1.nnu_ne_id = pi_ne_id
+       AND n1.nnu_no_node_id = n2.nnu_no_node_id
+       AND n1.nnu_ne_id != n2.nnu_ne_id
+       AND n2.nnu_no_node_id = no_node_id
+    ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_connected_element_ids;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_connected_element_ids(pi_node_id          IN  nm_nodes_all.no_node_id%TYPE
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT nnu_ne_id  element_id
+      FROM nm_node_usages n1
+          ,nm_nodes
+     WHERE nnu_no_node_id = pi_node_id
+       AND nnu_no_node_id = no_node_id
+    ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_connected_element_ids;
 
   --
   -----------------------------------------------------------------------------
