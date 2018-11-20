@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.20   Oct 30 2018 11:57:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.21   Nov 20 2018 12:19:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 30 2018 11:57:28  $
-  --       Date fetched Out : $Modtime:   Oct 30 2018 11:55:14  $
-  --       Version          : $Revision:   1.20  $
+  --       Date into PVCS   : $Date:   Nov 20 2018 12:19:58  $
+  --       Date fetched Out : $Modtime:   Nov 20 2018 12:16:04  $
+  --       Version          : $Revision:   1.21  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.20  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.21  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -6004,30 +6004,30 @@ AS
                                      ||CHR(10)||'      ,inv_type_name'
                                      ||CHR(10)||'      ,row_count'
                                      ||CHR(10)||'  FROM (SELECT rownum ind'
-                                     ||CHR(10)||'              ,nit.nit_inv_type inv_type'
-                                     ||CHR(10)||'              ,nit.nit_inv_type||'' - ''||nit.nit_descr    inv_type_name'
-                                     ||CHR(10)||'              ,CASE'
-                                     ||CHR(10)||'                 WHEN nit.nit_inv_type = p.def_type THEN 0'
-                                     ||CHR(10)||'                 WHEN p.filter_value IS NULL THEN 1'
-                                     ||CHR(10)||'                 WHEN UPPER(nit.nit_inv_type) = p.filter_value THEN 2'
-                                     ||CHR(10)||'                 WHEN UPPER(nit.nit_descr) = p.filter_value THEN 3'
-                                     ||CHR(10)||'                 WHEN UPPER(nit.nit_inv_type) LIKE p.filter_value||''%'' THEN 4'
-                                     ||CHR(10)||'                 WHEN UPPER(nit.nit_descr) LIKE p.filter_value||''%'' THEN 5'
-                                     ||CHR(10)||'                 ELSE 6'
-                                     ||CHR(10)||'               END match_quality'
-                                     ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                                     ||CHR(10)||'          FROM nm_inv_types nit'
-                                     ||CHR(10)||'              ,nm_inv_nw nin'
-                                     ||CHR(10)||'              ,nm_nt_groupings nng'
-                                     ||CHR(10)||'              ,nm_elements'
-                                     ||CHR(10)||'              ,params p'
-                                     ||CHR(10)||'         WHERE ne_id = :ne_id'
-                                     ||CHR(10)||'           AND ne_gty_group_type = nng.nng_group_type'
-                                     ||CHR(10)||'           AND nng.nng_nt_type = nin.nin_nw_type'
-                                     ||CHR(10)||'           AND nin.nin_nit_inv_code = nit.nit_inv_type'
-                                     ||CHR(10)||'           AND nit.nit_pnt_or_cont = ''P'''
-                                     --||CHR(10)||'           AND nit.nit_category in (''I'', ''F'', ''D'')'  -- Forms App doesn't support FT Assets but does let you pick FT Types.
-                                     ||CHR(10)||'           AND nit.nit_category in (''I'', ''D'')'
+                                     ||CHR(10)||'              ,types.*'
+                                     ||CHR(10)||'          FROM (SELECT nit.nit_inv_type inv_type'
+                                     ||CHR(10)||'                      ,nit.nit_inv_type||'' - ''||nit.nit_descr    inv_type_name'
+                                     ||CHR(10)||'                      ,CASE'
+                                     ||CHR(10)||'                         WHEN nit.nit_inv_type = p.def_type THEN 0'
+                                     ||CHR(10)||'                         WHEN p.filter_value IS NULL THEN 1'
+                                     ||CHR(10)||'                         WHEN UPPER(nit.nit_inv_type) = p.filter_value THEN 2'
+                                     ||CHR(10)||'                         WHEN UPPER(nit.nit_descr) = p.filter_value THEN 3'
+                                     ||CHR(10)||'                         WHEN UPPER(nit.nit_inv_type) LIKE p.filter_value||''%'' THEN 4'
+                                     ||CHR(10)||'                         WHEN UPPER(nit.nit_descr) LIKE p.filter_value||''%'' THEN 5'
+                                     ||CHR(10)||'                         ELSE 6'
+                                     ||CHR(10)||'                       END match_quality'
+                                     ||CHR(10)||'                      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                     ||CHR(10)||'                  FROM nm_inv_types nit'
+                                     ||CHR(10)||'                      ,nm_inv_nw nin'
+                                     ||CHR(10)||'                      ,nm_nt_groupings nng'
+                                     ||CHR(10)||'                      ,nm_elements'
+                                     ||CHR(10)||'                      ,params p'
+                                     ||CHR(10)||'                 WHERE ne_id = :ne_id'
+                                     ||CHR(10)||'                   AND ne_gty_group_type = nng.nng_group_type'
+                                     ||CHR(10)||'                   AND nng.nng_nt_type = nin.nin_nw_type'
+                                     ||CHR(10)||'                   AND nin.nin_nit_inv_code = nit.nit_inv_type'
+                                     ||CHR(10)||'                   AND nit.nit_pnt_or_cont = ''P'''
+                                     ||CHR(10)||'                   AND nit.nit_category in (''I'', ''D'')'
     ;
     --
   BEGIN
@@ -6037,7 +6037,7 @@ AS
     IF pi_filter IS NOT NULL
      THEN
         --
-        lv_filter := CHR(10)||'           AND UPPER(nit.nit_inv_type||'' - ''||nit.nit_descr) LIKE ''%''||p.filter_value||''%''';
+        lv_filter := CHR(10)||'                   AND UPPER(nit.nit_inv_type||'' - ''||nit.nit_descr) LIKE ''%''||p.filter_value||''%''';
         --
     END IF;
     /*
@@ -6052,7 +6052,7 @@ AS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||lv_filter
-                     ||CHR(10)||'         ORDER BY match_quality, nit.nit_descr)'
+                     ||CHR(10)||'                 ORDER BY match_quality, nit.nit_descr) types)'
                      ||CHR(10)||lv_row_restriction;
     --
     IF pi_pagesize IS NOT NULL
