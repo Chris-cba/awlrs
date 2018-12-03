@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.36   Sep 17 2018 12:37:08   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.37   Dec 03 2018 16:54:44   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 17 2018 12:37:08  $
-  --       Date fetched Out : $Modtime:   Sep 17 2018 12:36:20  $
-  --       Version          : $Revision:   1.36  $
+  --       Date into PVCS   : $Date:   Dec 03 2018 16:54:44  $
+  --       Date fetched Out : $Modtime:   Nov 28 2018 14:56:18  $
+  --       Version          : $Revision:   1.37  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.36  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.37  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -90,6 +90,116 @@ AS
        RETURN NULL;
   END get_custom_tag_value;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_custom_tag_gtypes(pi_theme_id   IN nm_themes_all.nth_theme_id%TYPE
+                                ,pi_theme_name IN nm_themes_all.nth_theme_name%TYPE)
+    RETURN awlrs_sdo.gtype_tab IS
+    --
+    lv_tag_value  nm3type.max_varchar2;
+    --
+    lt_tag_types  nm3type.tab_varchar32767;
+    --
+    lv_geometry_type  VARCHAR2(2);
+    lv_point_gtype    VARCHAR2(2);
+    lv_line_gtype     VARCHAR2(2);
+    lv_polygon_gtype  VARCHAR2(2);
+    --
+    lt_retval  awlrs_sdo.gtype_tab;
+    --
+  BEGIN
+    --
+    lv_tag_value := get_custom_tag_value(pi_theme_name => pi_theme_name
+                                        ,pi_tag_name   => 'GeometryTypes');
+    --
+    lt_tag_types := awlrs_util.tokenise_string(pi_string => lv_tag_value);
+    --
+    FOR i IN 1..lt_tag_types.COUNT LOOP
+      --
+      lv_geometry_type := SUBSTR(lt_tag_types(i),3,2);
+      --
+      CASE lv_geometry_type
+        WHEN '07'
+         THEN
+            /*
+            ||Multipolygon should overwrite Polygon.
+            */
+            lv_polygon_gtype := lv_geometry_type;
+        WHEN '03'
+         THEN
+            /*
+            ||Polygon should not overwrite Multipolygon.
+            */
+            IF lv_polygon_gtype IS NULL
+             THEN
+                lv_polygon_gtype := lv_geometry_type;
+            END IF;
+        WHEN '06'
+         THEN
+            /*
+            ||Multiline should overwrite Line.
+            */
+            lv_line_gtype := lv_geometry_type;         
+        WHEN '02'
+         THEN
+            /*
+            ||Line should not overwrite Multiline.
+            */
+            IF lv_line_gtype IS NULL
+             THEN
+                lv_line_gtype := lv_geometry_type;
+            END IF;
+        WHEN '05'
+         THEN
+            /*
+            ||Multipoint should overwrite Point.
+            */
+            lv_point_gtype := lv_geometry_type;         
+        WHEN '01'
+         THEN
+            /*
+            ||Point should not overwrite Multipoint.
+            */
+            IF lv_point_gtype IS NULL
+             THEN
+                lv_point_gtype := lv_geometry_type;
+            END IF;            
+        ELSE
+            /*
+            ||Ignore any bad values.
+            */
+            NULL;
+      END CASE;
+      --
+    END LOOP;
+    /*
+    ||For the purposes of the mapfile we do not
+    ||need to worry about the first 2 digits of
+    ||the G Type so just use 20 (2 dimensional non LRS geometry).
+    */
+    IF lv_point_gtype IS NOT NULL
+     THEN
+        lt_retval(lt_retval.COUNT+1).gtype := TO_NUMBER('20'||lv_point_gtype);
+        lt_retval(lt_retval.COUNT).theme_id := pi_theme_id;
+    END IF;
+    --
+    IF lv_line_gtype IS NOT NULL
+     THEN
+        lt_retval(lt_retval.COUNT+1).gtype := TO_NUMBER('20'||lv_line_gtype);
+        lt_retval(lt_retval.COUNT).theme_id := pi_theme_id;
+    END IF;
+    --
+    IF lv_polygon_gtype IS NOT NULL
+     THEN
+        lt_retval(lt_retval.COUNT+1).gtype := TO_NUMBER('20'||lv_polygon_gtype);
+        lt_retval(lt_retval.COUNT).theme_id := pi_theme_id;
+    END IF;
+    --
+    RETURN lt_retval;
+    --
+  END get_custom_tag_gtypes;
+  
   --
   -----------------------------------------------------------------------------
   --
@@ -182,6 +292,7 @@ AS
            END is_editable
           ,nth_feature_table     feature_table
           ,nth_feature_pk_column feature_pk_column
+          ,nth_feature_shape_column feature_shape_column
       FROM nm_themes_all
           ,nm_inv_themes
           ,nm_inv_types_all
@@ -1888,7 +1999,6 @@ AS
               lv_retval := get_line_style(pi_class         => lr_svg_data.g_class
                                          ,pi_style         => lr_svg_data.g_style
                                          ,pi_dash          => lr_svg_data.g_dash);
-                                         --,pi_offset_column => pi_offset_column);
               --
               OPEN  get_svg_lines(lv_style_def);
               FETCH get_svg_lines
@@ -1907,7 +2017,6 @@ AS
                         lv_retval := get_line_style(pi_class         => lt_svg_line_data(i).line_class
                                                    ,pi_style         => lt_svg_line_data(i).line_style
                                                    ,pi_dash          => lt_svg_line_data(i).line_dash
-                                                   --,pi_offset_column => pi_offset_column
                                                    ,pi_base_linecap  => NVL(get_style_value(pi_style => lr_svg_data.g_style
                                                                                            ,pi_field => 'stroke-linecap:')
                                                                            ,'ROUND')
@@ -1922,7 +2031,6 @@ AS
                           ||CHR(10)||get_line_style(pi_class         => lt_svg_line_data(i).line_class
                                                    ,pi_style         => lt_svg_line_data(i).line_style
                                                    ,pi_dash          => lt_svg_line_data(i).line_dash
-                                                   --,pi_offset_column => pi_offset_column
                                                    ,pi_base_linecap  => NVL(get_style_value(pi_style => lr_svg_data.g_style
                                                                                            ,pi_field => 'stroke-linecap:')
                                                                            ,'ROUND')
@@ -2064,7 +2172,6 @@ AS
             lv_retval := lv_retval||CHR(10)||get_geom_style(pi_style_name    => lt_adv_style_data(i).bucket_style
                                                            ,pi_geom_column   => pi_geom_column
                                                            ,pi_layer_type    => pi_layer_type);
-                                                           --,pi_offset_column => pi_offset_column);
             /*
             ||Write the label data if required.
             */
@@ -2073,7 +2180,6 @@ AS
              THEN
                 lv_retval := lv_retval||CHR(10)||get_label_style(pi_style_name    => pi_label_style
                                                                 ,pi_text_column   => pi_label_column
-                                                                --,pi_offset_column => pi_offset_column
                                                                 ,pi_min_scale     => pi_label_min_scale
                                                                 ,pi_max_scale     => pi_label_max_scale
                                                                 ,pi_layer_type    => pi_layer_type);
@@ -2098,12 +2204,11 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION generate_layer_class(pi_theme         IN themes_rec
-                               ,pi_gtype         IN NUMBER)
+  FUNCTION generate_layer_class(pi_theme      IN themes_rec
+                               ,pi_layer_type IN VARCHAR2)
     RETURN VARCHAR2 IS
     --
     lt_layer_class  nm3type.tab_varchar32767;
-    lt_gtypes       awlrs_sdo.gtype_tab;
     --
     lt_rules xml_tab;
     --
@@ -2154,7 +2259,7 @@ AS
        THEN
           lv_layer_text := lv_layer_text||get_geom_style(pi_style_name      => lr_rule_data.feature_style
                                                         ,pi_geom_column     => pi_theme.geometry_column
-                                                        ,pi_layer_type      => gtype_to_layer_type(pi_gtype => pi_gtype)
+                                                        ,pi_layer_type      => pi_layer_type
                                                         ,pi_rule_column     => lr_rule_data.rule_column
                                                         ,pi_label_column    => lr_rule_data.label_column
                                                         ,pi_label_style     => lr_rule_data.label_style
@@ -2172,7 +2277,7 @@ AS
           */
           lv_layer_text := lv_layer_text||CHR(10)||get_geom_style(pi_style_name  => lr_rule_data.feature_style
                                                                  ,pi_geom_column => pi_theme.geometry_column
-                                                                 ,pi_layer_type  => gtype_to_layer_type(pi_gtype => pi_gtype));
+                                                                 ,pi_layer_type  => pi_layer_type);
           /*
           ||Write the label data if required.
           */
@@ -2182,7 +2287,7 @@ AS
                                                                       ,pi_text_column   => lr_rule_data.label_column
                                                                       ,pi_min_scale     => pi_theme.label_min_scale
                                                                       ,pi_max_scale     => pi_theme.label_max_scale
-                                                                      ,pi_layer_type    => gtype_to_layer_type(pi_gtype => pi_gtype));
+                                                                      ,pi_layer_type    => pi_layer_type);
           END IF;
           /*
           ||Close the Class.
@@ -2474,7 +2579,13 @@ AS
       /*
       ||Get the Geometry Types.
       */
-      lt_gtypes := awlrs_sdo.get_gtypes(pi_theme_id => lt_themes(i).nth_theme_id);
+      lt_gtypes := get_custom_tag_gtypes(pi_theme_id   => lt_themes(i).nth_theme_id
+                                        ,pi_theme_name => lt_themes(i).name);
+      --
+      IF lt_gtypes.COUNT = 0
+       THEN
+          lt_gtypes := awlrs_sdo.get_gtypes(pi_theme_id => lt_themes(i).nth_theme_id);
+      END IF;
       --
       IF lt_gtypes.COUNT > 1
        THEN
@@ -2796,9 +2907,8 @@ AS
         lv_tmp := CHR(10)||'    END';
         lv_layer_text := lv_layer_text||lv_tmp;
         --
-        lv_tmp := generate_layer_class(pi_theme         => lt_themes(i)
-                                                            ,pi_gtype         => lt_gtypes(j).gtype);
-                                                            --,pi_offset_column => lv_offset_column);
+        lv_tmp := generate_layer_class(pi_theme      => lt_themes(i)
+                                      ,pi_layer_type => lv_layer_type);
         lv_layer_text := lv_layer_text||lv_tmp;
         --
         IF lt_themes(i).max_scale IS NOT NULL
