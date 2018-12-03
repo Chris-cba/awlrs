@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.18   Aug 07 2018 15:35:16   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.19   Dec 03 2018 16:54:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Aug 07 2018 15:35:16  $
-  --       Date fetched Out : $Modtime:   Aug 07 2018 15:31:52  $
-  --       Version          : $Revision:   1.18  $
+  --       Date into PVCS   : $Date:   Dec 03 2018 16:54:50  $
+  --       Date fetched Out : $Modtime:   Nov 28 2018 14:45:46  $
+  --       Version          : $Revision:   1.19  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -510,7 +510,7 @@ AS
     RETURN NVL(SYS_CONTEXT('NM3CORE','PREFERRED_LRM'),c_all_lrms_code);
     --
   END get_preferred_lrm;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -653,7 +653,7 @@ AS
                              ,pi_set_user_opt => pi_set_user_opt);
     --
   END set_preferred_lrm;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -1000,6 +1000,185 @@ AS
     --
   END gen_row_restriction;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION ref_cursor_to_csv(pi_cursor    IN sys_refcursor
+                            ,pi_title_row IN BOOLEAN DEFAULT TRUE)
+    RETURN CLOB IS
+    --
+    lv_cursor        sys_refcursor := pi_cursor;
+    lv_cursor_id     NUMBER;
+    lv_column_count  NUMBER;
+    lv_varchar2      nm3type.max_varchar2;
+    lv_number        NUMBER;
+    lv_date          DATE;
+    lv_clob          CLOB;
+    lv_title         CLOB;
+    lv_tmp           CLOB;
+    lv_retval        CLOB;
+    --
+    lt_desc  dbms_sql.desc_tab;
+    --
+  BEGIN
+    /*
+    ||Convert to DBMS_SQL Cursor.
+    */
+    lv_cursor_id := dbms_sql.to_cursor_number(rc => lv_cursor);
+    --
+    dbms_sql.describe_columns(c       => lv_cursor_id
+                             ,col_cnt => lv_column_count
+                             ,desc_t  => lt_desc);
+    /*
+    ||Define the columns for DBMS_SQL.
+    */
+    FOR i IN 1 .. lv_column_count LOOP
+      --
+      IF i > 1
+       THEN
+          lv_title := lv_title||',"'||INITCAP(REPLACE(lt_desc(i).col_name,'_',' '))||'"';
+      ELSE
+          lv_title := lv_title||'"'||INITCAP(REPLACE(lt_desc(i).col_name,'_',' '))||'"';
+      END IF;
+      --
+      CASE
+        WHEN lt_desc(i).col_type = c_number
+          THEN
+             dbms_sql.define_column(c        => lv_cursor_id
+                                   ,position => i
+                                   ,column   => lv_number);
+        WHEN lt_desc(i).col_type = c_date
+          THEN
+             dbms_sql.define_column(c        => lv_cursor_id
+                                   ,position => i
+                                   ,column   => lv_date);
+        WHEN lt_desc(i).col_type IN(c_varchar,c_varchar2)
+          THEN
+             dbms_sql.define_column(c           => lv_cursor_id
+                                   ,position    => i
+                                   ,column      => lv_varchar2
+                                   ,column_size => nm3type.c_max_varchar2_size);
+        WHEN lt_desc(i).col_type = c_clob
+          THEN
+             dbms_sql.define_column(c        => lv_cursor_id
+                                   ,position => i
+                                   ,column   => lv_clob);
+        ELSE
+            /*
+            ||Unsupported Column Type.
+            */
+            NULL;
+      END CASE;
+      --
+    END LOOP;
+    --
+    lv_title := lv_title||CHR(10);
+    lv_retval := lv_title;
+    /*
+    ||Get the data from the cursor and write it to the output.
+    */
+    WHILE dbms_sql.fetch_rows (lv_cursor_id) > 0 LOOP
+      --
+      FOR i IN 1 .. lv_column_count LOOP
+        --
+        IF i > 1
+         THEN
+            lv_tmp := lv_tmp||',';
+        END IF;
+        --
+        CASE
+          WHEN lt_desc(i).col_type = c_number
+            THEN
+               dbms_sql.column_value(c        => lv_cursor_id
+                                    ,position => i
+                                    ,value    => lv_number);
+               --
+               lv_tmp := lv_tmp||lv_number;
+               --
+          WHEN lt_desc(i).col_type = c_date
+            THEN
+               dbms_sql.column_value(c        => lv_cursor_id
+                                    ,position => i
+                                    ,value    => lv_date);
+               --
+               lv_tmp := lv_tmp||TO_CHAR(lv_date,'DD-MON-YYYY HH24:MI');
+               --
+          WHEN lt_desc(i).col_type IN(c_varchar,c_varchar2)
+            THEN
+               dbms_sql.column_value(c        => lv_cursor_id
+                                    ,position => i
+                                    ,value    => lv_varchar2);
+               --
+               lv_tmp := lv_tmp||'"'||lv_varchar2||'"';
+               --
+          WHEN lt_desc(i).col_type = c_clob
+            THEN
+               dbms_sql.column_value(c        => lv_cursor_id
+                                    ,position => i
+                                    ,value    => lv_clob);
+               --
+               lv_tmp := lv_tmp||'"'||lv_clob||'"';
+               --
+          ELSE
+              /*
+              ||Unsupported Column Type.
+              */
+              NULL;
+        END CASE;
+        --
+      END LOOP;
+      --
+      lv_tmp := lv_tmp||CHR(10);
+      lv_retval := lv_retval||lv_tmp;
+      lv_tmp := NULL;
+      --
+    END LOOP;
+    --
+    dbms_sql.close_cursor(c => lv_cursor_id);
+    --
+    RETURN lv_retval;
+    --
+  EXCEPTION 
+    WHEN others
+     THEN 
+        IF dbms_sql.is_open(lv_cursor_id)
+         THEN 
+            dbms_sql.close_cursor(lv_cursor_id); 
+        END IF; 
+  END ref_cursor_to_csv;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE ref_cursor_to_csv(pi_cursor           IN  sys_refcursor
+                             ,pi_title_row        IN  VARCHAR2 DEFAULT 'Y'
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_retval  CLOB;
+    --
+  BEGIN
+    --
+    lv_retval := awlrs_util.ref_cursor_to_csv(pi_cursor    => pi_cursor
+                                             ,pi_title_row => (pi_title_row = 'Y'));
+    --
+    OPEN po_cursor FOR
+    SELECT lv_retval
+      FROM dual
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END ref_cursor_to_csv;
+  
 --
 -----------------------------------------------------------------------------
 --
