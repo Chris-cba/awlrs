@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.16   Sep 14 2018 16:11:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.17   Dec 03 2018 16:54:46   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkh  $
-  --       Date into PVCS   : $Date:   Sep 14 2018 16:11:32  $
-  --       Date fetched Out : $Modtime:   Sep 14 2018 15:51:24  $
-  --       Version          : $Revision:   1.16  $
+  --       Date into PVCS   : $Date:   Dec 03 2018 16:54:46  $
+  --       Date fetched Out : $Modtime:   Nov 28 2018 14:55:12  $
+  --       Version          : $Revision:   1.17  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
   --
   TYPE theme_types_rec IS RECORD(admin_type                   nm_au_types.nat_admin_type%TYPE
                                 ,network_type                 nm_types.nt_type%TYPE
@@ -35,7 +35,8 @@ AS
                                 ,location_updatable           nm_themes_all.nth_location_updatable%TYPE                                
                                 ,editable                     VARCHAR2(1)
                                 ,feature_table                nm_themes_all.nth_feature_table%TYPE
-                                ,feature_pk_column            nm_themes_all.nth_feature_pk_column%TYPE);
+                                ,feature_pk_column            nm_themes_all.nth_feature_pk_column%TYPE
+                                ,feature_shape_column         nm_themes_all.nth_feature_shape_column%TYPE);
   TYPE theme_types_tab IS TABLE OF theme_types_rec INDEX BY BINARY_INTEGER;
   --
   TYPE wms_themes_rec IS RECORD(nwt_id                  v_nm_wms_themes.nwt_id%TYPE
