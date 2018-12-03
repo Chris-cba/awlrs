@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.21   Sep 24 2018 11:10:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.22   Dec 03 2018 16:56:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Sep 24 2018 11:10:46  $
-  --       Date fetched Out : $Modtime:   Sep 24 2018 11:09:48  $
-  --       Version          : $Revision:   1.21  $
+  --       Date into PVCS   : $Date:   Dec 03 2018 16:56:58  $
+  --       Date fetched Out : $Modtime:   Nov 23 2018 13:13:32  $
+  --       Version          : $Revision:   1.22  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -268,12 +268,16 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION wkt_to_sdo_geom(pi_theme_name IN nm_themes_all.nth_theme_name%TYPE
-                          ,pi_shape      IN CLOB)
+  FUNCTION wkt_to_sdo_geom(pi_theme_name          IN nm_themes_all.nth_theme_name%TYPE
+                          ,pi_shape               IN CLOB
+                          ,pi_conv_to_theme_gtype IN BOOLEAN DEFAULT TRUE
+                          ,pi_rectify_polygon     IN BOOLEAN DEFAULT FALSE)
     RETURN mdsys.sdo_geometry IS
     --
     lv_shape  mdsys.sdo_geometry;
-    lv_lrs    BOOLEAN;
+    lv_lrs    BOOLEAN := FALSE;
+    lv_tol    NUMBER;
+    lv_valid  nm3type.max_varchar2 := 'FALSE';
     --
     lr_theme       nm_themes_all%ROWTYPE;
     lr_theme_meta  user_sdo_geom_metadata%ROWTYPE;
@@ -286,21 +290,29 @@ AS
         --
         lr_theme := nm3get.get_nth(pi_nth_theme_name => pi_theme_name);
         lr_theme_meta := nm3sdo.get_theme_metadata(p_nth_id => lr_theme.nth_theme_id);
-        lt_gtypes := get_gtypes(pi_theme_name => pi_theme_name);
-        FOR i IN 1..lt_gtypes.COUNT LOOP
-          --
-          IF SUBSTR(lt_gtypes(i).gtype,2,1) IN('3','4')
-           THEN
-              lv_lrs := TRUE;
-              EXIT;
-          END IF;
-          --
-        END LOOP;
+        lv_tol := nm3sdo.get_table_diminfo(lr_theme.nth_feature_table,lr_theme.nth_feature_shape_column)(1).sdo_tolerance;
         --
         lv_shape := sdo_util.from_wktgeometry(pi_shape);
-        IF lv_lrs
+        --
+        IF pi_conv_to_theme_gtype
          THEN
-            lv_shape := sdo_lrs.convert_to_lrs_geom(lv_shape); --,0,lr_ne.ne_length);
+            --
+            lt_gtypes := get_gtypes(pi_theme_name => pi_theme_name);
+            FOR i IN 1..lt_gtypes.COUNT LOOP
+              --
+              IF SUBSTR(lt_gtypes(i).gtype,2,1) IN('3','4')
+               THEN
+                  lv_lrs := TRUE;
+                  EXIT;
+              END IF;
+              --
+            END LOOP;
+            --
+            IF lv_lrs
+             THEN
+                lv_shape := sdo_lrs.convert_to_lrs_geom(lv_shape);
+            END IF;
+            --
         END IF;
         --
         IF lr_theme_meta.srid IS NOT NULL
@@ -308,15 +320,36 @@ AS
             lv_shape.sdo_srid := lr_theme_meta.srid;
         END IF;
         --
-    ELSE
-       --Invalid geometry supplied
-       hig.raise_ner(pi_appl => 'AWLRS'
-                    ,pi_id   => 15);
+        lv_valid := nm3sdo.validate_geometry(lv_shape,NULL,lv_tol);
+        --
+        IF lv_valid != 'TRUE'
+         AND lv_shape.sdo_gtype = 2003
+         AND pi_rectify_polygon
+         THEN
+            lv_shape := sdo_util.rectify_geometry(sdo_util.remove_duplicate_vertices(lv_shape,lv_tol),lv_tol);
+            lv_valid := nm3sdo.validate_geometry(lv_shape,NULL,lv_tol);
+        END IF;
+        --        
+    END IF;
+    --
+    IF lv_valid != 'TRUE'
+     THEN
+        IF lv_valid = 'FALSE'
+         THEN
+            --Invalid geometry supplied
+            hig.raise_ner(pi_appl => 'AWLRS'
+                         ,pi_id   => 15);
+        ELSE
+            --Invalid geometry supplied
+            hig.raise_ner(pi_appl => 'AWLRS'
+                         ,pi_id   => 15
+                         ,pi_supplementary_info => lv_valid);
+        END IF;
     END IF;
     --
     RETURN lv_shape;
     --
-  END;
+  END wkt_to_sdo_geom;
 
   --
   -----------------------------------------------------------------------------
@@ -899,7 +932,7 @@ AS
 
     OPEN po_cursor FOR 'WITH element_shape AS(SELECT '||lr_theme.nth_feature_shape_column||' geom'
             ||CHR(10)||'                        FROM '||lr_theme.nth_feature_table
-            ||CHR(10)||'                       WHERE '||lr_theme.nth_feature_pk_column||' = :pi_ne_id)'--            ||CHR(10)||'                       WHERE '||lr_theme.nth_pk_column||' = :pi_ne_id)'
+            ||CHR(10)||'                       WHERE '||lr_theme.nth_feature_pk_column||' = :pi_ne_id)'
             ||CHR(10)||'SELECT a.id'
             ||CHR(10)||'      ,a.x x '
             ||CHR(10)||'      ,a.y y '
@@ -2634,7 +2667,7 @@ AS
     --
     RETURN lr_retval;
     --
-  END;
+  END get_datum_theme_rec;
 
   --
   ------------------------------------------------------------------------------
@@ -2759,9 +2792,6 @@ AS
     /*
     ||Execute the query.
     */
-nm_debug.debug_on;
-nm_debug.debug(lv_sql);
-nm_debug.debug_off;
     EXECUTE IMMEDIATE lv_sql INTO lv_retval USING pi_pk_value;
     /*
     ||Return the result.
@@ -2773,131 +2803,60 @@ nm_debug.debug_off;
   --
   ------------------------------------------------------------------------------
   --
---  FUNCTION get_aggr_geom_by_grp(pi_table_name  IN VARCHAR2
---                               ,pi_geom_column IN VARCHAR2
---                               ,pi_group_id    IN VARCHAR2
---                               ,pi_pk_column   IN VARCHAR2
---                               ,pi_pk_value    IN NUMBER)
---    RETURN mdsys.sdo_geometry IS
---    --
---    lv_driving_sql  nm3type.max_varchar2 := 'SELECT sdo.'||LOWER(pi_geom_column)
---                                           ||' FROM '||LOWER(pi_table_name)||' sdo,nm_members nm'
---                                          ||' WHERE sdo.'||LOWER(pi_pk_column)||' = :pk_val'
---                                            ||' AND sdo.ne_id_of = nm.nm_ne_id_of'
---                                            ||' AND nm.nm_ne_id_in = :grp_id'
---                                          ||' ORDER BY nm.nm_seq_no';
---    lv_retval       mdsys.sdo_geometry;
---    lv_mod          NUMBER;
---    lv_sql          nm3type.max_varchar2;
---    --
---    lt_mod  nm3type.tab_number;
---    --
---  BEGIN
---    /*
---    ||Get the initial group by modulus value.
---    ||This will be the next power of 2 above the number
---    ||of groups of 50 geometries we are dealing with.
---    */
---    lv_sql :=  'SELECT POWER(2,CEIL(LOG(2,COUNT(*)/50)))'
---    ||CHR(10)||'  FROM ('||lv_driving_sql||')'
---    ;
---    EXECUTE IMMEDIATE lv_sql INTO lv_mod USING pi_pk_value,pi_group_id;
---    /*
---    ||Create an array of group by modulus values.
---    */
---    LOOP
---      --
---      lt_mod(lt_mod.count+1) := lv_mod;
---      /*
---      ||Get the previous power of 2.
---      */
---      lv_mod := lv_mod/2;
---      /*
---      ||Skip every other power of 2 unless we have arrived at 2.
---      */
---      IF lv_mod > 2
---       THEN
---          lv_mod := lv_mod/2;
---      END IF;
---      --
---      IF lv_mod < 2
---       THEN
---          EXIT;
---      END IF;
---      --
---    END LOOP;
---    /*
---    ||Build the query.
---    */
---    IF lt_mod.COUNT = 1
---     AND lt_mod(1) <= 1
---     THEN
---        lv_sql :=  'SELECT sdo_aggr_union(mdsys.sdoaggrtype('||pi_geom_column||',0.5)) aggr_geom'
---        ||CHR(10)||'  FROM ('||lv_driving_sql||')'
---        ;
---    ELSE
---        lv_sql :=  'SELECT sdo_aggr_union(mdsys.sdoaggrtype('||pi_geom_column||',0.5)) aggr_geom'
---        ||CHR(10)||'  FROM ('||lv_driving_sql||')'
---        ||CHR(10)||' GROUP BY MOD(rownum,'||lt_mod(1)||')';
---        --
---        FOR i IN 2..lt_mod.COUNT LOOP
---          --
---          lv_sql :=  'SELECT sdo_aggr_union(mdsys.sdoaggrtype(aggr_geom,0.5)) aggr_geom'
---          ||CHR(10)||'  FROM ('||lv_sql||')'
---          ||CHR(10)||' GROUP BY MOD(rownum,'||lt_mod(i)||')';
---          --
---        END LOOP;
---        --
---        lv_sql :=  'SELECT sdo_aggr_union(sdoaggrtype(aggr_geom,0.5)) aggr_geom'
---        ||CHR(10)||'  FROM ('||lv_sql||')';
---        --
---    END IF;
---    /*
---    ||Execute the query.
---    */
---nm_debug.debug_on;
---nm_debug.debug(lv_sql);
---nm_debug.debug_off;
---    EXECUTE IMMEDIATE lv_sql INTO lv_retval USING pi_pk_value,pi_group_id;
---    /*
---    ||Return the result.
---    */
---    RETURN lv_retval;
---    --
---  END get_aggr_geom_by_grp;
+  FUNCTION get_geom_by_pk(pi_table_name  IN VARCHAR2
+                         ,pi_geom_column IN VARCHAR2
+                         ,pi_pk_column   IN VARCHAR2
+                         ,pi_pk_value    IN NUMBER)
+    RETURN mdsys.sdo_geometry IS
+    --
+    lv_retval  mdsys.sdo_geometry;
+    lv_sql     nm3type.max_varchar2;
+    --
+  BEGIN
+    /*
+    ||Build the query.
+    */
+    lv_sql :=  'SELECT '||pi_geom_column
+    ||CHR(10)||'  FROM '||pi_table_name
+    ||CHR(10)||' WHERE '||pi_pk_column||' = :pk_val'
+    ;
+    /*
+    ||Execute the query.
+    */
+    EXECUTE IMMEDIATE lv_sql INTO lv_retval USING pi_pk_value;
+    /*
+    ||Return the result.
+    */
+    RETURN lv_retval;
+    --
+  EXCEPTION
+    WHEN too_many_rows
+     THEN
+        RETURN get_aggr_geom_by_pk(pi_table_name  => pi_table_name
+                                  ,pi_geom_column => pi_geom_column
+                                  ,pi_pk_column   => pi_pk_column
+                                  ,pi_pk_value    => pi_pk_value);
+  END get_geom_by_pk;
 
   --
   ------------------------------------------------------------------------------
   --
---  FUNCTION get_aggr_geom_by_grp(pi_table_name  IN VARCHAR2
---                               ,pi_geom_column IN VARCHAR2
---                               ,pi_group_id    IN VARCHAR2
---                               ,pi_pk_column   IN VARCHAR2
---                               ,pi_pk_value    IN NUMBER)
---    RETURN mdsys.sdo_geometry IS
---    --
---    lv_sql  nm3type.max_varchar2;
---    --
---    lt_geom  sdo_geometry_array := sdo_geometry_array();
---    --
---  BEGIN
---    /*
---    ||Get the geometries.
---    */
---    lv_sql := 'SELECT sdo.'||LOWER(pi_geom_column)
---                     ||' FROM '||LOWER(pi_table_name)||' sdo,nm_members nm'
---                    ||' WHERE sdo.'||LOWER(pi_pk_column)||' = :pk_val'
---                      ||' AND sdo.ne_id_of = nm.nm_ne_id_of'
---                      ||' AND nm.nm_ne_id_in = :grp_id'
---                    ||' ORDER BY nm.nm_seq_no';
---    --
---    EXECUTE IMMEDIATE lv_sql BULK COLLECT INTO lt_geom USING pi_pk_value,pi_group_id;
---    /*
---    ||Return the result.
---    */
---    RETURN sdo_aggr_set_union(lt_geom,g_sdo_tolerance);
---    --
---  END get_aggr_geom_by_grp;
+  FUNCTION get_wkt_by_pk(pi_table_name  IN VARCHAR2
+                        ,pi_geom_column IN VARCHAR2
+                        ,pi_pk_column   IN VARCHAR2
+                        ,pi_pk_value    IN NUMBER)
+    RETURN CLOB IS
+    --
+  BEGIN
+    /*
+    ||Return the result.
+    */
+    RETURN sdo_geom_to_wkt(get_geom_by_pk(pi_table_name  => pi_table_name
+                                         ,pi_geom_column => pi_geom_column
+                                         ,pi_pk_column   => pi_pk_column
+                                         ,pi_pk_value    => pi_pk_value));
+    --
+  END get_wkt_by_pk;
 
   --
   ------------------------------------------------------------------------------
@@ -2939,6 +2898,73 @@ nm_debug.debug_off;
     --
   END get_aggr_geom_by_grp;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_theme_features(pi_theme_name        IN  nm_themes_all.nth_theme_name%TYPE
+                              ,pi_filter_wkt        IN  CLOB
+                              ,pi_inc_wkt_in_cursor IN  VARCHAR2 DEFAULT 'Y'
+                              ,po_message_severity  OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor    OUT sys_refcursor
+                              ,po_cursor            OUT sys_refcursor)
+    IS
+    --
+    lv_filter_geom  mdsys.sdo_geometry;
+    lv_sql          nm3type.max_varchar2;
+    --
+    lr_theme  nm_themes_all%ROWTYPE;
+    --
+  BEGIN
+    --
+    lv_filter_geom := wkt_to_sdo_geom(pi_theme_name          => pi_theme_name
+                                     ,pi_shape               => pi_filter_wkt
+                                     ,pi_conv_to_theme_gtype => FALSE
+                                     ,pi_rectify_polygon     => TRUE);
+    --
+    lr_theme := nm3get.get_nth(pi_nth_theme_name => pi_theme_name);
+    --
+    lv_sql :=  'SELECT id';
+    --
+    IF pi_inc_wkt_in_cursor = 'Y'
+     THEN
+        lv_sql := lv_sql
+          ||CHR(10)||'      ,awlrs_sdo.get_wkt_by_pk(:feature_table'
+          ||CHR(10)||'                              ,:shape_column'
+          ||CHR(10)||'                              ,:pk_col'
+          ||CHR(10)||'                              ,id) shape_wkt'
+        ;
+    END IF;
+    --
+    lv_sql := lv_sql
+      ||CHR(10)||'  FROM (SELECT DISTINCT '||LOWER(lr_theme.nth_feature_pk_column)||' id'
+      ||CHR(10)||'          FROM '||LOWER(lr_theme.nth_feature_table)
+      ||CHR(10)||'         WHERE SDO_ANYINTERACT('||LOWER(lr_theme.nth_feature_shape_column)||',:filter_geom) = ''TRUE'')'
+    ;
+    --
+    IF pi_inc_wkt_in_cursor = 'Y'
+     THEN
+        OPEN po_cursor FOR lv_sql
+        USING lr_theme.nth_feature_table
+             ,lr_theme.nth_feature_shape_column
+             ,lr_theme.nth_feature_pk_column
+             ,lv_filter_geom
+        ;
+    ELSE
+        OPEN po_cursor FOR lv_sql
+        USING lv_filter_geom
+        ;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_theme_features;
+  
 --
 ------------------------------------------------------------------------------
 --
