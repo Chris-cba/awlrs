@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.8   Sep 14 2018 15:45:10   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.9   Dec 03 2018 16:56:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkh  $
-  --       Date into PVCS   : $Date:   Sep 14 2018 15:45:10  $
-  --       Date fetched Out : $Modtime:   Aug 15 2018 15:29:22  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   Dec 03 2018 16:56:56  $
+  --       Date fetched Out : $Modtime:   Nov 23 2018 12:08:14  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
   --
   g_sdo_tolerance     NUMBER := 0.005;
   g_sdo_arc_tolerance NUMBER := 0.05;
@@ -120,8 +120,10 @@ AS
   --
   ------------------------------------------------------------------------------
   --
-  FUNCTION wkt_to_sdo_geom(pi_theme_name IN nm_themes_all.nth_theme_name%TYPE
-                          ,pi_shape      IN CLOB)
+  FUNCTION wkt_to_sdo_geom(pi_theme_name          IN nm_themes_all.nth_theme_name%TYPE
+                          ,pi_shape               IN CLOB
+                          ,pi_conv_to_theme_gtype IN BOOLEAN DEFAULT TRUE
+                          ,pi_rectify_polygon     IN BOOLEAN DEFAULT FALSE)
     RETURN mdsys.sdo_geometry;
 
   --
@@ -318,12 +320,40 @@ AS
   --
   ------------------------------------------------------------------------------
   --
+  FUNCTION get_geom_by_pk(pi_table_name  IN VARCHAR2
+                         ,pi_geom_column IN VARCHAR2
+                         ,pi_pk_column   IN VARCHAR2
+                         ,pi_pk_value    IN NUMBER)
+    RETURN mdsys.sdo_geometry;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_wkt_by_pk(pi_table_name  IN VARCHAR2
+                        ,pi_geom_column IN VARCHAR2
+                        ,pi_pk_column   IN VARCHAR2
+                        ,pi_pk_value    IN NUMBER)
+    RETURN CLOB;
+
+  --
+  ------------------------------------------------------------------------------
+  --
   FUNCTION get_aggr_geom_by_grp(pi_table_name  IN VARCHAR2
                                ,pi_geom_column IN VARCHAR2
                                ,pi_group_id    IN VARCHAR2
                                ,pi_pk_column   IN VARCHAR2
                                ,pi_pk_value    IN NUMBER)
     RETURN mdsys.sdo_geometry;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_theme_features(pi_theme_name        IN  nm_themes_all.nth_theme_name%TYPE
+                              ,pi_filter_wkt        IN  CLOB
+                              ,pi_inc_wkt_in_cursor IN  VARCHAR2 DEFAULT 'Y'
+                              ,po_message_severity  OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor    OUT sys_refcursor
+                              ,po_cursor            OUT sys_refcursor);
 
 END awlrs_sdo;
 /
