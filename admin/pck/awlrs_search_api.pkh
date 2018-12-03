@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.7   Sep 14 2018 11:52:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.8   Dec 03 2018 16:54:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkh  $
-  --       Date into PVCS   : $Date:   Sep 14 2018 11:52:04  $
-  --       Date fetched Out : $Modtime:   Sep 14 2018 11:37:32  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   Dec 03 2018 16:54:48  $
+  --       Date fetched Out : $Modtime:   Dec 03 2018 16:16:42  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
   --
   TYPE group_expression_rec IS RECORD(group_operation        VARCHAR2(100)
                                      ,group_expressions_xml  XMLTYPE
@@ -166,6 +166,26 @@ AS
                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
                                    ,po_message_cursor   OUT sys_refcursor
                                    ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_results_by_id_csv(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                 ,pi_ids              IN  id_tab
+                                 ,pi_include_wkt      IN  VARCHAR2 DEFAULT 'N'
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor);
+ 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_all_results_csv(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                               ,pi_max_rows         IN  NUMBER DEFAULT NULL
+                               ,pi_include_wkt      IN  VARCHAR2 DEFAULT 'N'
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
