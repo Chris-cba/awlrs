@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.35   Sep 24 2018 14:25:54   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.36   Dec 04 2018 14:43:30   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 24 2018 14:25:54  $
-  --       Date fetched Out : $Modtime:   Sep 24 2018 14:20:24  $
-  --       Version          : $Revision:   1.35  $
+  --       Date into PVCS   : $Date:   Dec 04 2018 14:43:30  $
+  --       Date fetched Out : $Modtime:   Dec 04 2018 14:33:16  $
+  --       Version          : $Revision:   1.36  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.35  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.36  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -1272,17 +1272,34 @@ AS
                      ,pi_id   => 125);
     END IF;
     --
-    FOR i IN 1..pi_old_attrib_names.COUNT LOOP
-      --
-      lt_old_asset_attribs(i).attrib_name := pi_old_attrib_names(i);
-      lt_old_asset_attribs(i).scrn_text   := pi_old_attrib_scrn_texts(i);
-      lt_old_asset_attribs(i).char_value  := pi_old_attrib_char_values(i);
-      --
-      lt_new_asset_attribs(i).attrib_name := pi_attrib_names(i);
-      lt_new_asset_attribs(i).scrn_text   := pi_attrib_scrn_texts(i);
-      lt_new_asset_attribs(i).char_value  := pi_new_attrib_char_values(i);
-      --
-    END LOOP;
+
+    IF pi_old_attrib_names.COUNT = 1 
+     AND (pi_old_attrib_names(1) is null 
+     AND pi_attrib_names(1) is null 
+     AND pi_old_attrib_scrn_texts(1)  is null 
+     AND pi_attrib_scrn_texts(1) is null 
+     AND pi_old_attrib_char_values(1) is null 
+     AND pi_new_attrib_char_values(1) is null)
+      THEN
+        /*
+        || To cope w`ith assets with no flexile attributes. .net has to pass empty array.
+        */
+        NULL;
+        --
+    ELSE
+      FOR i IN 1..pi_old_attrib_names.COUNT LOOP
+        --
+        lt_old_asset_attribs(i).attrib_name := pi_old_attrib_names(i);
+        lt_old_asset_attribs(i).scrn_text   := pi_old_attrib_scrn_texts(i);
+        lt_old_asset_attribs(i).char_value  := pi_old_attrib_char_values(i);
+        --
+        lt_new_asset_attribs(i).attrib_name := pi_attrib_names(i);
+        lt_new_asset_attribs(i).scrn_text   := pi_attrib_scrn_texts(i);
+        lt_new_asset_attribs(i).char_value  := pi_new_attrib_char_values(i);
+        --
+      END LOOP;
+    END IF;
+    
     --
     update_asset(pi_iit_ne_id       => pi_iit_ne_id
                 ,pi_old_primary_key => pi_old_primary_key
