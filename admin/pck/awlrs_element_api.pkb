@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.33   Nov 27 2018 14:36:48   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.34   Dec 04 2018 13:42:26   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Nov 27 2018 14:36:48  $
-  --       Date fetched Out : $Modtime:   Nov 27 2018 11:50:42  $
-  --       Version          : $Revision:   1.33  $
+  --       Date into PVCS   : $Date:   Dec 04 2018 13:42:26  $
+  --       Date fetched Out : $Modtime:   Dec 04 2018 12:34:28  $
+  --       Version          : $Revision:   1.34  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.33  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.34  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1394,7 +1394,13 @@ AS
           ,CASE
              WHEN nt_length_unit IS NOT NULL
               THEN
-                nm3unit.convert_unit(CASE WHEN ne_type = 'S' THEN nt_length_unit ELSE nm3net.get_nt_units(nm3net.get_datum_nt(ne_gty_group_type))END,un_unit_id,nm3net.get_ne_length(ne_id))
+                 CASE
+                   WHEN ne_type = 'S'
+                    THEN
+                       nm3net.get_ne_length(ne_id)
+                   ELSE
+                       nm3unit.convert_unit(nm3net.get_nt_units(nm3net.get_datum_nt(ne_gty_group_type)),nt_length_unit,nm3net.get_ne_length(ne_id))
+                 END
              ELSE
                  NULL
            END               element_length
@@ -1421,7 +1427,7 @@ AS
              WHEN nt_length_unit IS NOT NULL
               AND ne_type = 'G'
               THEN
-                 nm3unit.convert_unit(nt_length_unit,un_unit_id,awlrs_element_api.get_min_slk(ne_id))
+                 awlrs_element_api.get_min_slk(ne_id)
              ELSE
                  NULL
            END               element_min_offset
@@ -1429,20 +1435,21 @@ AS
              WHEN nt_length_unit IS NOT NULL
               AND ne_type = 'G'
               THEN
-                 nm3unit.convert_unit(nt_length_unit,un_unit_id,awlrs_element_api.get_max_slk(ne_id))
+                 awlrs_element_api.get_max_slk(ne_id)
              ELSE
                  NULL
            END               element_max_offset
       FROM nm_elements_all
           ,nm_types
+          ,nm_units
           ,nm_admin_units_all
           ,nm_group_types_all
           ,nm_nodes_all nos
           ,nm_points nps
           ,nm_nodes_all noe
           ,nm_points npe
-          ,(SELECT * FROM nm_units WHERE un_unit_id = Sys_Context('NM3CORE','USER_LENGTH_UNITS')) user_units
      WHERE ne_nt_type = nt_type
+       AND nt_length_unit = un_unit_id
        AND ne_admin_unit = nau_admin_unit
        AND ne_gty_group_type = ngt_group_type(+)
        AND ne_no_start = nos.no_node_id(+)
