@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.13   Sep 19 2018 12:03:48   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.14   Dec 04 2018 10:21:52   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   Sep 19 2018 12:03:48  $
---       Date fetched Out : $Modtime:   Sep 17 2018 16:39:14  $
---       Version          : $Revision:   1.13  $
+--       Date into PVCS   : $Date:   Dec 04 2018 10:21:52  $
+--       Date fetched Out : $Modtime:   Dec 04 2018 10:04:48  $
+--       Version          : $Revision:   1.14  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 17-SEP-2018 16:39
+--       Generation Date  : 04-DEC-2018 10:04
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -285,6 +285,31 @@ INSERT
       ,HOL_MIXED_CASE
       ,HOL_USER_OPTION
       ,HOL_MAX_LENGTH)
+SELECT 'AWLRECALPG'
+      ,'AWLRS'
+      ,'AWLRS Recalibrate All Parents'
+      ,'When perfoming certain network operations, such as Split, Merge and Reshape, on a Datum in AWLRS the user has the option to Rescale all parent groups at the end of the operation, this option defines the default position of the switch when the dialog is displayed, when set to Y the switch will default to On otherwise it will default to Off.'
+      ,'Y_OR_N'
+      ,'VARCHAR2'
+      ,'N'
+      ,'N'
+      ,1
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_LIST
+                   WHERE HOL_ID = 'AWLRECALPG');
+--
+INSERT
+  INTO HIG_OPTION_LIST
+      (HOL_ID
+      ,HOL_PRODUCT
+      ,HOL_NAME
+      ,HOL_REMARKS
+      ,HOL_DOMAIN
+      ,HOL_DATATYPE
+      ,HOL_MIXED_CASE
+      ,HOL_USER_OPTION
+      ,HOL_MAX_LENGTH)
 SELECT 'AWLUIDBUG'
       ,'AWLRS'
       ,'UI Debug'
@@ -422,6 +447,17 @@ SELECT 'AWLRECALHS'
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_OPTION_VALUES
                    WHERE HOV_ID = 'AWLRECALHS');
+--
+INSERT
+  INTO HIG_OPTION_VALUES
+      (HOV_ID
+      ,HOV_VALUE)
+SELECT 'AWLRECALPG'
+      ,'N'
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_VALUES
+                   WHERE HOV_ID = 'AWLRECALPG');
 --
 INSERT
   INTO HIG_OPTION_VALUES
