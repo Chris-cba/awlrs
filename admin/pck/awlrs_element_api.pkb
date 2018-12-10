@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.35   Dec 10 2018 15:53:44   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.36   Dec 10 2018 16:56:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Dec 10 2018 15:53:44  $
-  --       Date fetched Out : $Modtime:   Dec 10 2018 15:43:22  $
-  --       Version          : $Revision:   1.35  $
+  --       Date into PVCS   : $Date:   Dec 10 2018 16:56:04  $
+  --       Date fetched Out : $Modtime:   Dec 10 2018 16:53:44  $
+  --       Version          : $Revision:   1.36  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.35  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.36  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1395,11 +1395,11 @@ AS
              WHEN nt_length_unit IS NOT NULL
               THEN
                  CASE
-                   WHEN ne_type = 'S'
+                   WHEN ne_gty_group_type IS NOT NULL
                     THEN
-                       nm3net.get_ne_length(ne_id)
-                   ELSE
                        nm3unit.convert_unit(nm3net.get_nt_units(nm3net.get_datum_nt(ne_gty_group_type)),nt_length_unit,nm3net.get_ne_length(ne_id))
+                   ELSE
+                       nm3net.get_ne_length(ne_id)
                  END
              ELSE
                  NULL
