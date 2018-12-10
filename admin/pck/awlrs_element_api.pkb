@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.34   Dec 04 2018 13:42:26   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.35   Dec 10 2018 15:53:44   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Dec 04 2018 13:42:26  $
-  --       Date fetched Out : $Modtime:   Dec 04 2018 12:34:28  $
-  --       Version          : $Revision:   1.34  $
+  --       Date into PVCS   : $Date:   Dec 10 2018 15:53:44  $
+  --       Date fetched Out : $Modtime:   Dec 10 2018 15:43:22  $
+  --       Version          : $Revision:   1.35  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.34  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.35  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1449,7 +1449,7 @@ AS
           ,nm_nodes_all noe
           ,nm_points npe
      WHERE ne_nt_type = nt_type
-       AND nt_length_unit = un_unit_id
+       AND nt_length_unit = un_unit_id(+)
        AND ne_admin_unit = nau_admin_unit
        AND ne_gty_group_type = ngt_group_type(+)
        AND ne_no_start = nos.no_node_id(+)
