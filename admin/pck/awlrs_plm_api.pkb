@@ -3,17 +3,17 @@
     -------------------------------------------------------------------------
     --   PVCS Identifiers :-
     --
-    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.13   Oct 18 2018 14:49:24   Peter.Bibby  $
+    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.14   Dec 10 2018 12:02:16   Peter.Bibby  $
     --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-    --       Date into PVCS   : $Date:   Oct 18 2018 14:49:24  $
-    --       Date fetched Out : $Modtime:   Oct 18 2018 14:48:40  $
-    --       Version          : $Revision:   1.13  $
+    --       Date into PVCS   : $Date:   Dec 10 2018 12:02:16  $
+    --       Date fetched Out : $Modtime:   Dec 06 2018 16:40:58  $
+    --       Version          : $Revision:   1.14  $
     -------------------------------------------------------------------------
     --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
     -------------------------------------------------------------------------
     --
     --g_body_sccsid is the SCCS ID for the package body
-    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
+    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.14  $';
     g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
     --
     g_max_layers      PLS_INTEGER;
@@ -333,7 +333,7 @@
                                          ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
                                          ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
                                          ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab
-                                         ,pi_depth_removed            IN     NUMBER DEFAULT NULL
+                                         ,pi_depth_removed            IN     NUMBER DEFAULT NULL                                         
                                          ,po_iit_ne_ids               IN OUT iit_ne_id_tab
                                          ,po_message_severity            OUT hig_codes.hco_code%TYPE
                                          ,po_message_cursor              OUT sys_refcursor)
@@ -355,7 +355,6 @@
       lt_existing_iit_ne_ids      iit_ne_id_tab;
       lv_message_cursor           sys_refcursor;
       lt_xsps                     xsp_tab;
-     
       --
     BEGIN
       --
@@ -533,7 +532,7 @@
     --
     -----------------------------------------------------------------------------
     --
-    PROCEDURE create_construction_records(pi_admin_unit               IN     nm_admin_units_all.nau_admin_unit%TYPE
+    PROCEDURE create_replace_cons_records(pi_admin_unit               IN     nm_admin_units_all.nau_admin_unit%TYPE
                                          ,pi_description              IN     nm_inv_items_all.iit_descr%TYPE
                                          ,pi_start_date               IN     nm_inv_items_all.iit_start_date%TYPE
                                          ,pi_end_date                 IN     nm_inv_items_all.iit_end_date%TYPE
@@ -549,19 +548,14 @@
                                          ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
                                          ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
                                          ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab
-                                         ,pi_depth_removed            IN     NUMBER DEFAULT NULL
                                          ,po_message_severity            OUT hig_codes.hco_code%TYPE
                                          ,po_message_cursor              OUT sys_refcursor)
       IS
       --
       lt_iit_ne_ids iit_ne_id_tab;
-      --
-  lv_start timestamp;
-  lv_end   timestamp;      
+      --   
       --
     BEGIN
-      --
-  lv_start := systimestamp;      
       --
       create_construction_records(pi_admin_unit               => pi_admin_unit
                                  ,pi_description              => pi_description
@@ -579,21 +573,17 @@
                                  ,pi_layer_attrib_names       => pi_layer_attrib_names
                                  ,pi_layer_attrib_scrn_texts  => pi_layer_attrib_scrn_texts
                                  ,pi_layer_attrib_char_values => pi_layer_attrib_char_values
-                                 ,pi_depth_removed            => pi_depth_removed
+                                 ,pi_depth_removed            => null
                                  ,po_iit_ne_ids               => lt_iit_ne_ids
                                  ,po_message_severity         => po_message_severity
                                  ,po_message_cursor           => po_message_cursor );
-      --
-  lv_end := systimestamp;    
-  nm_debug.debug_on;
-nm_debug.debug('Execution time : '||TO_CHAR(lv_end - lv_start));
-nm_debug.debug_off;  
+    --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-    END create_construction_records;
+    END create_replace_cons_records;
 
     --
     -----------------------------------------------------------------------------
@@ -677,6 +667,209 @@ nm_debug.debug_off;
           awlrs_util.handle_exception(po_message_severity => po_message_severity
                                      ,po_cursor           => po_message_cursor);
     END create_construction_records;
+
+    --
+    -----------------------------------------------------------------------------
+    --
+    PROCEDURE reconstruct_cons_records(pi_admin_unit               IN     nm_admin_units_all.nau_admin_unit%TYPE
+                                      ,pi_description              IN     nm_inv_items_all.iit_descr%TYPE
+                                      ,pi_start_date               IN     nm_inv_items_all.iit_start_date%TYPE
+                                      ,pi_end_date                 IN     nm_inv_items_all.iit_end_date%TYPE
+                                      ,pi_notes                    IN     nm_inv_items_all.iit_note%TYPE
+                                      ,pi_attrib_names             IN     awlrs_asset_api.attrib_name_tab
+                                      ,pi_attrib_scrn_texts        IN     awlrs_asset_api.attrib_scrn_text_tab
+                                      ,pi_attrib_char_values       IN     awlrs_asset_api.attrib_value_tab
+                                      ,pi_xsps                     IN     xsp_tab
+                                      ,pi_ne_ids                   IN     awlrs_util.ne_id_tab
+                                      ,pi_begin_mps                IN     location_from_offset_tab
+                                      ,pi_end_mps                  IN     location_to_offset_tab
+                                      ,pi_layer_attrib_idx         IN     iit_ne_id_tab
+                                      ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
+                                      ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
+                                      ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab
+                                      ,pi_depth_removed            IN     NUMBER
+                                      ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor              OUT sys_refcursor)
+      IS
+      --
+      lt_iit_ne_ids iit_ne_id_tab;
+      --   
+    BEGIN
+      --        
+      create_construction_records(pi_admin_unit               => pi_admin_unit
+                                 ,pi_description              => pi_description
+                                 ,pi_start_date               => pi_start_date
+                                 ,pi_end_date                 => pi_end_date
+                                 ,pi_notes                    => pi_notes
+                                 ,pi_attrib_names             => pi_attrib_names
+                                 ,pi_attrib_scrn_texts        => pi_attrib_scrn_texts
+                                 ,pi_attrib_char_values       => pi_attrib_char_values
+                                 ,pi_xsps                     => pi_xsps
+                                 ,pi_ne_ids                   => pi_ne_ids
+                                 ,pi_begin_mps                => pi_begin_mps
+                                 ,pi_end_mps                  => pi_end_mps
+                                 ,pi_layer_attrib_idx         => pi_layer_attrib_idx
+                                 ,pi_layer_attrib_names       => pi_layer_attrib_names
+                                 ,pi_layer_attrib_scrn_texts  => pi_layer_attrib_scrn_texts
+                                 ,pi_layer_attrib_char_values => pi_layer_attrib_char_values
+                                 ,pi_depth_removed            => nvl(pi_depth_removed,0)
+                                 ,po_iit_ne_ids               => lt_iit_ne_ids
+                                 ,po_message_severity         => po_message_severity
+                                 ,po_message_cursor           => po_message_cursor );
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+    END reconstruct_cons_records;
+    
+    --
+    -----------------------------------------------------------------------------
+    --
+    PROCEDURE reconstruct_cons_records(pi_admin_unit               IN     nm_admin_units_all.nau_admin_unit%TYPE
+                                      ,pi_description              IN     nm_inv_items_all.iit_descr%TYPE
+                                      ,pi_start_date               IN     nm_inv_items_all.iit_start_date%TYPE
+                                      ,pi_end_date                 IN     nm_inv_items_all.iit_end_date%TYPE
+                                      ,pi_notes                    IN     nm_inv_items_all.iit_note%TYPE
+                                      ,pi_attrib_names             IN     awlrs_asset_api.attrib_name_tab
+                                      ,pi_attrib_scrn_texts        IN     awlrs_asset_api.attrib_scrn_text_tab
+                                      ,pi_attrib_char_values       IN     awlrs_asset_api.attrib_value_tab
+                                      ,pi_xsps                     IN     xsp_tab
+                                      ,pi_ne_ids                   IN     awlrs_util.ne_id_tab
+                                      ,pi_begin_mps                IN     location_from_offset_tab
+                                      ,pi_end_mps                  IN     location_to_offset_tab
+                                      ,pi_gaps_xsps                IN     xsp_tab
+                                      ,pi_gaps_ne_ids              IN     awlrs_util.ne_id_tab
+                                      ,pi_gaps_begin_mps           IN     location_from_offset_tab
+                                      ,pi_gaps_end_mps             IN     location_to_offset_tab                                         
+                                      ,pi_layer_attrib_idx         IN     iit_ne_id_tab
+                                      ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
+                                      ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
+                                      ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab
+                                      ,pi_depth_removed            IN     NUMBER
+                                      --,po_iit_ne_ids               IN OUT iit_ne_id_tab GK doesnt want.
+                                      ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor              OUT sys_refcursor)
+      IS
+      --
+      lv_severity   hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+      --
+      lt_messages                 awlrs_message_tab := awlrs_message_tab();
+      lt_iit_ne_ids               iit_ne_id_tab;
+      lt_iit_ne_ids_gaps          iit_ne_id_tab;      
+      lv_message_cursor           sys_refcursor;
+      lt_xsps                     xsp_tab;
+      lt_gaps_xsps                xsp_tab;
+      lt_gaps_ne_ids              awlrs_util.ne_id_tab;
+      lt_gaps_begin_mps           location_from_offset_tab;
+      lt_gaps_end_mps             location_to_offset_tab;                                      
+      --
+    BEGIN
+      --
+      /*
+      ||Add standard records
+      */
+      create_construction_records(pi_admin_unit               => pi_admin_unit              
+                                 ,pi_description              => pi_description             
+                                 ,pi_start_date               => pi_start_date              
+                                 ,pi_end_date                 => pi_end_date                
+                                 ,pi_notes                    => pi_notes                   
+                                 ,pi_attrib_names             => pi_attrib_names            
+                                 ,pi_attrib_scrn_texts        => pi_attrib_scrn_texts       
+                                 ,pi_attrib_char_values       => pi_attrib_char_values      
+                                 ,pi_xsps                     => pi_xsps                    
+                                 ,pi_ne_ids                   => pi_ne_ids                  
+                                 ,pi_begin_mps                => pi_begin_mps               
+                                 ,pi_end_mps                  => pi_end_mps                 
+                                 ,pi_layer_attrib_idx         => pi_layer_attrib_idx        
+                                 ,pi_layer_attrib_names       => pi_layer_attrib_names      
+                                 ,pi_layer_attrib_scrn_texts  => pi_layer_attrib_scrn_texts 
+                                 ,pi_layer_attrib_char_values => pi_layer_attrib_char_values
+                                 ,pi_depth_removed            => pi_depth_removed                                 
+                                 ,po_iit_ne_ids               => lt_iit_ne_ids
+                                 ,po_message_severity         => lv_severity
+                                 ,po_message_cursor           => lv_message_cursor);
+      --
+      IF lt_messages.COUNT = 0 AND  pi_gaps_ne_ids.COUNT > 0 THEN
+        /*
+        ||Add Gaps so null depth and gaps network elements, xsp and measure 
+        ||These will need to be passed in on there own as not all XSPs will have gaps
+        */
+        /*
+        ||Check row counts
+        */
+        IF pi_gaps_ne_ids.COUNT != pi_gaps_xsps.COUNT
+         OR pi_gaps_ne_ids.COUNT != pi_gaps_begin_mps.COUNT
+         OR pi_gaps_ne_ids.COUNT != pi_gaps_end_mps.COUNT
+          THEN
+            --
+            hig.raise_ner(pi_appl => 'AWLRS'
+                         ,pi_id   => 5);
+            --
+        END IF;    
+        --
+        /*
+        ||PB TO DO - do we need to handle single null array records or will arrays be empty.
+        */        
+        FOR i in 1..pi_gaps_ne_ids.COUNT LOOP
+          --
+          lt_gaps_xsps(1) := pi_gaps_xsps(i);
+          lt_gaps_ne_ids(1) := pi_gaps_ne_ids(i);
+          lt_gaps_begin_mps(1) := pi_gaps_begin_mps(i);
+          lt_gaps_end_mps(1) := pi_gaps_end_mps(i);                   
+          --
+          /*
+          ||create new construction data for gaps.
+          */
+          create_construction_records(pi_admin_unit               => pi_admin_unit              
+                                     ,pi_description              => pi_description             
+                                     ,pi_start_date               => pi_start_date              
+                                     ,pi_end_date                 => pi_end_date                
+                                     ,pi_notes                    => pi_notes                   
+                                     ,pi_attrib_names             => pi_attrib_names            
+                                     ,pi_attrib_scrn_texts        => pi_attrib_scrn_texts       
+                                     ,pi_attrib_char_values       => pi_attrib_char_values      
+                                     ,pi_xsps                     => lt_gaps_xsps
+                                     ,pi_ne_ids                   => lt_gaps_ne_ids
+                                     ,pi_begin_mps                => lt_gaps_begin_mps
+                                     ,pi_end_mps                  => lt_gaps_end_mps               
+                                     ,pi_layer_attrib_idx         => pi_layer_attrib_idx        
+                                     ,pi_layer_attrib_names       => pi_layer_attrib_names      
+                                     ,pi_layer_attrib_scrn_texts  => pi_layer_attrib_scrn_texts 
+                                     ,pi_layer_attrib_char_values => pi_layer_attrib_char_values
+                                     ,pi_depth_removed            => null                                 
+                                     ,po_iit_ne_ids               => lt_iit_ne_ids_gaps
+                                     ,po_message_severity         => lv_severity
+                                     ,po_message_cursor           => lv_message_cursor);
+          --
+          lt_iit_ne_ids(lt_iit_ne_ids.COUNT+1) := lt_iit_ne_ids_gaps(1);                                     
+          --
+        END LOOP;
+        --
+      END IF;
+      /*
+      ||If there are any messages to return then create a cursor for them.
+      */
+      IF lt_messages.COUNT > 0
+       THEN
+          awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                       ,po_cursor      => po_message_cursor);
+          awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                         ,po_message_severity => po_message_severity);
+      ELSE
+          --po_iit_ne_ids := lt_iit_ne_ids;
+          awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                               ,po_cursor           => po_message_cursor);
+      END IF;
+      --
+     
+    EXCEPTION
+      WHEN others
+       THEN
+          awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                     ,po_cursor           => po_message_cursor);
+    END reconstruct_cons_records;    
 
     --
     -----------------------------------------------------------------------------
@@ -3147,6 +3340,439 @@ nm_debug.debug_off;
                                      ,po_cursor           => po_message_cursor);
     END get_xsps;
     
+    --    
+    -----------------------------------------------------------------------------
+    --    
+    /*
+    ||update the XSP value pre running the PBI query
+    */
+    PROCEDURE update_pbi_xsp_value (pi_npq_id IN nm_pbi_query.npq_id%TYPE
+                                   ,pi_xsp    IN nm_inv_items_all.iit_x_sect%TYPE) IS
+      --
+      PRAGMA AUTONOMOUS_TRANSACTION;
+      --
+    BEGIN
+      --
+      UPDATE nm_pbi_query_values
+         SET nqv_value = pi_xsp
+       WHERE nqv_npq_id = pi_npq_id;
+      --
+      COMMIT;
+      --
+    END update_pbi_xsp_value;
+    --    
+    -----------------------------------------------------------------------------
+    --
+
+    PROCEDURE get_construction_gaps(pi_ne_ids             IN  awlrs_util.ne_id_tab
+                                   ,pi_xsps               IN  xsp_tab
+                                   ,pi_begin_mps          IN  location_from_offset_tab                                 
+                                   ,pi_end_mps            IN  location_to_offset_tab                                 
+                                   ,po_xsp_job            OUT nm_id_code_tbl)
+      IS
+      --
+      lv_nt_type           nm_elements.ne_nt_type%TYPE;
+      lv_grp_type          nm_elements.ne_gty_group_type%TYPE;
+      lv_nwextent_id       NUMBER := nm3net.get_next_nte_id;
+      lv_nwextent_id2      NUMBER;
+      lv_pcrextent_id      NUMBER;        
+      lv_gapsextent_id     NUMBER;
+      lv_pbi_result_job_id NUMBER;    
+      lv_npq_id            nm_pbi_query.npq_id%TYPE;      
+      --
+      lt_plm_xsp_job  nm_id_code_tbl := nm_id_code_tbl();          
+      --
+      TYPE nte_tab  IS TABLE OF nm_nw_temp_extents%ROWTYPE;
+      lt_nte nte_tab := nte_tab();
+      --
+      --      
+      CURSOR get_nw_grp_type(cp_ne_id IN nm_elements.ne_id%TYPE)
+          IS
+      SELECT ne_nt_type
+            ,ne_gty_group_type
+        FROM nm_elements
+       WHERE ne_id = cp_ne_id      
+      ; 
+      --
+      FUNCTION insert_pbi_query
+        RETURN NUMBER IS
+        --
+        lv_npq_id     nm_pbi_query.npq_id%TYPE;
+        lv_nqt_id     nm_pbi_query_types.nqt_seq_no%TYPE;
+        lv_pbi_unique nm_pbi_query.npq_unique%TYPE := 'AWL_PLM_CONS_GAPS';
+        lv_pbi_descr  nm_pbi_query.npq_descr%TYPE := 'Pre-Defined PBI query for use with Pavement Layers to establish gaps';        
+        lv_inv_type   nm_inv_items_all.iit_inv_type%TYPE := get_cons_rec_type;
+        --
+      BEGIN
+        --
+        SELECT npq_id 
+          INTO lv_npq_id
+          FROM nm_pbi_query
+         WHERE npq_unique = lv_pbi_unique;
+        --
+        RETURN lv_npq_id;
+        --
+      EXCEPTION
+        WHEN no_data_found THEN
+          lv_npq_id := nm3ddl.sequence_nextval('NPQ_ID_SEQ');
+          lv_nqt_id := nm3ddl.sequence_nextval('NQT_SEQ_NO_SEQ');
+          /*
+          ||Create PBI query and standard metadata needed.
+          */
+           INSERT 
+             INTO nm_pbi_query
+                 (npq_id
+                 ,npq_unique
+                 ,npq_descr)
+           VALUES(lv_npq_id
+                 ,lv_pbi_unique
+                 ,lv_pbi_descr)
+                ;
+           --
+           INSERT 
+             INTO nm_pbi_query_types
+                 (nqt_npq_id
+                 ,nqt_seq_no
+                 ,nqt_item_type_type
+                 ,nqt_item_type)
+           VALUES(lv_npq_id
+                 ,lv_nqt_id
+                 ,'I'
+                 ,lv_inv_type)
+                ;
+           --                
+           INSERT 
+             INTO nm_pbi_query_attribs
+                 (nqa_npq_id
+                 ,nqa_nqt_seq_no
+                 ,nqa_seq_no
+                 ,nqa_attrib_name
+                 ,nqa_operator
+                 ,nqa_pre_bracket
+                 ,nqa_post_bracket
+                 ,nqa_condition)
+           VALUES(lv_npq_id
+                 ,lv_nqt_id
+                 ,1
+                 ,'IIT_X_SECT'
+                 ,'AND'
+                 ,'('
+                 ,')'
+                 ,'=')
+                ;
+           --
+           INSERT 
+             INTO nm_pbi_query_values
+                 (nqv_npq_id
+                 ,nqv_nqt_seq_no
+                 ,nqv_nqa_seq_no
+                 ,nqv_sequence
+                 ,nqv_value)
+           VALUES(lv_npq_id
+                 ,lv_nqt_id
+                 ,1
+                 ,1
+                 ,'L')--dummy value will be overridden)
+                ;                   
+            COMMIT;
+            --
+            RETURN lv_npq_id;       
+        --
+      END insert_pbi_query;
+      /*
+      ||copied from nem to merge the locations into a temp extent and remove overlaps.
+      */
+      FUNCTION create_temp_ne_from_locs(pi_ne_ids_tab    IN awlrs_util.ne_id_tab
+                                       ,pi_begin_mps_tab IN awlrs_plm_api.location_from_offset_tab
+                                       ,pi_end_mps_tab   IN awlrs_plm_api.location_to_offset_tab)
+        RETURN NUMBER IS
+        --
+        lv_location_job_id  NUMBER;
+        lv_combined_job_id  NUMBER;
+        --
+      BEGIN
+        /*
+        ||Make sure the attribute tables have the same number of records.
+        */
+        IF pi_ne_ids_tab.COUNT != pi_begin_mps_tab.COUNT
+         OR pi_ne_ids_tab.COUNT != pi_end_mps_tab.COUNT
+         THEN
+            --The attribute tables passed in must have matching row counts
+            hig.raise_ner(pi_appl               => 'AWLRS'
+                         ,pi_id                 => 5);
+        END IF;
+        -- 
+        FOR i IN 1..pi_ne_ids_tab.COUNT LOOP
+          /*
+          ||Loop through the locations and add them to the asset extent.
+          */ 
+          nm3extent.create_temp_ne(pi_source_id => pi_ne_ids_tab(i)
+                                  ,pi_source    => nm3extent.get_route
+                                  ,pi_begin_mp  => pi_begin_mps_tab(i)
+                                  ,pi_end_mp    => pi_end_mps_tab(i)
+                                  ,po_job_id    => lv_location_job_id);                            
+          --
+          IF lv_combined_job_id IS NULL
+           THEN
+              lv_combined_job_id := lv_location_job_id;
+          ELSE
+              nm3extent.combine_temp_nes(pi_job_id_1       => lv_combined_job_id
+                                        ,pi_job_id_2       => lv_location_job_id
+                                        ,pi_check_overlaps => FALSE);
+          END IF;
+          --
+        END LOOP;      
+        /*
+        ||Not sure what the problem is but if remove overlaps is not
+        ||called TWICE here homo_update can raised an overlap error
+        ||when the network being added overlaps the existing location(s):
+        ||ORA-20519: NM_NW_TEMP_EXTENTS records with overlaps found
+        */
+        lv_combined_job_id := nm3extent.remove_overlaps(pi_nte_id => nm3extent.remove_overlaps(pi_nte_id => lv_combined_job_id));
+        --
+        RETURN lv_combined_job_id;
+        --
+      EXCEPTION
+        WHEN others
+         THEN
+            RAISE;  
+      END create_temp_ne_from_locs;      
+      --
+    BEGIN
+      --
+      /*
+      || Get NW and Group Types. PB TODO if not the same then error.
+      */
+      OPEN  get_nw_grp_type(pi_ne_ids(1));
+      FETCH get_nw_grp_type
+       INTO lv_nt_type, lv_grp_type;
+      CLOSE get_nw_grp_type;      
+      --
+      lt_plm_xsp_job.DELETE;
+      /*
+      ||Get or create PBI query informaition
+      */
+      lv_npq_id := insert_pbi_query;
+      --
+      FOR i in 1..pi_xsps.COUNT LOOP
+        lt_nte.DELETE;
+        IF pi_xsps(i) IS NOT NULL AND lv_npq_id IS NOT NULL THEN
+          update_pbi_xsp_value (pi_npq_id => lv_npq_id
+                               ,pi_xsp    => pi_xsps(i));
+        END IF;
+        --
+        /*
+        ||create temp extent for the network sections and remove overlaps
+        */
+ 	      --
+        lv_nwextent_id := create_temp_ne_from_locs(pi_ne_ids_tab    => pi_ne_ids
+                                                  ,pi_begin_mps_tab => pi_begin_mps
+                                                  ,pi_end_mps_tab   => pi_end_mps);     
+        /*
+        ||Make a copy of temp extent after overlaps removed
+        */
+        --
+        lv_nwextent_id2:= nm3net.get_next_nte_id;
+        --
+        SELECT lv_nwextent_id2
+              ,nte_ne_id_of
+              ,nte_begin_mp
+              ,nte_end_mp
+              ,nte_cardinality
+              ,nte_seq_no
+              ,nte_route_ne_id
+          BULK COLLECT
+          INTO lt_nte
+          FROM nm_nw_temp_extents
+         WHERE nte_job_id = lv_nwextent_id;
+                                                  --
+        /*
+        ||PBI query to get sections where pcr records exist. PB TODO look at what we do in terms of pbi query
+        */                             
+        nm3pbi.execute_pbi_query(pi_query_id      => lv_npq_id
+                                ,pi_nte_job_id    => lv_nwextent_id
+                                ,pi_description   => 'awlrs_plm_api.get_construction_gaps'
+                                ,po_result_job_id => lv_pbi_result_job_id);
+        /*
+        ||Turn into temp extent
+        */
+        nm3extent.create_temp_ne (pi_source_id                 =>     lv_pbi_result_job_id
+                                 ,pi_source                    =>     'PBI'
+                                 ,pi_begin_mp                  =>     null
+                                 ,pi_end_mp                    =>     null
+                                 ,po_job_id                    =>     lv_pcrextent_id
+                                 );
+        /*
+        ||Not sure why but the original temp extent is being removed so recreate here before doing minus.
+        || this function is slow so make a copy prior to it being removed an insert back into temp extents.
+        */
+        FORALL i IN lt_nte.FIRST..lt_nte.LAST
+          --
+          INSERT 
+            INTO nm_nw_temp_extents 
+          VALUES lt_nte(i);        
+        --                                                
+        /*
+        ||minus the temp extent of everything and the assets to give us the gaps.
+        */      
+        nm3extent.nte_minus_nte (pi_nte_1       =>     lv_nwextent_id2
+                                ,pi_nte_2       =>     lv_pcrextent_id
+                                ,po_nte_result  =>     lv_gapsextent_id
+                                );
+        /*
+        || add job and XSP for use in translation.
+        */
+        lt_plm_xsp_job.EXTEND;
+        lt_plm_xsp_job(lt_plm_xsp_job.count) := nm_id_code_type(lv_gapsextent_id
+                                                               ,pi_xsps(i));
+        --   
+        po_xsp_job := lt_plm_xsp_job;
+        --                                                              
+      END LOOP;
+      --
+    END get_construction_gaps;
+ 
+    --    
+    -----------------------------------------------------------------------------
+    --
+
+    PROCEDURE get_construction_gaps(pi_ne_ids             IN  awlrs_util.ne_id_tab
+                                   ,pi_xsps               IN  xsp_tab
+                                   ,pi_begin_mps          IN  location_from_offset_tab                                 
+                                   ,pi_end_mps            IN  location_to_offset_tab                                 
+                                   ,po_cursor             OUT sys_refcursor
+                                   ,po_message_severity   OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor     OUT sys_refcursor)
+      IS
+      --
+      lv_nt_type           nm_elements.ne_nt_type%TYPE;
+      lv_grp_type          nm_elements.ne_gty_group_type%TYPE;  
+      --
+      lt_plm_xsp_job  nm_id_code_tbl := nm_id_code_tbl();          
+      --
+
+      --
+      CURSOR get_nw_grp_type(cp_ne_id IN nm_elements.ne_id%TYPE)
+          IS
+      SELECT ne_nt_type
+            ,ne_gty_group_type
+        FROM nm_elements
+       WHERE ne_id = cp_ne_id;
+     
+      --
+    BEGIN
+      --
+      /*
+      || Get NW and Group Types. PB TODO if not the same then error.
+      */
+      OPEN  get_nw_grp_type(pi_ne_ids(1));
+      FETCH get_nw_grp_type
+       INTO lv_nt_type, lv_grp_type;
+      CLOSE get_nw_grp_type;  
+      --
+      get_construction_gaps(pi_ne_ids             => pi_ne_ids
+                           ,pi_xsps               => pi_xsps
+                           ,pi_begin_mps          => pi_begin_mps                           
+                           ,pi_end_mps            => pi_end_mps                            
+                           ,po_xsp_job            => lt_plm_xsp_job);
+      /*
+      ||Use get_connected chunks to translate to network type that was passed in. to do.
+      */
+      /*
+      ||pb added for datums, needs reviewing
+      */
+      IF lv_grp_type IS NULL THEN
+        OPEN po_cursor FOR
+         SELECT ne.ne_id             element_id
+               ,CASE ne.ne_nt_type
+                  WHEN 'ESU' THEN ne.ne_name_1
+                  WHEN 'NSGN' THEN ne.ne_number
+                  ELSE ne.ne_unique
+                END                  ne_unique
+               ,ne.ne_nt_type        element_type
+               ,ne.ne_gty_group_type element_group_type
+               ,ne.ne_type           ne_type
+               ,nte.nte_begin_mp     element_begin_mp
+               ,nte.nte_end_mp       element_end_mp
+               ,nte.nte_job_id       job_id
+               ,plm.code             xsp
+          FROM (SELECT id, code  FROM TABLE(CAST(lt_plm_xsp_job AS nm_id_code_tbl)))plm
+              ,nm_elements ne
+              ,nm_nw_temp_extents nte
+         WHERE nte_job_id = plm.id
+           AND nte_ne_id_of = ne_id
+           AND ne.ne_type = 'S'
+         ORDER BY ne_id, nte_job_id;      
+      ELSE
+        OPEN po_cursor FOR
+         SELECT ne.ne_id
+               ,CASE ne.ne_nt_type
+                  WHEN 'ESU' THEN ne.ne_name_1
+                  WHEN 'NSGN' THEN ne.ne_number
+                  ELSE ne.ne_unique
+                END ne_unique
+               ,ne.ne_nt_type
+               ,ne.ne_gty_group_type
+               ,ne.ne_type
+               ,locs.from_offset
+               ,locs.to_offset
+               ,locs.jobid
+               ,locs.xsp
+           FROM nm_units nu
+               ,nm_types nt
+               ,nm_admin_units_all nau
+               ,nm_elements ne
+               ,(SELECT pl.pl_ne_id ne_id
+                       ,pl.pl_start from_offset
+                       ,pl.pl_end   to_offset
+                       ,rownum      ind
+                       ,id jobid
+                       ,code xsp
+                   FROM (SELECT id, code  FROM TABLE(CAST(lt_plm_xsp_job AS nm_id_code_tbl)))plm
+                        ,TABLE(nm3pla.get_connected_chunks(p_nte_job_id => plm.id
+                                                          ,p_route_id   => NULL
+                                                          ,p_obj_type   => lv_grp_type).npa_placement_array) pl) locs
+          WHERE locs.ne_id = ne.ne_id
+            AND ne.ne_admin_unit = nau.nau_admin_unit 
+            AND ne.ne_nt_type = nt.nt_type
+            AND nt.nt_length_unit = nu.un_unit_id
+          GROUP
+             BY ne.ne_id
+               ,CASE ne.ne_nt_type
+                  WHEN 'ESU' THEN ne.ne_name_1
+                  WHEN 'NSGN' THEN ne.ne_number
+                  ELSE ne.ne_unique
+                END
+               ,ne.ne_descr
+               ,ne.ne_nt_type
+               ,ne.ne_gty_group_type
+               ,locs.from_offset
+               ,locs.to_offset
+               ,nt.nt_length_unit
+               ,nu.un_unit_name
+               ,nt.nt_node_type
+               ,ne.ne_type
+               ,nau.nau_name
+               ,locs.ind
+               ,locs.jobid
+               ,locs.xsp
+          ORDER
+             BY locs.ind
+               ,locs.jobid
+               ,locs.xsp       
+              ;
+        --
+      END IF;
+      --      
+      awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                           ,po_cursor           => po_message_cursor);
+      --
+    EXCEPTION
+      WHEN others
+       THEN
+          awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                     ,po_cursor           => po_message_cursor);
+    END get_construction_gaps; 
     --
     -----------------------------------------------------------------------------
     --

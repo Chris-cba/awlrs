@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.8   Oct 10 2018 10:22:32   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.9   Dec 10 2018 12:02:16   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkh  $
-  --       Date into PVCS   : $Date:   Oct 10 2018 10:22:32  $
-  --       Date fetched Out : $Modtime:   Oct 04 2018 15:33:50  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   Dec 10 2018 12:02:16  $
+  --       Date fetched Out : $Modtime:   Dec 06 2018 16:29:02  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
   --
   TYPE iit_ne_id_tab IS TABLE OF nm_inv_items_all.iit_ne_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -59,6 +59,77 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE create_replace_cons_records(pi_admin_unit               IN     nm_admin_units_all.nau_admin_unit%TYPE
+                                       ,pi_description              IN     nm_inv_items_all.iit_descr%TYPE
+                                       ,pi_start_date               IN     nm_inv_items_all.iit_start_date%TYPE
+                                       ,pi_end_date                 IN     nm_inv_items_all.iit_end_date%TYPE
+                                       ,pi_notes                    IN     nm_inv_items_all.iit_note%TYPE
+                                       ,pi_attrib_names             IN     awlrs_asset_api.attrib_name_tab
+                                       ,pi_attrib_scrn_texts        IN     awlrs_asset_api.attrib_scrn_text_tab
+                                       ,pi_attrib_char_values       IN     awlrs_asset_api.attrib_value_tab
+                                       ,pi_xsps                     IN     xsp_tab
+                                       ,pi_ne_ids                   IN     awlrs_util.ne_id_tab
+                                       ,pi_begin_mps                IN     location_from_offset_tab
+                                       ,pi_end_mps                  IN     location_to_offset_tab
+                                       ,pi_layer_attrib_idx         IN     iit_ne_id_tab
+                                       ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
+                                       ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
+                                       ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab
+                                       ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor              OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --  
+  PROCEDURE reconstruct_cons_records(pi_admin_unit               IN     nm_admin_units_all.nau_admin_unit%TYPE
+                                    ,pi_description              IN     nm_inv_items_all.iit_descr%TYPE
+                                    ,pi_start_date               IN     nm_inv_items_all.iit_start_date%TYPE
+                                    ,pi_end_date                 IN     nm_inv_items_all.iit_end_date%TYPE
+                                    ,pi_notes                    IN     nm_inv_items_all.iit_note%TYPE
+                                    ,pi_attrib_names             IN     awlrs_asset_api.attrib_name_tab
+                                    ,pi_attrib_scrn_texts        IN     awlrs_asset_api.attrib_scrn_text_tab
+                                    ,pi_attrib_char_values       IN     awlrs_asset_api.attrib_value_tab
+                                    ,pi_xsps                     IN     xsp_tab
+                                    ,pi_ne_ids                   IN     awlrs_util.ne_id_tab
+                                    ,pi_begin_mps                IN     location_from_offset_tab
+                                    ,pi_end_mps                  IN     location_to_offset_tab
+                                    ,pi_gaps_xsps                IN     xsp_tab
+                                    ,pi_gaps_ne_ids              IN     awlrs_util.ne_id_tab
+                                    ,pi_gaps_begin_mps           IN     location_from_offset_tab
+                                    ,pi_gaps_end_mps             IN     location_to_offset_tab                                                 
+                                    ,pi_layer_attrib_idx         IN     iit_ne_id_tab
+                                    ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
+                                    ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
+                                    ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab
+                                    ,pi_depth_removed            IN     NUMBER
+                                    ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor              OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE reconstruct_cons_records(pi_admin_unit               IN     nm_admin_units_all.nau_admin_unit%TYPE
+                                    ,pi_description              IN     nm_inv_items_all.iit_descr%TYPE
+                                    ,pi_start_date               IN     nm_inv_items_all.iit_start_date%TYPE
+                                    ,pi_end_date                 IN     nm_inv_items_all.iit_end_date%TYPE
+                                    ,pi_notes                    IN     nm_inv_items_all.iit_note%TYPE
+                                    ,pi_attrib_names             IN     awlrs_asset_api.attrib_name_tab
+                                    ,pi_attrib_scrn_texts        IN     awlrs_asset_api.attrib_scrn_text_tab
+                                    ,pi_attrib_char_values       IN     awlrs_asset_api.attrib_value_tab
+                                    ,pi_xsps                     IN     xsp_tab
+                                    ,pi_ne_ids                   IN     awlrs_util.ne_id_tab
+                                    ,pi_begin_mps                IN     location_from_offset_tab
+                                    ,pi_end_mps                  IN     location_to_offset_tab
+                                    ,pi_layer_attrib_idx         IN     iit_ne_id_tab
+                                    ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
+                                    ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
+                                    ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab
+                                    ,pi_depth_removed            IN     NUMBER
+                                    ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor              OUT sys_refcursor);                                            
+                                       
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE create_construction_records(pi_admin_unit               IN     nm_admin_units_all.nau_admin_unit%TYPE
                                        ,pi_description              IN     nm_inv_items_all.iit_descr%TYPE
                                        ,pi_start_date               IN     nm_inv_items_all.iit_start_date%TYPE
@@ -80,28 +151,7 @@ AS
                                        ,po_message_severity            OUT hig_codes.hco_code%TYPE
                                        ,po_message_cursor              OUT sys_refcursor);
 
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE create_construction_records(pi_admin_unit               IN     nm_admin_units_all.nau_admin_unit%TYPE
-                                       ,pi_description              IN     nm_inv_items_all.iit_descr%TYPE
-                                       ,pi_start_date               IN     nm_inv_items_all.iit_start_date%TYPE
-                                       ,pi_end_date                 IN     nm_inv_items_all.iit_end_date%TYPE
-                                       ,pi_notes                    IN     nm_inv_items_all.iit_note%TYPE
-                                       ,pi_attrib_names             IN     awlrs_asset_api.attrib_name_tab
-                                       ,pi_attrib_scrn_texts        IN     awlrs_asset_api.attrib_scrn_text_tab
-                                       ,pi_attrib_char_values       IN     awlrs_asset_api.attrib_value_tab
-                                       ,pi_xsps                     IN     xsp_tab
-                                       ,pi_ne_ids                   IN     awlrs_util.ne_id_tab
-                                       ,pi_begin_mps                IN     location_from_offset_tab
-                                       ,pi_end_mps                  IN     location_to_offset_tab
-                                       ,pi_layer_attrib_idx         IN     iit_ne_id_tab
-                                       ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
-                                       ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
-                                       ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab
-                                       ,pi_depth_removed            IN     NUMBER DEFAULT NULL
-                                       ,po_message_severity            OUT hig_codes.hco_code%TYPE
-                                       ,po_message_cursor              OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
   --
@@ -333,7 +383,6 @@ AS
                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
                                 ,po_message_cursor   OUT sys_refcursor
                                 ,po_cursor           OUT sys_refcursor);      
-
   --
   -----------------------------------------------------------------------------
   --
@@ -353,6 +402,16 @@ AS
                                    ,po_message_severity    OUT hig_codes.hco_code%TYPE
                                    ,po_message_cursor      OUT sys_refcursor
                                    ,po_cursor              OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_construction_gaps(pi_ne_ids             IN  awlrs_util.ne_id_tab
+                                 ,pi_xsps               IN  xsp_tab
+                                 ,pi_begin_mps          IN  location_from_offset_tab                                 
+                                 ,pi_end_mps            IN  location_to_offset_tab                                 
+                                 ,po_cursor             OUT sys_refcursor
+                                 ,po_message_severity   OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor     OUT sys_refcursor);                                   
   --
 END awlrs_plm_api;
 /
