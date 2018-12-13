@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.16   Dec 03 2018 16:54:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.17   Dec 13 2018 18:49:32   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   Dec 03 2018 16:54:50  $
-  --       Date fetched Out : $Modtime:   Nov 28 2018 14:45:44  $
-  --       Version          : $Revision:   1.16  $
+  --       Date into PVCS   : $Date:   Dec 13 2018 18:49:32  $
+  --       Date fetched Out : $Modtime:   Dec 13 2018 11:08:02  $
+  --       Version          : $Revision:   1.17  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -31,6 +31,41 @@ AS
   TYPE message_rec IS RECORD(category VARCHAR2(20)
                             ,message  VARCHAR2(4000));
   TYPE message_tab IS TABLE OF message_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE column_data_rec IS RECORD(cursor_col VARCHAR2(30)
+                                ,query_col  nm3type.max_varchar2
+                                ,datatype   VARCHAR2(30)
+                                ,mask       VARCHAR2(100));
+  TYPE column_data_tab IS TABLE OF column_data_rec INDEX BY BINARY_INTEGER;
+  /*
+  ||Constants for datatype.
+  */
+  c_varchar2_col CONSTANT VARCHAR2(10) := 'VARCHAR2';
+  c_date_col     CONSTANT VARCHAR2(10) := 'DATE';
+  c_datetime_col CONSTANT VARCHAR2(10) := 'DATETIME';
+  c_number_col   CONSTANT VARCHAR2(10) := 'NUMBER';
+  /*
+  ||Constants for datatype mask.
+  */
+  c_date_mask     CONSTANT VARCHAR2(20) := 'DD-MON-YYYY';
+  c_datetime_mask CONSTANT VARCHAR2(20) := 'DD-MON-YYYY HH24:MI';
+  /*
+  ||Constants for Filter Functions.
+  */
+  c_equals                  CONSTANT VARCHAR2(30) := 'Equals';
+  c_does_not_equal          CONSTANT VARCHAR2(30) := 'DoesNotEqual';
+  c_contains                CONSTANT VARCHAR2(30) := 'Contains';
+  c_does_not_contain        CONSTANT VARCHAR2(30) := 'DoesNotContain';
+  c_starts_with             CONSTANT VARCHAR2(30) := 'StartsWith';
+  c_ends_with               CONSTANT VARCHAR2(30) := 'EndsWith';
+  c_less_than               CONSTANT VARCHAR2(30) := 'LessThan';
+  c_greater_than            CONSTANT VARCHAR2(30) := 'GreaterThan';
+  c_less_than_or_equal_to   CONSTANT VARCHAR2(30) := 'LessThanOrEqualTo';
+  c_geater_than_or_equal_to CONSTANT VARCHAR2(30) := 'GeaterThanOrEqualTo';
+  c_between                 CONSTANT VARCHAR2(30) := 'Between';
+  c_not_between             CONSTANT VARCHAR2(30) := 'NotBetween';
+  c_has_value               CONSTANT VARCHAR2(30) := 'HasValue';
+  c_does_not_have_value     CONSTANT VARCHAR2(30) := 'DoesNotHaveValue';
   /*
   ||Constants for message severity.
   */
@@ -167,6 +202,45 @@ AS
                                  ,po_cursor           OUT sys_refcursor);
 
   --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE gen_row_restriction(pi_index_column IN  VARCHAR2
+                               ,pi_where_clause IN  BOOLEAN DEFAULT TRUE
+                               ,pi_skip_n_rows  IN  PLS_INTEGER
+                               ,pi_pagesize     IN  PLS_INTEGER
+                               ,po_lower_index  OUT PLS_INTEGER
+                               ,po_upper_index  OUT PLS_INTEGER
+                               ,po_statement    OUT VARCHAR2);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION gen_order_by(pi_order_columns  IN nm3type.tab_varchar30
+                       ,pi_order_asc_desc IN nm3type.tab_varchar4
+                       ,pi_enclose_cols   IN BOOLEAN DEFAULT TRUE)
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE add_column_data(pi_cursor_col   IN     VARCHAR2
+                           ,pi_query_col    IN     VARCHAR2
+                           ,pi_datatype     IN     VARCHAR2
+                           ,pi_mask         IN     VARCHAR2
+                           ,pio_column_data IN OUT column_data_tab);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE process_filter(pi_columns      IN  nm3type.tab_varchar30
+                          ,pi_column_data IN  column_data_tab
+                          ,pi_operators    IN  nm3type.tab_varchar30
+                          ,pi_values_1     IN  nm3type.tab_varchar32767
+                          ,pi_values_2     IN  nm3type.tab_varchar32767
+                          ,pi_where_or_and IN  VARCHAR2 DEFAULT 'WHERE'
+                          ,po_where_clause OUT nm3type.max_varchar2);
+
+  --
   ------------------------------------------------------------------------------
   --
   FUNCTION get_preferred_lrm
@@ -275,17 +349,6 @@ AS
   --
   FUNCTION inv_category_is_updatable(pi_category IN nm_inv_categories.nic_category%TYPE)
     RETURN VARCHAR2;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE gen_row_restriction(pi_index_column IN  VARCHAR2
-                               ,pi_where_clause IN  BOOLEAN DEFAULT TRUE
-                               ,pi_skip_n_rows  IN  PLS_INTEGER
-                               ,pi_pagesize     IN  PLS_INTEGER
-                               ,po_lower_index  OUT PLS_INTEGER
-                               ,po_upper_index  OUT PLS_INTEGER
-                               ,po_statement    OUT VARCHAR2);
 
   --
   -----------------------------------------------------------------------------

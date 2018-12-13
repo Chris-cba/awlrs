@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.19   Dec 03 2018 16:54:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.20   Dec 13 2018 18:49:32   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Dec 03 2018 16:54:50  $
-  --       Date fetched Out : $Modtime:   Nov 28 2018 14:45:46  $
-  --       Version          : $Revision:   1.19  $
+  --       Date into PVCS   : $Date:   Dec 13 2018 18:49:32  $
+  --       Date fetched Out : $Modtime:   Dec 13 2018 11:08:02  $
+  --       Version          : $Revision:   1.20  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.20  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -207,7 +207,7 @@ AS
         */
         lv_value := awlrs_util.escape_single_quotes(pi_string => pi_value);
         --
-        IF pi_datatype = 'NUMBER'
+        IF pi_datatype = c_number_col
          THEN
             /*
             ||Try to convert to number directly.
@@ -256,10 +256,15 @@ AS
                              ,pi_supplementary_info => 'Value ['||lv_value||']');
             END IF;
             --
-        ELSIF pi_datatype = 'DATE'
+        ELSIF pi_datatype = c_date_col
          THEN
             --
-            lv_retval := 'TO_DATE('||nm3flx.string(lv_value)||','||nm3flx.string(NVL(pi_format_mask,'DD-MON-YYYY'))||')';
+            lv_retval := 'TO_DATE('||nm3flx.string(lv_value)||','||nm3flx.string(NVL(pi_format_mask,c_date_mask))||')';
+            --
+        ELSIF pi_datatype = c_datetime_col
+         THEN
+            --
+            lv_retval := 'TO_DATE('||nm3flx.string(lv_value)||','||nm3flx.string(NVL(pi_format_mask,c_datetime_mask))||')';
             --
         ELSE
             --
@@ -500,6 +505,555 @@ AS
   END get_hig_option_values;
 
   --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION gen_row_restriction(pi_index_column   IN VARCHAR2
+                              ,pi_where_clause   IN BOOLEAN DEFAULT TRUE
+                              ,pi_start_index    IN PLS_INTEGER
+                              ,pi_number_of_rows IN PLS_INTEGER)
+
+    RETURN VARCHAR2 IS
+    --
+    lv_predicate    VARCHAR2(7) := ' WHERE ';
+    lv_start_index  PLS_INTEGER;
+    lv_retval       nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    IF NOT pi_where_clause
+     THEN
+        lv_predicate := ' AND ';
+    END IF;
+    --
+    lv_start_index := pi_start_index;
+    --
+    IF lv_start_index IS NOT NULL
+     THEN
+        lv_start_index := GREATEST(lv_start_index,1);
+        lv_retval := lv_predicate||pi_index_column||' >= '||lv_start_index;
+    END IF;
+    --
+    IF pi_number_of_rows IS NOT NULL
+     THEN
+        IF lv_retval IS NOT NULL
+         THEN
+            lv_retval := lv_retval||' AND '||pi_index_column||' < '||TO_CHAR(NVL(lv_start_index,1) + pi_number_of_rows);
+        ELSE
+            lv_retval := lv_predicate||pi_index_column||' < '||TO_CHAR(NVL(lv_start_index,1) + pi_number_of_rows);
+        END IF;
+    END IF;
+    --
+    RETURN lv_retval;
+    --
+  END gen_row_restriction;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE gen_row_restriction(pi_index_column IN  VARCHAR2
+                               ,pi_where_clause IN  BOOLEAN DEFAULT TRUE
+                               ,pi_skip_n_rows  IN  PLS_INTEGER
+                               ,pi_pagesize     IN  PLS_INTEGER
+                               ,po_lower_index  OUT PLS_INTEGER
+                               ,po_upper_index  OUT PLS_INTEGER
+                               ,po_statement    OUT VARCHAR2)
+    IS
+    --
+    lv_predicate    VARCHAR2(7) := ' WHERE ';
+    lv_lower_index  PLS_INTEGER;
+    lv_upper_index  PLS_INTEGER;
+    lv_retval       nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    IF NOT pi_where_clause
+     THEN
+        lv_predicate := ' AND ';
+    END IF;
+    --
+    lv_lower_index := NVL(pi_skip_n_rows,0) + 1;
+    lv_retval := lv_predicate||pi_index_column||' >= :lower_index';
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        lv_upper_index := lv_lower_index + pi_pagesize;
+        lv_retval := lv_retval||' AND '||pi_index_column||' < :upper_index';
+    END IF;
+    --
+    po_lower_index := lv_lower_index;
+    po_upper_index := lv_upper_index;
+    po_statement   := lv_retval;
+    --
+  END gen_row_restriction;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION gen_order_by(pi_order_columns  IN nm3type.tab_varchar30
+                       ,pi_order_asc_desc IN nm3type.tab_varchar4
+                       ,pi_enclose_cols   IN BOOLEAN DEFAULT TRUE)
+    RETURN VARCHAR2 IS
+    --
+    lv_retval  nm3type.max_varchar2;
+    lv_enc     VARCHAR2(1);
+    --
+  BEGIN
+    --
+    IF pi_order_columns.COUNT != pi_order_asc_desc.COUNT
+     THEN
+        --The attribute tables passed in must have matching row counts
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_util.gen_order_by');
+    END IF;
+    --
+    IF pi_enclose_cols
+     THEN
+        lv_enc := '"';
+    END IF;
+    --
+    FOR i IN 1..pi_order_columns.COUNT LOOP
+      --
+      IF i > 1
+       THEN
+          lv_retval := lv_retval||',';
+      END IF;
+      --
+      lv_retval := lv_retval||lv_enc||pi_order_columns(i)||lv_enc||' '||pi_order_asc_desc(i);
+      --
+    END LOOP;
+    --
+    RETURN lv_retval;
+    --
+  END gen_order_by;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE add_column_data(pi_cursor_col   IN     VARCHAR2
+                           ,pi_query_col    IN     VARCHAR2
+                           ,pi_datatype     IN     VARCHAR2
+                           ,pi_mask         IN     VARCHAR2
+                           ,pio_column_data IN OUT column_data_tab)
+    IS
+  BEGIN
+    --
+    pio_column_data(pio_column_data.COUNT+1).cursor_col := pi_cursor_col;
+    pio_column_data(pio_column_data.COUNT).query_col := pi_query_col;
+    pio_column_data(pio_column_data.COUNT).datatype := pi_datatype;
+    pio_column_data(pio_column_data.COUNT).mask := pi_mask;
+    --
+  END add_column_data;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE get_datatype(pi_column_data IN  column_data_tab
+                        ,pi_column      IN  VARCHAR2
+                        ,po_query_col   OUT VARCHAR2
+                        ,po_datatype    OUT VARCHAR2
+                        ,po_mask        OUT VARCHAR2)
+    IS
+    --
+    lv_query_col  nm3type.max_varchar2;
+    lv_datatype   VARCHAR2(30);
+    lv_mask       VARCHAR2(100);
+    --
+  BEGIN
+    --
+    FOR i IN 1..pi_column_data.COUNT LOOP
+      --
+      IF pi_column_data(i).cursor_col = pi_column
+       THEN
+          po_query_col := NVL(pi_column_data(i).query_col,pi_column_data(i).cursor_col);
+          po_datatype  := pi_column_data(i).datatype;
+          po_mask      := pi_column_data(i).mask;
+          EXIT;
+      END IF;
+      --
+    END LOOP;
+    --
+    IF po_query_col IS NULL
+     THEN
+        raise_application_error(-20001,'Unable to derive datatype of column: '||pi_column);
+        --TODO add a ner
+        --hig.raise_ner(pi_appl => 'AWLRS'
+        --             ,pi_id   => 43);
+    END IF;
+    --
+  END get_datatype;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE process_filter(pi_columns            IN  nm3type.tab_varchar30
+                          ,pi_column_data       IN  column_data_tab
+                          ,pi_operators          IN  nm3type.tab_varchar30
+                          ,pi_values_1           IN  nm3type.tab_varchar32767
+                          ,pi_values_2           IN  nm3type.tab_varchar32767
+                          ,pi_where_or_and       IN  VARCHAR2 DEFAULT 'WHERE'
+                          ,po_where_clause       OUT nm3type.max_varchar2)
+    IS
+    --
+    lv_query_col  nm3type.max_varchar2;
+    lv_datatype   VARCHAR2(30);
+    lv_mask       VARCHAR2(100);
+    lv_operation  VARCHAR2(10) := pi_where_or_and;
+    --
+  BEGIN
+    --
+    IF pi_columns.COUNT != pi_operators.COUNT
+     OR pi_columns.COUNT != pi_values_1.COUNT
+     OR pi_columns.COUNT != pi_values_2.COUNT
+     THEN
+        --The attribute tables passed in must have matching row counts
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_asset_api.process_filter');
+    END IF;
+    --
+    FOR i IN 1..pi_columns.COUNT LOOP
+      --
+      IF i > 1
+       THEN
+          lv_operation := 'AND';
+      END IF;
+      --
+      get_datatype(pi_column_data => pi_column_data
+                  ,pi_column      => pi_columns(i)
+                  ,po_query_col   => lv_query_col
+                  ,po_datatype    => lv_datatype
+                  ,po_mask        => lv_mask);
+      --
+      CASE
+        WHEN pi_operators(i) = c_contains
+         THEN
+            --
+            IF lv_datatype != c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+            END IF;
+            --
+            po_where_clause := po_where_clause||' '||lv_operation||' UPPER('||lv_query_col||') LIKE ''%'||UPPER(pi_values_1(i))||'%''';
+            --
+        WHEN pi_operators(i) = c_does_not_contain
+         THEN
+            --
+            IF lv_datatype != c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+            END IF;
+            --
+            po_where_clause := po_where_clause||' '||lv_operation||' UPPER('||lv_query_col||') NOT LIKE ''%'||UPPER(pi_values_1(i))||'%''';
+            --
+        WHEN pi_operators(i) = c_starts_with
+         THEN
+            --
+            IF lv_datatype != c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+            END IF;
+            --
+            po_where_clause := po_where_clause||' '||lv_operation||' UPPER('||lv_query_col||') LIKE '''||UPPER(pi_values_1(i))||'%''';
+            --
+        WHEN pi_operators(i) = c_ends_with
+         THEN
+            IF lv_datatype != c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+            END IF;
+            --
+            po_where_clause := po_where_clause||' '||lv_operation||' UPPER('||lv_query_col||') LIKE ''%'||UPPER(pi_values_1(i))||'''';
+            --
+        WHEN pi_operators(i) = c_equals
+         THEN
+            IF lv_datatype = c_varchar2_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' UPPER('||lv_query_col||')';
+                --
+            ELSIF lv_datatype = c_date_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                --
+            ELSIF lv_datatype = c_datetime_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                --
+            ELSE
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                --
+            END IF;
+            --
+            po_where_clause := po_where_clause||' = '||get_assignment(pi_value       => pi_values_1(i)
+                                                                     ,pi_datatype    => lv_datatype
+                                                                     ,pi_format_mask => lv_mask);
+            --
+        WHEN pi_operators(i) = c_does_not_equal
+         THEN
+            IF lv_datatype = c_varchar2_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' UPPER('||lv_query_col||')';
+                --
+            ELSIF lv_datatype = c_date_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                --
+            ELSIF lv_datatype = c_datetime_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                --
+            ELSE
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                --
+            END IF;
+            --
+            po_where_clause := po_where_clause||' != '||get_assignment(pi_value       => pi_values_1(i)
+                                                                      ,pi_datatype    => lv_datatype
+                                                                      ,pi_format_mask => lv_mask);
+            --
+        WHEN pi_operators(i) = c_greater_than
+         THEN
+            --
+            IF lv_datatype = c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+                --
+            ELSIF lv_datatype = c_date_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                --
+            ELSIF lv_datatype = c_datetime_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                --
+            ELSE
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                --
+            END IF;
+            --
+            po_where_clause := po_where_clause||' > '||get_assignment(pi_value       => pi_values_1(i)
+                                                                     ,pi_datatype    => lv_datatype
+                                                                     ,pi_format_mask => lv_mask);
+            --
+        WHEN pi_operators(i) = c_less_than
+         THEN
+            --
+            IF lv_datatype = c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+                --
+            ELSIF lv_datatype = c_date_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                --
+            ELSIF lv_datatype = c_datetime_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                --
+            ELSE
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                --
+            END IF;
+            --
+            po_where_clause := po_where_clause||' < '||get_assignment(pi_value       => pi_values_1(i)
+                                                                     ,pi_datatype    => lv_datatype
+                                                                     ,pi_format_mask => lv_mask);
+            --
+        WHEN pi_operators(i) = c_geater_than_or_equal_to
+         THEN
+            --
+            IF lv_datatype = c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+                --
+            ELSIF lv_datatype = c_date_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                --
+            ELSIF lv_datatype = c_datetime_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                --
+            ELSE
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                --
+            END IF;
+            --
+            po_where_clause := po_where_clause||' >= '||get_assignment(pi_value       => pi_values_1(i)
+                                                                      ,pi_datatype    => lv_datatype
+                                                                      ,pi_format_mask => lv_mask);
+            --
+        WHEN pi_operators(i) = c_less_than_or_equal_to
+         THEN
+            --
+            IF lv_datatype = c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+                --
+            ELSIF lv_datatype = c_date_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                --
+            ELSIF lv_datatype = c_datetime_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                --
+            ELSE
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                --
+            END IF;
+            --
+            po_where_clause := po_where_clause||' <= '||get_assignment(pi_value       => pi_values_1(i)
+                                                                      ,pi_datatype    => lv_datatype
+                                                                      ,pi_format_mask => lv_mask);
+            --
+        WHEN pi_operators(i) = c_between
+         THEN
+            --
+            IF (pi_values_1(i) IS NULL OR pi_values_2(i) IS NULL)
+             THEN
+                --Two values must be supplied for filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 45
+                             ,pi_supplementary_info => pi_operators(i));
+            END IF;
+            --
+            IF lv_datatype = c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+                --
+            ELSIF lv_datatype = c_date_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                --
+            ELSIF lv_datatype = c_datetime_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                --
+            ELSE
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                --
+            END IF;
+            --
+            po_where_clause := po_where_clause||' BETWEEN '||get_assignment(pi_value       => pi_values_1(i)
+                                                                           ,pi_datatype    => lv_datatype
+                                                                           ,pi_format_mask => lv_mask)
+                            ||' AND '||get_assignment(pi_value       => pi_values_2(i)
+                                                     ,pi_datatype    => lv_datatype
+                                                     ,pi_format_mask => lv_mask);
+            --
+        WHEN pi_operators(i) = c_not_between
+         THEN
+            --
+            IF (pi_values_1(i) IS NULL OR pi_values_2(i) IS NULL)
+             THEN
+                --Two values must be supplied for filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 45
+                             ,pi_supplementary_info => pi_operators(i));
+            END IF;
+            --
+            IF lv_datatype = c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+                --
+            ELSIF lv_datatype = c_date_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                --
+            ELSIF lv_datatype = c_datetime_col
+             THEN
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                --
+            ELSE
+                --
+                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                --
+            END IF;
+            --
+            po_where_clause := po_where_clause||' NOT BETWEEN '||get_assignment(pi_value       => pi_values_1(i)
+                                                                               ,pi_datatype    => lv_datatype
+                                                                               ,pi_format_mask => lv_mask)
+                            ||' AND '||get_assignment(pi_value       => pi_values_2(i)
+                                                     ,pi_datatype    => lv_datatype
+                                                     ,pi_format_mask => lv_mask);
+            --
+        WHEN pi_operators(i) = c_has_value
+         THEN
+            --
+            po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col||' IS NULL';
+            --
+        WHEN pi_operators(i) = c_does_not_have_value
+         THEN
+            --
+            po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col||' IS NOT NULL';
+            --
+        ELSE
+            --Invalid filter function
+            hig.raise_ner(pi_appl => 'AWLRS'
+                         ,pi_id   => 43);
+      END CASE;
+          --
+    END LOOP;
+    --
+  END process_filter;
+
+  --
   ------------------------------------------------------------------------------
   --
   FUNCTION get_preferred_lrm
@@ -593,12 +1147,12 @@ AS
     /*
     ||Get the page parameters.
     */
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
-                                  ,pi_skip_n_rows  => pi_skip_n_rows
-                                  ,pi_pagesize     => pi_pagesize
-                                  ,po_lower_index  => lv_lower_index
-                                  ,po_upper_index  => lv_upper_index
-                                  ,po_statement    => lv_row_restriction);
+    gen_row_restriction(pi_index_column => 'ind'
+                       ,pi_skip_n_rows  => pi_skip_n_rows
+                       ,pi_pagesize     => pi_pagesize
+                       ,po_lower_index  => lv_lower_index
+                       ,po_upper_index  => lv_upper_index
+                       ,po_statement    => lv_row_restriction);
     --
     lv_cursor_sql := lv_cursor_sql
                      ||lv_filter
@@ -703,49 +1257,6 @@ AS
         handle_exception(po_message_severity => po_message_severity
                         ,po_cursor           => po_message_cursor);
   END get_length_units;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  FUNCTION gen_row_restriction(pi_index_column   IN VARCHAR2
-                              ,pi_where_clause   IN BOOLEAN DEFAULT TRUE
-                              ,pi_start_index    IN PLS_INTEGER
-                              ,pi_number_of_rows IN PLS_INTEGER)
-
-    RETURN VARCHAR2 IS
-    --
-    lv_predicate    VARCHAR2(7) := ' WHERE ';
-    lv_start_index  PLS_INTEGER;
-    lv_retval       nm3type.max_varchar2;
-    --
-  BEGIN
-    --
-    IF NOT pi_where_clause
-     THEN
-        lv_predicate := ' AND ';
-    END IF;
-    --
-    lv_start_index := pi_start_index;
-    --
-    IF lv_start_index IS NOT NULL
-     THEN
-        lv_start_index := GREATEST(lv_start_index,1);
-        lv_retval := lv_predicate||pi_index_column||' >= '||lv_start_index;
-    END IF;
-    --
-    IF pi_number_of_rows IS NOT NULL
-     THEN
-        IF lv_retval IS NOT NULL
-         THEN
-            lv_retval := lv_retval||' AND '||pi_index_column||' < '||TO_CHAR(NVL(lv_start_index,1) + pi_number_of_rows);
-        ELSE
-            lv_retval := lv_predicate||pi_index_column||' < '||TO_CHAR(NVL(lv_start_index,1) + pi_number_of_rows);
-        END IF;
-    END IF;
-    --
-    RETURN lv_retval;
-    --
-  END gen_row_restriction;
 
   --
   -----------------------------------------------------------------------------
@@ -960,45 +1471,6 @@ AS
     RETURN nm3flx.boolean_to_char(p_boolean => lv_retval);
     --
   END inv_category_is_updatable;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE gen_row_restriction(pi_index_column IN  VARCHAR2
-                               ,pi_where_clause IN  BOOLEAN DEFAULT TRUE
-                               ,pi_skip_n_rows  IN  PLS_INTEGER
-                               ,pi_pagesize     IN  PLS_INTEGER
-                               ,po_lower_index  OUT PLS_INTEGER
-                               ,po_upper_index  OUT PLS_INTEGER
-                               ,po_statement    OUT VARCHAR2)
-    IS
-    --
-    lv_predicate    VARCHAR2(7) := ' WHERE ';
-    lv_lower_index  PLS_INTEGER;
-    lv_upper_index  PLS_INTEGER;
-    lv_retval       nm3type.max_varchar2;
-    --
-  BEGIN
-    --
-    IF NOT pi_where_clause
-     THEN
-        lv_predicate := ' AND ';
-    END IF;
-    --
-    lv_lower_index := NVL(pi_skip_n_rows,0) + 1;
-    lv_retval := lv_predicate||pi_index_column||' >= :lower_index';
-    --
-    IF pi_pagesize IS NOT NULL
-     THEN
-        lv_upper_index := lv_lower_index + pi_pagesize;
-        lv_retval := lv_retval||' AND '||pi_index_column||' < :upper_index';
-    END IF;
-    --
-    po_lower_index := lv_lower_index;
-    po_upper_index := lv_upper_index;
-    po_statement   := lv_retval;
-    --
-  END gen_row_restriction;
 
   --
   -----------------------------------------------------------------------------
