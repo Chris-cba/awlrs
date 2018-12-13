@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.36   Dec 04 2018 14:43:30   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.37   Dec 13 2018 18:50:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Dec 04 2018 14:43:30  $
-  --       Date fetched Out : $Modtime:   Dec 04 2018 14:33:16  $
-  --       Version          : $Revision:   1.36  $
+  --       Date into PVCS   : $Date:   Dec 13 2018 18:50:38  $
+  --       Date fetched Out : $Modtime:   Dec 12 2018 17:37:28  $
+  --       Version          : $Revision:   1.37  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.36  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.37  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -810,7 +810,7 @@ AS
                         ,po_message_cursor        OUT sys_refcursor)
     IS
     --
-    lt_element_attribs  flex_attr_tab;
+    lt_attribs  flex_attr_tab;
     --
     lv_iit_foreign_key nm_inv_items_all.iit_foreign_key%TYPE;
     --
@@ -865,22 +865,22 @@ AS
     --
     FOR i IN 1..pi_attrib_names.COUNT LOOP
       --
-      lt_element_attribs(i).attrib_name := pi_attrib_names(i);
-      lt_element_attribs(i).scrn_text   := pi_attrib_scrn_texts(i);
-      lt_element_attribs(i).char_value  := pi_attrib_char_values(i);
+      lt_attribs(i).attrib_name := pi_attrib_names(i);
+      lt_attribs(i).scrn_text   := pi_attrib_scrn_texts(i);
+      lt_attribs(i).char_value  := pi_attrib_char_values(i);
       /*
       ||populate foreign_key key flexible attribute
       ||As per Gopi is struggling to populate IIT_FOREIGN_KEY on UI when add child so if null add via API.
       */  
-      IF pi_iit_foreign_key IS NOT NULL AND lt_element_attribs(i).attrib_name = 'IIT_FOREIGN_KEY' AND lt_element_attribs(i).char_value IS NULL
+      IF pi_iit_foreign_key IS NOT NULL AND lt_attribs(i).attrib_name = 'IIT_FOREIGN_KEY' AND lt_attribs(i).char_value IS NULL
        THEN
-         lt_element_attribs(i).char_value := lv_iit_foreign_key;     
+         lt_attribs(i).char_value := lv_iit_foreign_key;     
       END IF  ;         
     END LOOP;
     --
     build_asset_rec(pi_inv_type   => g_iit_rec.iit_inv_type
                    ,pi_global     => 'awlrs_asset_api.g_iit_rec'
-                   ,pi_attributes => lt_element_attribs);
+                   ,pi_attributes => lt_attribs);
     --
     IF pi_xsp IS NOT NULL
      THEN
@@ -2197,14 +2197,11 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_locations(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
-                         ,pi_iit_inv_type     IN  nm_inv_items_all.iit_inv_type%TYPE
-                         ,pi_nwtype           IN  nm_elements.ne_nt_type%TYPE
-                         ,pi_grouptype        IN  nm_elements.ne_gty_group_type%TYPE
-                         ,po_message_severity OUT hig_codes.hco_code%TYPE
-                         ,po_message_cursor   OUT sys_refcursor
-                         ,po_cursor           OUT sys_refcursor)
-    IS
+  FUNCTION get_locations(pi_iit_ne_id    IN nm_inv_items_all.iit_ne_id%TYPE
+                        ,pi_iit_inv_type IN nm_inv_items_all.iit_inv_type%TYPE
+                        ,pi_nwtype       IN nm_elements.ne_nt_type%TYPE
+                        ,pi_grouptype    IN nm_elements.ne_gty_group_type%TYPE)
+    RETURN nm_placement_array IS
     --
     lt_pla  nm_placement_array := nm3pla.initialise_placement_array;
     --
@@ -2277,6 +2274,31 @@ AS
         --
     END IF;
     --
+    RETURN lt_pla;
+    --
+  END ;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_locations(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                         ,pi_iit_inv_type     IN  nm_inv_items_all.iit_inv_type%TYPE
+                         ,pi_nwtype           IN  nm_elements.ne_nt_type%TYPE
+                         ,pi_grouptype        IN  nm_elements.ne_gty_group_type%TYPE
+                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor
+                         ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lt_pla  nm_placement_array := nm3pla.initialise_placement_array;
+    --
+  BEGIN
+    --
+    lt_pla := get_locations(pi_iit_ne_id    => pi_iit_ne_id
+                           ,pi_iit_inv_type => pi_iit_inv_type
+                           ,pi_nwtype       => pi_nwtype
+                           ,pi_grouptype    => pi_grouptype);
+    --
     OPEN po_cursor FOR
     SELECT *
       FROM (SELECT pi_iit_ne_id     asset_id
@@ -2346,6 +2368,272 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_locations;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_locations(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                               ,pi_iit_inv_type     IN  nm_inv_items_all.iit_inv_type%TYPE
+                               ,pi_nwtype           IN  nm_elements.ne_nt_type%TYPE
+                               ,pi_grouptype        IN  nm_elements.ne_gty_group_type%TYPE
+                               ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                               ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                               ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                               ,pi_skip_n_rows      IN  PLS_INTEGER
+                               ,pi_pagesize         IN  PLS_INTEGER
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lt_pla  nm_placement_array := nm3pla.initialise_placement_array;
+    --
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_order_by         nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    --
+    lv_driving_sql  nm3type.max_varchar2 := 'WITH asset AS (SELECT :asset_id asset_id FROM DUAL)'
+                                         ||' SELECT asset_id asset_id'
+                                                ||',ne.ne_id element_id'
+                                                ||',ne.ne_nt_type element_type'
+                                                ||',CASE ne.ne_nt_type'
+                                                  ||' WHEN ''ESU'' THEN ne.ne_name_1'
+                                                  ||' WHEN ''NSGN'' THEN ne.ne_number'
+                                                  ||' ELSE ne.ne_unique'
+                                                ||' END element_unique'
+                                                ||',ne.ne_descr element_descr'
+                                                ||',TO_NUMBER(nm3unit.get_formatted_value(locs.pl_start, un_unit_id)) from_offset'
+                                                ||',TO_NUMBER(nm3unit.get_formatted_value(locs.pl_end, un_unit_id)) to_offset'
+                                                ||',TO_NUMBER(nm3unit.get_formatted_value(CASE'
+                                                                                        ||' WHEN locs.pl_end > locs.pl_start'
+                                                                                         ||' THEN'
+                                                                                            ||' locs.pl_end - locs.pl_start'
+                                                                                        ||' ELSE'
+                                                                                            ||' locs.pl_start - locs.pl_end'
+                                                                                      ||' END'
+                                                                                     ||' ,un_unit_id)) offset_length'
+                                                ||',nm3net.get_ne_length(ne.ne_id) element_length'
+                                                ||',un_unit_id element_unit_id'
+                                                ||',un_unit_name element_unit_name'
+                                                ||',nau_name element_admin_unit'
+                                                ||',ne_start_date element_start_date'
+                                                ||',CASE '
+                                                  ||' WHEN ne_gty_group_type IS NOT NULL'
+                                                   ||' THEN'
+                                                      ||' (SELECT MIN(im.nm_start_date)'
+                                                         ||' FROM nm_members rm'
+                                                             ||' ,nm_members im'
+                                                        ||' WHERE im.nm_ne_id_in = asset_id'
+                                                          ||' AND im.nm_ne_id_of = rm.nm_ne_id_of'
+                                                          ||' AND rm.nm_ne_id_in = ne_id'
+                                                          ||' AND rm.nm_obj_type = ne_gty_group_type)'
+                                                  ||' ELSE'
+                                                      ||' (SELECT MIN(nm_start_date)'
+                                                         ||' FROM nm_members'
+                                                        ||' WHERE nm_ne_id_in = asset_id'
+                                                          ||' AND nm_ne_id_of = ne_id)'
+                                                ||' END member_start_date'
+                                           ||' FROM TABLE(CAST(:pla AS nm_placement_array_type)) locs'
+                                               ||' ,nm_elements_all ne'
+                                               ||' ,nm_admin_units_all'
+                                               ||' ,nm_types'
+                                               ||' ,nm_units'
+                                               ||' ,nm_unit_domains'
+                                               ||' ,asset'
+                                          ||' WHERE locs.pl_ne_id = ne.ne_id'
+                                            ||' AND ne.ne_nt_type = :nwtype'
+                                            ||' AND NVL(ne.ne_gty_group_type,''~~~~~'') = NVL(:grouptype,''~~~~~'')'
+                                            ||' AND ne.ne_admin_unit = nau_admin_unit'
+                                            ||' AND ne_nt_type = nt_type'
+                                            ||' AND nt_length_unit = un_unit_id(+)'
+                                            ||' AND un_domain_id = ud_domain_id(+)'
+                                            ||' AND ud_domain_name(+) = ''LENGTH'''
+    ;
+    lv_cursor_sql  nm3type.max_varchar2 := 'SELECT asset_id'
+                            ||CHR(10)||'          ,element_id'
+                            ||CHR(10)||'          ,element_type'
+                            ||CHR(10)||'          ,element_unique'
+                            ||CHR(10)||'          ,element_descr'
+                            ||CHR(10)||'          ,from_offset'
+                            ||CHR(10)||'          ,to_offset'
+                            ||CHR(10)||'          ,offset_length'
+                            ||CHR(10)||'          ,element_length'
+                            ||CHR(10)||'          ,element_unit_id'
+                            ||CHR(10)||'          ,element_unit_name'
+                            ||CHR(10)||'          ,element_admin_unit'
+                            ||CHR(10)||'          ,element_start_date'
+                            ||CHR(10)||'          ,member_start_date'
+                            ||CHR(10)||'          ,row_count'
+                            ||CHR(10)||'      FROM (SELECT rownum ind'
+                            ||CHR(10)||'                  ,a.*'
+                            ||CHR(10)||'                  ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                            ||CHR(10)||'              FROM ('||lv_driving_sql
+    ;
+    --
+    lt_column_data  awlrs_util.column_data_tab;
+    --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'element_id'
+                                ,pi_query_col  => 'ne_id'
+                                ,pi_datatype   => awlrs_util.c_number_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'element_type'
+                                ,pi_query_col  => 'ne_nt_type'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'element_unique'
+                                ,pi_query_col  => 'CASE ne.ne_nt_type WHEN ''ESU'' THEN ne.ne_name_1 WHEN ''NSGN'' THEN ne.ne_number ELSE ne.ne_unique END'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'element_descr'
+                                ,pi_query_col  => 'ne_descr'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'from_offset'
+                                ,pi_query_col  => 'TO_NUMBER(nm3unit.get_formatted_value(locs.pl_start, un_unit_id))'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'to_offset'
+                                ,pi_query_col  => 'TO_NUMBER(nm3unit.get_formatted_value(locs.pl_end, un_unit_id))'
+                                ,pi_datatype   => awlrs_util.c_number_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'offset_length'
+                                ,pi_query_col  => 'TO_NUMBER(nm3unit.get_formatted_value(CASE WHEN locs.pl_end > locs.pl_start THEN locs.pl_end - locs.pl_start ELSE locs.pl_start - locs.pl_end END,un_unit_id))'
+                                ,pi_datatype   => awlrs_util.c_number_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'element_length'
+                                ,pi_query_col  => 'nm3net.get_ne_length(ne.ne_id)'
+                                ,pi_datatype   => awlrs_util.c_number_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'element_unit_id'
+                                ,pi_query_col  => 'un_unit_id'
+                                ,pi_datatype   => awlrs_util.c_number_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'element_unit_name'
+                                ,pi_query_col  => 'un_unit_name'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'element_admin_unit'
+                                ,pi_query_col  => 'nau_name'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'element_start_date'
+                                ,pi_query_col  => 'ne_start_date'
+                                ,pi_datatype   => awlrs_util.c_date_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'member_start_date'
+                                ,pi_query_col  => 'CASE  WHEN ne_gty_group_type IS NOT NULL THEN (SELECT MIN(im.nm_start_date) FROM nm_members rm,nm_members im WHERE im.nm_ne_id_in = asset_id AND im.nm_ne_id_of = rm.nm_ne_id_of AND rm.nm_ne_id_in = ne_id AND rm.nm_obj_type = ne_gty_group_type) ELSE (SELECT MIN(nm_start_date) FROM nm_members WHERE nm_ne_id_in = asset_id AND nm_ne_id_of = ne_id) END'
+                                ,pi_datatype   => awlrs_util.c_date_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+    END set_column_data;
+    --
+  BEGIN
+    /*
+    ||Get the locations.
+    */
+    lt_pla := get_locations(pi_iit_ne_id    => pi_iit_ne_id
+                           ,pi_iit_inv_type => pi_iit_inv_type
+                           ,pi_nwtype       => pi_nwtype
+                           ,pi_grouptype    => pi_grouptype);
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'AND'
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||CHR(10)||lv_filter
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'element_unique')||') a)'
+                     ||CHR(10)||lv_row_restriction
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_iit_ne_id
+             ,lt_pla.npa_placement_array
+             ,pi_nwtype
+             ,pi_grouptype
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_iit_ne_id
+             ,lt_pla.npa_placement_array
+             ,pi_nwtype
+             ,pi_grouptype
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_locations;
 
   --
   -----------------------------------------------------------------------------

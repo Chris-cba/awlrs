@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.15   Jul 20 2018 13:23:16   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.16   Dec 13 2018 18:50:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   Jul 20 2018 13:23:16  $
-  --       Date fetched Out : $Modtime:   Jul 19 2018 19:14:52  $
-  --       Version          : $Revision:   1.15  $
+  --       Date into PVCS   : $Date:   Dec 13 2018 18:50:38  $
+  --       Date fetched Out : $Modtime:   Dec 11 2018 11:50:58  $
+  --       Version          : $Revision:   1.16  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.15  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.16  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -236,6 +236,15 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION get_locations(pi_iit_ne_id    IN nm_inv_items_all.iit_ne_id%TYPE
+                        ,pi_iit_inv_type IN nm_inv_items_all.iit_inv_type%TYPE
+                        ,pi_nwtype       IN nm_elements.ne_nt_type%TYPE
+                        ,pi_grouptype    IN nm_elements.ne_gty_group_type%TYPE)
+    RETURN nm_placement_array;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_locations(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
                          ,pi_iit_inv_type     IN  nm_inv_items_all.iit_inv_type%TYPE
                          ,pi_nwtype           IN  nm_elements.ne_nt_type%TYPE
@@ -243,6 +252,25 @@ AS
                          ,po_message_severity OUT hig_codes.hco_code%TYPE
                          ,po_message_cursor   OUT sys_refcursor
                          ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_locations(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                               ,pi_iit_inv_type     IN  nm_inv_items_all.iit_inv_type%TYPE
+                               ,pi_nwtype           IN  nm_elements.ne_nt_type%TYPE
+                               ,pi_grouptype        IN  nm_elements.ne_gty_group_type%TYPE
+                               ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                               ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                               ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                               ,pi_skip_n_rows      IN  PLS_INTEGER
+                               ,pi_pagesize         IN  PLS_INTEGER
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
