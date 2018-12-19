@@ -3,17 +3,17 @@
     -------------------------------------------------------------------------
     --   PVCS Identifiers :-
     --
-    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.14   Dec 10 2018 12:02:16   Peter.Bibby  $
+    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.15   Dec 19 2018 16:16:42   Peter.Bibby  $
     --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-    --       Date into PVCS   : $Date:   Dec 10 2018 12:02:16  $
-    --       Date fetched Out : $Modtime:   Dec 06 2018 16:40:58  $
-    --       Version          : $Revision:   1.14  $
+    --       Date into PVCS   : $Date:   Dec 19 2018 16:16:42  $
+    --       Date fetched Out : $Modtime:   Dec 19 2018 16:14:28  $
+    --       Version          : $Revision:   1.15  $
     -------------------------------------------------------------------------
     --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
     -------------------------------------------------------------------------
     --
     --g_body_sccsid is the SCCS ID for the package body
-    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.14  $';
+    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.15  $';
     g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
     --
     g_max_layers      PLS_INTEGER;
@@ -755,7 +755,6 @@
       --
       lv_severity   hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
       --
-      lt_messages                 awlrs_message_tab := awlrs_message_tab();
       lt_iit_ne_ids               iit_ne_id_tab;
       lt_iit_ne_ids_gaps          iit_ne_id_tab;      
       lv_message_cursor           sys_refcursor;
@@ -791,7 +790,7 @@
                                  ,po_message_severity         => lv_severity
                                  ,po_message_cursor           => lv_message_cursor);
       --
-      IF lt_messages.COUNT = 0 AND  pi_gaps_ne_ids.COUNT > 0 THEN
+      IF lv_severity = awlrs_util.c_msg_cat_success AND  pi_gaps_ne_ids.COUNT > 0 THEN
         /*
         ||Add Gaps so null depth and gaps network elements, xsp and measure 
         ||These will need to be passed in on there own as not all XSPs will have gaps
@@ -843,24 +842,25 @@
                                      ,po_message_severity         => lv_severity
                                      ,po_message_cursor           => lv_message_cursor);
           --
-          lt_iit_ne_ids(lt_iit_ne_ids.COUNT+1) := lt_iit_ne_ids_gaps(1);                                     
+          IF lv_severity =  awlrs_util.c_msg_cat_success THEN
+            lt_iit_ne_ids(lt_iit_ne_ids.COUNT+1) := lt_iit_ne_ids_gaps(1);                                     
+          ELSE 
+            EXIT;
+          END IF;
           --
         END LOOP;
         --
       END IF;
       /*
-      ||If there are any messages to return then create a cursor for them.
+      ||If there are any messages to return 
       */
-      IF lt_messages.COUNT > 0
+      IF lv_severity <> awlrs_util.c_msg_cat_success
        THEN
-          awlrs_util.get_message_cursor(pi_message_tab => lt_messages
-                                       ,po_cursor      => po_message_cursor);
-          awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
-                                         ,po_message_severity => po_message_severity);
+         po_message_severity := lv_severity;
+         po_message_cursor := lv_message_cursor;
       ELSE
-          --po_iit_ne_ids := lt_iit_ne_ids;
-          awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                               ,po_cursor           => po_message_cursor);
+         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                              ,po_cursor           => po_message_cursor);
       END IF;
       --
      
