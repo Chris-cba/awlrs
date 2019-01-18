@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.11   Apr 11 2018 14:57:10   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.12   Jan 18 2019 11:27:12   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkb  $
-  --       Date into PVCS   : $Date:   Apr 11 2018 14:57:10  $
-  --       Date fetched Out : $Modtime:   Apr 11 2018 12:19:56  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   Jan 18 2019 11:27:12  $
+  --       Date fetched Out : $Modtime:   Jan 18 2019 11:25:44  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reshape_api';
   --
@@ -221,6 +221,7 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE do_rescale(pi_ne_id            IN     nm_elements.ne_id%TYPE
+                      ,pi_effective_date   IN     DATE
                       ,pi_offset_st        IN     NUMBER
                       ,pi_use_history      IN     VARCHAR2
                       ,po_message_severity IN OUT hig_codes.hco_code%TYPE
@@ -234,6 +235,7 @@ AS
   BEGIN
     --
     awlrs_group_api.rescale_route(pi_ne_id            => pi_ne_id
+                                 ,pi_effective_date   => pi_effective_date
                                  ,pi_offset_st        => pi_offset_st
                                  ,pi_use_history      => pi_use_history
                                  ,po_message_severity => po_message_severity
@@ -288,7 +290,7 @@ AS
     CURSOR get_linear_groups(cp_ne_id IN nm_elements_all.ne_id%TYPE)
         IS
     SELECT nm_ne_id_in group_id
-          ,nvl(nm3net.get_min_slk(pi_ne_id => nm_ne_id_in),0) min_slk
+          ,NVL(nm3net.get_min_slk(pi_ne_id => nm_ne_id_in),0) min_slk
       FROM nm_members 
      WHERE nm_ne_id_of = cp_ne_id
        AND nm_obj_type IN(SELECT ngt_group_type
@@ -394,6 +396,7 @@ AS
           lt_messages.DELETE;
           --
           do_rescale(pi_ne_id            => lt_groups(i).group_id
+                    ,pi_effective_date   => pi_effective_date
                     ,pi_offset_st        => lt_groups(i).min_slk
                     ,pi_use_history      => 'Y'
                     ,po_message_severity => lv_severity
@@ -405,6 +408,7 @@ AS
               lt_messages.DELETE;
               --
               do_rescale(pi_ne_id            => lt_groups(i).group_id
+                        ,pi_effective_date   => pi_effective_date
                         ,pi_offset_st        => lt_groups(i).min_slk
                         ,pi_use_history      => 'N'
                         ,po_message_severity => lv_severity
@@ -426,9 +430,12 @@ AS
     /*
     ||If errors occurred rollback.
     */
-    IF lv_severity IN(awlrs_util.c_msg_cat_error,awlrs_util.c_msg_cat_ask_continue)
+    IF lv_severity IN(awlrs_util.c_msg_cat_error
+                     ,awlrs_util.c_msg_cat_ask_continue
+                     ,awlrs_util.c_msg_cat_circular_route)
      THEN
         ROLLBACK TO reshape_element1_sp;
+        po_new_ne_id := NULL;
     ELSE
         po_new_ne_id := lv_new_ne_id;
     END IF;
