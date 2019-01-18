@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.19   Nov 05 2018 16:54:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.20   Jan 18 2019 11:27:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   Nov 05 2018 16:54:30  $
-  --       Date fetched Out : $Modtime:   Nov 05 2018 10:39:34  $
-  --       Version          : $Revision:   1.19  $
+  --       Date into PVCS   : $Date:   Jan 18 2019 11:27:58  $
+  --       Date fetched Out : $Modtime:   Jan 16 2019 18:08:12  $
+  --       Version          : $Revision:   1.20  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.20  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -670,6 +670,7 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE do_rescale(pi_ne_id            IN     nm_elements.ne_id%TYPE
+                      ,pi_effective_date   IN     DATE
                       ,pi_offset_st        IN     NUMBER
                       ,pi_use_history      IN     VARCHAR2
                       ,po_message_severity IN OUT hig_codes.hco_code%TYPE
@@ -683,6 +684,7 @@ AS
   BEGIN
     --
     awlrs_group_api.rescale_route(pi_ne_id            => pi_ne_id
+                                 ,pi_effective_date   => pi_effective_date
                                  ,pi_offset_st        => pi_offset_st
                                  ,pi_use_history      => pi_use_history
                                  ,po_message_severity => po_message_severity
@@ -800,7 +802,7 @@ AS
     CURSOR get_linear_groups(cp_ne_id IN nm_elements_all.ne_id%TYPE)
         IS
     SELECT nm_ne_id_in group_id
-          ,nm3net.get_min_slk(pi_ne_id => nm_ne_id_in) min_slk
+          ,NVL(nm3net.get_min_slk(pi_ne_id => nm_ne_id_in),0) min_slk
       FROM nm_members 
      WHERE nm_ne_id_of = cp_ne_id
        AND nm_obj_type IN(SELECT ngt_group_type
@@ -959,6 +961,7 @@ AS
           lt_messages.DELETE;
           --
           do_rescale(pi_ne_id            => lt_groups(i).group_id
+                    ,pi_effective_date   => pi_effective_date
                     ,pi_offset_st        => lt_groups(i).min_slk
                     ,pi_use_history      => 'Y'
                     ,po_message_severity => lv_severity
@@ -970,6 +973,7 @@ AS
               lt_messages.DELETE;
               --
               do_rescale(pi_ne_id            => lt_groups(i).group_id
+                        ,pi_effective_date   => pi_effective_date
                         ,pi_offset_st        => lt_groups(i).min_slk
                         ,pi_use_history      => 'N'
                         ,po_message_severity => lv_severity
@@ -980,7 +984,7 @@ AS
           IF lv_severity != awlrs_util.c_msg_cat_success
            THEN
               /*
-              ||If an error has ocured rescaling a group end the whole operation.
+              ||If an error has occurred rescaling a group end the whole operation.
               */
               EXIT;
               --
@@ -991,7 +995,9 @@ AS
     /*
     ||If errors occurred rollback.
     */
-    IF lv_severity IN(awlrs_util.c_msg_cat_error,awlrs_util.c_msg_cat_ask_continue)
+    IF lv_severity IN(awlrs_util.c_msg_cat_error
+                     ,awlrs_util.c_msg_cat_ask_continue
+                     ,awlrs_util.c_msg_cat_circular_route)
      THEN
         ROLLBACK TO do_split_sp;
         po_new_ne_ids(1) := NULL;
