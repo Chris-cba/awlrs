@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_recalibrate_api.pkb-arc   1.4   Apr 11 2018 14:57:10   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_recalibrate_api.pkb-arc   1.5   Jan 18 2019 11:09:52   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_recalibrate_api.pkb  $
-  --       Date into PVCS   : $Date:   Apr 11 2018 14:57:10  $
-  --       Date fetched Out : $Modtime:   Apr 11 2018 13:53:56  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   Jan 18 2019 11:09:52  $
+  --       Date fetched Out : $Modtime:   Jan 15 2019 17:36:42  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_recalibrate_api';
   --
@@ -147,7 +147,7 @@ AS
     CURSOR get_linear_groups(cp_ne_id nm_elements_all.ne_id%TYPE)
         IS
     SELECT nm_ne_id_in group_id
-          ,nvl(nm3net.get_min_slk(pi_ne_id => nm_ne_id_in),0) min_slk
+          ,NVL(nm3net.get_min_slk(pi_ne_id => nm_ne_id_in),0) min_slk
       FROM nm_members 
      WHERE nm_ne_id_of = cp_ne_id
        AND nm_obj_type IN(SELECT ngt_group_type
@@ -299,7 +299,7 @@ AS
           IF lv_severity != awlrs_util.c_msg_cat_success
            THEN
               /*
-              ||If an error has ocured rescaling a group end the whole operation.
+              ||If an error has occurred rescaling a group end the whole operation.
               */
               EXIT;
               --
@@ -311,9 +311,12 @@ AS
     /*
     ||If errors occurred rollback.
     */
-    IF lv_severity = awlrs_util.c_msg_cat_error
+    IF lv_severity IN(awlrs_util.c_msg_cat_error
+                     ,awlrs_util.c_msg_cat_ask_continue
+                     ,awlrs_util.c_msg_cat_circular_route)
      THEN
         ROLLBACK TO recalibration_sp;
+        po_new_ne_id := NULL;
     ELSE
         po_new_ne_id := lv_ne_id;
     END IF;
