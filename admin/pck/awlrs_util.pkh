@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.17   Dec 13 2018 18:49:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.18   Jan 18 2019 11:34:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   Dec 13 2018 18:49:32  $
-  --       Date fetched Out : $Modtime:   Dec 13 2018 11:08:02  $
-  --       Version          : $Revision:   1.17  $
+  --       Date into PVCS   : $Date:   Jan 18 2019 11:34:36  $
+  --       Date fetched Out : $Modtime:   Jan 10 2019 15:15:58  $
+  --       Version          : $Revision:   1.18  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -217,7 +217,7 @@ AS
   --
   FUNCTION gen_order_by(pi_order_columns  IN nm3type.tab_varchar30
                        ,pi_order_asc_desc IN nm3type.tab_varchar4
-                       ,pi_enclose_cols   IN BOOLEAN DEFAULT TRUE)
+                       ,pi_enclose_cols   IN BOOLEAN DEFAULT FALSE)
     RETURN VARCHAR2;
 
   --

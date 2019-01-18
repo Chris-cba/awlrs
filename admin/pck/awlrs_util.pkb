@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.20   Dec 13 2018 18:49:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.21   Jan 18 2019 11:34:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Dec 13 2018 18:49:32  $
-  --       Date fetched Out : $Modtime:   Dec 13 2018 11:08:02  $
-  --       Version          : $Revision:   1.20  $
+  --       Date into PVCS   : $Date:   Jan 18 2019 11:34:36  $
+  --       Date fetched Out : $Modtime:   Jan 18 2019 11:33:50  $
+  --       Version          : $Revision:   1.21  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.20  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -591,7 +591,7 @@ AS
   --
   FUNCTION gen_order_by(pi_order_columns  IN nm3type.tab_varchar30
                        ,pi_order_asc_desc IN nm3type.tab_varchar4
-                       ,pi_enclose_cols   IN BOOLEAN DEFAULT TRUE)
+                       ,pi_enclose_cols   IN BOOLEAN DEFAULT FALSE)
     RETURN VARCHAR2 IS
     --
     lv_retval  nm3type.max_varchar2;
@@ -663,9 +663,9 @@ AS
     --
     FOR i IN 1..pi_column_data.COUNT LOOP
       --
-      IF pi_column_data(i).cursor_col = pi_column
+      IF UPPER(pi_column_data(i).cursor_col) = UPPER(pi_column)
        THEN
-          po_query_col := NVL(pi_column_data(i).query_col,pi_column_data(i).cursor_col);
+          po_query_col := UPPER(NVL(pi_column_data(i).query_col,pi_column_data(i).cursor_col));
           po_datatype  := pi_column_data(i).datatype;
           po_mask      := pi_column_data(i).mask;
           EXIT;
@@ -800,7 +800,7 @@ AS
                 --
             END IF;
             --
-            po_where_clause := po_where_clause||' = '||get_assignment(pi_value       => pi_values_1(i)
+            po_where_clause := po_where_clause||' = '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                      ,pi_datatype    => lv_datatype
                                                                      ,pi_format_mask => lv_mask);
             --
@@ -827,7 +827,7 @@ AS
                 --
             END IF;
             --
-            po_where_clause := po_where_clause||' != '||get_assignment(pi_value       => pi_values_1(i)
+            po_where_clause := po_where_clause||' != '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                       ,pi_datatype    => lv_datatype
                                                                       ,pi_format_mask => lv_mask);
             --
@@ -857,7 +857,7 @@ AS
                 --
             END IF;
             --
-            po_where_clause := po_where_clause||' > '||get_assignment(pi_value       => pi_values_1(i)
+            po_where_clause := po_where_clause||' > '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                      ,pi_datatype    => lv_datatype
                                                                      ,pi_format_mask => lv_mask);
             --
@@ -887,7 +887,7 @@ AS
                 --
             END IF;
             --
-            po_where_clause := po_where_clause||' < '||get_assignment(pi_value       => pi_values_1(i)
+            po_where_clause := po_where_clause||' < '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                      ,pi_datatype    => lv_datatype
                                                                      ,pi_format_mask => lv_mask);
             --
@@ -917,7 +917,7 @@ AS
                 --
             END IF;
             --
-            po_where_clause := po_where_clause||' >= '||get_assignment(pi_value       => pi_values_1(i)
+            po_where_clause := po_where_clause||' >= '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                       ,pi_datatype    => lv_datatype
                                                                       ,pi_format_mask => lv_mask);
             --
@@ -947,7 +947,7 @@ AS
                 --
             END IF;
             --
-            po_where_clause := po_where_clause||' <= '||get_assignment(pi_value       => pi_values_1(i)
+            po_where_clause := po_where_clause||' <= '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                       ,pi_datatype    => lv_datatype
                                                                       ,pi_format_mask => lv_mask);
             --
@@ -985,10 +985,10 @@ AS
                 --
             END IF;
             --
-            po_where_clause := po_where_clause||' BETWEEN '||get_assignment(pi_value       => pi_values_1(i)
+            po_where_clause := po_where_clause||' BETWEEN '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                            ,pi_datatype    => lv_datatype
                                                                            ,pi_format_mask => lv_mask)
-                            ||' AND '||get_assignment(pi_value       => pi_values_2(i)
+                            ||' AND '||get_assignment(pi_value       => UPPER(pi_values_2(i))
                                                      ,pi_datatype    => lv_datatype
                                                      ,pi_format_mask => lv_mask);
             --
@@ -1026,10 +1026,10 @@ AS
                 --
             END IF;
             --
-            po_where_clause := po_where_clause||' NOT BETWEEN '||get_assignment(pi_value       => pi_values_1(i)
+            po_where_clause := po_where_clause||' NOT BETWEEN '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                                ,pi_datatype    => lv_datatype
                                                                                ,pi_format_mask => lv_mask)
-                            ||' AND '||get_assignment(pi_value       => pi_values_2(i)
+                            ||' AND '||get_assignment(pi_value       => UPPER(pi_values_2(i))
                                                      ,pi_datatype    => lv_datatype
                                                      ,pi_format_mask => lv_mask);
             --
