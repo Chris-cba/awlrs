@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.21   Jan 18 2019 11:34:36   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.22   Jan 21 2019 20:40:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Jan 18 2019 11:34:36  $
-  --       Date fetched Out : $Modtime:   Jan 18 2019 11:33:50  $
-  --       Version          : $Revision:   1.21  $
+  --       Date into PVCS   : $Date:   Jan 21 2019 20:40:20  $
+  --       Date fetched Out : $Modtime:   Jan 21 2019 18:30:04  $
+  --       Version          : $Revision:   1.22  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -675,10 +675,10 @@ AS
     --
     IF po_query_col IS NULL
      THEN
-        raise_application_error(-20001,'Unable to derive datatype of column: '||pi_column);
-        --TODO add a ner
-        --hig.raise_ner(pi_appl => 'AWLRS'
-        --             ,pi_id   => 43);
+        --Unable to derive datatype of column
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 62
+                     ,pi_supplementary_info => pi_column);
     END IF;
     --
   END get_datatype;
