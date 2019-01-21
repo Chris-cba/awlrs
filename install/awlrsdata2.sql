@@ -1,19 +1,19 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.14   Sep 19 2018 12:03:48   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.15   Jan 21 2019 20:51:20   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Sep 19 2018 12:03:48  $
---       Date fetched Out : $Modtime:   Sep 17 2018 16:39:14  $
---       Version          : $Revision:   1.14  $
+--       Date into PVCS   : $Date:   Jan 21 2019 20:51:20  $
+--       Date fetched Out : $Modtime:   Jan 21 2019 20:26:20  $
+--       Version          : $Revision:   1.15  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 17-SEP-2018 16:39
+--       Generation Date  : 21-JAN-2019 20:26
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
 --
 -------------------------------------------------------------------------
---   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2019 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
 --
 --   TABLES PROCESSED
@@ -1101,6 +1101,60 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 59);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,60
+      ,null
+      ,'Network Element belongs to a Circular Route, please retry with Rescale All set to "Off" and manually run Rescale for the relevant groups'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 60);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,61
+      ,null
+      ,'Network Element belongs to a Circular Route, please retry with Maintain History set to "Off" and manually run Rescale for the relevant groups'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 61);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,62
+      ,null
+      ,'Unable to derive datatype of column'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 62);
 --
 ----------------------------------------------------------------------------------------
 --
