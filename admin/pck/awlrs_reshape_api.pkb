@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.12   Jan 18 2019 11:27:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.13   Jan 21 2019 20:41:12   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 18 2019 11:27:12  $
-  --       Date fetched Out : $Modtime:   Jan 18 2019 11:25:44  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   Jan 21 2019 20:41:12  $
+  --       Date fetched Out : $Modtime:   Jan 21 2019 20:36:44  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reshape_api';
   --
@@ -419,8 +419,18 @@ AS
           IF lv_severity != awlrs_util.c_msg_cat_success
            THEN
               /*
-              ||If an error has ocured rescaling a group end the whole operation.
+              ||If an error has occurred rescaling a group end the whole operation.
               */
+              IF lv_severity = awlrs_util.c_msg_cat_circular_route
+               THEN
+                  lt_messages.DELETE;
+                  awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                   ,pi_ner_id             => 60
+                                                   ,pi_supplementary_info => NULL
+                                                   ,pi_category           => awlrs_util.c_msg_cat_error
+                                                   ,po_message_tab        => lt_messages);
+              END IF;
+              --
               EXIT;
               --
           END IF;

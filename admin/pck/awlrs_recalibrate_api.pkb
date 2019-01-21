@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_recalibrate_api.pkb-arc   1.5   Jan 18 2019 11:09:52   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_recalibrate_api.pkb-arc   1.6   Jan 21 2019 20:41:12   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_recalibrate_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 18 2019 11:09:52  $
-  --       Date fetched Out : $Modtime:   Jan 15 2019 17:36:42  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   Jan 21 2019 20:41:12  $
+  --       Date fetched Out : $Modtime:   Jan 21 2019 20:36:44  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_recalibrate_api';
   --
@@ -219,8 +219,17 @@ AS
           IF lv_severity != awlrs_util.c_msg_cat_success
            THEN
               /*
-              ||If an error has ocured rescaling a group end the whole operation.
+              ||If an error has occurred rescaling a group end the whole operation.
               */
+              IF lv_severity = awlrs_util.c_msg_cat_circular_route
+               THEN
+                  lt_messages.DELETE;
+                  awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                   ,pi_ner_id             => 61
+                                                   ,pi_supplementary_info => NULL
+                                                   ,pi_category           => awlrs_util.c_msg_cat_error
+                                                   ,po_message_tab        => lt_messages);
+              END IF;
               EXIT;
               --
           END IF;
@@ -301,6 +310,16 @@ AS
               /*
               ||If an error has occurred rescaling a group end the whole operation.
               */
+              IF lv_severity = awlrs_util.c_msg_cat_circular_route
+               THEN
+                  lt_messages.DELETE;
+                  awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                   ,pi_ner_id             => 61
+                                                   ,pi_supplementary_info => NULL
+                                                   ,pi_category           => awlrs_util.c_msg_cat_error
+                                                   ,po_message_tab        => lt_messages);
+              END IF;
+              --
               EXIT;
               --
           END IF;

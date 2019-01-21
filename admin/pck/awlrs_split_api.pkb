@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.20   Jan 18 2019 11:27:58   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.21   Jan 21 2019 20:41:12   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 18 2019 11:27:58  $
-  --       Date fetched Out : $Modtime:   Jan 16 2019 18:08:12  $
-  --       Version          : $Revision:   1.20  $
+  --       Date into PVCS   : $Date:   Jan 21 2019 20:41:12  $
+  --       Date fetched Out : $Modtime:   Jan 21 2019 18:40:24  $
+  --       Version          : $Revision:   1.21  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.20  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -803,7 +803,7 @@ AS
         IS
     SELECT nm_ne_id_in group_id
           ,NVL(nm3net.get_min_slk(pi_ne_id => nm_ne_id_in),0) min_slk
-      FROM nm_members 
+      FROM nm_members
      WHERE nm_ne_id_of = cp_ne_id
        AND nm_obj_type IN(SELECT ngt_group_type
                             FROM nm_group_types
@@ -986,6 +986,16 @@ AS
               /*
               ||If an error has occurred rescaling a group end the whole operation.
               */
+              IF lv_severity = awlrs_util.c_msg_cat_circular_route
+               THEN
+                  lt_messages.DELETE;
+                  awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                   ,pi_ner_id             => 60
+                                                   ,pi_supplementary_info => NULL
+                                                   ,pi_category           => awlrs_util.c_msg_cat_error
+                                                   ,po_message_tab        => lt_messages);
+              END IF;
+              --
               EXIT;
               --
           END IF;
