@@ -3,11 +3,11 @@
 --
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1230_upg.sql-arc   1.1   Jan 24 2019 11:54:02   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1230_upg.sql-arc   1.2   Jan 24 2019 15:26:38   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrs1010_awlrs1230_upg.sql  $
---       Date into PVCS   : $Date:   Jan 24 2019 11:54:02  $
---       Date fetched Out : $Modtime:   Jan 24 2019 11:53:48  $
---       Version          : $Revision:   1.1  $
+--       Date into PVCS   : $Date:   Jan 24 2019 15:26:38  $
+--       Date fetched Out : $Modtime:   Jan 24 2019 15:25:46  $
+--       Version          : $Revision:   1.2  $
 --
 --   Product upgrade script
 --
@@ -41,7 +41,7 @@ WHERE hpr_product = 'AWLRS';
 WHENEVER SQLERROR EXIT
 begin
    hig2.pre_upgrade_check (p_product               => 'AWLRS'
-                          ,p_new_version           => '1.2.3.0'
+                          ,p_new_version           => '1.2.3.1'
                           ,p_allowed_old_version_1 => '1.0.1.0'
                           );
 END;
@@ -193,7 +193,7 @@ SET TERM ON
 Prompt Setting The Version Number...
 SET TERM OFF
 BEGIN
-      hig2.upgrade('AWLRS','awlrs1010_awlrs1230_upg.sql','Upgrade from 1.0.1.0 to 1.2.3.0','1.2.3.0');
+      hig2.upgrade('AWLRS','awlrs1010_awlrs1230_upg.sql','Upgrade from 1.0.1.0 to 1.2.3.1','1.2.3.1');
 END;
 /
 COMMIT;
