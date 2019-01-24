@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrspkh.sql-arc   1.9   Sep 19 2018 12:45:38   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrspkh.sql-arc   1.10   Jan 24 2019 10:56:56   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrspkh.sql  $
---       Date into PVCS   : $Date:   Sep 19 2018 12:45:38  $
---       Date fetched Out : $Modtime:   Sep 19 2018 12:44:48  $
---       Version          : $Revision:   1.9  $
+--       Date into PVCS   : $Date:   Jan 24 2019 10:56:56  $
+--       Date fetched Out : $Modtime:   Jan 24 2019 10:52:38  $
+--       Version          : $Revision:   1.10  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
@@ -299,11 +299,39 @@ SET feedback OFF
 -------------------------------------------------------------------------
 --
 SET TERM ON
-PROMPT awlrs_plm_api
+PROMPT awlrs_sdo_offset
 SET TERM OFF
 SET define ON
 SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
        ||'&terminator'||'awlrs_sdo_offset.pkh' run_file
+  FROM dual
+     ;
+SET feedback ON
+START '&run_file'
+SET feedback OFF
+--
+-------------------------------------------------------------------------
+--
+SET TERM ON
+PROMPT awlrs_metaref_api
+SET TERM OFF
+SET define ON
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
+       ||'&terminator'||'awlrs_metaref_api.pkh' run_file
+  FROM dual
+     ;
+SET feedback ON
+START '&run_file'
+SET feedback OFF
+--
+-------------------------------------------------------------------------
+--
+SET TERM ON
+PROMPT awlrs_metasec_api
+SET TERM OFF
+SET define ON
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
+       ||'&terminator'||'awlrs_metasec_api.pkh' run_file
   FROM dual
      ;
 SET feedback ON
