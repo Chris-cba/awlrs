@@ -1,0 +1,207 @@
+CREATE OR REPLACE PACKAGE awlrs_metaref_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkh-arc   1.0   Jan 24 2019 10:47:06   Peter.Bibby  $
+  --       Module Name      : $Workfile:   awlrs_metaref_api.pkh  $
+  --       Date into PVCS   : $Date:   Jan 24 2019 10:47:06  $
+  --       Date fetched Out : $Modtime:   Jan 16 2019 15:33:30  $
+  --       Version          : $Revision:   1.0  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_domain(pi_domain          IN     hig_domains.hdo_domain%TYPE
+                      ,po_message_severity   OUT hig_codes.hco_code%TYPE
+                      ,po_message_cursor     OUT sys_refcursor
+                      ,po_cursor             OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_domains(po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor
+                       ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_domains(pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                             ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                             ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                             ,pi_skip_n_rows      IN  PLS_INTEGER
+                             ,pi_pagesize         IN  PLS_INTEGER
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_code(pi_domain           IN     hig_codes.hco_domain%TYPE
+                    ,pi_code             IN     hig_codes.hco_code%TYPE
+                    ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor      OUT sys_refcursor
+                    ,po_cursor              OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_codes(pi_domain           IN     hig_codes.hco_domain%TYPE
+                     ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                     ,po_message_cursor      OUT sys_refcursor
+                     ,po_cursor              OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_codes(pi_domain           IN     hig_codes.hco_domain%TYPE
+                           ,pi_filter_columns   IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_filter_operators IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_filter_values_1  IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                           ,pi_filter_values_2  IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                           ,pi_order_columns    IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_order_asc_desc   IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                           ,pi_skip_n_rows      IN     PLS_INTEGER
+                           ,pi_pagesize         IN     PLS_INTEGER
+                           ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor      OUT sys_refcursor
+                           ,po_cursor              OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_product_option(pi_option           IN      hig_options.hop_id%TYPE
+                              ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor       OUT sys_refcursor
+                              ,po_cursor               OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_product_options(po_message_severity     OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor       OUT sys_refcursor
+                               ,po_cursor               OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_product_options(pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                     ,pi_skip_n_rows      IN  PLS_INTEGER
+                                     ,pi_pagesize         IN  PLS_INTEGER
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user_prod_option(pi_option           IN      hig_options.hop_id%TYPE
+                                ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor       OUT sys_refcursor
+                                ,po_cursor               OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user_prod_options(po_message_severity     OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor       OUT sys_refcursor
+                                 ,po_cursor               OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_user_prod_options(pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                       ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                       ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                       ,pi_skip_n_rows      IN  PLS_INTEGER
+                                       ,pi_pagesize         IN  PLS_INTEGER
+                                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor   OUT sys_refcursor
+                                       ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_domain(pi_domain           IN      hig_domains.hdo_domain%TYPE
+                         ,pi_title            IN      hig_domains.hdo_title%TYPE
+                         ,pi_product          IN      hig_domains.hdo_product%TYPE
+                         ,pi_code_length      IN      hig_domains.hdo_code_length%TYPE
+                         ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor       OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_code(pi_seq              IN     hig_codes.hco_seq%TYPE
+                       ,pi_domain           IN     hig_codes.hco_domain%TYPE
+                       ,pi_code             IN     hig_codes.hco_code%TYPE
+                       ,pi_meaning          IN     hig_codes.hco_meaning%TYPE
+                       ,pi_system           IN     hig_codes.hco_system%TYPE
+                       ,pi_start_date       IN     hig_codes.hco_start_date%TYPE
+                       ,pi_end_date         IN     hig_codes.hco_end_date%TYPE
+                       ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor      OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_code(pi_domain               IN     hig_codes.hco_domain%TYPE
+                       ,pi_old_code             IN     hig_codes.hco_code%TYPE
+                       ,pi_old_meaning          IN     hig_codes.hco_meaning%TYPE
+                       ,pi_old_system           IN     hig_codes.hco_system%TYPE
+                       ,pi_old_seq              IN     hig_codes.hco_seq%TYPE
+                       ,pi_old_start_date       IN     hig_codes.hco_start_date%TYPE
+                       ,pi_old_end_date         IN     hig_codes.hco_end_date%TYPE
+                       ,pi_new_code             IN     hig_codes.hco_code%TYPE
+                       ,pi_new_meaning          IN     hig_codes.hco_meaning%TYPE
+                       ,pi_new_system           IN     hig_codes.hco_system%TYPE
+                       ,pi_new_seq              IN     hig_codes.hco_seq%TYPE
+                       ,pi_new_start_date       IN     hig_codes.hco_start_date%TYPE
+                       ,pi_new_end_date         IN     hig_codes.hco_end_date%TYPE
+                       ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor          OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_product_option(pi_option              IN     hig_option_values.hov_id%TYPE
+                                 ,pi_old_value           IN     hig_option_values.hov_value%TYPE
+                                 ,pi_new_value           IN     hig_option_values.hov_value%TYPE
+                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT sys_refcursor);
+
+--
+END awlrs_metaref_api;
+/

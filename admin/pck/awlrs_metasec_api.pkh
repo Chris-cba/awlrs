@@ -1,0 +1,88 @@
+CREATE OR REPLACE PACKAGE awlrs_metasec_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkh-arc   1.0   Jan 24 2019 10:47:06   Peter.Bibby  $
+  --       Module Name      : $Workfile:   awlrs_metasec_api.pkh  $
+  --       Date into PVCS   : $Date:   Jan 24 2019 10:47:06  $
+  --       Date fetched Out : $Modtime:   Dec 20 2018 16:19:40  $
+  --       Version          : $Revision:   1.0  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_products(po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor
+                        ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_products(pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                              ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                              ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                              ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                              ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                              ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                              ,pi_skip_n_rows      IN  PLS_INTEGER
+                              ,pi_pagesize         IN  PLS_INTEGER
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_product_license(pi_product          IN     hig_products.hpr_product%TYPE
+                               ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE revoke_product_license(pi_product          IN     hig_products.hpr_product%TYPE
+                                  ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor      OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_upgrades(po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor
+                        ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_upgrades(pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                              ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                              ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                              ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                              ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                              ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                              ,pi_skip_n_rows      IN  PLS_INTEGER
+                              ,pi_pagesize         IN  PLS_INTEGER
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor);
+  --
+END awlrs_metasec_api;
+/
