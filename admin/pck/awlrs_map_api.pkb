@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.37   Dec 03 2018 16:54:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.38   Jan 28 2019 15:05:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Dec 03 2018 16:54:44  $
-  --       Date fetched Out : $Modtime:   Nov 28 2018 14:56:18  $
-  --       Version          : $Revision:   1.37  $
+  --       Date into PVCS   : $Date:   Jan 28 2019 15:05:14  $
+  --       Date fetched Out : $Modtime:   Jan 25 2019 18:13:48  $
+  --       Version          : $Revision:   1.38  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.37  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.38  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -2636,7 +2636,15 @@ AS
               ||CHR(10)||'      "gml_featureid"               "'||lt_themes(i).nth_feature_pk_column||'"'
               ||CHR(10)||'      "gml_include_items"           "all"'
               ||CHR(10)||'      "gml_geometries"              "msGeometry"'
-              ||CHR(10)||'      "gml_msGeometry_type"         "'||lv_gml_msGeometry_type||'"'
+              ||CHR(10)||'      "gml_msGeometry_type"         "'||CASE
+                                                                    WHEN (lr_theme_types.network_group_type IS NOT NULL
+                                                                          OR lr_theme_types.asset_type IS NOT NULL)
+                                                                     AND lv_gml_msGeometry_type = 'line'
+                                                                     THEN
+                                                                        'multiline'
+                                                                    ELSE
+                                                                        lv_gml_msGeometry_type
+                                                                  END||'"'
         ;
         lv_layer_text := lv_layer_text||lv_tmp;
         --
