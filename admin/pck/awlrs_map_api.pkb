@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.38   Jan 28 2019 15:05:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.39   Jan 29 2019 17:06:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 28 2019 15:05:14  $
-  --       Date fetched Out : $Modtime:   Jan 25 2019 18:13:48  $
-  --       Version          : $Revision:   1.38  $
+  --       Date into PVCS   : $Date:   Jan 29 2019 17:06:28  $
+  --       Date fetched Out : $Modtime:   Jan 29 2019 17:00:38  $
+  --       Version          : $Revision:   1.39  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.38  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.39  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -2321,7 +2321,6 @@ AS
     lv_tmp                       CLOB;
     lv_layer_type                VARCHAR2(100);
     lv_theme_extent              VARCHAR2(500);
-    lv_gml_msGeometry_type       VARCHAR2(100);
     lv_wfs_featureid             VARCHAR2(100);
     lv_group                     VARCHAR2(200);
     lv_group_name                VARCHAR2(200);
@@ -2601,7 +2600,6 @@ AS
       FOR j IN 1..lt_gtypes.COUNT LOOP
         --
         lv_layer_type := gtype_to_layer_type(pi_gtype => lt_gtypes(j).gtype);
-        lv_gml_msGeometry_type := gtype_to_gml_msGeometry_type(pi_gtype => lt_gtypes(j).gtype);
         --
         IF lv_group IS NOT NULL
          THEN
@@ -2635,16 +2633,6 @@ AS
               ||CHR(10)||'      "wfs_getfeature_formatlist"   "SHAPEZIP,CSV,JSON"'
               ||CHR(10)||'      "gml_featureid"               "'||lt_themes(i).nth_feature_pk_column||'"'
               ||CHR(10)||'      "gml_include_items"           "all"'
-              ||CHR(10)||'      "gml_geometries"              "msGeometry"'
-              ||CHR(10)||'      "gml_msGeometry_type"         "'||CASE
-                                                                    WHEN (lr_theme_types.network_group_type IS NOT NULL
-                                                                          OR lr_theme_types.asset_type IS NOT NULL)
-                                                                     AND lv_gml_msGeometry_type = 'line'
-                                                                     THEN
-                                                                        'multiline'
-                                                                    ELSE
-                                                                        lv_gml_msGeometry_type
-                                                                  END||'"'
         ;
         lv_layer_text := lv_layer_text||lv_tmp;
         --
