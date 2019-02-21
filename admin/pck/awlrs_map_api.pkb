@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.39   Jan 29 2019 17:06:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.40   Feb 21 2019 19:21:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 29 2019 17:06:28  $
-  --       Date fetched Out : $Modtime:   Jan 29 2019 17:00:38  $
-  --       Version          : $Revision:   1.39  $
+  --       Date into PVCS   : $Date:   Feb 21 2019 19:21:16  $
+  --       Date fetched Out : $Modtime:   Feb 21 2019 19:10:14  $
+  --       Version          : $Revision:   1.40  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.39  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.40  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -2381,9 +2381,10 @@ AS
     --
     ---------------------------------------------------------------------------
     --
-    FUNCTION get_theme_extra_cols(pi_theme_name IN VARCHAR2
-                                 ,pi_pk_column  IN VARCHAR2
-                                 ,pi_alias      IN VARCHAR2)
+    FUNCTION get_theme_extra_cols(pi_theme_name    IN VARCHAR2
+                                 ,pi_pk_column     IN VARCHAR2
+                                 ,pi_alias         IN VARCHAR2
+                                 ,pi_is_node_layer IN BOOLEAN)
       RETURN VARCHAR2 IS
       --
       lt_columns  nm3type.tab_varchar30;
@@ -2398,7 +2399,16 @@ AS
       --
       IF lv_label_col IS NOT NULL
        THEN
-          lv_retval := ', '||pi_alias||lv_label_col;
+          /*
+          ||If this is a node layer then some columns will be added later
+          ||so no need to add them here.
+          */
+          IF (pi_is_node_layer AND UPPER(lv_label_col) IN('NO_NODE_ID','NO_NODE_NAME','NO_DESCR'))
+           THEN
+              NULL;
+          ELSE
+              lv_retval := ', '||pi_alias||lv_label_col;
+          END IF;
       END IF;
       --
       SELECT DISTINCT pi_alias||theme_styles.label_column
@@ -2415,9 +2425,21 @@ AS
       FOR i IN 1..lt_columns.COUNT LOOP
         IF lt_columns(i) IS NOT NULL
          THEN
-            lv_retval := lv_retval||', '||lt_columns(i);
+            IF (pi_is_node_layer AND UPPER(lt_columns(i)) IN('NO_NODE_ID','NO_NODE_NAME','NO_DESCR'))
+             THEN
+                NULL;
+            ELSE
+                lv_retval := lv_retval||', '||lt_columns(i);
+            END IF;
         END IF;
       END LOOP;
+      /*
+      ||If this is a Node Theme add some required columns.
+      */
+      IF pi_is_node_layer
+       THEN
+          lv_retval := lv_retval||', '||pi_alias||'no_node_id, '||pi_alias||'no_node_name, '||pi_alias||'no_descr';
+      END IF;
       --
       RETURN lv_retval;
       --
@@ -2536,16 +2558,10 @@ AS
       /*
       ||Get the style data from user_sdo_themes and user_sdo_styles.
       */
-      lv_theme_extra_cols := get_theme_extra_cols(pi_theme_name => lt_themes(i).name
-                                                 ,pi_pk_column  => lt_themes(i).nth_feature_pk_column
-                                                 ,pi_alias      => 'ft.');
-      /*
-      ||If this is a Node Theme add some required columns.
-      */
-      IF is_node_layer(pi_feature_table => lt_themes(i).nth_feature_table)
-       THEN
-          lv_theme_extra_cols := lv_theme_extra_cols||',ft.no_node_id,ft.no_node_name,ft.no_descr';
-      END IF;
+      lv_theme_extra_cols := get_theme_extra_cols(pi_theme_name    => lt_themes(i).name
+                                                 ,pi_pk_column     => lt_themes(i).nth_feature_pk_column
+                                                 ,pi_alias         => 'ft.'
+                                                 ,pi_is_node_layer => is_node_layer(pi_feature_table => lt_themes(i).nth_feature_table));
       /*
       ||Get the key_column for the wfs_featureid.
       */
