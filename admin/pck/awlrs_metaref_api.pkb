@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.0   Jan 24 2019 10:47:06   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.1   Feb 28 2019 11:16:32   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaref_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 24 2019 10:47:06  $
-  --       Date fetched Out : $Modtime:   Jan 24 2019 10:27:56  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Feb 28 2019 11:16:32  $
+  --       Date fetched Out : $Modtime:   Feb 27 2019 13:31:00  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -106,7 +106,107 @@ AS
       RETURN lv_exists;
       --
   END product_exists;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION unit_domain_exists (pi_unit_domain_id IN nm_unit_domains.ud_domain_id%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM nm_unit_domains
+     WHERE ud_domain_id = pi_unit_domain_id;
+    --    
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found
+     THEN
+       --
+       RETURN lv_exists;
+       --
+  END unit_domain_exists;
   
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION unit_exists (pi_unit_id IN nm_units.un_unit_id%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM nm_units
+     WHERE un_unit_id = pi_unit_id;
+    --    
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found
+     THEN
+       --
+       RETURN lv_exists;
+       --
+  END unit_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION user_option_exists (pi_user_id          IN       hig_user_options.huo_hus_user_id%TYPE
+                              ,pi_option_id        IN       hig_user_options.huo_id%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM hig_user_options
+     WHERE huo_hus_user_id = pi_user_id
+       AND huo_id = pi_option_id;
+    --    
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found
+     THEN
+       --
+       RETURN lv_exists;
+       --
+  END user_option_exists; 
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION unit_conversion_exists (pi_unit_conv_id_in  IN nm_unit_conversions.uc_unit_id_in%TYPE
+                                  ,pi_unit_conv_id_out IN nm_unit_conversions.uc_unit_id_out%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM nm_unit_conversions
+     WHERE uc_unit_id_in  = pi_unit_conv_id_in
+       AND uc_unit_id_out = pi_unit_conv_id_out;
+    --    
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found
+     THEN
+       --
+       RETURN lv_exists;
+       --
+  END unit_conversion_exists;  
+    
   --
   -----------------------------------------------------------------------------
   --
@@ -147,16 +247,28 @@ AS
   --
   BEGIN
     --
-    SELECT hop_datatype
-          ,hop_domain
-          ,hop_mixed_case
-          ,hop_max_length
+    SELECT datatype
+          ,domain
+          ,mixed_case
+          ,max_length
       INTO lv_format
           ,lv_domain
           ,lv_case
           ,lv_max_Length
-      FROM hig_options
-     WHERE hop_id = pi_option_id;
+      FROM (SELECT hol_id          option_id
+                  ,hol_datatype    datatype
+                  ,hol_domain      domain
+                  ,hol_mixed_case  mixed_case
+                  ,hol_max_length  max_length
+              FROM hig_option_list
+             UNION
+            SELECT huol_id         option_id
+                  ,huol_datatype   datatype
+                  ,huol_domain     domain
+                  ,huol_mixed_case mixed_case
+                  ,huol_max_length max_length
+              FROM hig_user_option_list)
+     WHERE option_id = pi_option_id;
     --
 	   IF lv_domain IS NULL
 	   	THEN
@@ -180,7 +292,7 @@ AS
 		   	    IF hig.date_convert (pi_value) IS NULL THEN
 		           --
                hig.raise_ner(pi_appl => 'HIG'
-                            ,pi_id   => 1); --pb todo this id looks wrong but came from forms?
+                            ,pi_id   => 148); --pb todo this id looks wrong but came from forms?
                --
 		   	    END IF;
 		     END IF;
@@ -214,6 +326,26 @@ AS
      END IF;
     --
   END validate_option_value;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_notnull(pi_parameter_desc  IN hig_options.hop_id%TYPE
+                            ,pi_parameter_value IN hig_options.hop_value%TYPE) 
+  IS
+  --
+  BEGIN
+    --
+    IF pi_parameter_value IS NULL THEN 
+      --
+      hig.raise_ner(pi_appl               => 'HIG'
+                   ,pi_id                 => 22
+                   ,pi_supplementary_info => pi_parameter_desc || ' has not been specified');         
+      --
+    END IF;
+    --
+  END validate_notnull;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -306,7 +438,7 @@ AS
     lv_driving_sql  nm3type.max_varchar2 := 'SELECT hco_domain domain
                                                    ,hco_code code
                                                    ,hco_meaning meaning
-                                                   ,hco_system product
+                                                   ,hco_system system_data
                                                    ,hco_seq seq
                                                    ,hco_start_date start_date
                                                    ,hco_end_date end_date
@@ -316,7 +448,7 @@ AS
     lv_cursor_sql  nm3type.max_varchar2 := 'SELECT domain'
                                               ||' ,code'
                                               ||' ,meaning'
-                                              ||' ,product'
+                                              ||' ,system_data'
                                               ||' ,seq'
                                               ||' ,start_date'
                                               ||' ,end_date'
@@ -351,8 +483,8 @@ AS
                                 ,pi_mask         => null
                                 ,pio_column_data => po_column_data);
       --
-      awlrs_util.add_column_data(pi_cursor_col   => 'product'
-                                ,pi_query_col    => 'hco_product'
+      awlrs_util.add_column_data(pi_cursor_col   => 'system_data'
+                                ,pi_query_col    => 'hco_system'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => null
                                 ,pio_column_data => po_column_data);
@@ -478,7 +610,6 @@ AS
                        ,po_message_cursor   OUT sys_refcursor
                        ,po_cursor           OUT sys_refcursor)
     IS
-    --
     --
   BEGIN
     --
@@ -776,7 +907,7 @@ AS
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'remark'
-                                ,pi_query_col    => 'hop_remark' 
+                                ,pi_query_col    => 'hop_remarks' 
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => null
                                 ,pio_column_data => po_column_data);
@@ -1002,7 +1133,7 @@ AS
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'remark'
-                                ,pi_query_col    => 'huol_remark' 
+                                ,pi_query_col    => 'huol_remarks' 
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => null
                                 ,pio_column_data => po_column_data);
@@ -1072,9 +1203,6 @@ AS
                      ||CHR(10)||lv_row_restriction
     ;
     --
-    nm_debug.debug_on;
-    nm_debug.debug(lv_cursor_sql);
-    nm_debug.debug_off;
     IF pi_pagesize IS NOT NULL
      THEN
         OPEN po_cursor FOR lv_cursor_sql
@@ -1127,8 +1255,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_users(pi_user_id       IN     hig_users.hus_user_id%TYPE
-                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+  PROCEDURE get_users(po_message_severity OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor   OUT sys_refcursor
                      ,po_cursor           OUT sys_refcursor)
     IS
@@ -1141,8 +1268,7 @@ AS
             ,hus_initials initials
             ,hus_name name
             ,hus_username username
-        FROM hig_users 
-       WHERE hus_user_id = pi_user_id
+        FROM hig_users
        ORDER BY DECODE(hus_username,Sys_Context('NM3_SECURITY_CTX','USERNAME'),1,2), upper(hus_name);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -1158,8 +1284,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_paged_users(pi_user_id          IN     hig_users.hus_user_id%TYPE
-                           ,pi_filter_columns   IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+  PROCEDURE get_paged_users(pi_filter_columns   IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                            ,pi_filter_operators IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                            ,pi_filter_values_1  IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
                            ,pi_filter_values_2  IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
@@ -1182,8 +1307,7 @@ AS
                                                    ,hus_initials initials
                                                    ,hus_name     name
                                                    ,hus_username username
-                                               FROM hig_users 
-                                              WHERE hus_user_id = :pi_user_id'
+                                               FROM hig_users'
     ;
     lv_cursor_sql  nm3type.max_varchar2 := 'SELECT user_id'
                                               ||' ,initials'
@@ -1256,7 +1380,7 @@ AS
                                  ,pi_operators    => pi_filter_operators
                                  ,pi_values_1     => pi_filter_values_1
                                  ,pi_values_2     => pi_filter_values_2
-                                 ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
                                  ,po_where_clause => lv_filter);
         --
     END IF;
@@ -1271,13 +1395,11 @@ AS
     IF pi_pagesize IS NOT NULL
      THEN
         OPEN po_cursor FOR lv_cursor_sql
-        USING pi_user_id
-             ,lv_lower_index
+        USING lv_lower_index
              ,lv_upper_index;
     ELSE
         OPEN po_cursor FOR lv_cursor_sql
-        USING pi_user_id
-             ,lv_lower_index;
+        USING lv_lower_index;
     END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -1304,9 +1426,14 @@ AS
     --
     OPEN po_cursor FOR
       SELECT huo_hus_user_id user_id
-            ,huo_id          initials
-            ,huo_value       name
+            ,huo_id          option_id
+            ,huol_product    product
+            ,huo_value       option_value
             ,huol_name       option_meaning
+            ,huol_domain     option_domain
+            ,huol_datatype   option_datatype
+            ,huol_mixed_case mixed_case
+            ,huol_max_length max_length            
         FROM hig_user_options
             ,hig_user_option_list_all
        WHERE huo_id = huol_id
@@ -1337,8 +1464,13 @@ AS
     OPEN po_cursor FOR
       SELECT huo_hus_user_id user_id
             ,huo_id          option_id
+            ,huol_product    product
             ,huo_value       option_value
             ,huol_name       option_meaning
+            ,huol_domain     option_domain
+            ,huol_datatype   option_datatype
+            ,huol_mixed_case mixed_case
+            ,huol_max_length max_length     
         FROM hig_user_options
             ,hig_user_option_list_all
        WHERE huo_id = huol_id
@@ -1354,6 +1486,40 @@ AS
                                    ,po_cursor           => po_message_cursor);
   END get_user_options;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_add_user_options(pi_user_id       IN     hig_user_options.huo_hus_user_id%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT huol_id         option_id
+            ,huol_name       option_meaning
+            ,huol_domain     option_domain
+            ,huol_datatype   option_datatype
+            ,huol_mixed_case mixed_case
+            ,huol_max_length max_length              
+        FROM hig_user_option_list_all
+       WHERE NOT EXISTS (SELECT 1
+                           FROM hig_user_options
+                          WHERE huo_hus_user_id = pi_user_id
+                            AND huo_id = huol_id)
+       ORDER BY huol_id;    
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_add_user_options;
   --
   -----------------------------------------------------------------------------
   --
@@ -1379,8 +1545,13 @@ AS
     --
     lv_driving_sql  nm3type.max_varchar2 := 'SELECT huo_hus_user_id user_id
                                                    ,huo_id          option_id
+                                                   ,huol_product    product
                                                    ,huo_value       option_value
                                                    ,huol_name       option_meaning
+                                                   ,huol_domain     option_domain
+                                                   ,huol_datatype   option_datatype
+                                                   ,huol_mixed_case mixed_case
+                                                   ,huol_max_length max_length    
                                                FROM hig_user_options
                                                    ,hig_user_option_list_all
                                               WHERE huo_id = huol_id
@@ -1388,8 +1559,13 @@ AS
     ;
     lv_cursor_sql  nm3type.max_varchar2 := 'SELECT user_id'
                                               ||' ,option_id'
+                                              ||' ,product'
                                               ||' ,option_value'
                                               ||' ,option_meaning'
+                                              ||' ,option_domain'
+                                              ||' ,option_datatype'
+                                              ||' ,mixed_case'
+                                              ||' ,max_length'
                                               ||' ,row_count'
                                           ||' FROM (SELECT rownum ind'
                                                       ||' ,a.*'
@@ -1411,9 +1587,15 @@ AS
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'option_id'
                                 ,pi_query_col    => 'huo_id'
-                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => null
                                 ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'product'
+                                ,pi_query_col    => 'huol_product'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => null
+                                ,pio_column_data => po_column_data);                                
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'option_value'
                                 ,pi_query_col    => 'huo_value'
@@ -1426,6 +1608,30 @@ AS
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => null
                                 ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'option_domain'
+                                ,pi_query_col    => 'huol_domain'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => null
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'option_datatype'
+                                ,pi_query_col    => 'huol_datatype'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => null
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'mixed_case'
+                                ,pi_query_col    => 'huol_mixed_case'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => null
+                                ,pio_column_data => po_column_data);                                    
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'max_length'
+                                ,pi_query_col    => 'huol_max_length'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => null
+                                ,pio_column_data => po_column_data);                                
       --
     END set_column_data;
     --
@@ -1457,7 +1663,7 @@ AS
                                  ,pi_operators    => pi_filter_operators
                                  ,pi_values_1     => pi_filter_values_1
                                  ,pi_values_2     => pi_filter_values_2
-                                 ,pi_where_or_and => 'AND`' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
                                  ,po_where_clause => lv_filter);
         --
     END IF;
@@ -1468,7 +1674,10 @@ AS
                      ||CHR(10)||lv_row_restriction
     ;
     --
-    
+    nm_debug.debug_on;
+    nm_debug.debug(lv_filter);
+    nm_debug.debug(lv_cursor_sql);    
+    nm_debug.debug_off;
     IF pi_pagesize IS NOT NULL
      THEN
         OPEN po_cursor FOR lv_cursor_sql
@@ -1692,107 +1901,521 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_paged_errors;
-  
+
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE update_error(pi_product_id       IN     nm_errors.ner_appl%TYPE
-                        ,pi_error_id         IN     nm_errors.ner_id%TYPE
-                        ,pi_old_error_text   IN     nm_errors.ner_descr%TYPE
-                        ,pi_old_error_cause  IN     nm_errors.ner_cause%TYPE
-                        ,pi_new_error_text   IN     nm_errors.ner_descr%TYPE
-                        ,pi_new_error_cause  IN     nm_errors.ner_cause%TYPE                         
-                        ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor      OUT sys_refcursor
-                        ,po_cursor              OUT sys_refcursor)
+  PROCEDURE get_unit_domains(po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor)
     IS
     --
-    lr_db_ner_rec    nm_errors%ROWTYPE;
-    lv_upd           VARCHAR2(1) := 'N'; 
-    --
-    PROCEDURE get_db_rec(pi_product_id       IN     nm_errors.ner_appl%TYPE
-                        ,pi_error_id         IN     nm_errors.ner_id%TYPE)
-      IS
-    BEGIN
-      --
-    SELECT * 
-      INTO lr_db_ner_rec
-      FROM nm_errors
-     WHERE ner_appl = pi_product_id
-       AND ner_id = pi_error_id
-       FOR UPDATE NOWAIT;
-      --
-    EXCEPTION
-      WHEN no_data_found THEN
-        --
-        hig.raise_ner(pi_appl               => 'HIG'
-                     ,pi_id                 => 85
-                     ,pi_supplementary_info => 'Error ID does not exist');
-      --      
-    END get_db_rec;
   BEGIN
     --
-    get_db_rec(pi_product_id  => pi_product_id
-              ,pi_error_id    => pi_error_id);
+    OPEN po_cursor FOR
+      SELECT ud_domain_id unit_domain_id
+            ,ud_domain_name unit_domain_name
+            ,ud_text unit_domain_desc 
+       FROM nm_unit_domains
+       ORDER BY ud_domain_id;
     --
-    /*
-    ||Compare old with DB
-    */
-    IF lr_db_ner_rec.ner_descr != pi_old_error_text
-     OR (lr_db_ner_rec.ner_descr IS NULL AND pi_old_error_text IS NOT NULL)
-     OR (lr_db_ner_rec.ner_descr IS NOT NULL AND pi_old_error_text IS NULL)
-     --error cause
-     OR (lr_db_ner_rec.ner_cause != pi_old_error_cause)
-     OR (lr_db_ner_rec.ner_cause IS NULL AND pi_old_error_cause IS NOT NULL)
-     OR (lr_db_ner_rec.ner_cause IS NOT NULL AND pi_old_error_cause IS NULL)
-     THEN
-        --Updated by another user
-        hig.raise_ner(pi_appl => 'AWLRS'
-                     ,pi_id   => 24);
-    ELSE
-      /*
-      ||Compare old with New
-      */
-      IF pi_old_error_text != pi_new_error_text
-       OR (pi_old_error_text IS NULL AND pi_new_error_text IS NOT NULL)
-       OR (pi_old_error_text IS NOT NULL AND pi_new_error_text IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;
-      --
-      IF pi_old_error_cause != pi_new_error_cause
-       OR (pi_old_error_cause IS NULL AND pi_new_error_cause IS NOT NULL)
-       OR (pi_old_error_cause IS NOT NULL AND pi_new_error_cause IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;   
-      --
-      IF lv_upd = 'N'
-       THEN
-          --There are no changes to be applied
-          hig.raise_ner(pi_appl => 'AWLRS'
-                       ,pi_id   => 25);
-      ELSE
-        --
-        UPDATE nm_errors
-           SET ner_descr = pi_new_error_text
-              ,ner_cause = pi_new_error_cause
-         WHERE ner_appl = pi_product_id
-           AND ner_id = pi_error_id;
-        --           
-        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                             ,po_cursor           => po_message_cursor);
-        --
-      END IF; 
-    END IF;
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
     --
   EXCEPTION
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END update_error;  
+  END get_unit_domains;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_unit_domain(pi_unit_domain   IN     nm_unit_domains.ud_domain_id%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT ud_domain_id unit_domain_id
+            ,ud_domain_name unit_domain_name
+            ,ud_text unit_domain_desc 
+       FROM nm_unit_domains
+      WHERE ud_domain_id = pi_unit_domain
+      ORDER BY ud_domain_id;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_unit_domain;
   
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_unit_domains(pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                  ,pi_skip_n_rows      IN  PLS_INTEGER
+                                  ,pi_pagesize         IN  PLS_INTEGER
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor
+                                  ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_order_by         nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    --
+    lv_driving_sql  nm3type.max_varchar2 := 'SELECT ud_domain_id   unit_domain_id
+                                                   ,ud_domain_name unit_domain_name
+                                                   ,ud_text        unit_domain_desc 
+                                              FROM nm_unit_domains'
+    ;
+    lv_cursor_sql  nm3type.max_varchar2 := 'SELECT unit_domain_id
+                                                  ,unit_domain_name
+                                                  ,unit_domain_desc'
+                                              ||' ,row_count'
+                                          ||' FROM (SELECT rownum ind'
+                                                      ||' ,a.*'
+                                                      ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                  ||' FROM ('||lv_driving_sql
+    ;
+    --
+    lt_column_data  awlrs_util.column_data_tab;
+    --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'unit_domain_id'
+                                ,pi_query_col    => 'ud_domain_id' --can be null if the same as pi_cursor_col
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'unit_domain_name'
+                                ,pi_query_col    => 'ud_domain_name' --can be null if the same as pi_cursor_col
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'unit_domain_desc'
+                                ,pi_query_col    => 'ud_text' --can be null if the same as pi_cursor_col
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);                                
+      --
+      --<Repeat for each column that should allow filtering>
+      --
+    END set_column_data;
+    --
+  BEGIN
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||CHR(10)||lv_filter
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'ud_domain_id')||') a)'
+                     ||CHR(10)||lv_row_restriction
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_unit_domains;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_units(pi_unit_domain   IN     nm_unit_domains.ud_domain_id%TYPE
+                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                     ,po_message_cursor   OUT sys_refcursor
+                     ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT un_domain_id    unit_domain_id
+            ,un_unit_id      unit_id
+            ,un_unit_name    unit_name 
+            ,un_format_mask  unit_format_mask 
+       FROM nm_units
+      WHERE un_domain_id = pi_unit_domain
+      ORDER BY un_domain_id;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_units;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_unit(pi_unit_domain   IN     nm_units.un_domain_id%TYPE
+                    ,pi_unit_id       IN     nm_units.un_unit_id%TYPE
+                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor   OUT sys_refcursor
+                    ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT un_domain_id    unit_domain_id
+            ,un_unit_id      unit_id
+            ,un_unit_name    unit_name 
+            ,un_format_mask  unit_format_mask 
+       FROM nm_units
+      WHERE un_domain_id = pi_unit_domain
+        AND un_unit_id   = pi_unit_id
+      ORDER BY un_domain_id;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_unit;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_units(pi_unit_domain      IN  nm_unit_domains.ud_domain_id%TYPE
+                           ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                           ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                           ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                           ,pi_skip_n_rows      IN  PLS_INTEGER
+                           ,pi_pagesize         IN  PLS_INTEGER
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_order_by         nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    --
+    lv_driving_sql  nm3type.max_varchar2 := 'SELECT un_domain_id    unit_domain_id
+                                                   ,un_unit_id      unit_id
+                                                   ,un_unit_name    unit_name 
+                                                   ,un_format_mask  unit_format_mask 
+                                              FROM nm_units
+                                             WHERE un_domain_id = :pi_unit_domain'
+    ;
+    lv_cursor_sql  nm3type.max_varchar2 := 'SELECT unit_domain_id
+                                                  ,unit_id
+                                                  ,unit_name
+                                                  ,unit_format_mask'
+                                              ||' ,row_count'
+                                          ||' FROM (SELECT rownum ind'
+                                                      ||' ,a.*'
+                                                      ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                  ||' FROM ('||lv_driving_sql
+    ;
+    --
+    lt_column_data  awlrs_util.column_data_tab;
+    --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'unit_domain_id'
+                                ,pi_query_col    => 'un_domain_id' --can be null if the same as pi_cursor_col
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'unit_id'
+                                ,pi_query_col    => 'un_unit_id' --can be null if the same as pi_cursor_col
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'unit_name'
+                                ,pi_query_col    => 'un_unit_name' --can be null if the same as pi_cursor_col
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);                                
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'unit_format_mask'
+                                ,pi_query_col    => 'un_format_mask' --can be null if the same as pi_cursor_col
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);  
+    END set_column_data;
+    --
+  BEGIN
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||CHR(10)||lv_filter
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'ud_domain_id')||') a)'
+                     ||CHR(10)||lv_row_restriction
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_unit_domain 
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_unit_domain 
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_units;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_unit_conversions(pi_unit_id       IN     nm_units.un_unit_id%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+        SELECT uc_unit_id_in                         unit_in_id
+              ,uc_unit_id_out                        unit_out_id
+              ,nm3unit.get_unit_name(uc_unit_id_out) unit_out_name
+              ,uc_function                           unit_function
+              ,uc_conversion                         unit_conversion
+              ,uc_conversion_factor                  unit_conversion_factor
+         FROM nm_unit_conversions
+        WHERE uc_unit_id_in = pi_unit_id;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_unit_conversions;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_unit_conversion(pi_unit_in       IN     nm_units.un_unit_id%TYPE
+                               ,pi_unit_out      IN     nm_units.un_unit_id%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+        SELECT uc_unit_id_in                         unit_in_id
+              ,uc_unit_id_out                        unit_out_id
+              ,nm3unit.get_unit_name(uc_unit_id_out) unit_out_name
+              ,uc_function                           unit_function
+              ,uc_conversion                         unit_conversion
+              ,uc_conversion_factor                  unit_conversion_factor
+         FROM nm_unit_conversions
+        WHERE uc_unit_id_in  = pi_unit_in
+          AND uc_unit_id_out = pi_unit_out;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_unit_conversion;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_add_unit_conversions(pi_unit_domain   IN     nm_unit_domains.ud_domain_id%TYPE
+                                    ,pi_unit_id       IN     nm_units.un_unit_id%TYPE
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+        SELECT un_domain_id    unit_domain_id
+              ,un_unit_id      unit_id
+              ,un_unit_name    unit_name 
+              ,un_format_mask  unit_format_mask 
+         FROM nm_units
+        WHERE un_domain_id = pi_unit_domain
+          AND un_unit_id != pi_unit_id
+          AND NOT EXISTS (SELECT uc_unit_id_out
+                           FROM nm_unit_conversions
+                          WHERE uc_unit_id_in = pi_unit_id
+                            AND uc_unit_id_out = un_unit_id)
+       ORDER BY un_domain_id, un_unit_id ;    
+       --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_add_unit_conversions;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_default_unit_conversion(pi_unit_conv_function   IN     nm_unit_conversions.uc_function%TYPE
+                                       ,pi_unit_conv_factor     IN     nm_unit_conversions.uc_conversion_factor%TYPE
+                                       ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor          OUT sys_refcursor
+                                       ,po_cursor                  OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+  	IF pi_unit_conv_factor IS NULL 
+     OR pi_unit_conv_function IS NULL THEN
+      --
+      hig.raise_ner(pi_appl => 'NET'
+                   ,pi_id   => 26);
+      --
+  	END IF;  
+    --
+    OPEN po_cursor FOR
+      SELECT nm3unit.get_function_from_factor(p_function_name => pi_unit_conv_function
+                                             ,p_factor        => pi_unit_conv_factor)
+        FROM dual;  
+       --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_default_unit_conversion;
+    
   --
   -----------------------------------------------------------------------------
   --
@@ -1839,7 +2462,7 @@ AS
            ,hdo_title
            ,hdo_product
            ,hdo_code_length)
-    VALUES (pi_domain
+    VALUES (UPPER(pi_domain)
            ,pi_title
            ,pi_product
            ,pi_code_length);
@@ -1901,8 +2524,8 @@ AS
            ,hco_start_date
            ,hco_end_date)
     VALUES (pi_seq
-           ,pi_domain
-           ,pi_code
+           ,UPPER(pi_domain)
+           ,UPPER(pi_code)
            ,pi_meaning
            ,pi_system
            ,TRUNC(pi_start_date)
@@ -1965,7 +2588,7 @@ AS
            ,huo_id
            ,huo_value)
     VALUES (pi_user_id
-           ,pi_option_id
+           ,UPPER(pi_option_id)
            ,pi_value);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -1977,6 +2600,172 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_user_option;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_unit_domain(pi_unit_domain_name   IN      nm_unit_domains.ud_domain_name%TYPE
+                              ,pi_unit_domain_text   IN      nm_unit_domains.ud_text%TYPE
+                              ,po_message_severity      OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor        OUT  sys_refcursor)
+    IS
+    --
+    lv_unit_domain_id nm_unit_domains.ud_domain_id%TYPE := nm3unit.get_next_ud_domain_id;
+    --
+  BEGIN
+    --
+    validate_notnull(pi_parameter_desc  => 'Domain name'
+                    ,pi_parameter_value => pi_unit_domain_name);
+    --
+    validate_notnull(pi_parameter_desc  => 'Domain text'
+                    ,pi_parameter_value => pi_unit_domain_text);
+
+    --    
+    INSERT 
+      INTO nm_unit_domains 
+           (ud_domain_id
+           ,ud_domain_name
+           ,ud_text)
+    VALUES (lv_unit_domain_id
+           ,UPPER(pi_unit_domain_name)
+           ,UPPER(pi_unit_domain_text));
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_unit_domain;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_unit(pi_unit_domain_id     IN      nm_units.un_domain_id%TYPE
+                       ,pi_unit_name          IN      nm_units.un_unit_name%TYPE
+                       ,pi_unit_format_mask   IN      nm_units.un_format_mask%TYPE
+                       ,po_message_severity      OUT  hig_codes.hco_code%TYPE
+                       ,po_message_cursor        OUT  sys_refcursor)
+    IS
+    --
+    lv_unit_id nm_unit_domains.ud_domain_id%TYPE := nm3unit.get_next_unit_id;
+    --
+  BEGIN
+    --
+    validate_notnull(pi_parameter_desc  => 'Domain'
+                    ,pi_parameter_value => pi_unit_domain_id);
+    --
+    validate_notnull(pi_parameter_desc  => 'Unit name'
+                    ,pi_parameter_value => pi_unit_name);
+    --
+    validate_notnull(pi_parameter_desc  => 'Unit format mask'
+                    ,pi_parameter_value => pi_unit_format_mask);
+    --
+    /*
+    ||Check domain exists
+    */
+    IF unit_domain_exists (pi_unit_domain_id => pi_unit_domain_id) = 'N' THEN
+      --
+      hig.raise_ner(pi_appl               => 'HIG'
+                   ,pi_id                 => 16
+                   ,pi_supplementary_info => 'Unit Domain does not exist');         
+      --
+    END IF;
+    --
+    INSERT 
+      INTO nm_units 
+           (un_unit_id
+           ,un_unit_name
+           ,un_format_mask
+           ,un_domain_id)
+    VALUES (lv_unit_id
+           ,pi_unit_name
+           ,pi_unit_format_mask
+           ,pi_unit_domain_id);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_unit;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_unit_conversion(pi_unit_conv_id_in         IN      nm_unit_conversions.uc_unit_id_in%TYPE
+                                  ,pi_unit_conv_id_out        IN      nm_unit_conversions.uc_unit_id_out%TYPE
+                                  ,pi_unit_conv_function      IN      nm_unit_conversions.uc_function%TYPE
+                                  ,pi_unit_conv_conversion    IN      nm_unit_conversions.uc_conversion%TYPE
+                                  ,pi_unit_conv_factor        IN      nm_unit_conversions.uc_conversion_factor%TYPE
+                                  ,po_message_severity           OUT  hig_codes.hco_code%TYPE
+                                  ,po_message_cursor             OUT  sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    IF unit_conversion_exists (pi_unit_conv_id_in      => pi_unit_conv_id_in
+                              ,pi_unit_conv_id_out => pi_unit_conv_id_out) = 'Y' THEN
+      --
+      hig.raise_ner(pi_appl               => 'HIG'
+                   ,pi_id                 => 64);
+      --
+    END IF;
+    --
+    validate_notnull(pi_parameter_desc  => 'Unit'
+                    ,pi_parameter_value => pi_unit_conv_id_in);
+    --
+    validate_notnull(pi_parameter_desc  => 'Unit out'
+                    ,pi_parameter_value => pi_unit_conv_id_out);
+    --
+    validate_notnull(pi_parameter_desc  => 'Function'
+                    ,pi_parameter_value => pi_unit_conv_function);
+    --
+    validate_notnull(pi_parameter_desc  => 'Conversion'
+                    ,pi_parameter_value => pi_unit_conv_conversion);
+    --
+    validate_notnull(pi_parameter_desc  => 'Factor'
+                    ,pi_parameter_value => pi_unit_conv_factor);
+    --
+    IF unit_exists(pi_unit_id => pi_unit_conv_id_in) = 'N' THEN
+        hig.raise_ner(pi_appl               => 'HIG'
+                     ,pi_id                 => 22
+                     ,pi_supplementary_info => 'Unit does not exist');    
+    END IF;
+    --
+    IF unit_exists(pi_unit_id => pi_unit_conv_id_out) = 'N'  THEN
+        hig.raise_ner(pi_appl               => 'HIG'
+                     ,pi_id                 => 29
+                     ,pi_supplementary_info => 'Unit does not exist');   
+    END IF;
+    --
+    INSERT 
+      INTO nm_unit_conversions
+           (uc_unit_id_in
+           ,uc_unit_id_out
+           ,uc_function
+           ,uc_conversion
+           ,uc_conversion_factor)
+    VALUES (pi_unit_conv_id_in
+           ,pi_unit_conv_id_out
+           ,UPPER(pi_unit_conv_function)
+           ,pi_unit_conv_conversion
+           ,pi_unit_conv_factor);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_unit_conversion;
   
   --
   -----------------------------------------------------------------------------
@@ -2139,12 +2928,12 @@ AS
       ELSE
         --
         UPDATE hig_codes
-           SET hco_code        = pi_new_code
+           SET hco_code        = UPPER(pi_new_code)
               ,hco_meaning     = pi_new_meaning
               ,hco_system      = pi_new_system
               ,hco_seq         = pi_new_seq
-              ,hco_start_date  = pi_new_start_date
-              ,hco_end_date    = pi_new_end_date
+              ,hco_start_date  = TRUNC(pi_new_start_date)
+              ,hco_end_date    = TRUNC(pi_new_end_date)
          WHERE hco_domain = pi_domain
            AND hco_code   = pi_old_code;
         --           
@@ -2356,6 +3145,726 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_user_option;
+
   --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_error(pi_product_id       IN     nm_errors.ner_appl%TYPE
+                        ,pi_error_id         IN     nm_errors.ner_id%TYPE
+                        ,pi_old_error_text   IN     nm_errors.ner_descr%TYPE
+                        ,pi_old_error_cause  IN     nm_errors.ner_cause%TYPE
+                        ,pi_new_error_text   IN     nm_errors.ner_descr%TYPE
+                        ,pi_new_error_cause  IN     nm_errors.ner_cause%TYPE                         
+                        ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor      OUT sys_refcursor)
+    IS
+    --
+    lr_db_ner_rec    nm_errors%ROWTYPE;
+    lv_upd           VARCHAR2(1) := 'N'; 
+    --
+    PROCEDURE get_db_rec(pi_product_id       IN     nm_errors.ner_appl%TYPE
+                        ,pi_error_id         IN     nm_errors.ner_id%TYPE)
+      IS
+    BEGIN
+      --
+    SELECT * 
+      INTO lr_db_ner_rec
+      FROM nm_errors
+     WHERE ner_appl = pi_product_id
+       AND ner_id = pi_error_id
+       FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN no_data_found THEN
+        --
+        hig.raise_ner(pi_appl               => 'HIG'
+                     ,pi_id                 => 85
+                     ,pi_supplementary_info => 'Error ID does not exist');
+      --      
+    END get_db_rec;
+  BEGIN
+    --
+    get_db_rec(pi_product_id  => pi_product_id
+              ,pi_error_id    => pi_error_id);
+    --
+    /*
+    ||Compare old with DB
+    */
+    IF lr_db_ner_rec.ner_descr != pi_old_error_text
+     OR (lr_db_ner_rec.ner_descr IS NULL AND pi_old_error_text IS NOT NULL)
+     OR (lr_db_ner_rec.ner_descr IS NOT NULL AND pi_old_error_text IS NULL)
+     --error cause
+     OR (lr_db_ner_rec.ner_cause != pi_old_error_cause)
+     OR (lr_db_ner_rec.ner_cause IS NULL AND pi_old_error_cause IS NOT NULL)
+     OR (lr_db_ner_rec.ner_cause IS NOT NULL AND pi_old_error_cause IS NULL)
+     THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    ELSE
+      /*
+      ||Compare old with New
+      */
+      IF pi_old_error_text != pi_new_error_text
+       OR (pi_old_error_text IS NULL AND pi_new_error_text IS NOT NULL)
+       OR (pi_old_error_text IS NOT NULL AND pi_new_error_text IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_error_cause != pi_new_error_cause
+       OR (pi_old_error_cause IS NULL AND pi_new_error_cause IS NOT NULL)
+       OR (pi_old_error_cause IS NOT NULL AND pi_new_error_cause IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;   
+      --
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      ELSE
+        --
+        UPDATE nm_errors
+           SET ner_descr = pi_new_error_text
+              ,ner_cause = pi_new_error_cause
+         WHERE ner_appl = pi_product_id
+           AND ner_id = pi_error_id;
+        --           
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --
+      END IF; 
+    END IF;
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_error;  
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_unit_domain(pi_unit_domain_id        IN     nm_unit_domains.ud_domain_id%TYPE
+                              ,pi_old_name              IN     nm_unit_domains.ud_domain_name%TYPE
+                              ,pi_new_name              IN     nm_unit_domains.ud_domain_name%TYPE
+                              ,pi_old_desc              IN     nm_unit_domains.ud_text%TYPE
+                              ,pi_new_desc              IN     nm_unit_domains.ud_text%TYPE                              
+                              ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor          OUT sys_refcursor)
+    IS
+    --
+    lr_db_ud_rec    nm_unit_domains%ROWTYPE;
+    lv_upd           VARCHAR2(1) := 'N'; 
+    --
+    PROCEDURE get_db_rec(pi_unit_domain_id   IN nm_unit_domains.ud_domain_id%TYPE)
+      IS
+    BEGIN
+      --
+      SELECT * 
+        INTO lr_db_ud_rec
+        FROM nm_unit_domains
+       WHERE ud_domain_id = pi_unit_domain_id
+         FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN no_data_found THEN
+        --
+        hig.raise_ner(pi_appl               => 'HIG'
+                     ,pi_id                 => 85
+                     ,pi_supplementary_info => 'Unit Domain does not exist');
+      --      
+    END get_db_rec;
+    --
+  BEGIN
+    --
+    validate_notnull(pi_parameter_desc  => 'Unit Name'
+                    ,pi_parameter_value => pi_new_name);
+    --
+    validate_notnull(pi_parameter_desc  => 'Unit Description'
+                    ,pi_parameter_value => pi_new_desc);
+    --    
+    get_db_rec(pi_unit_domain_id   => pi_unit_domain_id);
+    --          
+    /*
+    ||Compare old with DB
+    */
+    IF lr_db_ud_rec.ud_domain_name != pi_old_name
+     OR (lr_db_ud_rec.ud_domain_name IS NULL AND pi_old_name IS NOT NULL)
+     OR (lr_db_ud_rec.ud_domain_name IS NOT NULL AND pi_old_name IS NULL)
+     --unit domain desc
+     OR (lr_db_ud_rec.ud_text != pi_old_desc)
+     OR (lr_db_ud_rec.ud_text IS NULL AND pi_old_desc IS NOT NULL)
+     OR (lr_db_ud_rec.ud_text IS NOT NULL AND pi_old_desc IS NULL)
+     THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    ELSE
+      /*
+      ||Compare old with New
+      */
+      IF pi_old_name != pi_new_name
+       OR (pi_old_name IS NULL AND pi_new_name IS NOT NULL)
+       OR (pi_old_name IS NOT NULL AND pi_new_name IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_desc != pi_new_desc
+       OR (pi_old_desc IS NULL AND pi_new_desc IS NOT NULL)
+       OR (pi_old_desc IS NOT NULL AND pi_new_desc IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF; 
+      --      
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      ELSE
+        --
+        UPDATE nm_unit_domains
+           SET ud_domain_name  = UPPER(pi_new_name)
+              ,ud_text         = UPPER(pi_new_desc)
+         WHERE ud_domain_id = pi_unit_domain_id;
+        --           
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --
+      END IF; 
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_unit_domain;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_unit(pi_unit_id               IN     nm_units.un_unit_id%TYPE
+                       ,pi_old_name              IN     nm_units.un_unit_name%TYPE
+                       ,pi_new_name              IN     nm_units.un_unit_name%TYPE
+                       ,pi_old_format_mask       IN     nm_units.un_format_mask%TYPE
+                       ,pi_new_format_mask       IN     nm_units.un_format_mask%TYPE                              
+                       ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor          OUT sys_refcursor)
+    IS
+    --
+    lr_db_un_rec    nm_units%ROWTYPE;
+    lv_upd           VARCHAR2(1) := 'N'; 
+    --
+    PROCEDURE get_db_rec(pi_unit_id          IN nm_units.un_unit_id%TYPE)
+      IS
+    BEGIN
+      --
+      SELECT * 
+        INTO lr_db_un_rec
+        FROM nm_units
+       WHERE un_unit_id   = pi_unit_id
+         FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN no_data_found THEN
+        --
+        hig.raise_ner(pi_appl               => 'HIG'
+                     ,pi_id                 => 85
+                     ,pi_supplementary_info => 'Unit does not exist');
+      --      
+    END get_db_rec;
+    --
+  BEGIN
+    --
+    validate_notnull(pi_parameter_desc  => 'Unit Name'
+                    ,pi_parameter_value => pi_new_name);
+    --
+    validate_notnull(pi_parameter_desc  => 'Unit format mask'
+                    ,pi_parameter_value => pi_new_format_mask);                
+    --    
+    get_db_rec(pi_unit_id          => pi_unit_id);
+    --          
+    /*
+    ||Compare old with DB
+    */
+    IF lr_db_un_rec.un_unit_name != pi_old_name
+     OR (lr_db_un_rec.un_unit_name IS NULL AND pi_old_name IS NOT NULL)
+     OR (lr_db_un_rec.un_unit_name IS NOT NULL AND pi_old_name IS NULL)
+     --format mask
+     OR (lr_db_un_rec.un_format_mask != pi_old_format_mask)
+     OR (lr_db_un_rec.un_format_mask IS NULL AND pi_old_format_mask IS NOT NULL)
+     OR (lr_db_un_rec.un_format_mask IS NOT NULL AND pi_old_format_mask IS NULL)
+     THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    ELSE
+      /*
+      ||Compare old with New
+      */
+      IF pi_old_name != pi_new_name
+       OR (pi_old_name IS NULL AND pi_new_name IS NOT NULL)
+       OR (pi_old_name IS NOT NULL AND pi_new_name IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_format_mask != pi_new_format_mask
+       OR (pi_old_format_mask IS NULL AND pi_new_format_mask IS NOT NULL)
+       OR (pi_old_format_mask IS NOT NULL AND pi_new_format_mask IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF; 
+      --      
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      ELSE
+        --
+        UPDATE nm_units
+           SET un_unit_name    = pi_new_name
+              ,un_format_mask  = pi_new_format_mask
+         WHERE un_unit_id   = pi_unit_id; 
+        --           
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --
+      END IF; 
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_unit;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_unit_conversion(pi_unit_id_in            IN     nm_unit_conversions.uc_unit_id_in%TYPE
+                                  ,pi_unit_id_out           IN     nm_unit_conversions.uc_unit_id_out%TYPE
+                                  ,pi_old_function          IN     nm_unit_conversions.uc_function%TYPE
+                                  ,pi_new_function          IN     nm_unit_conversions.uc_function%TYPE
+                                  ,pi_old_conversion        IN     nm_unit_conversions.uc_conversion%TYPE
+                                  ,pi_new_conversion        IN     nm_unit_conversions.uc_conversion%TYPE
+                                  ,pi_old_conversion_factor IN     nm_unit_conversions.uc_conversion_factor%TYPE
+                                  ,pi_new_conversion_factor IN     nm_unit_conversions.uc_conversion_factor%TYPE                                      
+                                  ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor           OUT sys_refcursor)
+    IS
+    --
+    lr_db_uc_rec     nm_unit_conversions%ROWTYPE;
+    lv_upd           VARCHAR2(1) := 'N'; 
+    --
+    PROCEDURE get_db_rec(pi_unit_id_in   IN nm_unit_conversions.uc_unit_id_in%TYPE
+                        ,pi_unit_id_out  IN nm_unit_conversions.uc_unit_id_out%TYPE)
+      IS
+    BEGIN
+      --
+      SELECT * 
+        INTO lr_db_uc_rec
+        FROM nm_unit_conversions
+       WHERE uc_unit_id_in  = pi_unit_id_in
+         AND uc_unit_id_out = pi_unit_id_out
+         FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN no_data_found THEN
+        --
+        hig.raise_ner(pi_appl               => 'HIG'
+                     ,pi_id                 => 85
+                     ,pi_supplementary_info => 'Unit Conversion does not exist');
+      --      
+    END get_db_rec;
+    --
+  BEGIN
+    --
+    validate_notnull(pi_parameter_desc  => 'Function'
+                    ,pi_parameter_value => pi_new_function);
+    --
+    validate_notnull(pi_parameter_desc  => 'Conversion'
+                    ,pi_parameter_value => pi_new_conversion);                
+    --
+    validate_notnull(pi_parameter_desc  => 'Conversion factod'
+                    ,pi_parameter_value => pi_new_conversion_factor);
+    -- 
+    get_db_rec(pi_unit_id_in   => pi_unit_id_in
+              ,pi_unit_id_out  => pi_unit_id_out);
+    --          
+    /*
+    ||Compare old with DB
+    */
+    IF lr_db_uc_rec.uc_function != pi_old_function
+     OR (lr_db_uc_rec.uc_function IS NULL AND pi_old_function IS NOT NULL)
+     OR (lr_db_uc_rec.uc_function IS NOT NULL AND pi_old_function IS NULL)
+     --conversion
+     OR (lr_db_uc_rec.uc_conversion != pi_old_conversion)
+     OR (lr_db_uc_rec.uc_conversion IS NULL AND pi_old_conversion IS NOT NULL)
+     OR (lr_db_uc_rec.uc_conversion IS NOT NULL AND pi_old_conversion IS NULL)
+     --conversion factor
+     OR (lr_db_uc_rec.uc_conversion_factor != pi_old_conversion_factor)
+     OR (lr_db_uc_rec.uc_conversion_factor IS NULL AND pi_old_conversion_factor IS NOT NULL)
+     OR (lr_db_uc_rec.uc_conversion_factor IS NOT NULL AND pi_old_conversion_factor IS NULL)
+     THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    ELSE
+      /*
+      ||Compare old with New
+      */
+      IF pi_old_function != pi_new_function
+       OR (pi_old_function IS NULL AND pi_new_function IS NOT NULL)
+       OR (pi_old_function IS NOT NULL AND pi_new_function IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_conversion != pi_new_conversion
+       OR (pi_old_conversion IS NULL AND pi_new_conversion IS NOT NULL)
+       OR (pi_old_conversion IS NOT NULL AND pi_new_conversion IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF; 
+      --
+      IF pi_old_conversion_factor != pi_new_conversion_factor
+       OR (pi_old_conversion_factor IS NULL AND pi_new_conversion_factor IS NOT NULL)
+       OR (pi_old_conversion_factor IS NOT NULL AND pi_new_conversion_factor IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF; 
+      --      
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      ELSE
+        --
+        UPDATE nm_unit_conversions
+           SET uc_function          = UPPER(pi_new_function)
+              ,uc_conversion        = pi_new_conversion
+              ,uc_conversion_factor = pi_new_conversion_factor
+         WHERE uc_unit_id_in  = pi_unit_id_in
+           AND uc_unit_id_out = pi_unit_id_out;
+        --           
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --
+      END IF; 
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_unit_conversion;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_domain(pi_domain            IN      hig_domains.hdo_domain%TYPE
+                         ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                         ,po_message_cursor       OUT  sys_refcursor)
+    IS
+    --
+    CURSOR c_domain_codes is
+    SELECT COUNT(hco_domain)
+      FROM hig_codes
+     WHERE hco_domain = pi_domain;
+    --
+    lv_cnt  NUMBER;
+    --
+  BEGIN
+    --
+    IF domain_exists(pi_domain => pi_domain) <> 'Y' THEN 
+      hig.raise_ner(pi_appl => 'NET'
+                   ,pi_id   => 26);
+    END IF;
+    --
+    OPEN  c_domain_codes;
+    FETCH c_domain_codes 
+     INTO lv_cnt;
+    CLOSE c_domain_codes;
+    
+    IF lv_cnt = 0 THEN
+      --
+      DELETE 
+        FROM hig_domains
+       WHERE hdo_domain = pi_domain;
+      -- 
+    ELSE
+      --
+      hig.raise_ner(pi_appl => 'NET'
+                   ,pi_id   => 2);
+      --
+    END IF;                       
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_domain;
   
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_unit_domain(pi_unit_domain_id    IN      nm_unit_domains.ud_domain_id%TYPE
+                              ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor       OUT  sys_refcursor)
+    IS
+    --
+    CURSOR c_units is
+    SELECT COUNT(un_unit_id)
+      FROM nm_units
+     WHERE un_domain_id = pi_unit_domain_id;
+    --
+    lv_cnt  NUMBER;
+    --
+  BEGIN
+    --
+    IF unit_domain_exists (pi_unit_domain_id => pi_unit_domain_id) <> 'Y' THEN 
+      hig.raise_ner(pi_appl => 'NET'
+                   ,pi_id   => 26);
+    END IF;
+    --
+    OPEN  c_units;
+    FETCH c_units 
+     INTO lv_cnt;
+    CLOSE c_units;
+    
+    IF lv_cnt = 0 THEN
+      --
+      DELETE 
+        FROM nm_unit_domains
+       WHERE ud_domain_id = pi_unit_domain_id;
+      -- 
+    ELSE
+      --
+      hig.raise_ner(pi_appl => 'NET'
+                   ,pi_id   => 2);
+      --
+    END IF;                       
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_unit_domain;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_unit(pi_unit_id           IN      nm_units.un_unit_id%TYPE
+                       ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                       ,po_message_cursor       OUT  sys_refcursor)
+    IS
+    --
+    CURSOR c_unit_conversions IS 
+    SELECT COUNT(uc_unit_id_in)
+      FROM nm_unit_conversions
+     WHERE uc_unit_id_in = pi_unit_id 
+        OR uc_unit_id_out = pi_unit_id;
+    --
+    lv_cnt  NUMBER;
+    --
+  BEGIN
+    --
+    IF unit_exists (pi_unit_id => pi_unit_id) <> 'Y' THEN
+      hig.raise_ner(pi_appl => 'NET'
+                   ,pi_id   => 26);
+    END IF;
+    --
+    OPEN  c_unit_conversions;
+    FETCH c_unit_conversions 
+     INTO lv_cnt;
+    CLOSE c_unit_conversions;
+    
+    IF lv_cnt = 0 THEN
+      --
+      DELETE 
+        FROM nm_units
+       WHERE un_unit_id = pi_unit_id;
+      -- 
+    ELSE
+      --
+      hig.raise_ner(pi_appl => 'NET'
+                   ,pi_id   => 2);
+      --
+    END IF;                       
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_unit;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_user_option(pi_user_id          IN       hig_user_options.huo_hus_user_id%TYPE
+                              ,pi_option_id        IN       hig_user_options.huo_id%TYPE
+                              ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor       OUT  sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    IF user_option_exists (pi_user_id    => pi_user_id      
+                          ,pi_option_id  => pi_option_id) <> 'Y' 
+     THEN
+       hig.raise_ner(pi_appl => 'NET'
+                    ,pi_id   => 26);
+    END IF;
+    --
+    DELETE 
+      FROM hig_user_options
+     WHERE huo_hus_user_id = pi_user_id
+       AND huo_id = pi_option_id;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_user_option;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_unit_conversion(pi_unit_conv_id_in   IN      nm_unit_conversions.uc_function%TYPE
+                                  ,pi_unit_conv_id_out  IN      nm_unit_conversions.uc_conversion%TYPE
+                                  ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                  ,po_message_cursor       OUT  sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    IF unit_conversion_exists (pi_unit_conv_id_in  => pi_unit_conv_id_in
+                              ,pi_unit_conv_id_out => pi_unit_conv_id_out) <> 'Y' THEN
+      --
+      hig.raise_ner(pi_appl => 'NET'
+                   ,pi_id   => 26);
+      --
+    END IF;   
+    --
+    DELETE 
+      FROM nm_unit_conversions
+     WHERE uc_unit_id_in = pi_unit_conv_id_in 
+       AND uc_unit_id_out = pi_unit_conv_id_out;
+    -- 
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_unit_conversion;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE gen_unit_conversion_fun(pi_unit_conv_function     IN      nm_unit_conversions.uc_function%TYPE
+                                   ,pi_unit_conv_conversion   IN      nm_unit_conversions.uc_conversion%TYPE
+                                   ,po_message_severity          OUT  hig_codes.hco_code%TYPE
+                                   ,po_message_cursor            OUT  sys_refcursor)
+    IS
+    --
+    e_no_object_for_syn EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_no_object_for_syn, -20301);
+    
+    e_user_not_exist EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_user_not_exist, -20302);
+    
+    e_no_permission EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_no_permission, -20303);
+    
+    e_no_create_priv exception;
+    PRAGMA EXCEPTION_INIT(e_no_create_priv, -20305);
+    
+    e_sql_error EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_sql_error, -20306);
+    
+    e_no_object_in_string EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_no_object_in_string, -20307);    
+    --
+  BEGIN
+    --
+    BEGIN
+      nm3ddl.create_object_and_syns(p_object_name => pi_unit_conv_function
+                                   ,p_ddl_text    => pi_unit_conv_conversion);    
+      -- 
+      awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                           ,po_cursor           => po_message_cursor);
+      --
+    EXCEPTION
+      WHEN e_no_object_for_syn
+       THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 79);      
+      WHEN e_user_not_exist
+       THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 80);    
+      WHEN e_no_permission
+       THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 81);        
+      WHEN e_no_create_priv
+       THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 82);        
+      WHEN e_sql_error
+       THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 83);        
+      WHEN e_no_object_in_string
+       THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 84);
+    END;
+    --
+  EXCEPTION    
+    WHEN others
+       THEN      
+          awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                     ,po_cursor           => po_message_cursor);
+  END gen_unit_conversion_fun; 
+  --
 END awlrs_metaref_api;
