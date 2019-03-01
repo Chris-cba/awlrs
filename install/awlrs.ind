@@ -1,15 +1,34 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.ind-arc   1.7   Sep 19 2018 11:57:12   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.ind-arc   1.8   Mar 01 2019 11:41:06   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.ind  $
---       Date into PVCS   : $Date:   Sep 19 2018 11:57:12  $
---       Date fetched Out : $Modtime:   Sep 19 2018 11:54:00  $
---       Version          : $Revision:   1.7  $
+--       Date into PVCS   : $Date:   Mar 01 2019 11:41:06  $
+--       Date fetched Out : $Modtime:   Mar 01 2019 11:28:46  $
+--       Version          : $Revision:   1.8  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Mon Sep 17  18:25:12 2018 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Fri Mar 01  11:21:18 2019 by Server Generator 10.1.2.9.28
+
+PROMPT Creating Index 'AEL_UK'
+CREATE UNIQUE INDEX AEL_UK ON AWLRS_EXTERNAL_LINKS
+ (AEL_NAME)
+/
+
+PROMPT Creating Index 'AELP_IND1'
+CREATE INDEX AELP_IND1 ON AWLRS_EXTERNAL_LINK_PARAMS
+ (AELP_ENTITY_TYPE
+ ,AELP_ENTITY_TYPE_TYPE)
+/
+
+PROMPT Creating Index 'AELP_UK'
+CREATE UNIQUE INDEX AELP_UK ON AWLRS_EXTERNAL_LINK_PARAMS
+ (AELP_AEL_ID
+ ,AELP_ENTITY_TYPE
+ ,AELP_ENTITY_TYPE_TYPE
+ ,AELP_SEQUENCE)
+/
 
 PROMPT Creating Index 'AFDAM_FK_AFFM_IND'
 CREATE INDEX AFDAM_FK_AFFM_IND ON AWLRS_FILE_DATUM_ATTRIB_MAP

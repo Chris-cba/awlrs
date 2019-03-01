@@ -1,15 +1,36 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.9   Sep 19 2018 11:57:12   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.10   Mar 01 2019 11:41:06   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.tab  $
---       Date into PVCS   : $Date:   Sep 19 2018 11:57:12  $
---       Date fetched Out : $Modtime:   Sep 19 2018 11:54:24  $
---       Version          : $Revision:   1.9  $
+--       Date into PVCS   : $Date:   Mar 01 2019 11:41:06  $
+--       Date fetched Out : $Modtime:   Mar 01 2019 11:26:44  $
+--       Version          : $Revision:   1.10  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Mon Sep 17  18:25:12 2018 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Fri Mar 01  11:21:18 2019 by Server Generator 10.1.2.9.28
+
+PROMPT Creating Table 'AWLRS_EXTERNAL_LINKS'
+CREATE TABLE AWLRS_EXTERNAL_LINKS
+ (AEL_ID NUMBER(38) NOT NULL
+ ,AEL_NAME VARCHAR2(100) NOT NULL
+ ,AEL_URL_TEMPLATE VARCHAR2(1000) NOT NULL
+ )
+/
+
+PROMPT Creating Table 'AWLRS_EXTERNAL_LINK_PARAMS'
+CREATE TABLE AWLRS_EXTERNAL_LINK_PARAMS
+ (AELP_ID NUMBER(38) NOT NULL
+ ,AELP_AEL_ID NUMBER(38) NOT NULL
+ ,AELP_ENTITY_TYPE VARCHAR2(10) NOT NULL
+ ,AELP_ENTITY_TYPE_TYPE VARCHAR2(4) NOT NULL
+ ,AELP_SEQUENCE NUMBER(38) NOT NULL
+ ,AELP_SOURCE_TYPE VARCHAR2(10) NOT NULL
+ ,AELP_SOURCE VARCHAR2(1000) NOT NULL
+ ,AELP_DEFAULT_VALUE VARCHAR2(1000)
+ )
+/
 
 PROMPT Creating Table 'AWLRS_FILE_DATUM_ATTRIB_MAP'
 CREATE TABLE AWLRS_FILE_DATUM_ATTRIB_MAP
