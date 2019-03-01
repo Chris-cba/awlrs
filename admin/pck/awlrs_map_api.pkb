@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.40   Feb 21 2019 19:21:16   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.41   Mar 01 2019 10:58:32   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 21 2019 19:21:16  $
-  --       Date fetched Out : $Modtime:   Feb 21 2019 19:10:14  $
-  --       Version          : $Revision:   1.40  $
+  --       Date into PVCS   : $Date:   Mar 01 2019 10:58:32  $
+  --       Date fetched Out : $Modtime:   Feb 27 2019 17:25:18  $
+  --       Version          : $Revision:   1.41  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.40  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.41  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -2341,6 +2341,7 @@ AS
     lv_displayed_in_legend       VARCHAR2(10);
     lv_legend_group              nm3type.max_varchar2;
     lv_theme_offset_view         nm_theme_offset_views.ntov_offset_view_name%TYPE;
+    lv_doc_man_url_template      nm3type.max_varchar2;
     lv_gtype_restriction         VARCHAR2(100);
     lv_where_and                 VARCHAR2(10) := ' WHERE ';
     --
@@ -2592,6 +2593,14 @@ AS
       lv_legend_group := get_custom_tag_value(pi_theme_name => lt_themes(i).name
                                              ,pi_tag_name   => 'LegendGroup');
       /*
+      ||If ALIM Document Manager is in use then check for a gateway
+      ||for the layer and generate a template URL to be used in the UI.
+      */
+      IF NVL(hig.get_sysopt('NEWDOCMAN'),'N') = 'Y'
+       THEN
+          lv_doc_man_url_template := awlrs_alim_doc_man_api.get_url_template(pi_theme_name => lt_themes(i).name);
+      END IF;
+      /*
       ||Get the Geometry Types.
       */
       lt_gtypes := get_custom_tag_gtypes(pi_theme_id   => lt_themes(i).nth_theme_id
@@ -2797,6 +2806,12 @@ AS
          THEN
             lv_tmp := CHR(10)||'      "offset_allowed"              "Y"';
             lv_layer_text := lv_layer_text||lv_tmp;
+        END IF;
+        --
+        IF lv_doc_man_url_template IS NOT NULL
+         THEN
+            lv_tmp := CHR(10)||'      "alim_doc_man_url"            "'||lv_doc_man_url_template||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;         
         END IF;
         --
         lv_tmp := CHR(10)||'      "is_editable"                 "'||NVL(lr_theme_types.editable,'N')||'"'
