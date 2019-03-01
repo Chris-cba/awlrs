@@ -1,0 +1,77 @@
+CREATE OR REPLACE PACKAGE awlrs_alim_doc_man_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alim_doc_man_api.pkh-arc   1.0   Mar 01 2019 11:00:16   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_alim_doc_man_api.pkh  $
+  --       Date into PVCS   : $Date:   Mar 01 2019 11:00:16  $
+  --       Date fetched Out : $Modtime:   Feb 27 2019 16:14:08  $
+  --       Version          : $Revision:   1.0  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION doc_gateway_exists(pi_table_name IN doc_gateways.dgt_table_name%TYPE)
+    RETURN BOOLEAN;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION doc_gateway_exists(pi_theme_name IN nm_themes_all.nth_theme_name%TYPE)
+    RETURN BOOLEAN;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_url_template(pi_gateway_name IN doc_gateways.dgt_table_name%TYPE)
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_url_template(pi_table_name IN doc_gateways.dgt_table_name%TYPE)
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_url_template(pi_theme_name IN nm_themes_all.nth_theme_name%TYPE)
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_document_count(pi_gateway_name IN doc_gateways.dgt_table_name%TYPE
+                             ,pi_id           IN NUMBER)
+    RETURN NUMBER;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_document_count(pi_theme_name IN nm_themes_all.nth_theme_name%TYPE
+                             ,pi_feature_id IN NUMBER)
+    RETURN NUMBER;
+
+END awlrs_alim_doc_man_api;
+/
