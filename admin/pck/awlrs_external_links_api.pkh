@@ -1,0 +1,90 @@
+CREATE OR REPLACE PACKAGE awlrs_external_links_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_external_links_api.pkh-arc   1.0   Mar 01 2019 11:00:38   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_external_links_api.pkh  $
+  --       Date into PVCS   : $Date:   Mar 01 2019 11:00:38  $
+  --       Date fetched Out : $Modtime:   Mar 01 2019 10:55:44  $
+  --       Version          : $Revision:   1.0  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+
+  c_network  CONSTANT VARCHAR2(10) := 'NETWORK';
+  c_asset    CONSTANT VARCHAR2(10) := 'ASSET';
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_url(pi_url_template     IN awlrs_external_links.ael_url_template%TYPE
+                  ,pi_entity_type      IN awlrs_external_link_params.aelp_entity_type%TYPE
+                  ,pi_entity_type_type IN awlrs_external_link_params.aelp_entity_type_type%TYPE
+                  ,pi_entity_id        IN NUMBER)
+    RETURN awlrs_external_links.ael_url_template%TYPE;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_url(pi_external_link_name IN  awlrs_external_links.ael_name%TYPE
+                   ,pi_theme_name         IN  nm_themes_all.nth_theme_name%TYPE
+                   ,pi_feature_id         IN  NUMBER
+                   ,po_message_severity   OUT hig_codes.hco_code%TYPE
+                   ,po_message_cursor     OUT sys_refcursor
+                   ,po_cursor             OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_external_link_actions(pi_entity_type      IN  awlrs_external_link_params.aelp_entity_type%TYPE
+                                     ,pi_entity_type_type IN  awlrs_external_link_params.aelp_entity_type_type%TYPE
+                                     ,pi_entity_id        IN  NUMBER
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_external_link_actions(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                     ,pi_feature_id       IN  NUMBER
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_external_links(pi_entity_type      IN  awlrs_external_link_params.aelp_entity_type%TYPE
+                              ,pi_entity_type_type IN  awlrs_external_link_params.aelp_entity_type_type%TYPE
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_external_links(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor);
+
+END awlrs_external_links_api;
+/
