@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alim_doc_man_api.pkb-arc   1.0   Mar 01 2019 11:00:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alim_doc_man_api.pkb-arc   1.1   Mar 04 2019 12:09:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_alim_doc_man_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 01 2019 11:00:14  $
-  --       Date fetched Out : $Modtime:   Feb 27 2019 16:14:08  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Mar 04 2019 12:09:48  $
+  --       Date fetched Out : $Modtime:   Mar 04 2019 12:08:52  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_alim_doc_man_api';
   --
   -----------------------------------------------------------------------------
@@ -231,5 +231,37 @@ AS
     --
   END get_document_count;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_document_count(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                              ,pi_feature_id       IN  NUMBER
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_count  NUMBER;
+    --
+  BEGIN
+    --
+    lv_count := get_document_count(pi_theme_name => pi_theme_name
+                                  ,pi_feature_id => pi_feature_id);
+    --
+    OPEN po_cursor FOR
+    SELECT lv_count document_count
+      FROM dual
+    ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_document_count;
+  
 END awlrs_alim_doc_man_api;
 /
