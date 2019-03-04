@@ -1,19 +1,19 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.14   Dec 04 2018 10:21:52   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.15   Mar 04 2019 10:46:12   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   Dec 04 2018 10:21:52  $
---       Date fetched Out : $Modtime:   Dec 04 2018 10:04:48  $
---       Version          : $Revision:   1.14  $
+--       Date into PVCS   : $Date:   Mar 04 2019 10:46:12  $
+--       Date fetched Out : $Modtime:   Mar 04 2019 08:18:08  $
+--       Version          : $Revision:   1.15  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 04-DEC-2018 10:04
+--       Generation Date  : 04-MAR-2019 08:18
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
 --
 -------------------------------------------------------------------------
---   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2019 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
 --
 --   TABLES PROCESSED
@@ -481,6 +481,38 @@ SELECT 'AWLUIDBUG'
 SET TERM ON
 PROMPT hig_sequence_associations
 SET TERM OFF
+--
+INSERT
+  INTO HIG_SEQUENCE_ASSOCIATIONS
+      (HSA_TABLE_NAME
+      ,HSA_COLUMN_NAME
+      ,HSA_SEQUENCE_NAME
+      ,HSA_LAST_REBUILD_DATE)
+SELECT 'AWLRS_EXTERNAL_LINKS'
+      ,'AEL_ID'
+      ,'AEL_ID_SEQ'
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_SEQUENCE_ASSOCIATIONS
+                   WHERE HSA_TABLE_NAME = 'AWLRS_EXTERNAL_LINKS'
+                     AND HSA_COLUMN_NAME = 'AEL_ID');
+--
+INSERT
+  INTO HIG_SEQUENCE_ASSOCIATIONS
+      (HSA_TABLE_NAME
+      ,HSA_COLUMN_NAME
+      ,HSA_SEQUENCE_NAME
+      ,HSA_LAST_REBUILD_DATE)
+SELECT 'AWLRS_EXTERNAL_LINK_PARAMS'
+      ,'AELP_ID'
+      ,'AELP_ID_SEQ'
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_SEQUENCE_ASSOCIATIONS
+                   WHERE HSA_TABLE_NAME = 'AWLRS_EXTERNAL_LINK_PARAMS'
+                     AND HSA_COLUMN_NAME = 'AELP_ID');
 --
 INSERT
   INTO HIG_SEQUENCE_ASSOCIATIONS
