@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.1   Feb 28 2019 11:16:32   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.2   Mar 05 2019 08:51:40   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaref_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 28 2019 11:16:32  $
-  --       Date fetched Out : $Modtime:   Feb 27 2019 13:31:00  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Mar 05 2019 08:51:40  $
+  --       Date fetched Out : $Modtime:   Mar 05 2019 07:56:40  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -3025,6 +3025,10 @@ AS
       /*
       ||Update row value and then validate option value
       */
+      IF lr_db_hov_rec.hov_id IS NULL 
+       THEN
+          lr_db_hov_rec.hov_id := pi_option;
+      END IF;
       lr_db_hov_rec.hov_value := pi_new_value;
       --
       validate_option_value(pi_option_id => pi_option
