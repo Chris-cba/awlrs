@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.1   Feb 28 2019 12:04:24   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.2   Mar 05 2019 08:55:36   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 28 2019 12:04:24  $
-  --       Date fetched Out : $Modtime:   Feb 28 2019 12:04:08  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Mar 05 2019 08:55:36  $
+  --       Date fetched Out : $Modtime:   Mar 04 2019 14:27:42  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -2514,5 +2514,192 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_paged_admin_subtypes;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_groupings(po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor
+                         ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+     SELECT natg_grouping         grouping_group
+           ,natg_nat_admin_type   grouping_admin_type
+           ,hco_meaning   group_meaning
+      FROM nm_au_types_groupings, hig_codes
+     WHERE hco_domain = nm3api_admin_unit.get_natg_domain 
+       AND hco_code = natg_grouping
+     ORDER BY natg_grouping; 
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_groupings;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_grouping(pi_admin_grouping       IN     nm_au_types_groupings.natg_grouping%TYPE
+                        ,pi_grouping_admin_type  IN     nm_au_types_groupings.natg_nat_admin_type%TYPE
+                        ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor          OUT sys_refcursor
+                        ,po_cursor                  OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+     SELECT natg_grouping         grouping_group
+           ,natg_nat_admin_type   grouping_admin_type
+           ,hco_meaning   group_meaning
+      FROM nm_au_types_groupings, hig_codes
+     WHERE hco_domain = nm3api_admin_unit.get_natg_domain 
+       AND hco_code = natg_grouping
+       AND natg_grouping = pi_admin_grouping
+       AND natg_nat_admin_type = pi_grouping_admin_type
+     ORDER BY natg_grouping;  
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_grouping;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_groupings(pi_filter_columns   IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_filter_operators IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_filter_values_1  IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                               ,pi_filter_values_2  IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                               ,pi_order_columns    IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_order_asc_desc   IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                               ,pi_skip_n_rows      IN     PLS_INTEGER
+                               ,pi_pagesize         IN     PLS_INTEGER
+                               ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT sys_refcursor
+                               ,po_cursor              OUT sys_refcursor)
+    IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 :=' SELECT natg_grouping         grouping_group
+                                                     ,natg_nat_admin_type   grouping_admin_type
+                                                     ,hco_meaning           group_meaning
+                                                FROM nm_au_types_groupings, hig_codes
+                                               WHERE hco_domain = nm3api_admin_unit.get_natg_domain 
+                                                 AND hco_code = natg_grouping';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  grouping_group'
+                                                  ||',grouping_admin_type'
+                                                  ||',group_meaning'
+                                                  ||',row_count'
+                                            ||' FROM (SELECT rownum ind'
+                                                        ||' ,a.*'
+                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                    ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'grouping_group'
+                                ,pi_query_col  => 'natg_grouping'
+                                ,pi_datatype   => awlrs_util.c_number_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'grouping_admin_type'
+                                ,pi_query_col  => 'natg_nat_admin_type'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'group_meaning'
+                                ,pi_query_col  => 'hco_meaning'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+    END set_column_data;
+    --    
+  BEGIN
+      /*
+      ||Get the page parameters.
+      */
+      awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                    ,pi_skip_n_rows  => pi_skip_n_rows
+                                    ,pi_pagesize     => pi_pagesize
+                                    ,po_lower_index  => lv_lower_index
+                                    ,po_upper_index  => lv_upper_index
+                                    ,po_statement    => lv_row_restriction);
+      /*
+      ||Get the Order By clause.
+      */
+      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                            ,pi_order_asc_desc => pi_order_asc_desc);
+      /*
+      ||Process the filter.
+      */
+      IF pi_filter_columns.COUNT > 0
+       THEN
+          --
+          set_column_data(po_column_data => lt_column_data);
+          --
+          awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                   ,pi_column_data  => lt_column_data
+                                   ,pi_operators    => pi_filter_operators
+                                   ,pi_values_1     => pi_filter_values_1
+                                   ,pi_values_2     => pi_filter_values_2
+                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,po_where_clause => lv_filter);
+          --
+      END IF;
+      --
+      lv_cursor_sql := lv_cursor_sql
+                       ||CHR(10)||lv_filter
+                       ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'natg_grouping')||') a)'
+                       ||CHR(10)||lv_row_restriction
+      ;
+      --
+      IF pi_pagesize IS NOT NULL
+       THEN
+          OPEN po_cursor FOR lv_cursor_sql
+          USING lv_lower_index
+               ,lv_upper_index;
+      ELSE
+          OPEN po_cursor FOR lv_cursor_sql
+          USING lv_lower_index;
+      END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_groupings;
   --
 END awlrs_metasec_api;
