@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.24   Jan 24 2019 11:21:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.25   Mar 06 2019 17:38:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 24 2019 11:21:50  $
-  --       Date fetched Out : $Modtime:   Jan 23 2019 13:34:04  $
-  --       Version          : $Revision:   1.24  $
+  --       Date into PVCS   : $Date:   Mar 06 2019 17:38:36  $
+  --       Date fetched Out : $Modtime:   Mar 06 2019 16:19:12  $
+  --       Version          : $Revision:   1.25  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.24  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.25  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -376,7 +376,13 @@ AS
   ||CHR(10)||'              ,CASE'
   ||CHR(10)||'                 WHEN column_name = ''NE_LENGTH'''
   ||CHR(10)||'                  THEN'
-  ||CHR(10)||'                     (SELECT LENGTH(SUBSTR(mask,INSTR(mask,(SELECT SUBSTR(value,1,1) FROM nls_database_parameters WHERE parameter = ''NLS_NUMERIC_CHARACTERS''),1)+ 1))'
+  ||CHR(10)||'                     (SELECT CASE'
+  ||CHR(10)||'                               WHEN INSTR(mask,(SELECT SUBSTR(value,1,1) FROM nls_database_parameters WHERE parameter = ''NLS_NUMERIC_CHARACTERS''),1) = 0'
+  ||CHR(10)||'                                THEN'
+  ||CHR(10)||'                                   0'
+  ||CHR(10)||'                               ELSE'
+  ||CHR(10)||'                                   LENGTH(SUBSTR(mask,INSTR(mask,(SELECT SUBSTR(value,1,1) FROM nls_database_parameters WHERE parameter = ''NLS_NUMERIC_CHARACTERS''),1)+ 1))'
+  ||CHR(10)||'                             END'
   ||CHR(10)||'                        FROM (SELECT nm3unit.get_unit_mask(:unit_id) mask FROM DUAL))'
   ||CHR(10)||'                 ELSE'
   ||CHR(10)||'                     data_scale'
@@ -708,6 +714,7 @@ AS
     --
     IF lt_theme_types.COUNT > 0
      THEN
+        --
         CASE
           WHEN lt_theme_types(1).network_type IS NOT NULL
            THEN
