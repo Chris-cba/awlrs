@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.23   Feb 20 2019 10:52:28   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.24   Mar 06 2019 13:58:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Feb 20 2019 10:52:28  $
-  --       Date fetched Out : $Modtime:   Feb 20 2019 10:46:36  $
-  --       Version          : $Revision:   1.23  $
+  --       Date into PVCS   : $Date:   Mar 06 2019 13:58:16  $
+  --       Date fetched Out : $Modtime:   Mar 06 2019 13:49:30  $
+  --       Version          : $Revision:   1.24  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.23  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.24  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -1036,12 +1036,12 @@ AS
         WHEN pi_operators(i) = c_has_value
          THEN
             --
-            po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col||' IS NOT NULL';
+            po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col||' IS NULL';
             --
         WHEN pi_operators(i) = c_does_not_have_value
          THEN
             --
-            po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col||' IS NULL';
+            po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col||' IS NOT NULL';
             --
         ELSE
             --Invalid filter function
@@ -1549,7 +1549,7 @@ AS
     /*
     ||Get the data from the cursor and write it to the output.
     */
-    WHILE dbms_sql.fetch_rows (lv_cursor_id) > 0 LOOP
+    WHILE NVL(dbms_sql.fetch_rows(lv_cursor_id),0) > 0 LOOP
       --
       FOR i IN 1 .. lv_column_count LOOP
         --
@@ -1612,11 +1612,12 @@ AS
     --
   EXCEPTION 
     WHEN others
-     THEN 
+     THEN
         IF dbms_sql.is_open(lv_cursor_id)
          THEN 
             dbms_sql.close_cursor(lv_cursor_id); 
-        END IF; 
+        END IF;
+        RAISE;
   END ref_cursor_to_csv;
 
   --
