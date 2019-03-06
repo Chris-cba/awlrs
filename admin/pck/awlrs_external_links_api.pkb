@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_external_links_api.pkb-arc   1.0   Mar 01 2019 11:00:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_external_links_api.pkb-arc   1.1   Mar 06 2019 14:05:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_external_links_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 01 2019 11:00:38  $
-  --       Date fetched Out : $Modtime:   Mar 01 2019 10:55:30  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Mar 06 2019 14:05:48  $
+  --       Date fetched Out : $Modtime:   Mar 06 2019 13:52:44  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_external_links_api';
   --
   g_theme_name   nm_themes_all.nth_theme_name%TYPE;
@@ -123,7 +123,7 @@ AS
       --
       IF lt_aelp(i).aelp_default_value IS NOT NULL
        THEN
-          lv_source := 'NVL('||lv_source||','''||lt_aelp(i).aelp_default_value||''')';
+          lv_source := 'NVL(TO_CHAR('||lv_source||'),'''||lt_aelp(i).aelp_default_value||''')';
       END IF;
       --
       IF i = 1
