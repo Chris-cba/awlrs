@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_external_links_api.pkb-arc   1.1   Mar 06 2019 14:05:48   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_external_links_api.pkb-arc   1.2   Mar 19 2019 13:10:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_external_links_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 06 2019 14:05:48  $
-  --       Date fetched Out : $Modtime:   Mar 06 2019 13:52:44  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Mar 19 2019 13:10:16  $
+  --       Date fetched Out : $Modtime:   Mar 18 2019 15:36:16  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_external_links_api';
   --
   g_theme_name   nm_themes_all.nth_theme_name%TYPE;
@@ -59,7 +59,8 @@ AS
   --
   ------------------------------------------------------------------------------
   --
-  FUNCTION get_url(pi_url_template     IN awlrs_external_links.ael_url_template%TYPE
+  FUNCTION get_url(pi_ael_id           IN awlrs_external_links.ael_id%TYPE
+                  ,pi_url_template     IN awlrs_external_links.ael_url_template%TYPE
                   ,pi_entity_type      IN awlrs_external_link_params.aelp_entity_type%TYPE
                   ,pi_entity_type_type IN awlrs_external_link_params.aelp_entity_type_type%TYPE
                   ,pi_entity_id        IN NUMBER)
@@ -75,12 +76,14 @@ AS
     TYPE aelp_tab IS TABLE OF awlrs_external_link_params%ROWTYPE;
     lt_aelp  aelp_tab;
     --
-    CURSOR get_aelp(cp_entity_type      IN awlrs_external_link_params.aelp_entity_type%TYPE
+    CURSOR get_aelp(cp_ael_id           IN awlrs_external_links.ael_id%TYPE
+                   ,cp_entity_type      IN awlrs_external_link_params.aelp_entity_type%TYPE
                    ,cp_entity_type_type IN awlrs_external_link_params.aelp_entity_type_type%TYPE)
         IS
     SELECT *
       FROM awlrs_external_link_params
-     WHERE aelp_entity_type = cp_entity_type
+     WHERE aelp_ael_id = cp_ael_id
+       AND aelp_entity_type = cp_entity_type
        AND aelp_entity_type_type = cp_entity_type_type
      ORDER
         BY aelp_sequence
@@ -88,7 +91,8 @@ AS
     --
   BEGIN
     --
-    OPEN  get_aelp(pi_entity_type
+    OPEN  get_aelp(pi_ael_id
+                  ,pi_entity_type
                   ,pi_entity_type_type);
     FETCH get_aelp
      BULK COLLECT
@@ -196,7 +200,8 @@ AS
                            END;
     --
     OPEN po_cursor FOR
-    SELECT awlrs_external_links_api.get_url(ael_url_template
+    SELECT awlrs_external_links_api.get_url(ael_id
+                                           ,ael_url_template
                                            ,lv_entity_type
                                            ,lv_entity_type_type
                                            ,pi_feature_id) external_link_url
@@ -204,7 +209,8 @@ AS
      WHERE ael_name = pi_external_link_name
        AND EXISTS(SELECT 'x'
                     FROM awlrs_external_link_params
-                   WHERE aelp_entity_type = lv_entity_type
+                   WHERE aelp_ael_id = ael_id
+                     AND aelp_entity_type = lv_entity_type
                      AND aelp_entity_type_type = lv_entity_type_type)
     ;
     --
@@ -233,14 +239,16 @@ AS
     --
     OPEN po_cursor FOR
     SELECT ael_name  external_link_name
-          ,awlrs_external_links_api.get_url(ael_url_template
+          ,awlrs_external_links_api.get_url(ael_id
+                                           ,ael_url_template
                                            ,pi_entity_type
                                            ,pi_entity_type_type
                                            ,pi_entity_id) external_link_url
       FROM awlrs_external_links
      WHERE EXISTS(SELECT 'x'
                     FROM awlrs_external_link_params
-                   WHERE aelp_entity_type = pi_entity_type
+                   WHERE aelp_ael_id = ael_id
+                     AND aelp_entity_type = pi_entity_type
                      AND aelp_entity_type_type = pi_entity_type_type)
     ;
     --
@@ -332,7 +340,8 @@ AS
       FROM awlrs_external_links
      WHERE EXISTS(SELECT 'x'
                     FROM awlrs_external_link_params
-                   WHERE aelp_entity_type = pi_entity_type
+                   WHERE aelp_ael_id = ael_id
+                     AND aelp_entity_type = pi_entity_type
                      AND aelp_entity_type_type = pi_entity_type_type)
     ;
     --
