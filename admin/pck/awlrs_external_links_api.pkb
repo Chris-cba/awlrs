@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_external_links_api.pkb-arc   1.2   Mar 19 2019 13:10:16   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_external_links_api.pkb-arc   1.3   Mar 19 2019 16:49:26   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_external_links_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 19 2019 13:10:16  $
-  --       Date fetched Out : $Modtime:   Mar 18 2019 15:36:16  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   Mar 19 2019 16:49:26  $
+  --       Date fetched Out : $Modtime:   Mar 19 2019 16:43:36  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_external_links_api';
   --
   g_theme_name   nm_themes_all.nth_theme_name%TYPE;
@@ -144,7 +144,7 @@ AS
         --
         IF lv_ad_asset_attrib
          THEN
-            lv_sql := 'SELECT '||lv_sql||' FROM nm_elements_all,nm_nw_ad_link,nm_inv_items_all WHERE ne_id = :entity_id AND ne_id = nad_ne_id AND nad_primary_ad = ''Y'' AND nad_iit_ne_id = iit_ne_id';
+            lv_sql := 'SELECT '||lv_sql||' FROM nm_elements_all,nm_nw_ad_link,nm_inv_items_all WHERE ne_id = :entity_id AND ne_id = nad_ne_id(+) AND nad_primary_ad(+) = ''Y'' AND nad_iit_ne_id = iit_ne_id(+)';
         ELSE
             lv_sql := 'SELECT '||lv_sql||' FROM nm_elements_all WHERE ne_id = :entity_id';
         END IF;
