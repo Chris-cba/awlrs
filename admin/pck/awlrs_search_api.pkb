@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.25   Mar 06 2019 17:38:36   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.26   Mar 25 2019 10:58:44   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 06 2019 17:38:36  $
-  --       Date fetched Out : $Modtime:   Mar 06 2019 16:19:12  $
-  --       Version          : $Revision:   1.25  $
+  --       Date into PVCS   : $Date:   Mar 25 2019 10:58:44  $
+  --       Date fetched Out : $Modtime:   Mar 25 2019 10:57:08  $
+  --       Version          : $Revision:   1.26  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.25  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.26  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -3828,7 +3828,7 @@ AS
               IF lt_like_cols.COUNT = 0
                THEN
                   lt_like_cols(1) := 'ne_unique';
-                  --lt_like_cols(2) := 'ne_descr';
+                  lt_like_cols(2) := 'ne_descr';
               END IF;
               --
               get_paged_network_quick_search(pi_search_string    => pi_search_string
