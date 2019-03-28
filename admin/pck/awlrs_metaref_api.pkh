@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkh-arc   1.1   Feb 28 2019 11:16:32   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkh-arc   1.2   Mar 28 2019 10:09:26   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaref_api.pkh  $
-  --       Date into PVCS   : $Date:   Feb 28 2019 11:16:32  $
-  --       Date fetched Out : $Modtime:   Feb 21 2019 16:17:22  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Mar 28 2019 10:09:26  $
+  --       Date fetched Out : $Modtime:   Mar 20 2019 14:16:56  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -294,7 +294,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_units(pi_unit_domain       IN     nm_unit_domains.ud_domain_id%TYPE
+  PROCEDURE get_units(pi_unit_domain       IN     nm_units.un_domain_id%TYPE
                      ,po_message_severity     OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor       OUT sys_refcursor
                      ,po_cursor               OUT sys_refcursor);
@@ -302,7 +302,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_paged_units(pi_unit_domain      IN  nm_unit_domains.ud_domain_id%TYPE
+  PROCEDURE get_paged_units(pi_unit_domain      IN  nm_units.un_domain_id%TYPE
                            ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                            ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                            ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
@@ -523,18 +523,10 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE delete_unit_conversion(pi_unit_conv_id_in   IN      nm_unit_conversions.uc_function%TYPE
-                                  ,pi_unit_conv_id_out  IN      nm_unit_conversions.uc_conversion%TYPE
+  PROCEDURE delete_unit_conversion(pi_unit_conv_id_in   IN      nm_unit_conversions.uc_unit_id_in%TYPE
+                                  ,pi_unit_conv_id_out  IN      nm_unit_conversions.uc_unit_id_out%TYPE
                                   ,po_message_severity     OUT  hig_codes.hco_code%TYPE
                                   ,po_message_cursor       OUT  sys_refcursor);
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE gen_unit_conversion_fun(pi_unit_conv_function     IN      nm_unit_conversions.uc_function%TYPE
-                                   ,pi_unit_conv_conversion   IN      nm_unit_conversions.uc_conversion%TYPE
-                                   ,po_message_severity          OUT  hig_codes.hco_code%TYPE
-                                   ,po_message_cursor            OUT  sys_refcursor);
 --
 END awlrs_metaref_api;
 /

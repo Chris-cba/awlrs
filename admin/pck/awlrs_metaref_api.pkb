@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.2   Mar 05 2019 08:51:40   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.3   Mar 28 2019 10:09:26   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaref_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 05 2019 08:51:40  $
-  --       Date fetched Out : $Modtime:   Mar 05 2019 07:56:40  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   Mar 28 2019 10:09:26  $
+  --       Date fetched Out : $Modtime:   Mar 25 2019 11:16:12  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -346,6 +346,66 @@ AS
     --
   END validate_notnull;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE gen_unit_conversion_fun(pi_unit_conv_function     IN      nm_unit_conversions.uc_function%TYPE
+                                   ,pi_unit_conv_conversion   IN      nm_unit_conversions.uc_conversion%TYPE)
+    IS
+    --
+    e_no_object_for_syn EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_no_object_for_syn, -20301);
+    
+    e_user_not_exist EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_user_not_exist, -20302);
+    
+    e_no_permission EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_no_permission, -20303);
+    
+    e_no_create_priv exception;
+    PRAGMA EXCEPTION_INIT(e_no_create_priv, -20305);
+    
+    e_sql_error EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_sql_error, -20306);
+    
+    e_no_object_in_string EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_no_object_in_string, -20307);    
+    --
+  BEGIN
+    --
+    BEGIN
+      nm3ddl.create_object_and_syns(p_object_name => pi_unit_conv_function
+                                   ,p_ddl_text    => pi_unit_conv_conversion);    
+       --
+    EXCEPTION
+      WHEN e_no_object_for_syn
+       THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 79);      
+      WHEN e_user_not_exist
+       THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 80);    
+      WHEN e_no_permission
+       THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 81);        
+      WHEN e_no_create_priv
+       THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 82);        
+      WHEN e_sql_error
+       THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 83);        
+      WHEN e_no_object_in_string
+       THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 84);
+    END;
+    --
+  END gen_unit_conversion_fun; 
+  
   --
   -----------------------------------------------------------------------------
   --
@@ -782,8 +842,11 @@ AS
           ,hop_datatype     option_datatype
           ,hop_mixed_case   mixed_case
           ,hop_max_length   max_length
+          ,hol_user_option user_option
       FROM hig_options
-     WHERE hop_id = pi_option;
+          ,hig_option_list
+     WHERE hop_id = hol_id
+       AND hop_id = pi_option;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -815,7 +878,10 @@ AS
           ,hop_datatype    option_datatype
           ,hop_mixed_case  mixed_case
           ,hop_max_length  max_length
-      FROM hig_options;
+          ,hol_user_option user_option
+      FROM hig_options
+          ,hig_option_list
+     WHERE hop_id = hol_id;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -849,16 +915,19 @@ AS
     lv_order_by         nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     --
-    lv_driving_sql  nm3type.max_varchar2 := 'SELECT hop_id         option_id
-                                                   ,hop_product    product
-                                                   ,hop_name       name
-                                                   ,hop_value      option_value
-                                                   ,hop_remarks    remark
-                                                   ,hop_domain     option_domain
-                                                   ,hop_datatype   option_datatype
-                                                   ,hop_mixed_case mixed_case
-                                                   ,hop_max_length max_length
-                                               FROM hig_options'
+    lv_driving_sql  nm3type.max_varchar2 := 'SELECT hop_id          option_id
+                                                   ,hop_product     product
+                                                   ,hop_name        name
+                                                   ,hop_value       option_value
+                                                   ,hop_remarks     remark
+                                                   ,hop_domain      option_domain
+                                                   ,hop_datatype    option_datatype
+                                                   ,hop_mixed_case  mixed_case
+                                                   ,hop_max_length  max_length
+                                                   ,hol_user_option user_option
+                                               FROM hig_options
+                                                   ,hig_option_list
+                                              WHERE hop_id = hol_id'
     ;
     lv_cursor_sql  nm3type.max_varchar2 := 'SELECT option_id
                                                   ,product
@@ -868,7 +937,8 @@ AS
                                                   ,option_domain
                                                   ,option_datatype
                                                   ,mixed_case
-                                                  ,max_length'
+                                                  ,max_length
+                                                  ,user_option'
                                               ||' ,row_count'
                                           ||' FROM (SELECT rownum ind'
                                                       ||' ,a.*'
@@ -936,6 +1006,12 @@ AS
                                 ,pi_mask         => null
                                 ,pio_column_data => po_column_data);
       --
+      awlrs_util.add_column_data(pi_cursor_col   => 'user_option'
+                                ,pi_query_col    => 'hol_user_option' 
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => null
+                                ,pio_column_data => po_column_data);                                
+      --
     END set_column_data;
     --
   BEGIN
@@ -966,7 +1042,7 @@ AS
                                  ,pi_operators    => pi_filter_operators
                                  ,pi_values_1     => pi_filter_values_1
                                  ,pi_values_2     => pi_filter_values_2
-                                 ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
                                  ,po_where_clause => lv_filter);
         --
     END IF;
@@ -2086,7 +2162,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_units(pi_unit_domain   IN     nm_unit_domains.ud_domain_id%TYPE
+  PROCEDURE get_units(pi_unit_domain   IN     nm_units.un_domain_id%TYPE
                      ,po_message_severity OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor   OUT sys_refcursor
                      ,po_cursor           OUT sys_refcursor)
@@ -2149,7 +2225,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_paged_units(pi_unit_domain      IN  nm_unit_domains.ud_domain_id%TYPE
+  PROCEDURE get_paged_units(pi_unit_domain      IN  nm_units.un_domain_id%TYPE
                            ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                            ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                            ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
@@ -2253,7 +2329,7 @@ AS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||CHR(10)||lv_filter
-                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'ud_domain_id')||') a)'
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'un_domain_id')||') a)'
                      ||CHR(10)||lv_row_restriction
     ;
     --
@@ -2294,7 +2370,7 @@ AS
     OPEN po_cursor FOR
         SELECT uc_unit_id_in                         unit_in_id
               ,uc_unit_id_out                        unit_out_id
-              ,nm3unit.get_unit_name(uc_unit_id_out) unit_out_name
+              ,(SELECT nvl(un_unit_name,' ') FROM nm_units WHERE un_unit_id =uc_unit_id_out) unit_out_name
               ,uc_function                           unit_function
               ,uc_conversion                         unit_conversion
               ,uc_conversion_factor                  unit_conversion_factor
@@ -2327,7 +2403,7 @@ AS
     OPEN po_cursor FOR
         SELECT uc_unit_id_in                         unit_in_id
               ,uc_unit_id_out                        unit_out_id
-              ,nm3unit.get_unit_name(uc_unit_id_out) unit_out_name
+              ,(SELECT nvl(un_unit_name,' ') FROM nm_units WHERE un_unit_id =uc_unit_id_out) unit_out_name
               ,uc_function                           unit_function
               ,uc_conversion                         unit_conversion
               ,uc_conversion_factor                  unit_conversion_factor
@@ -2582,14 +2658,9 @@ AS
     validate_option_value(pi_option_id => pi_option_id
                          ,pi_value     => pi_value); 
     --
-    INSERT
-      INTO hig_user_options
-           (huo_hus_user_id
-           ,huo_id
-           ,huo_value)
-    VALUES (pi_user_id
-           ,UPPER(pi_option_id)
-           ,pi_value);
+    hig.set_useopt (pi_huo_hus_user_id => pi_user_id
+                   ,pi_huo_id          => UPPER(pi_option_id)
+                   ,pi_huo_value       => pi_value);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -2744,6 +2815,9 @@ AS
                      ,pi_supplementary_info => 'Unit does not exist');   
     END IF;
     --
+    gen_unit_conversion_fun(pi_unit_conv_function     => UPPER(pi_unit_conv_function)
+                           ,pi_unit_conv_conversion   => pi_unit_conv_conversion);
+    --
     INSERT 
       INTO nm_unit_conversions
            (uc_unit_id_in
@@ -2756,7 +2830,7 @@ AS
            ,UPPER(pi_unit_conv_function)
            ,pi_unit_conv_conversion
            ,pi_unit_conv_factor);
-    --
+    --                               
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
@@ -3022,26 +3096,18 @@ AS
         hig.raise_ner(pi_appl => 'AWLRS'
                      ,pi_id   => 25);
     ELSE
-      /*
-      ||Update row value and then validate option value
-      */
-      IF lr_db_hov_rec.hov_id IS NULL 
-       THEN
-          lr_db_hov_rec.hov_id := pi_option;
-      END IF;
-      lr_db_hov_rec.hov_value := pi_new_value;
       --
-      validate_option_value(pi_option_id => pi_option
-                           ,pi_value     => lr_db_hov_rec.hov_value);
+      IF pi_new_value IS NOT NULL
+       THEN
+          validate_option_value(pi_option_id => pi_option
+                               ,pi_value     => pi_new_value);
+      END IF;
       --
       /*
       ||delete and insert as per the instead of clause used in the form as apposed to update.S
       */
-      nm3del.del_hov (pi_hov_id          => pi_option
-                     ,pi_raise_not_found => FALSE
-                     );
-      --insert.
-      nm3ins.ins_hov (lr_db_hov_rec);
+      hig.set_opt (pi_hov_id          => pi_option
+                  ,pi_hov_value       => pi_new_value);      
       --
     END IF; 
     --
@@ -3128,11 +3194,17 @@ AS
         */
         validate_option_value(pi_option_id => pi_option_id
                              ,pi_value     => pi_new_value); 
-        --
-        UPDATE hig_user_options
+                             
+        /*UPDATE hig_user_options
            SET huo_value  = pi_new_value
          WHERE huo_hus_user_id = pi_user_id
            AND huo_id   = pi_option_id;
+        */
+        --
+
+        hig.set_useopt (pi_huo_hus_user_id => pi_user_id
+                       ,pi_huo_id          => pi_option_id
+                       ,pi_huo_value       => pi_new_value);
         --           
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                              ,po_cursor           => po_message_cursor);
@@ -3560,13 +3632,40 @@ AS
                        ,pi_id   => 25);
       ELSE
         --
+        BEGIN
+          --
+          gen_unit_conversion_fun(pi_unit_conv_function   => UPPER(pi_new_function)
+                                 ,pi_unit_conv_conversion => pi_new_conversion);
+          --
+        EXCEPTION
+          WHEN others
+           THEN
+              /*
+              ||if function create fails then reestblish old function but return error to user.
+              */
+              BEGIN
+                gen_unit_conversion_fun(pi_unit_conv_function   => UPPER(pi_old_function)
+                                       ,pi_unit_conv_conversion => pi_old_conversion);
+              EXCEPTION
+                WHEN others
+                 THEN
+                   null;
+                   /*
+                   ||attempt to resetablish old function failed but we report new function failure.
+                   */
+              END;
+              --
+              RAISE;
+              --
+        END;      
+        --
         UPDATE nm_unit_conversions
            SET uc_function          = UPPER(pi_new_function)
               ,uc_conversion        = pi_new_conversion
               ,uc_conversion_factor = pi_new_conversion_factor
          WHERE uc_unit_id_in  = pi_unit_id_in
            AND uc_unit_id_out = pi_unit_id_out;
-        --           
+        --
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                              ,po_cursor           => po_message_cursor);
         --
@@ -3579,6 +3678,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        --           
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_unit_conversion;
@@ -3770,8 +3870,8 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE delete_unit_conversion(pi_unit_conv_id_in   IN      nm_unit_conversions.uc_function%TYPE
-                                  ,pi_unit_conv_id_out  IN      nm_unit_conversions.uc_conversion%TYPE
+  PROCEDURE delete_unit_conversion(pi_unit_conv_id_in   IN      nm_unit_conversions.uc_unit_id_in%TYPE
+                                  ,pi_unit_conv_id_out  IN      nm_unit_conversions.uc_unit_id_out%TYPE
                                   ,po_message_severity     OUT  hig_codes.hco_code%TYPE
                                   ,po_message_cursor       OUT  sys_refcursor)
     IS
@@ -3801,74 +3901,6 @@ AS
                                    ,po_cursor           => po_message_cursor);
   END delete_unit_conversion;
   
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE gen_unit_conversion_fun(pi_unit_conv_function     IN      nm_unit_conversions.uc_function%TYPE
-                                   ,pi_unit_conv_conversion   IN      nm_unit_conversions.uc_conversion%TYPE
-                                   ,po_message_severity          OUT  hig_codes.hco_code%TYPE
-                                   ,po_message_cursor            OUT  sys_refcursor)
-    IS
-    --
-    e_no_object_for_syn EXCEPTION;
-    PRAGMA EXCEPTION_INIT(e_no_object_for_syn, -20301);
-    
-    e_user_not_exist EXCEPTION;
-    PRAGMA EXCEPTION_INIT(e_user_not_exist, -20302);
-    
-    e_no_permission EXCEPTION;
-    PRAGMA EXCEPTION_INIT(e_no_permission, -20303);
-    
-    e_no_create_priv exception;
-    PRAGMA EXCEPTION_INIT(e_no_create_priv, -20305);
-    
-    e_sql_error EXCEPTION;
-    PRAGMA EXCEPTION_INIT(e_sql_error, -20306);
-    
-    e_no_object_in_string EXCEPTION;
-    PRAGMA EXCEPTION_INIT(e_no_object_in_string, -20307);    
-    --
-  BEGIN
-    --
-    BEGIN
-      nm3ddl.create_object_and_syns(p_object_name => pi_unit_conv_function
-                                   ,p_ddl_text    => pi_unit_conv_conversion);    
-      -- 
-      awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                           ,po_cursor           => po_message_cursor);
-      --
-    EXCEPTION
-      WHEN e_no_object_for_syn
-       THEN
-          hig.raise_ner(pi_appl => 'HIG'
-                       ,pi_id   => 79);      
-      WHEN e_user_not_exist
-       THEN
-          hig.raise_ner(pi_appl => 'HIG'
-                       ,pi_id   => 80);    
-      WHEN e_no_permission
-       THEN
-          hig.raise_ner(pi_appl => 'HIG'
-                       ,pi_id   => 81);        
-      WHEN e_no_create_priv
-       THEN
-          hig.raise_ner(pi_appl => 'HIG'
-                       ,pi_id   => 82);        
-      WHEN e_sql_error
-       THEN
-          hig.raise_ner(pi_appl => 'HIG'
-                       ,pi_id   => 83);        
-      WHEN e_no_object_in_string
-       THEN
-          hig.raise_ner(pi_appl => 'HIG'
-                       ,pi_id   => 84);
-    END;
-    --
-  EXCEPTION    
-    WHEN others
-       THEN      
-          awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                     ,po_cursor           => po_message_cursor);
-  END gen_unit_conversion_fun; 
+
   --
 END awlrs_metaref_api;

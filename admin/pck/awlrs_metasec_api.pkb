@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.2   Mar 05 2019 08:55:36   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.3   Mar 28 2019 10:09:26   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 05 2019 08:55:36  $
-  --       Date fetched Out : $Modtime:   Mar 04 2019 14:27:42  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   Mar 28 2019 10:09:26  $
+  --       Date fetched Out : $Modtime:   Mar 26 2019 10:44:40  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -57,6 +57,7 @@ AS
      THEN
         RETURN lv_exists;
   END admin_type_exists;
+  
   --
   -----------------------------------------------------------------------------
   --
@@ -126,6 +127,187 @@ AS
      THEN
         RETURN lv_exists;
   END admin_unit_exists;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION module_exists(pi_module IN hig_modules.hmo_module%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM hig_modules
+     WHERE hmo_module = pi_module;
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found 
+     THEN
+        RETURN lv_exists;
+  END module_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION module_role_exists(pi_module IN hig_module_roles.hmr_module%TYPE
+                             ,pi_role   IN hig_module_roles.hmr_module%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM hig_module_roles
+     WHERE hmr_module = pi_module
+       AND hmr_role   = pi_role;
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found 
+     THEN
+        RETURN lv_exists;
+  END module_role_exists;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION product_exists(pi_product IN hig_products.hpr_product%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM hig_products
+     WHERE hpr_product = pi_product;
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found THEN
+      --
+      RETURN lv_exists;
+      --
+  END product_exists;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION role_exists(pi_role IN hig_roles.hro_role%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM hig_roles
+     WHERE hro_role = pi_role;
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found 
+     THEN
+        RETURN lv_exists;
+  END role_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION check_privs(pi_priv IN VARCHAR2) 
+    RETURN BOOLEAN 
+  IS
+  
+    CURSOR c1 IS
+       SELECT 1 
+         FROM user_sys_privs 
+        WHERE privilege = pi_priv;
+    --
+    CURSOR c2 IS
+       SELECT 1 
+         FROM dba_role_privs r, dba_sys_privs s
+        WHERE s.privilege = pi_priv
+          AND s.grantee = r.granted_role 
+          AND r.grantee = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME');
+  
+    dummy  NUMBER;
+    retval BOOLEAN;
+  
+  BEGIN
+      OPEN c1;
+     FETCH c1 
+      INTO dummy;
+     --
+     retval := c1%FOUND;
+     IF NOT retval THEN
+        OPEN c2;
+       FETCH c2 
+        INTO dummy;
+       retval := c2%FOUND;
+       CLOSE c2;
+     END IF;
+     CLOSE c1;
+     RETURN retval;  
+  END;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION can_delete_role (pi_role  IN  hig_module_roles.hmr_role%TYPE)
+    RETURN BOOLEAN 
+  IS
+    --
+    -- Does the user have the privileges to remove a role
+    --
+    CURSOR C1 is
+      SELECT 'x' 
+        FROM dba_sys_privs
+       WHERE grantee = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME')
+         AND privilege = 'DROP ANY ROLE';
+  --
+    CURSOR C2 is 
+      SELECT 'x' 
+        FROM dba_role_privs r
+            ,dba_sys_privs s
+       WHERE s.privilege = 'DROP ANY ROLE'
+         AND s.grantee = r.granted_role
+         AND r.grantee = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME');
+  --  
+    CURSOR C3 is
+      SELECT 'x' 
+        FROM dba_role_privs
+       WHERE grantee = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME')
+         AND GRanted_role = pi_role
+         AND ADmin_option = 'YES';
+  --
+    dummy varchar2(1);
+  --
+  BEGIN
+    OPEN c1;
+    FETCH c1 INTO dummy;
+    IF c1%notfound THEN
+      OPEN c2;
+      FETCH c2 INTO dummy;
+      IF c2%notfound THEN
+         open c3;
+         FETCH c3 INTO dummy;
+         IF c3%notfound THEN
+           RETURN FALSE;
+         END IF;
+      END IF;
+    END IF;
+    --
+    RETURN TRUE;
+    --
+  END;
 
   --
   -----------------------------------------------------------------------------
@@ -790,7 +972,7 @@ AS
            ,nat_exclusive)
     VALUES (UPPER(pi_admin_type)
            ,UPPER(pi_desc)
-           ,UPPER(pi_exclusive));--pb check created by and stuff is being created by triggers.
+           ,UPPER(pi_exclusive));
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1410,32 +1592,31 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE create_admin_unit(pi_admin_type        IN     nm_admin_units_all.nau_admin_type%TYPE
-                             ,pi_unit_code         IN     nm_admin_units_all.nau_unit_code%TYPE      
-                             ,pi_level             IN     nm_admin_units_all.nau_level%TYPE  
-                             ,pi_authority_code    IN     nm_admin_units_all.nau_authority_code%TYPE
-                             ,pi_name              IN     nm_admin_units_all.nau_name%TYPE
-                             ,pi_address1          IN     nm_admin_units_all.nau_address1%TYPE
-                             ,pi_address2          IN     nm_admin_units_all.nau_address2%TYPE
-                             ,pi_address3          IN     nm_admin_units_all.nau_address3%TYPE
-                             ,pi_address4          IN     nm_admin_units_all.nau_address4%TYPE
-                             ,pi_address5          IN     nm_admin_units_all.nau_address5%TYPE
-                             ,pi_phone             IN     nm_admin_units_all.nau_phone%TYPE
-                             ,pi_fax               IN     nm_admin_units_all.nau_fax%TYPE
-                             ,pi_comments          IN     nm_admin_units_all.nau_comments%TYPE
-                             ,pi_last_wor_no       IN     nm_admin_units_all.nau_last_wor_no%TYPE
-                             ,pi_start_date        IN     nm_admin_units_all.nau_start_date%TYPE
-                             ,pi_end_date          IN     nm_admin_units_all.nau_end_date%TYPE
-                             ,pi_nsty_sub_type     IN     nm_admin_units_all.nau_nsty_sub_type%TYPE
-                             ,pi_prefix            IN     nm_admin_units_all.nau_prefix%TYPE
-                             ,pi_postcode          IN     nm_admin_units_all.nau_postcode%TYPE
-                             ,pi_minor_undertaker  IN     nm_admin_units_all.nau_minor_undertaker%TYPE
-                             ,pi_tcpip             IN     nm_admin_units_all.nau_tcpip%TYPE
-                             ,pi_domain            IN     nm_admin_units_all.nau_domain%TYPE
-                             ,pi_directory         IN     nm_admin_units_all.nau_directory%TYPE
-                             ,pi_external_name     IN     nm_admin_units_all.nau_external_name%TYPE
-                             ,po_message_severity     OUT hig_codes.hco_code%TYPE
-                             ,po_message_cursor       OUT sys_refcursor)
+  PROCEDURE create_parent_admin_unit(pi_admin_type        IN     nm_admin_units_all.nau_admin_type%TYPE
+                                    ,pi_unit_code         IN     nm_admin_units_all.nau_unit_code%TYPE      
+                                    ,pi_authority_code    IN     nm_admin_units_all.nau_authority_code%TYPE
+                                    ,pi_name              IN     nm_admin_units_all.nau_name%TYPE
+                                    ,pi_address1          IN     nm_admin_units_all.nau_address1%TYPE
+                                    ,pi_address2          IN     nm_admin_units_all.nau_address2%TYPE
+                                    ,pi_address3          IN     nm_admin_units_all.nau_address3%TYPE
+                                    ,pi_address4          IN     nm_admin_units_all.nau_address4%TYPE
+                                    ,pi_address5          IN     nm_admin_units_all.nau_address5%TYPE
+                                    ,pi_phone             IN     nm_admin_units_all.nau_phone%TYPE
+                                    ,pi_fax               IN     nm_admin_units_all.nau_fax%TYPE
+                                    ,pi_comments          IN     nm_admin_units_all.nau_comments%TYPE
+                                    ,pi_last_wor_no       IN     nm_admin_units_all.nau_last_wor_no%TYPE
+                                    ,pi_start_date        IN     nm_admin_units_all.nau_start_date%TYPE
+                                    ,pi_end_date          IN     nm_admin_units_all.nau_end_date%TYPE
+                                    ,pi_nsty_sub_type     IN     nm_admin_units_all.nau_nsty_sub_type%TYPE
+                                    ,pi_prefix            IN     nm_admin_units_all.nau_prefix%TYPE
+                                    ,pi_postcode          IN     nm_admin_units_all.nau_postcode%TYPE
+                                    ,pi_minor_undertaker  IN     nm_admin_units_all.nau_minor_undertaker%TYPE
+                                    ,pi_tcpip             IN     nm_admin_units_all.nau_tcpip%TYPE
+                                    ,pi_domain            IN     nm_admin_units_all.nau_domain%TYPE
+                                    ,pi_directory         IN     nm_admin_units_all.nau_directory%TYPE
+                                    ,pi_external_name     IN     nm_admin_units_all.nau_external_name%TYPE
+                                    ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor       OUT sys_refcursor)
     IS
     --
     lr_nau_rec         nm_admin_units_all%ROWTYPE;
@@ -1452,11 +1633,8 @@ AS
     validate_notnull(pi_parameter_desc  => 'Start Date'
                     ,pi_parameter_value => pi_start_date);   
     --
-    validate_notnull(pi_parameter_desc  => 'Level'
-                    ,pi_parameter_value => pi_level);
-    --
     validate_notnull(pi_parameter_desc  => 'Code'
-                    ,pi_parameter_value => pi_authority_code);
+                    ,pi_parameter_value => pi_unit_code);
     --
     IF admin_unit_exists (pi_admin_type => pi_admin_type
                          ,pi_unit_code  => pi_unit_code) = 'Y'
@@ -1484,7 +1662,7 @@ AS
     */    
     lr_nau_rec.nau_admin_unit       := null; --created by package
     lr_nau_rec.nau_unit_code        := UPPER(pi_unit_code);
-    lr_nau_rec.nau_level            := 1;--pb to do?
+    lr_nau_rec.nau_level            := 1; 
     lr_nau_rec.nau_authority_code   := UPPER(pi_authority_code);
     lr_nau_rec.nau_name             := pi_name;
     lr_nau_rec.nau_address1         := pi_address1;
@@ -1495,8 +1673,8 @@ AS
     lr_nau_rec.nau_postcode         := pi_postcode;
     lr_nau_rec.nau_phone            := pi_phone;
     lr_nau_rec.nau_fax              := pi_fax;
-    lr_nau_rec.nau_start_date       := pi_start_date;
-    lr_nau_rec.nau_end_date         := pi_end_date;
+    lr_nau_rec.nau_start_date       := TRUNC(pi_start_date);
+    lr_nau_rec.nau_end_date         := TRUNC(pi_end_date);
     lr_nau_rec.nau_admin_type       := pi_admin_type;
     lr_nau_rec.nau_nsty_sub_type    := pi_nsty_sub_type;
     lr_nau_rec.nau_prefix           := pi_prefix;
@@ -1516,7 +1694,7 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END create_admin_unit;
+  END create_parent_admin_unit;
 
   --
   -----------------------------------------------------------------------------
@@ -1560,6 +1738,27 @@ AS
     lr_nau_rec         nm_admin_units_all%ROWTYPE;
     lr_nau_rec_parent  nm_admin_units_all%ROWTYPE;
     --
+    lr_db_nau_rec      nm_admin_units%ROWTYPE;
+    lv_upd             VARCHAR2(1) := 'N'; 
+    --
+    PROCEDURE get_db_rec(pi_parent_admin_unit IN nm_admin_units.nau_admin_unit%TYPE)
+      IS
+    BEGIN
+      --
+      SELECT * 
+        INTO lr_db_nau_rec
+        FROM nm_admin_units
+       WHERE nau_admin_unit = pi_parent_admin_unit;
+      --
+    EXCEPTION
+      WHEN no_data_found 
+       THEN
+          --
+          hig.raise_ner(pi_appl               => 'HIG'
+                       ,pi_id                 => 85
+                       ,pi_supplementary_info => 'Admin unit type does not exist');
+          --      
+    END get_db_rec;    
   BEGIN
     --
     validate_notnull(pi_parameter_desc  => 'Parent Admin Type'
@@ -1575,7 +1774,7 @@ AS
                     ,pi_parameter_value => pi_parent_level);
     --
     validate_notnull(pi_parameter_desc  => 'Parent Code'
-                    ,pi_parameter_value => pi_parent_authority_code);
+                    ,pi_parameter_value => pi_parent_unit_code);
     --
     validate_notnull(pi_parameter_desc  => 'Admin Type'
                     ,pi_parameter_value => pi_admin_type);
@@ -1601,6 +1800,23 @@ AS
                      ,pi_id   => 26);
     END IF;
     /*
+    ||Check Parent matches DB record
+    */
+    get_db_rec(pi_parent_admin_unit => pi_parent_admin_unit);
+    --
+    /*
+    ||Compare parent level against DB level as this is used to generate child level in nm3api
+    */
+    IF lr_db_nau_rec.nau_level != pi_parent_level
+     OR (lr_db_nau_rec.nau_level IS NULL AND pi_parent_level IS NOT NULL)
+     OR (lr_db_nau_rec.nau_level IS NOT NULL AND pi_parent_level IS NULL)
+     --  
+     THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    END IF;                     
+    /*
     ||Check Child values
     */
     IF admin_unit_exists (pi_admin_type => pi_admin_type
@@ -1625,8 +1841,8 @@ AS
     lr_nau_rec.nau_unit_code := UPPER(pi_unit_code);
     lr_nau_rec.nau_level := pi_level;
     lr_nau_rec.nau_name := pi_name;
-    lr_nau_rec.nau_start_date := pi_start_date;
-    lr_nau_rec.nau_end_date := pi_end_date;
+    lr_nau_rec.nau_start_date := TRUNC(pi_start_date);
+    lr_nau_rec.nau_end_date := TRUNC(pi_end_date);
     lr_nau_rec.nau_admin_type := UPPER(pi_admin_type);
     lr_nau_rec.nau_nsty_sub_type := pi_nsty_sub_type;
     --
@@ -1643,8 +1859,8 @@ AS
     lr_nau_rec_parent.nau_postcode := pi_parent_postcode;
     lr_nau_rec_parent.nau_phone := pi_parent_phone;
     lr_nau_rec_parent.nau_fax := pi_parent_fax;
-    lr_nau_rec_parent.nau_start_date := pi_parent_start_date;
-    lr_nau_rec_parent.nau_end_date := pi_parent_end_date;
+    lr_nau_rec_parent.nau_start_date := TRUNC(pi_parent_start_date);
+    lr_nau_rec_parent.nau_end_date := TRUNC(pi_parent_end_date);
     lr_nau_rec_parent.nau_admin_type := UPPER(pi_parent_admin_type);
     lr_nau_rec_parent.nau_nsty_sub_type := pi_parent_nsty_sub_type;
     lr_nau_rec_parent.nau_prefix := pi_parent_prefix;
@@ -1769,7 +1985,7 @@ AS
                     ,pi_parameter_value => pi_new_level);
     --
     validate_notnull(pi_parameter_desc  => 'Code'
-                    ,pi_parameter_value => pi_new_authority_code);                    
+                    ,pi_parameter_value => pi_new_unit_code);                    
     --
     IF pi_new_minor_undertaker IS NOT NULL AND pi_new_minor_undertaker NOT IN ('Y','N') 
      THEN
@@ -2181,9 +2397,13 @@ AS
                      ,pi_id   => 502);
     END IF;
     --    
-    UPDATE nm_admin_units_all 
-       SET nau_end_date = TRUNC(pi_end_date)
-     WHERE nau_admin_unit = pi_admin_unit;
+    /*
+    ||pb to do This has option to end all children defaulted to true.
+    ||Do we want to give this option?
+    
+    */
+    nm3api_admin_unit.end_date_admin_unit(pi_admin_unit  => pi_admin_unit
+                                         ,pi_end_date    => TRUNC(pi_end_date));     
     -- 
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -2276,7 +2496,7 @@ AS
 
   --
   -----------------------------------------------------------------------------
-  --
+  --No longer used according to RC so do not include. PV to decide
   PROCEDURE get_admin_subtype(pi_nsty_id       IN     nm_au_sub_types.nsty_id%TYPE
                              ,po_message_severity OUT hig_codes.hco_code%TYPE
                              ,po_message_cursor   OUT sys_refcursor
@@ -2325,7 +2545,7 @@ AS
   
   --
   -----------------------------------------------------------------------------
-  --
+  --No longer used according to RC so do not include. PV to decide
   PROCEDURE get_paged_admin_subtypes(pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                     ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                     ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
@@ -2517,7 +2737,7 @@ AS
   
   --
   -----------------------------------------------------------------------------
-  --
+  --No longer used according to RC so do not include. PV to decide
   PROCEDURE get_groupings(po_message_severity OUT hig_codes.hco_code%TYPE
                          ,po_message_cursor   OUT sys_refcursor
                          ,po_cursor           OUT sys_refcursor)
@@ -2547,7 +2767,7 @@ AS
 
   --
   -----------------------------------------------------------------------------
-  --
+  --No longer used according to RC so do not include. PV to decide
   PROCEDURE get_grouping(pi_admin_grouping       IN     nm_au_types_groupings.natg_grouping%TYPE
                         ,pi_grouping_admin_type  IN     nm_au_types_groupings.natg_nat_admin_type%TYPE
                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
@@ -2580,7 +2800,7 @@ AS
   
   --
   -----------------------------------------------------------------------------
-  --
+  --No longer used according to RC so do not include. PV to decide
   PROCEDURE get_paged_groupings(pi_filter_columns   IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                ,pi_filter_operators IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                ,pi_filter_values_1  IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
@@ -2701,5 +2921,2296 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_paged_groupings;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_modules(po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor
+                       ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT hmo_module            module_
+            ,hmo_title             title
+            ,hmo_filename          filename
+            ,hmo_module_type       module_type
+            ,hmo_fastpath_opts     fastpath_opts
+            ,hmo_fastpath_invalid  fastpath_invalid
+            ,hmo_use_gri           use_gri
+            ,hmo_application       product
+            ,hmo_menu              menu
+       FROM hig_modules
+      ORDER BY hmo_module, hmo_module_type; 
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_modules;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_module(pi_module               IN     hig_modules.hmo_module%TYPE
+                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                      ,po_message_cursor          OUT sys_refcursor
+                      ,po_cursor                  OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT hmo_module            module_
+            ,hmo_title             title
+            ,hmo_filename          filename
+            ,hmo_module_type       module_type
+            ,hmo_fastpath_opts     fastpath_opts
+            ,hmo_fastpath_invalid  fastpath_invalid
+            ,hmo_use_gri           use_gri
+            ,hmo_application       product
+            ,hmo_menu              menu
+        FROM hig_modules
+       WHERE hmo_module = pi_module
+      ORDER BY hmo_module, hmo_module_type; 
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_module;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_modules(pi_filter_columns   IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_filter_operators IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_filter_values_1  IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                             ,pi_filter_values_2  IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                             ,pi_order_columns    IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_order_asc_desc   IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                             ,pi_skip_n_rows      IN     PLS_INTEGER
+                             ,pi_pagesize         IN     PLS_INTEGER
+                             ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor      OUT sys_refcursor
+                             ,po_cursor              OUT sys_refcursor)
+    IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 :='SELECT hmo_module            module_
+                                                    ,hmo_title             title
+                                                    ,hmo_filename          filename
+                                                    ,hmo_module_type       module_type
+                                                    ,hmo_fastpath_opts     fastpath_opts
+                                                    ,hmo_fastpath_invalid  fastpath_invalid
+                                                    ,hmo_use_gri           use_gri
+                                                    ,hmo_application       product
+                                                    ,hmo_menu              menu
+                                               FROM hig_modules';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  module_'
+                                                  ||',title'
+                                                  ||',filename'
+                                                  ||',module_type'
+                                                  ||',fastpath_opts'
+                                                  ||',fastpath_invalid'
+                                                  ||',use_gri'
+                                                  ||',product'
+                                                  ||',menu'
+                                                  ||',row_count'
+                                            ||' FROM (SELECT rownum ind'
+                                                        ||' ,a.*'
+                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                    ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'module_'
+                                ,pi_query_col  => 'hmo_module'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'title'
+                                ,pi_query_col  => 'hmo_title'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'filename'
+                                ,pi_query_col  => 'hmo_filename'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'module_type'
+                                ,pi_query_col  => 'hmo_module_type'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'fastpath_opts'
+                                ,pi_query_col  => 'hmo_fastpath_opts'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'fastpath_invalid'
+                                ,pi_query_col  => 'hmo_fastpath_invalid'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'use_gri'
+                                ,pi_query_col  => 'hmo_use_gri'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'product'
+                                ,pi_query_col  => 'hmo_application'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'menu'
+                                ,pi_query_col  => 'hmo_menu'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --      
+    END set_column_data;
+    --    
+  BEGIN
+      /*
+      ||Get the page parameters.
+      */
+      awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                    ,pi_skip_n_rows  => pi_skip_n_rows
+                                    ,pi_pagesize     => pi_pagesize
+                                    ,po_lower_index  => lv_lower_index
+                                    ,po_upper_index  => lv_upper_index
+                                    ,po_statement    => lv_row_restriction);
+      /*
+      ||Get the Order By clause.
+      */
+      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                            ,pi_order_asc_desc => pi_order_asc_desc);
+      /*
+      ||Process the filter.
+      */
+      IF pi_filter_columns.COUNT > 0
+       THEN
+          --
+          set_column_data(po_column_data => lt_column_data);
+          --
+          awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                   ,pi_column_data  => lt_column_data
+                                   ,pi_operators    => pi_filter_operators
+                                   ,pi_values_1     => pi_filter_values_1
+                                   ,pi_values_2     => pi_filter_values_2
+                                   ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,po_where_clause => lv_filter);
+          --
+      END IF;
+      --
+      lv_cursor_sql := lv_cursor_sql
+                       ||CHR(10)||lv_filter
+                       ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'hmo_module, hmo_module_type')||') a)'
+                       ||CHR(10)||lv_row_restriction
+      ;
+      --
+      IF pi_pagesize IS NOT NULL
+       THEN
+          OPEN po_cursor FOR lv_cursor_sql
+          USING lv_lower_index
+               ,lv_upper_index;
+      ELSE
+          OPEN po_cursor FOR lv_cursor_sql
+          USING lv_lower_index;
+      END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_modules;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_module_roles(pi_module        IN      hig_module_roles.hmr_module%TYPE
+                            ,po_message_severity OUT  hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT  sys_refcursor
+                            ,po_cursor           OUT  sys_refcursor)
+    IS
+    --
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT hmr_module   module_
+            ,hmr_role     role_
+            ,hmr_mode     mode_
+        FROM hig_module_roles
+       WHERE hmr_module = pi_module
+     ORDER BY hmr_role; 
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_module_roles;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_module_role(pi_module              IN      hig_module_roles.hmr_module%TYPE
+                           ,pi_role                IN      hig_module_roles.hmr_role%TYPE
+                           ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor          OUT sys_refcursor
+                           ,po_cursor                  OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT hmr_module   module_
+            ,hmr_role     role_
+            ,hmr_mode     mode_
+        FROM hig_module_roles
+       WHERE hmr_module = pi_module
+         AND hmr_role   = pi_role
+    ORDER BY hmr_role; 
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_module_role;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_module_roles(pi_module               IN     hig_module_roles.hmr_module%TYPE
+                                  ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                  ,pi_skip_n_rows          IN     PLS_INTEGER
+                                  ,pi_pagesize             IN     PLS_INTEGER
+                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor          OUT sys_refcursor
+                                  ,po_cursor                  OUT sys_refcursor)
+    IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 :='SELECT hmr_module   module_
+                                                    ,hmr_role     role_
+                                                    ,hmr_mode     mode_
+                                                FROM hig_module_roles
+                                               WHERE hmr_module = :pi_module';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  module_'
+                                                  ||',role_'
+                                                  ||',mode_'
+                                                  ||',row_count'
+                                            ||' FROM (SELECT rownum ind'
+                                                        ||' ,a.*'
+                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                    ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'module_'
+                                ,pi_query_col  => 'hmr_module'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'role_'
+                                ,pi_query_col  => 'hmr_role'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'mode_'
+                                ,pi_query_col  => 'hmr_mode'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+    END set_column_data;
+    --    
+  BEGIN
+      /*
+      ||Get the page parameters.
+      */
+      awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                    ,pi_skip_n_rows  => pi_skip_n_rows
+                                    ,pi_pagesize     => pi_pagesize
+                                    ,po_lower_index  => lv_lower_index
+                                    ,po_upper_index  => lv_upper_index
+                                    ,po_statement    => lv_row_restriction);
+      /*
+      ||Get the Order By clause.
+      */
+      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                            ,pi_order_asc_desc => pi_order_asc_desc);
+      /*
+      ||Process the filter.
+      */
+      IF pi_filter_columns.COUNT > 0
+       THEN
+          --
+          set_column_data(po_column_data => lt_column_data);
+          --
+          awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                   ,pi_column_data  => lt_column_data
+                                   ,pi_operators    => pi_filter_operators
+                                   ,pi_values_1     => pi_filter_values_1
+                                   ,pi_values_2     => pi_filter_values_2
+                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,po_where_clause => lv_filter);
+          --
+      END IF;
+      --
+      lv_cursor_sql := lv_cursor_sql
+                       ||CHR(10)||lv_filter
+                       ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'hmr_role')||') a)'
+                       ||CHR(10)||lv_row_restriction
+      ;
+      --
+      IF pi_pagesize IS NOT NULL
+       THEN
+          OPEN po_cursor FOR lv_cursor_sql
+          USING pi_module
+               ,lv_lower_index
+               ,lv_upper_index;
+      ELSE
+          OPEN po_cursor FOR lv_cursor_sql
+          USING pi_module
+               ,lv_lower_index;
+      END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_module_roles;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_module(pi_module           IN      hig_modules.hmo_module%TYPE
+                         ,pi_title            IN      hig_modules.hmo_title%TYPE
+                         ,pi_filename         IN      hig_modules.hmo_filename%TYPE
+                         ,pi_module_type      IN      hig_modules.hmo_module_type%TYPE
+                         ,pi_fastpath_opts    IN      hig_modules.hmo_fastpath_opts%TYPE
+                         ,pi_fastpath_invalid IN      hig_modules.hmo_fastpath_invalid%TYPE
+                         ,pi_use_gri          IN      hig_modules.hmo_use_gri%TYPE
+                         ,pi_application      IN      hig_modules.hmo_application%TYPE
+                         ,pi_menu             IN      hig_modules.hmo_menu%TYPE
+                         ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor       OUT sys_refcursor)
+    IS
+    --
+    FUNCTION module_type_exists(pi_module_type IN hig_codes.hco_code%TYPE)
+      RETURN VARCHAR2
+    IS
+      lv_exists VARCHAR2(1):= 'N';
+    BEGIN
+      --
+      SELECT 'Y'
+        INTO lv_exists
+        FROM hig_codes 
+       WHERE hco_domain = 'MODULE_TYPE'
+         AND hco_code = pi_module_type;
+      --
+      RETURN lv_exists;
+      --
+    EXCEPTION
+      WHEN no_data_found 
+       THEN
+          RETURN lv_exists;
+    END module_type_exists;
+    --
+  BEGIN
+    --
+    validate_notnull(pi_parameter_desc  => 'Module'
+                    ,pi_parameter_value => pi_module);
+    --
+    validate_notnull(pi_parameter_desc  => 'Title'
+                    ,pi_parameter_value => pi_title);
+    --
+    validate_notnull(pi_parameter_desc  => 'Filename'
+                    ,pi_parameter_value => pi_filename);                    
+    --
+    validate_notnull(pi_parameter_desc  => 'Module Type'
+                    ,pi_parameter_value => pi_module_type);
+    --
+    validate_notnull(pi_parameter_desc  => 'Fsatpath Invalid'
+                    ,pi_parameter_value => pi_fastpath_invalid);
+    --
+    validate_notnull(pi_parameter_desc  => 'Product'
+                    ,pi_parameter_value => pi_application);
+    --
+    validate_notnull(pi_parameter_desc  => 'Menu'
+                    ,pi_parameter_value => pi_menu);                    
+    --
+    IF module_exists(pi_module => pi_module) = 'Y' 
+     THEN   
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 64);     
+    END IF;
+    --
+    IF pi_fastpath_invalid NOT IN ('Y','N') OR pi_use_gri NOT IN ('Y','N')
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 1);
+    END IF;
+    --    
+    IF product_exists(pi_product => pi_application) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29);    
+    END IF;
+    --
+    IF module_type_exists(pi_module_type => pi_module_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29); 
+    END IF;
+    --
+    INSERT 
+      INTO hig_modules 
+           (hmo_module
+           ,hmo_title
+           ,hmo_filename
+           ,hmo_module_type
+           ,hmo_fastpath_opts
+           ,hmo_fastpath_invalid
+           ,hmo_use_gri
+           ,hmo_application
+           ,hmo_menu
+           )
+    VALUES (UPPER(pi_module)
+           ,pi_title
+           ,pi_filename
+           ,pi_module_type
+           ,pi_fastpath_opts
+           ,pi_fastpath_invalid
+           ,pi_use_gri
+           ,pi_application
+           ,UPPER(pi_menu));
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_module;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_module(pi_old_module           IN      hig_modules.hmo_module%TYPE 
+                         ,pi_old_title            IN      hig_modules.hmo_title%TYPE 
+                         ,pi_old_filename         IN      hig_modules.hmo_filename%TYPE 
+                         ,pi_old_module_type      IN      hig_modules.hmo_module_type%TYPE 
+                         ,pi_old_fastpath_opts    IN      hig_modules.hmo_fastpath_opts%TYPE 
+                         ,pi_old_fastpath_invalid IN      hig_modules.hmo_fastpath_invalid%TYPE 
+                         ,pi_old_use_gri          IN      hig_modules.hmo_use_gri%TYPE 
+                         ,pi_old_application      IN      hig_modules.hmo_application%TYPE 
+                         ,pi_old_menu             IN      hig_modules.hmo_menu%TYPE 
+                         ,pi_new_module           IN      hig_modules.hmo_module%TYPE
+                         ,pi_new_title            IN      hig_modules.hmo_title%TYPE
+                         ,pi_new_filename         IN      hig_modules.hmo_filename%TYPE
+                         ,pi_new_module_type      IN      hig_modules.hmo_module_type%TYPE
+                         ,pi_new_fastpath_opts    IN      hig_modules.hmo_fastpath_opts%TYPE
+                         ,pi_new_fastpath_invalid IN      hig_modules.hmo_fastpath_invalid%TYPE
+                         ,pi_new_use_gri          IN      hig_modules.hmo_use_gri%TYPE
+                         ,pi_new_application      IN      hig_modules.hmo_application%TYPE
+                         ,pi_new_menu             IN      hig_modules.hmo_menu%TYPE
+                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor          OUT sys_refcursor)
+    IS
+    --    
+    lr_db_hmo_rec    hig_modules%ROWTYPE;
+    lv_upd           VARCHAR2(1) := 'N'; 
+    --
+    PROCEDURE get_db_rec
+      IS
+    BEGIN
+      --
+      SELECT * 
+        INTO lr_db_hmo_rec
+        FROM hig_modules
+       WHERE hmo_module = UPPER(pi_old_module)
+         FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN no_data_found 
+       THEN
+          --
+          hig.raise_ner(pi_appl               => 'HIG'
+                       ,pi_id                 => 85
+                       ,pi_supplementary_info => 'Module does not exist');
+          --      
+    END get_db_rec;
+    --
+  BEGIN
+    --
+    validate_notnull(pi_parameter_desc  => 'Module'
+                    ,pi_parameter_value => pi_new_module);
+    --
+    validate_notnull(pi_parameter_desc  => 'Title'
+                    ,pi_parameter_value => pi_new_title);
+    --
+    validate_notnull(pi_parameter_desc  => 'Filename'
+                    ,pi_parameter_value => pi_new_filename);                    
+    --
+    validate_notnull(pi_parameter_desc  => 'Module Type'
+                    ,pi_parameter_value => pi_new_module_type);
+    --
+    validate_notnull(pi_parameter_desc  => 'Fsatpath Invalid'
+                    ,pi_parameter_value => pi_new_fastpath_invalid);
+    --
+    validate_notnull(pi_parameter_desc  => 'Product'
+                    ,pi_parameter_value => pi_new_application);
+    --
+    validate_notnull(pi_parameter_desc  => 'Menu'
+                    ,pi_parameter_value => pi_new_menu);                    
+    --
+    IF pi_new_fastpath_invalid NOT IN ('Y','N') OR pi_new_use_gri NOT IN ('Y','N')
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 1);
+    END IF;
+    --    
+    IF  product_exists(pi_product => pi_new_application) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29);    
+    END IF;
+    --    
+    get_db_rec;
+    --
+    /*
+    ||Compare old with DB
+    */
+    IF lr_db_hmo_rec.hmo_module != UPPER(pi_old_module)
+     OR (lr_db_hmo_rec.hmo_module IS NULL AND UPPER(pi_old_module) IS NOT NULL)
+     OR (lr_db_hmo_rec.hmo_module IS NOT NULL AND UPPER(pi_old_module) IS NULL)
+     --
+     OR (lr_db_hmo_rec.hmo_title != pi_old_title)
+     OR (lr_db_hmo_rec.hmo_title IS NULL AND pi_old_title IS NOT NULL)
+     OR (lr_db_hmo_rec.hmo_title IS NOT NULL AND pi_old_title IS NULL)
+     --
+     OR (lr_db_hmo_rec.hmo_filename != pi_old_filename)
+     OR (lr_db_hmo_rec.hmo_filename IS NULL AND pi_old_filename IS NOT NULL)
+     OR (lr_db_hmo_rec.hmo_filename IS NOT NULL AND pi_old_filename IS NULL)
+     --
+     OR (lr_db_hmo_rec.hmo_module_type != pi_old_module_type)
+     OR (lr_db_hmo_rec.hmo_module_type IS NULL AND pi_old_module_type IS NOT NULL)
+     OR (lr_db_hmo_rec.hmo_module_type IS NOT NULL AND pi_old_module_type IS NULL)
+     --
+     OR (lr_db_hmo_rec.hmo_fastpath_opts != pi_old_fastpath_opts)
+     OR (lr_db_hmo_rec.hmo_fastpath_opts IS NULL AND pi_old_fastpath_opts IS NOT NULL)
+     OR (lr_db_hmo_rec.hmo_fastpath_opts IS NOT NULL AND pi_old_fastpath_opts IS NULL)
+     --
+     OR (lr_db_hmo_rec.hmo_fastpath_invalid != pi_old_fastpath_invalid)
+     OR (lr_db_hmo_rec.hmo_fastpath_invalid IS NULL AND pi_old_fastpath_invalid IS NOT NULL)
+     OR (lr_db_hmo_rec.hmo_fastpath_invalid IS NOT NULL AND pi_old_fastpath_invalid IS NULL)
+     --
+     OR (lr_db_hmo_rec.hmo_use_gri != pi_old_use_gri)
+     OR (lr_db_hmo_rec.hmo_use_gri IS NULL AND pi_old_use_gri IS NOT NULL)
+     OR (lr_db_hmo_rec.hmo_use_gri IS NOT NULL AND pi_old_use_gri IS NULL)
+     --
+     OR (lr_db_hmo_rec.hmo_application != pi_old_application)
+     OR (lr_db_hmo_rec.hmo_application IS NULL AND pi_old_application IS NOT NULL)
+     OR (lr_db_hmo_rec.hmo_application IS NOT NULL AND pi_old_application IS NULL)
+     --
+     OR (lr_db_hmo_rec.hmo_menu != pi_old_menu)
+     OR (lr_db_hmo_rec.hmo_menu IS NULL AND pi_old_menu IS NOT NULL)
+     OR (lr_db_hmo_rec.hmo_menu IS NOT NULL AND pi_old_menu IS NULL)
+     --     
+     THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    ELSE
+      /*
+      ||Compare old with New
+      */
+      IF pi_old_module != pi_new_module
+       OR (pi_old_module IS NULL AND pi_new_module IS NOT NULL)
+       OR (pi_old_module IS NOT NULL AND pi_new_module IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_title != pi_new_title
+       OR (pi_old_title IS NULL AND pi_new_title IS NOT NULL)
+       OR (pi_old_title IS NOT NULL AND pi_new_title IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;   
+      --
+      IF pi_old_filename != pi_new_filename
+       OR (pi_old_filename IS NULL AND pi_new_filename IS NOT NULL)
+       OR (pi_old_filename IS NOT NULL AND pi_new_filename IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;   
+      IF pi_old_module_type != pi_new_module_type
+       OR (pi_old_module_type IS NULL AND pi_new_module_type IS NOT NULL)
+       OR (pi_old_module_type IS NOT NULL AND pi_new_module_type IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_fastpath_opts != pi_new_fastpath_opts
+       OR (pi_old_fastpath_opts IS NULL AND pi_new_fastpath_opts IS NOT NULL)
+       OR (pi_old_fastpath_opts IS NOT NULL AND pi_new_fastpath_opts IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;   
+      --
+      IF pi_old_fastpath_invalid != pi_new_fastpath_invalid
+       OR (pi_old_fastpath_invalid IS NULL AND pi_new_fastpath_invalid IS NOT NULL)
+       OR (pi_old_fastpath_invalid IS NOT NULL AND pi_new_fastpath_invalid IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;  
+      --
+      IF pi_old_use_gri != pi_new_use_gri
+       OR (pi_old_use_gri IS NULL AND pi_new_use_gri IS NOT NULL)
+       OR (pi_old_use_gri IS NOT NULL AND pi_new_use_gri IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_application != pi_new_application
+       OR (pi_old_application IS NULL AND pi_new_application IS NOT NULL)
+       OR (pi_old_application IS NOT NULL AND pi_new_application IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;   
+      --
+      IF pi_old_menu != pi_new_menu
+       OR (pi_old_menu IS NULL AND pi_new_menu IS NOT NULL)
+       OR (pi_old_menu IS NOT NULL AND pi_new_menu IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;        
+      --
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      ELSE
+        --
+        UPDATE hig_modules
+           SET  hmo_module            =  UPPER(pi_new_module)
+               ,hmo_title             =  pi_new_title
+               ,hmo_filename          =  pi_new_filename
+               ,hmo_module_type       =  pi_new_module_type
+               ,hmo_fastpath_opts     =  pi_new_fastpath_opts
+               ,hmo_fastpath_invalid  =  pi_new_fastpath_invalid
+               ,hmo_use_gri           =  pi_new_use_gri
+               ,hmo_application       =  pi_new_application
+               ,hmo_menu              =  UPPER(pi_new_menu)
+         WHERE hmo_module = UPPER(pi_old_module);
+        --           
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --
+      END IF; 
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_module;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_module_role(pi_module           IN      hig_module_roles.hmr_module%TYPE
+                              ,pi_role             IN      hig_module_roles.hmr_role%TYPE
+                              ,pi_mode             IN      hig_module_roles.hmr_mode%TYPE
+                              ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor       OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    validate_notnull(pi_parameter_desc  => 'Module'
+                    ,pi_parameter_value => pi_module);
+    --
+    validate_notnull(pi_parameter_desc  => 'Role'
+                    ,pi_parameter_value => pi_role);
+    --
+    validate_notnull(pi_parameter_desc  => 'Mode'
+                    ,pi_parameter_value => pi_mode);                                       
+    --
+    IF module_role_exists(pi_module => pi_module
+                         ,pi_role   => pi_role) = 'Y' 
+     THEN   
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 64);     
+    END IF;    
+    --
+    IF module_exists(pi_module => pi_module) <> 'Y' 
+     THEN   
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29);     
+    END IF;
+    --
+    IF role_exists(pi_role => pi_role) <> 'Y' 
+     THEN   
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29);     
+    END IF;  
+    -- 
+    INSERT 
+      INTO hig_module_roles 
+           (hmr_module
+           ,hmr_role
+           ,hmr_mode
+           )
+    VALUES (UPPER(pi_module)
+           ,UPPER(pi_role)
+           ,UPPER(pi_mode));
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_module_role;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_module_role(pi_old_module           IN     hig_module_roles.hmr_module%TYPE 
+                              ,pi_old_role             IN     hig_module_roles.hmr_role%TYPE 
+                              ,pi_old_mode             IN     hig_module_roles.hmr_mode%TYPE 
+                              ,pi_new_module           IN     hig_module_roles.hmr_module%TYPE 
+                              ,pi_new_role             IN     hig_module_roles.hmr_role%TYPE 
+                              ,pi_new_mode             IN     hig_module_roles.hmr_mode%TYPE 
+                              ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor          OUT sys_refcursor)
+    IS
+    --    
+    lr_db_hmr_rec    hig_module_roles%ROWTYPE;
+    lv_upd           VARCHAR2(1) := 'N'; 
+    --
+    PROCEDURE get_db_rec
+      IS
+    BEGIN
+      --
+      SELECT * 
+        INTO lr_db_hmr_rec
+        FROM hig_module_roles
+       WHERE hmr_module = pi_old_module
+         AND hmr_role   = pi_old_role
+         FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN no_data_found 
+       THEN
+          --
+          hig.raise_ner(pi_appl               => 'HIG'
+                       ,pi_id                 => 85
+                       ,pi_supplementary_info => 'Module Role does not exist');
+          --      
+    END get_db_rec;
+    --
+  BEGIN
+    --
+    validate_notnull(pi_parameter_desc  => 'Module'
+                    ,pi_parameter_value => pi_new_module);
+    --
+    validate_notnull(pi_parameter_desc  => 'Role'
+                    ,pi_parameter_value => pi_new_role);
+    --
+    validate_notnull(pi_parameter_desc  => 'Mode'
+                    ,pi_parameter_value => pi_old_mode);                       
+    --
+    IF module_exists(pi_module => pi_new_module) <> 'Y' 
+     THEN   
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29);     
+    END IF;
+    --
+    IF role_exists(pi_role => pi_new_role) <> 'Y' 
+     THEN   
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29);     
+    END IF;  
+    --
+    get_db_rec;
+    --
+    /*
+    ||Compare old with DB
+    */
+    IF lr_db_hmr_rec.hmr_module != pi_old_module
+     OR (lr_db_hmr_rec.hmr_module IS NULL AND pi_old_module IS NOT NULL)
+     OR (lr_db_hmr_rec.hmr_module IS NOT NULL AND pi_old_module IS NULL)
+     --
+     OR (lr_db_hmr_rec.hmr_role != pi_old_role)
+     OR (lr_db_hmr_rec.hmr_role IS NULL AND pi_old_role IS NOT NULL)
+     OR (lr_db_hmr_rec.hmr_role IS NOT NULL AND pi_old_role IS NULL)
+     --
+     OR (lr_db_hmr_rec.hmr_mode != pi_old_mode)
+     OR (lr_db_hmr_rec.hmr_mode IS NULL AND pi_old_mode IS NOT NULL)
+     OR (lr_db_hmr_rec.hmr_mode IS NOT NULL AND pi_old_mode IS NULL)
+     --     
+     THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    ELSE
+      /*
+      ||Compare old with New
+      */
+      IF pi_old_module != pi_new_module
+       OR (pi_old_module IS NULL AND pi_new_module IS NOT NULL)
+       OR (pi_old_module IS NOT NULL AND pi_new_module IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_role != pi_new_role
+       OR (pi_old_role IS NULL AND pi_new_role IS NOT NULL)
+       OR (pi_old_role IS NOT NULL AND pi_new_role IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;   
+      --
+      IF pi_old_mode != pi_new_mode
+       OR (pi_old_mode IS NULL AND pi_new_mode IS NOT NULL)
+       OR (pi_old_mode IS NOT NULL AND pi_new_mode IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;    
+      --
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      ELSE
+        --
+        UPDATE hig_module_roles
+           SET  hmr_module = UPPER(pi_new_module)
+               ,hmr_role   = UPPER(pi_new_role)
+               ,hmr_mode   = UPPER(pi_new_mode)
+         WHERE hmr_module = lr_db_hmr_rec.hmr_module
+           AND hmr_role   = lr_db_hmr_rec.hmr_role;
+        --           
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --
+      END IF; 
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_module_role;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_module_role(pi_module            IN      hig_module_roles.hmr_module%TYPE
+                              ,pi_role              IN      hig_module_roles.hmr_role%TYPE 
+                              ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor       OUT  sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    IF module_role_exists(pi_module => pi_module
+                         ,pi_role   => pi_role) <> 'Y' 
+     THEN 
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 26);
+    END IF;
+    --    
+    DELETE 
+      FROM hig_module_roles
+     WHERE hmr_module = pi_module
+       AND hmr_role   = pi_role;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_module_role;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_roles(po_message_severity OUT  hig_codes.hco_code%TYPE
+                     ,po_message_cursor   OUT  sys_refcursor
+                     ,po_cursor           OUT  sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+     SELECT hro_role
+           ,hro_product
+           ,hro_descr
+       FROM hig_roles
+     ORDER BY hro_product, hro_role; 
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_roles;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_role(pi_role                IN      hig_roles.hro_role%TYPE
+                    ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor          OUT sys_refcursor
+                    ,po_cursor                  OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+     SELECT hro_role
+           ,hro_product
+           ,hro_descr
+       FROM hig_roles
+      WHERE hro_role = pi_role;  
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_role;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_roles(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                           ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                           ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                           ,pi_skip_n_rows          IN     PLS_INTEGER
+                           ,pi_pagesize             IN     PLS_INTEGER
+                           ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor          OUT sys_refcursor
+                           ,po_cursor                  OUT sys_refcursor)
+    IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 :='SELECT hro_role    role_
+                                                    ,hro_product product
+                                                    ,hro_descr   description_
+                                                FROM hig_roles';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  role_'
+                                                  ||',product'
+                                                  ||',description_'
+                                                  ||',row_count'
+                                            ||' FROM (SELECT rownum ind'
+                                                        ||' ,a.*'
+                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                    ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'role_'
+                                ,pi_query_col  => 'hro_role'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'product'
+                                ,pi_query_col  => 'hro_product'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'description_'
+                                ,pi_query_col  => 'hro_descr'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+    END set_column_data;
+    --    
+  BEGIN
+      /*
+      ||Get the page parameters.
+      */
+      awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                    ,pi_skip_n_rows  => pi_skip_n_rows
+                                    ,pi_pagesize     => pi_pagesize
+                                    ,po_lower_index  => lv_lower_index
+                                    ,po_upper_index  => lv_upper_index
+                                    ,po_statement    => lv_row_restriction);
+      /*
+      ||Get the Order By clause.
+      */
+      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                            ,pi_order_asc_desc => pi_order_asc_desc);
+      /*
+      ||Process the filter.
+      */
+      IF pi_filter_columns.COUNT > 0
+       THEN
+          --
+          set_column_data(po_column_data => lt_column_data);
+          --
+          awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                   ,pi_column_data  => lt_column_data
+                                   ,pi_operators    => pi_filter_operators
+                                   ,pi_values_1     => pi_filter_values_1
+                                   ,pi_values_2     => pi_filter_values_2
+                                   ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,po_where_clause => lv_filter);
+          --
+      END IF;
+      --
+      lv_cursor_sql := lv_cursor_sql
+                       ||CHR(10)||lv_filter
+                       ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'hro_role, hro_product')||') a)'
+                       ||CHR(10)||lv_row_restriction
+      ;
+      --
+      IF pi_pagesize IS NOT NULL
+       THEN
+          OPEN po_cursor FOR lv_cursor_sql
+          USING lv_lower_index
+               ,lv_upper_index;
+      ELSE
+          OPEN po_cursor FOR lv_cursor_sql
+          USING lv_lower_index;
+      END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_roles;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_module_roles(pi_role          IN      hig_module_roles.hmr_role%TYPE
+                            ,po_message_severity OUT  hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT  sys_refcursor
+                            ,po_cursor           OUT  sys_refcursor)
+    IS
+    --
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT hmr_module module_
+            ,hmr_role   role_
+            ,hmr_mode   mode_
+       FROM hig_module_roles
+      WHERE hig_module_roles.hmr_role = pi_role
+      ORDER BY hmr_module;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_module_roles;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  /*PROCEDURE get_module_role(pi_module             IN      hig_module_roles.hmr_module%TYPE
+                           ,pi_role               IN      hig_module_roles.hmr_role%TYPE
+                           ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor          OUT sys_refcursor
+                           ,po_cursor                  OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT hmr_module module_
+            ,hmr_role   role_
+            ,hmr_mode   mode_
+       FROM hig_module_roles
+      WHERE hmr_role   = pi_role
+        AND hmr_module = pi_module
+      ORDER BY hmr_module; 
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_module_role;*/
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_module_roles(pi_role                 IN     hig_module_roles.hmr_role%TYPE
+                                  ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                  ,pi_skip_n_rows          IN     PLS_INTEGER
+                                  ,pi_pagesize             IN     PLS_INTEGER
+                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor          OUT sys_refcursor
+                                  ,po_cursor                  OUT sys_refcursor)
+    IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 :='SELECT hmr_module module_
+                                                    ,hmr_role   role_
+                                                    ,hmr_mode   mode_
+                                               FROM hig_module_roles
+                                              WHERE hmr_role   = :pi_role
+                                              ORDER BY hmr_module';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  module_'
+                                                  ||',role_'
+                                                  ||',mode_'
+                                                  ||',row_count'
+                                            ||' FROM (SELECT rownum ind'
+                                                        ||' ,a.*'
+                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                    ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'module_'
+                                ,pi_query_col  => 'hmr_module'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'role_'
+                                ,pi_query_col  => 'hmr_role'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'mode_'
+                                ,pi_query_col  => 'hmr_mode'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+    END set_column_data;
+    --    
+  BEGIN
+      /*
+      ||Get the page parameters.
+      */
+      awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                    ,pi_skip_n_rows  => pi_skip_n_rows
+                                    ,pi_pagesize     => pi_pagesize
+                                    ,po_lower_index  => lv_lower_index
+                                    ,po_upper_index  => lv_upper_index
+                                    ,po_statement    => lv_row_restriction);
+      /*
+      ||Get the Order By clause.
+      */
+      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                            ,pi_order_asc_desc => pi_order_asc_desc);
+      /*
+      ||Process the filter.
+      */
+      IF pi_filter_columns.COUNT > 0
+       THEN
+          --
+          set_column_data(po_column_data => lt_column_data);
+          --
+          awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                   ,pi_column_data  => lt_column_data
+                                   ,pi_operators    => pi_filter_operators
+                                   ,pi_values_1     => pi_filter_values_1
+                                   ,pi_values_2     => pi_filter_values_2
+                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,po_where_clause => lv_filter);
+          --
+      END IF;
+      --
+      lv_cursor_sql := lv_cursor_sql
+                       ||CHR(10)||lv_filter
+                       ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'hmr_module')||') a)'
+                       ||CHR(10)||lv_row_restriction
+      ;
+      --
+      IF pi_pagesize IS NOT NULL
+       THEN
+          OPEN po_cursor FOR lv_cursor_sql
+          USING pi_role
+               ,lv_lower_index
+               ,lv_upper_index;
+      ELSE
+          OPEN po_cursor FOR lv_cursor_sql
+          USING pi_role
+               ,lv_lower_index;
+      END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_module_roles;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_sys_privs_roles(pi_role          IN      hig_module_roles.hmr_role%TYPE
+                               ,po_message_severity OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT  sys_refcursor
+                               ,po_cursor           OUT  sys_refcursor)
+    IS
+    --
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+     SELECT role           role_
+           ,privilege      privilege
+       FROM role_sys_privs 
+      WHERE role = pi_role
+      ORDER BY role;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_sys_privs_roles;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_add_sys_privs(po_message_severity OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT  sys_refcursor
+                             ,po_cursor           OUT  sys_refcursor)
+    IS
+    --
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+     SELECT distinct privilege      privilege
+       FROM dba_sys_privs
+      ORDER BY privilege;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_add_sys_privs;  
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_sys_privs_role(pi_sys_priv           IN      role_sys_privs.role%TYPE
+                              ,pi_role               IN      hig_module_roles.hmr_role%TYPE
+                              ,po_message_severity       OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor         OUT sys_refcursor
+                              ,po_cursor                 OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+     SELECT role           role_
+           ,privilege      privilege
+       FROM role_sys_privs 
+      WHERE role = pi_role
+        AND privilege = pi_sys_priv; 
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_sys_privs_role;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_sys_privs_roles(pi_role                 IN     hig_module_roles.hmr_role%TYPE
+                                     ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                     ,pi_skip_n_rows          IN     PLS_INTEGER
+                                     ,pi_pagesize             IN     PLS_INTEGER
+                                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor          OUT sys_refcursor
+                                     ,po_cursor                  OUT sys_refcursor)
+    IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 :='SELECT role       role_
+                                                    ,privilege  privilege
+                                                FROM role_sys_privs 
+                                               WHERE role = :pi_role';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  role_'
+                                                  ||',privilege'
+                                                  ||',row_count'
+                                            ||' FROM (SELECT rownum ind'
+                                                        ||' ,a.*'
+                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                    ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'role_'
+                                ,pi_query_col  => 'role'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'privilege'
+                                ,pi_query_col  => 'privilege'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+    END set_column_data;
+    --    
+  BEGIN
+      /*
+      ||Get the page parameters.
+      */
+      awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                    ,pi_skip_n_rows  => pi_skip_n_rows
+                                    ,pi_pagesize     => pi_pagesize
+                                    ,po_lower_index  => lv_lower_index
+                                    ,po_upper_index  => lv_upper_index
+                                    ,po_statement    => lv_row_restriction);
+      /*
+      ||Get the Order By clause.
+      */
+      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                            ,pi_order_asc_desc => pi_order_asc_desc);
+      /*
+      ||Process the filter.
+      */
+      IF pi_filter_columns.COUNT > 0
+       THEN
+          --
+          set_column_data(po_column_data => lt_column_data);
+          --
+          awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                   ,pi_column_data  => lt_column_data
+                                   ,pi_operators    => pi_filter_operators
+                                   ,pi_values_1     => pi_filter_values_1
+                                   ,pi_values_2     => pi_filter_values_2
+                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,po_where_clause => lv_filter);
+          --
+      END IF;
+      --
+      lv_cursor_sql := lv_cursor_sql
+                       ||CHR(10)||lv_filter
+                       ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'role')||') a)'
+                       ||CHR(10)||lv_row_restriction
+      ;
+      --
+      IF pi_pagesize IS NOT NULL
+       THEN
+          OPEN po_cursor FOR lv_cursor_sql
+          USING pi_role
+               ,lv_lower_index
+               ,lv_upper_index;
+      ELSE
+          OPEN po_cursor FOR lv_cursor_sql
+          USING pi_role
+               ,lv_lower_index;
+      END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_sys_privs_roles;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_obj_privs_roles(pi_role          IN      hig_module_roles.hmr_role%TYPE
+                               ,po_message_severity OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT  sys_refcursor
+                               ,po_cursor           OUT  sys_refcursor)
+    IS
+    --
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT grantee     grantee
+            ,owner       owner_
+            ,table_name  table_name
+            ,grantor     grantor
+            ,privilege   privilege_
+            ,grantable   grantable
+            ,hierarchy   hierarchy_
+       FROM dba_tab_privs
+      WHERE grantee = pi_role
+      ORDER BY  table_name;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_obj_privs_roles;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_obj_privs_role(pi_role                IN      dba_tab_privs.grantee%TYPE
+                              ,pi_privilege           IN      dba_tab_privs.privilege%TYPE
+                              ,pi_table_name          IN      dba_tab_privs.table_name%TYPE
+                              ,pi_owner               IN      dba_tab_privs.owner%TYPE
+                              ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor          OUT sys_refcursor
+                              ,po_cursor                  OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT grantee     grantee
+            ,owner       owner_
+            ,table_name  table_name
+            ,grantor     grantor
+            ,privilege   privilege_
+            ,grantable   grantable
+            ,hierarchy   hierarchy_
+       FROM dba_tab_privs
+      WHERE grantee = pi_role
+        AND privilege = pi_privilege
+        AND table_name = pi_table_name
+        AND owner = pi_owner
+      ORDER BY table_name; 
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_obj_privs_role;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_obj_privs_roles(pi_role                 IN     hig_module_roles.hmr_role%TYPE
+                                     ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                     ,pi_skip_n_rows          IN     PLS_INTEGER
+                                     ,pi_pagesize             IN     PLS_INTEGER
+                                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor          OUT sys_refcursor
+                                     ,po_cursor                  OUT sys_refcursor)
+    IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 :='SELECT grantee     grantee
+                                                    ,owner       owner_
+                                                    ,table_name  table_name
+                                                    ,grantor     grantor
+                                                    ,privilege   privilege_
+                                                    ,grantable   grantable
+                                                    ,hierarchy   hierarchy_
+                                              FROM dba_tab_privs
+                                             WHERE grantee = :pi_role';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  grantee'
+                                                  ||',owner_'
+                                                  ||',table_name'
+                                                  ||',grantor'
+                                                  ||',grantable'
+                                                  ||',hierarchy_'
+                                                  ||',row_count'
+                                            ||' FROM (SELECT rownum ind'
+                                                        ||' ,a.*'
+                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                    ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'grantee'
+                                ,pi_query_col  => 'grantee'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'owner'
+                                ,pi_query_col  => 'owner'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'table_name'
+                                ,pi_query_col  => 'table_name'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'grantor'
+                                ,pi_query_col  => 'grantor'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'privilege'
+                                ,pi_query_col  => 'privilege'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'grantable'
+                                ,pi_query_col  => 'grantable'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'hierarchy'
+                                ,pi_query_col  => 'hierarchy_'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+    END set_column_data;
+    --    
+  BEGIN
+      /*
+      ||Get the page parameters.
+      */
+      awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                    ,pi_skip_n_rows  => pi_skip_n_rows
+                                    ,pi_pagesize     => pi_pagesize
+                                    ,po_lower_index  => lv_lower_index
+                                    ,po_upper_index  => lv_upper_index
+                                    ,po_statement    => lv_row_restriction);
+      /*
+      ||Get the Order By clause.
+      */
+      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                            ,pi_order_asc_desc => pi_order_asc_desc);
+      /*
+      ||Process the filter.
+      */
+      IF pi_filter_columns.COUNT > 0
+       THEN
+          --
+          set_column_data(po_column_data => lt_column_data);
+          --
+          awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                   ,pi_column_data  => lt_column_data
+                                   ,pi_operators    => pi_filter_operators
+                                   ,pi_values_1     => pi_filter_values_1
+                                   ,pi_values_2     => pi_filter_values_2
+                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,po_where_clause => lv_filter);
+          --
+      END IF;
+      --
+      lv_cursor_sql := lv_cursor_sql
+                       ||CHR(10)||lv_filter
+                       ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'table_name')||') a)'
+                       ||CHR(10)||lv_row_restriction
+      ;
+      --
+      IF pi_pagesize IS NOT NULL
+       THEN
+          OPEN po_cursor FOR lv_cursor_sql
+          USING pi_role
+               ,lv_lower_index
+               ,lv_upper_index;
+      ELSE
+          OPEN po_cursor FOR lv_cursor_sql
+          USING pi_role
+               ,lv_lower_index;
+      END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_obj_privs_roles;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE gen_role(pi_role                   IN      hig_roles.hro_role%TYPE)
+    IS
+    --
+    ddl_error  exception;
+    PRAGMA     exception_init( ddl_error, -20001 );   
+    sql_string nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    nm_Debug.debug_on;
+   nm_Debug.debug('pb1');
+    sql_string := 'CREATE ROLE '||pi_role;
+     nm_Debug.debug(sql_string);
+    hig.execute_ddl(sql_string);   
+    --
+  EXCEPTION    
+    WHEN ddl_error
+       THEN
+       nm_Debug.debug('whnen ddl error');
+       nm_Debug.debug_off;
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 83);
+  END gen_role; 
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE drop_role(pi_role  IN   hig_roles.hro_role%TYPE)
+    IS
+    --
+    ddl_error  exception;
+    PRAGMA     exception_init( ddl_error, -20001 );   
+    sql_string nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    sql_string := 'DROP ROLE '||pi_role;
+    hig.execute_ddl(sql_string);   
+    --
+  EXCEPTION    
+    WHEN ddl_error
+       THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 83);
+  END drop_role; 
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_role(pi_product         IN      hig_roles.hro_product%TYPE
+                       ,pi_role            IN      hig_roles.hro_role%TYPE
+                       ,pi_description     IN      hig_roles.hro_descr%TYPE
+                       ,pi_run_checks      IN      VARCHAR2 DEFAULT 'Y'
+                       ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor       OUT sys_refcursor)
+    IS
+    --
+    lr_hur_rec hig_user_roles%ROWTYPE;
+    lt_messages awlrs_message_tab := awlrs_message_tab();
+    --
+  BEGIN
+    --
+    validate_notnull(pi_parameter_desc  => 'Product'
+                    ,pi_parameter_value => pi_product);
+    --
+    validate_notnull(pi_parameter_desc  => 'Role'
+                    ,pi_parameter_value => pi_role);
+    --
+    validate_notnull(pi_parameter_desc  => 'Description'
+                    ,pi_parameter_value => pi_description);                                     
+    --    
+    IF  product_exists(pi_product => pi_product) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29);    
+    END IF;
+    --
+    IF role_exists(pi_role => pi_role) = 'Y' 
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29);    
+    END IF;
+    --
+    /*
+    ||Check the user has priviledges
+    */
+    --
+    IF NOT check_privs(pi_priv => 'CREATE ROLE') 
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 86);    
+    END IF;
+    --
+    /*
+    ||insert the new role into hig_user_roles, if not highways owner then error. pb this should be warning. not error TO DO.
+    */
+    IF pi_run_checks = 'Y' 
+     THEN
+       IF SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME') <> SYS_CONTEXT('NM3CORE','APPLICATION_OWNER')
+        THEN
+           awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'HIG'
+                                            ,pi_ner_id      => 116
+                                            ,pi_category    => awlrs_util.c_msg_cat_ask_continue
+                                            ,po_message_tab => lt_messages);
+           --
+       END IF;
+    END IF;
+    --
+    IF lt_messages.COUNT > 0
+     THEN
+        --
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        --
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+        --
+    ELSE
+       /*
+       ||create the role object, insert into hig role and hig user roles.
+       */
+       gen_role(pi_role => pi_role);
+       --
+       /*
+       ||insert into roles.
+       */
+       INSERT 
+         INTO hig_roles
+              (hro_product
+              ,hro_role
+              ,hro_descr
+              )
+       VALUES (UPPER(pi_product)
+              ,UPPER(pi_role)
+              ,pi_description);     
+       --
+	     lr_hur_rec.hur_username   := Sys_Context('NM3CORE','APPLICATION_OWNER');
+       lr_hur_rec.hur_role       := pi_role;
+       lr_hur_rec.hur_start_date := TRUNC(SYSDATE);
+       --
+       hig.ins_hur(pi_hur_rec => lr_hur_rec);
+       --
+       awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                            ,po_cursor           => po_message_cursor);
+       --
+    END IF;
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_role;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_role(pi_role              IN     hig_roles.hro_role%TYPE 
+                       ,pi_old_product       IN     hig_roles.hro_product%TYPE 
+                       ,pi_old_descr         IN     hig_roles.hro_descr%TYPE 
+                       ,pi_new_product       IN     hig_roles.hro_product%TYPE 
+                       ,pi_new_descr         IN     hig_roles.hro_descr%TYPE 
+                       ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor       OUT sys_refcursor)
+    IS
+    --    
+    lr_db_hro_rec    hig_roles%ROWTYPE;
+    lv_upd           VARCHAR2(1) := 'N'; 
+    --
+    PROCEDURE get_db_rec
+      IS
+    BEGIN
+      --
+      SELECT * 
+        INTO lr_db_hro_rec
+        FROM hig_roles
+       WHERE hro_role = pi_role
+         FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN no_data_found 
+       THEN
+          --
+          hig.raise_ner(pi_appl               => 'HIG'
+                       ,pi_id                 => 85
+                       ,pi_supplementary_info => 'Role does not exist');
+          --      
+    END get_db_rec;
+    --
+  BEGIN
+    --
+    validate_notnull(pi_parameter_desc  => 'Product'
+                    ,pi_parameter_value => pi_new_product);
+    --
+    validate_notnull(pi_parameter_desc  => 'Description'
+                    ,pi_parameter_value => pi_new_descr);                      
+    --
+    IF  product_exists(pi_product => pi_new_product) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29);    
+    END IF;    
+    --
+    get_db_rec;
+    --
+    /*
+    ||Compare old with DB
+    */
+    IF lr_db_hro_rec.hro_product != pi_old_product
+     OR (lr_db_hro_rec.hro_product IS NULL AND pi_old_product IS NOT NULL)
+     OR (lr_db_hro_rec.hro_product IS NOT NULL AND pi_old_product IS NULL)
+     --
+     OR (lr_db_hro_rec.hro_descr != pi_old_descr)
+     OR (lr_db_hro_rec.hro_descr IS NULL AND pi_old_descr IS NOT NULL)
+     OR (lr_db_hro_rec.hro_descr IS NOT NULL AND pi_old_descr IS NULL)
+     --    
+     THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    ELSE
+      /*
+      ||Compare old with New
+      */
+      IF pi_old_product != pi_new_product
+       OR (pi_old_product IS NULL AND pi_new_product IS NOT NULL)
+       OR (pi_old_product IS NOT NULL AND pi_new_product IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_descr != pi_new_descr
+       OR (pi_old_descr IS NULL AND pi_new_descr IS NOT NULL)
+       OR (pi_old_descr IS NOT NULL AND pi_new_descr IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;     
+      --
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      ELSE
+        --
+        UPDATE hig_roles
+           SET  hro_product = UPPER(pi_new_product)
+               ,hro_descr   = pi_new_descr
+         WHERE hro_role = lr_db_hro_rec.hro_role;
+        --           
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --
+      END IF; 
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_role;  
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_role(pi_role              IN      hig_roles.hro_role%TYPE
+                       ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                       ,po_message_cursor       OUT  sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    IF role_exists(pi_role => pi_role) <> 'Y' 
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29);    
+    END IF;
+    --
+    IF NOT can_delete_role (pi_role => pi_role)
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 86);    
+    END IF;
+    --
+    drop_role(pi_role => pi_role);
+    --
+    DELETE
+      FROM hig_module_roles 
+     WHERE hmr_role = pi_role;
+    --
+    DELETE 
+      FROM hig_user_roles
+     WHERE hur_role = pi_role;
+    --
+    DELETE 
+      FROM hig_roles
+     WHERE hro_role = pi_role;  
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_role;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE grant_sys_privs_to_role (pi_role IN VARCHAR2, 
+                                     pi_priv IN VARCHAR2) 
+  IS
+    --
+    ddl_error EXCEPTION;
+    PRAGMA    exception_init( ddl_error, -20001 );
+    ddl_errm  VARCHAR2(70);
+    --
+    proc_input VARCHAR2(200) := '';
+    return_val INTEGER;
+    --
+    CURSOR c1 IS
+      SELECT grantee 
+        FROM dba_role_privs
+       WHERE granted_role = pi_role;
+    --
+  BEGIN
+    --
+    proc_input := 'GRANT '||pi_priv||' TO '||pi_role;
+    hig.execute_ddl(proc_input);
+    --
+    proc_input := '';
+    --
+    FOR c1_rec in c1 LOOP
+       proc_input := 'GRANT '||pi_priv||' TO '||c1_rec.grantee;
+       hig.execute_ddl(proc_input);
+    END LOOP;
+    --
+  END grant_sys_privs_to_role;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE revoke_sys_privs_from_role(pi_role IN VARCHAR2, 
+                                       pi_priv IN VARCHAR2 ) IS
+  --
+    ddl_error EXCEPTION;
+    pragma    exception_init( ddl_error, -20001 );
+    ddl_errm  VARCHAR2(70);
+    --
+    proc_input VARCHAR2(200) := '';
+    return_val INTEGER;
+    /*
+    || On revoking the privilege from the role, all grantees of that role
+    || who also have this privilege (directly) should have the 
+    || privilege revoked , unless that privilege has been granted through
+    || another role.
+    ||
+    || Hence the user must not be assigned privileges directly since these will
+    || be revoked if the same privileges are assigned to a role and then revoked.
+    ||
+    */
+    CURSOR c1 IS
+      SELECT u.grantee
+        FROM dba_role_privs u, dba_sys_privs rp, dba_sys_privs up  -- give all grantees of the privilege
+       WHERE u.granted_role = pi_role                              -- who have the privilege directly and
+         AND up.grantee = u.grantee                                -- through the role
+         AND up.privilege = pi_priv
+         AND rp.privilege = pi_priv
+         AND rp.grantee   = u.grantee
+         AND rp.privilege NOT IN (                                 -- where these privilieges are not in
+           SELECT s.privilege                                      -- those privileges assigned to the grantee
+             FROM dba_role_privs r, 
+                  dba_sys_privs s, 
+                  dba_role_privs p  
+            WHERE s.privilege = pi_priv
+              AND s.grantee = r.granted_role
+              AND R.grantee = p.grantee
+              AND r.granted_role != pi_role                        -- through a role other than the current
+              AND p.granted_role = r.granted_role
+              AND p.grantee = u.grantee
+           );
+  BEGIN
+    --
+    proc_input := 'REVOKE '||pi_priv||' FROM '||pi_role;
+    hig.execute_ddl(proc_input);
+    --
+    proc_input := '';
+    --
+    FOR c1_rec IN c1 LOOP
+       proc_input := 'REVOKE '||pi_priv||' FROM '||c1_rec.grantee;
+       hig.execute_ddl(proc_input);
+    END LOOP;
+    --
+  END;  
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_sys_priv_role(pi_role              IN      hig_roles.hro_role%TYPE
+                                ,pi_priv              IN      dba_sys_privs.privilege%TYPE
+                                ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor       OUT  sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    IF role_exists(pi_role => pi_role) <> 'Y' 
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29);    
+    END IF;
+    --
+    grant_sys_privs_to_role (pi_role => pi_role
+                            ,pi_priv => pi_priv);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_sys_priv_role;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_sys_priv_role(pi_role              IN      hig_roles.hro_role%TYPE
+                                ,pi_priv              IN      dba_sys_privs.privilege%TYPE
+                                ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor       OUT  sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    IF role_exists(pi_role => pi_role) <> 'Y' 
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29);    
+    END IF;
+    --
+    revoke_sys_privs_from_role(pi_role => pi_role 
+                              ,pi_priv => pi_priv);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_sys_priv_role;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_launchpad_detail(pi_parent               IN      hig_standard_favourites.hstf_parent%TYPE
+                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT hstf_child module_name 
+          ,hstf_descr module_desc
+          ,hstf_order module_order
+      FROM hig_standard_favourites
+     WHERE hstf_parent = pi_parent
+       AND hstf_type = 'M'
+       AND nm3user.user_can_run_module_vc(hstf_child) = 'Y'
+     ORDER BY  hstf_order; 
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_launchpad_detail;  
   --
 END awlrs_metasec_api;
