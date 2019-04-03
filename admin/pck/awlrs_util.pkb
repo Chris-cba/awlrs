@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.24   Mar 06 2019 13:58:16   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.25   Apr 03 2019 12:27:10   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Mar 06 2019 13:58:16  $
-  --       Date fetched Out : $Modtime:   Mar 06 2019 13:49:30  $
-  --       Version          : $Revision:   1.24  $
+  --       Date into PVCS   : $Date:   Apr 03 2019 12:27:10  $
+  --       Date fetched Out : $Modtime:   Apr 03 2019 12:26:02  $
+  --       Version          : $Revision:   1.25  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.24  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.25  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -1036,12 +1036,12 @@ AS
         WHEN pi_operators(i) = c_has_value
          THEN
             --
-            po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col||' IS NULL';
+            po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col||' IS NOT NULL';
             --
         WHEN pi_operators(i) = c_does_not_have_value
          THEN
             --
-            po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col||' IS NOT NULL';
+            po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col||' IS NULL';
             --
         ELSE
             --Invalid filter function
