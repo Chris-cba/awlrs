@@ -7,11 +7,11 @@
 --
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1170_ddl_upg.sql-arc   1.0   Apr 08 2019 13:44:44   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1170_ddl_upg.sql-arc   1.1   Apr 08 2019 15:09:34   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrs1010_awlrs1170_ddl_upg.sql  $
---       Date into PVCS   : $Date:   Apr 08 2019 13:44:44  $
---       Date fetched Out : $Modtime:   Apr 08 2019 11:46:18  $
---       Version          : $Revision:   1.0  $
+--       Date into PVCS   : $Date:   Apr 08 2019 15:09:34  $
+--       Date fetched Out : $Modtime:   Apr 08 2019 15:02:42  $
+--       Version          : $Revision:   1.1  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2019 Bentley Systems Incorporated. All rights reserved.
@@ -197,6 +197,132 @@ DECLARE
   PRAGMA exception_init( obj_exists, -2275);
 BEGIN
   EXECUTE IMMEDIATE 'ALTER TABLE nm_theme_offset_views ADD(CONSTRAINT ntoc_nth_fk FOREIGN KEY (ntov_nth_theme_id) REFERENCES nm_themes_all(nth_theme_id) ON DELETE CASCADE)';
+EXCEPTION
+  WHEN obj_exists THEN
+    NULL;
+END;
+/
+
+------------------------------------------------------------------
+SET TERM ON
+PROMPT AWLRS External Links
+SET TERM OFF
+DECLARE
+  --
+  already_exists  EXCEPTION;
+  PRAGMA exception_init(already_exists,-955);
+  --
+BEGIN
+  EXECUTE IMMEDIATE('CREATE SEQUENCE ael_id_seq');
+EXCEPTION
+ WHEN already_exists
+  THEN
+     NULL;
+ WHEN others
+  THEN
+    RAISE;
+END;
+/
+
+DECLARE
+  --
+  already_exists  EXCEPTION;
+  PRAGMA exception_init(already_exists,-955);
+  --
+BEGIN
+  EXECUTE IMMEDIATE('CREATE SEQUENCE aelp_id_seq');
+EXCEPTION
+ WHEN already_exists
+  THEN
+     NULL;
+ WHEN others
+  THEN
+    RAISE;
+END;
+/
+
+DECLARE
+  obj_exists EXCEPTION;
+  PRAGMA exception_init(obj_exists, -955);
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE TABLE awlrs_external_links'
+                  ||'(ael_id            NUMBER(38)     NOT NULL'
+                  ||',ael_name          VARCHAR2(100)  NOT NULL'
+                  ||',ael_url_template  VARCHAR2(1000) NOT NULL)';
+EXCEPTION
+  WHEN obj_exists THEN
+    NULL;
+END;
+/
+
+DECLARE
+  obj_exists EXCEPTION;
+  PRAGMA exception_init( obj_exists, -2260);
+BEGIN
+  EXECUTE IMMEDIATE 'ALTER TABLE awlrs_external_links ADD(CONSTRAINT ael_pk PRIMARY KEY (ael_id))';
+EXCEPTION
+  WHEN obj_exists THEN
+    NULL;
+END;
+/
+
+DECLARE
+  obj_exists EXCEPTION;
+  PRAGMA exception_init( obj_exists, -955);
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE UNIQUE INDEX ael_uk ON awlrs_external_links(ael_name)';
+EXCEPTION
+  WHEN obj_exists THEN
+    NULL;
+END;
+/
+
+DECLARE
+  obj_exists EXCEPTION;
+  PRAGMA exception_init(obj_exists, -955);
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE TABLE awlrs_external_link_params'
+                  ||'(aelp_id                NUMBER(38)   NOT NULL'
+                  ||',aelp_ael_id            NUMBER(38)   NOT NULL'
+                  ||',aelp_entity_type       VARCHAR2(10) NOT NULL'
+                  ||',aelp_entity_type_type  VARCHAR2(4)  NOT NULL'
+                  ||',aelp_sequence          NUMBER(38)   NOT NULL'
+                  ||',aelp_source_type       VARCHAR2(10) NOT NULL'
+                  ||',aelp_source            VARCHAR2(1000) NOT NULL'
+                  ||',aelp_default_value     VARCHAR2(1000))';
+EXCEPTION
+  WHEN obj_exists THEN
+    NULL;
+END;
+/
+
+DECLARE
+  obj_exists EXCEPTION;
+  PRAGMA exception_init( obj_exists, -2260);
+BEGIN
+  EXECUTE IMMEDIATE 'ALTER TABLE awlrs_external_link_params ADD(CONSTRAINT aelp_pk PRIMARY KEY (aelp_id))';
+EXCEPTION
+  WHEN obj_exists THEN
+    NULL;
+END;
+/
+
+DECLARE
+  obj_exists EXCEPTION;
+  PRAGMA exception_init( obj_exists, -955);
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE UNIQUE INDEX aelp_uk ON awlrs_external_link_params(aelp_ael_id,aelp_entity_type,aelp_entity_type_type,aelp_sequence)';
+EXCEPTION
+  WHEN obj_exists THEN
+    NULL;
+END;
+/
+
+DECLARE
+  obj_exists EXCEPTION;
+  PRAGMA exception_init( obj_exists, -955);
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE INDEX aelp_ind1 ON awlrs_external_link_params(aelp_entity_type,aelp_entity_type_type)';
 EXCEPTION
   WHEN obj_exists THEN
     NULL;

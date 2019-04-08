@@ -7,11 +7,11 @@
 --
 --  PVCS Identifiers :-
 --
---      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1170_metadata_upg.sql-arc   1.0   Apr 08 2019 13:44:46   Barbara.Odriscoll  $
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1170_metadata_upg.sql-arc   1.1   Apr 08 2019 15:09:34   Barbara.Odriscoll  $
 --      Module Name      : $Workfile:   awlrs1010_awlrs1170_metadata_upg.sql  $
---      Date into PVCS   : $Date:   Apr 08 2019 13:44:46  $
---      Date fetched Out : $Modtime:   Apr 08 2019 11:46:18  $
---      Version          : $Revision:   1.0  $
+--      Date into PVCS   : $Date:   Apr 08 2019 15:09:34  $
+--      Date fetched Out : $Modtime:   Apr 08 2019 15:02:42  $
+--      Version          : $Revision:   1.1  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2019 Bentley Systems Incorporated. All rights reserved.
@@ -412,6 +412,44 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 62)
+/
+
+------------------------------------------------------------------
+SET TERM ON
+PROMPT Sequence Associations for External Links
+SET TERM OFF
+INSERT
+  INTO HIG_SEQUENCE_ASSOCIATIONS
+      (HSA_TABLE_NAME
+      ,HSA_COLUMN_NAME
+      ,HSA_SEQUENCE_NAME
+      ,HSA_LAST_REBUILD_DATE)
+SELECT 'AWLRS_EXTERNAL_LINKS'
+      ,'AEL_ID'
+      ,'AEL_ID_SEQ'
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_SEQUENCE_ASSOCIATIONS
+                   WHERE HSA_TABLE_NAME = 'AWLRS_EXTERNAL_LINKS'
+                     AND HSA_COLUMN_NAME = 'AEL_ID')
+/
+
+INSERT
+  INTO HIG_SEQUENCE_ASSOCIATIONS
+      (HSA_TABLE_NAME
+      ,HSA_COLUMN_NAME
+      ,HSA_SEQUENCE_NAME
+      ,HSA_LAST_REBUILD_DATE)
+SELECT 'AWLRS_EXTERNAL_LINK_PARAMS'
+      ,'AELP_ID'
+      ,'AELP_ID_SEQ'
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_SEQUENCE_ASSOCIATIONS
+                   WHERE HSA_TABLE_NAME = 'AWLRS_EXTERNAL_LINK_PARAMS'
+                     AND HSA_COLUMN_NAME = 'AELP_ID')
 /
 
 ------------------------------------------------------------------
