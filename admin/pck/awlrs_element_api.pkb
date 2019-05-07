@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.36   Dec 10 2018 16:56:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.37   May 07 2019 11:20:34   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Dec 10 2018 16:56:04  $
-  --       Date fetched Out : $Modtime:   Dec 10 2018 16:53:44  $
-  --       Version          : $Revision:   1.36  $
+  --       Date into PVCS   : $Date:   May 07 2019 11:20:34  $
+  --       Date fetched Out : $Modtime:   May 07 2019 10:58:28  $
+  --       Version          : $Revision:   1.37  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.36  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.37  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1997,18 +1997,19 @@ AS
     END IF;
     /*
     ||Run some route based checks.
+    ||NB. Checks commented out after consultation with MRWA 07-MAY-2019
     */
-    IF pi_run_checks = 'Y'
-     AND hig.get_sysopt('CHECKROUTE') = 'Y'
-     THEN
-        route_check(pi_ne_id             => NULL
-                   ,pi_new_start_node_id => lr_ne.ne_no_start
-                   ,pi_new_end_node_id   => lr_ne.ne_no_end
-                   ,pi_new_ne_sub_class  => lr_ne.ne_sub_class
-                   ,pi_new_ne_group      => lr_ne.ne_group
-                   ,po_message_severity  => lv_severity
-                   ,po_message_cursor    => lv_message_cursor);
-    END IF;
+    --IF pi_run_checks = 'Y'
+    -- AND hig.get_sysopt('CHECKROUTE') = 'Y'
+    -- THEN
+    --    route_check(pi_ne_id             => NULL
+    --               ,pi_new_start_node_id => lr_ne.ne_no_start
+    --               ,pi_new_end_node_id   => lr_ne.ne_no_end
+    --               ,pi_new_ne_sub_class  => lr_ne.ne_sub_class
+    --               ,pi_new_ne_group      => lr_ne.ne_group
+    --               ,po_message_severity  => lv_severity
+    --               ,po_message_cursor    => lv_message_cursor);
+    --END IF;
     --
     IF lv_severity = awlrs_util.c_msg_cat_success
      THEN
