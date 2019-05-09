@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkh-arc   1.1   Mar 28 2019 10:09:26   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkh-arc   1.2   May 09 2019 14:11:08   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkh  $
-  --       Date into PVCS   : $Date:   Mar 28 2019 10:09:26  $
-  --       Date fetched Out : $Modtime:   Mar 27 2019 10:54:14  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   May 09 2019 14:11:08  $
+  --       Date fetched Out : $Modtime:   Apr 18 2019 12:19:10  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -312,6 +312,14 @@ AS
                                ,po_message_severity OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor   OUT sys_refcursor
                                ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_admin_unit_tree(pi_admin_type    IN     nm_admin_units.nau_admin_type%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);                               
   --
   -----------------------------------------------------------------------------
   --
@@ -346,6 +354,14 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_module_roles(pi_module        IN      hig_module_roles.hmr_module%TYPE
+                            ,po_message_severity OUT  hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT  sys_refcursor
+                            ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_module_roles(pi_role          IN      hig_module_roles.hmr_role%TYPE
                             ,po_message_severity OUT  hig_codes.hco_code%TYPE
                             ,po_message_cursor   OUT  sys_refcursor
                             ,po_cursor           OUT  sys_refcursor);
