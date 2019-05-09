@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.3   Mar 28 2019 10:09:26   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.4   May 09 2019 14:11:10   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 28 2019 10:09:26  $
-  --       Date fetched Out : $Modtime:   Mar 26 2019 10:44:40  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   May 09 2019 14:11:10  $
+  --       Date fetched Out : $Modtime:   Apr 18 2019 12:23:16  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -2445,6 +2445,75 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_admin_unit_tree;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_admin_unit_tree(pi_admin_type    IN     nm_admin_units.nau_admin_type%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor)
+    IS
+    -- 
+    lv_top_admin_unit nm_admin_units.nau_admin_unit%TYPE;
+    --
+  BEGIN
+    --
+    BEGIN
+       SELECT nau_admin_unit
+         INTO lv_top_admin_unit
+         FROM nm_admin_units
+        WHERE nau_admin_type = pi_admin_type
+          AND nau_level = 1;
+    EXCEPTION
+      WHEN no_data_found
+       THEN
+          lv_top_admin_unit := '';
+      WHEN too_many_rows
+       THEN
+          lv_top_admin_unit := '';          
+    END;
+    --
+    OPEN po_cursor FOR
+    SELECT 1                                         depth
+          ,nau_unit_code || ' - ' || nau_name        label
+          ,nau_admin_unit                            admin_unit
+          ,null                                      parent_admin_unit
+      FROM nm_admin_units nau
+     WHERE nau.Nau_Admin_Unit = lv_top_admin_unit
+     UNION ALL
+    SELECT l_level + 1                              depth
+          ,x.nau_unit_code || ' - ' || x.nau_name   label
+          ,nau_admin_unit                           admin_unit
+          ,nag_parent_admin_unit                    parent_admin_unit
+      FROM (SELECT tre.Nag_Parent_Admin_Unit,
+                   tre.Nag_Child_Admin_Unit,
+                   tre.Nau_Name,
+                   tre.Nau_Admin_Unit,
+                   tre.Nau_Unit_Code,
+                   LEVEL L_Level
+              FROM (SELECT nag.nag_parent_admin_unit,
+                           nag.nag_child_admin_unit,
+                           nau.nau_name,
+                           nau.nau_admin_unit,
+                           nau.nau_unit_code
+                      FROM nm_admin_groups nag, nm_admin_units nau
+                     WHERE nag.nag_direct_link = 'Y'
+                       AND nau.nau_admin_unit = nag.nag_child_admin_unit)
+                   tre
+            CONNECT BY PRIOR tre.Nag_Child_Admin_Unit = tre.Nag_Parent_Admin_Unit
+            START WITH tre.Nag_Parent_Admin_Unit = lv_top_admin_unit)
+            x;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_admin_unit_tree;
   
   --
   -----------------------------------------------------------------------------
@@ -4598,6 +4667,7 @@ AS
                                                   ||',owner_'
                                                   ||',table_name'
                                                   ||',grantor'
+                                                  ||',privilege_'
                                                   ||',grantable'
                                                   ||',hierarchy_'
                                                   ||',row_count'
@@ -4620,7 +4690,7 @@ AS
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'owner'
-                                ,pi_query_col  => 'owner'
+                                ,pi_query_col  => 'owner_'
                                 ,pi_datatype   => awlrs_util.c_varchar2_col
                                 ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
@@ -4638,7 +4708,7 @@ AS
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'privilege'
-                                ,pi_query_col  => 'privilege'
+                                ,pi_query_col  => 'privilege_'
                                 ,pi_datatype   => awlrs_util.c_varchar2_col
                                 ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
