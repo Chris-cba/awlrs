@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.26   Mar 25 2019 10:58:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.27   May 16 2019 16:25:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 25 2019 10:58:44  $
-  --       Date fetched Out : $Modtime:   Mar 25 2019 10:57:08  $
-  --       Version          : $Revision:   1.26  $
+  --       Date into PVCS   : $Date:   May 16 2019 16:25:58  $
+  --       Date fetched Out : $Modtime:   May 16 2019 16:01:34  $
+  --       Version          : $Revision:   1.27  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.26  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.27  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -2518,9 +2518,9 @@ AS
       --
       lv_prompt := LOWER(REPLACE(REPLACE(REPLACE(lt_atc(i).prompt,'.',''),'"',''),' ','_'));
       --
-      po_select_list := po_select_list||CHR(10)||'                       ,'||LOWER(lt_atc(i).column_name)||' '||lv_prompt;
+      po_select_list := po_select_list||CHR(10)||'                       ,'||LOWER(lt_atc(i).column_name)||' "'||lv_prompt||'"';
       --
-      po_alias_list := po_alias_list||CHR(10)||'      ,'||lv_prompt;
+      po_alias_list := po_alias_list||CHR(10)||'      ,"'||lv_prompt||'"';
       --
     END LOOP;
     --
@@ -5758,40 +5758,40 @@ dbms_output.put_line(lv_sql);
     --
     IF pi_paged
      THEN
-        lv_pagecols := 'rownum ind'
-            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+        lv_pagecols := 'rownum "ind"'
+            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) "row_count"'
             ||CHR(10)||'      ,';
     END IF;
     --
     lv_retval :=  'SELECT '||lv_pagecols
-                       ||'result_id'
-       ||CHR(10)||'      ,name'
-       ||CHR(10)||'      ,description'
-       ||CHR(10)||'      ,purpose'
-       ||CHR(10)||'      ,start_date'
-       ||CHR(10)||'      ,end_date'
-       ||CHR(10)||'      ,node_type'
-       ||CHR(10)||'      ,date_created'
-       ||CHR(10)||'      ,created_by'
-       ||CHR(10)||'      ,date_modified'
-       ||CHR(10)||'      ,modified_by'
-       ||CHR(10)||'      ,node_id'
-       ||CHR(10)||'      ,point_id'
-       ||CHR(10)||'      ,point_location_id'
-       ||CHR(10)||'  FROM (SELECT npl_id result_id'
-       ||CHR(10)||'              ,no_node_id node_id'
-       ||CHR(10)||'              ,no_node_name name'
-       ||CHR(10)||'              ,no_descr description'
-       ||CHR(10)||'              ,no_purpose purpose'
-       ||CHR(10)||'              ,no_start_date start_date'
-       ||CHR(10)||'              ,no_end_date end_date'
-       ||CHR(10)||'              ,no_node_type node_type'
-       ||CHR(10)||'              ,no_date_created date_created'
-       ||CHR(10)||'              ,no_created_by created_by'
-       ||CHR(10)||'              ,no_date_modified date_modified'
-       ||CHR(10)||'              ,no_modified_by modified_by'
-       ||CHR(10)||'              ,no_np_id point_id'
-       ||CHR(10)||'              ,npl_id point_location_id'
+                       ||'"result_id"'
+       ||CHR(10)||'      ,"name"'
+       ||CHR(10)||'      ,"description"'
+       ||CHR(10)||'      ,"purpose"'
+       ||CHR(10)||'      ,"start_date"'
+       ||CHR(10)||'      ,"end_date"'
+       ||CHR(10)||'      ,"node_type"'
+       ||CHR(10)||'      ,"date_created"'
+       ||CHR(10)||'      ,"created_by"'
+       ||CHR(10)||'      ,"date_modified"'
+       ||CHR(10)||'      ,"modified_by"'
+       ||CHR(10)||'      ,"node_id"'
+       ||CHR(10)||'      ,"point_id"'
+       ||CHR(10)||'      ,"point_location_id"'
+       ||CHR(10)||'  FROM (SELECT npl_id "result_id"'
+       ||CHR(10)||'              ,no_node_id "node_id"'
+       ||CHR(10)||'              ,no_node_name "name"'
+       ||CHR(10)||'              ,no_descr "description"'
+       ||CHR(10)||'              ,no_purpose "purpose"'
+       ||CHR(10)||'              ,no_start_date "start_date"'
+       ||CHR(10)||'              ,no_end_date "end_date"'
+       ||CHR(10)||'              ,no_node_type "node_type"'
+       ||CHR(10)||'              ,no_date_created "date_created"'
+       ||CHR(10)||'              ,no_created_by "created_by"'
+       ||CHR(10)||'              ,no_date_modified "date_modified"'
+       ||CHR(10)||'              ,no_modified_by "modified_by"'
+       ||CHR(10)||'              ,no_np_id "point_id"'
+       ||CHR(10)||'              ,npl_id "point_location_id"'
        ||CHR(10)||'          FROM '||pi_feature_table
        ||CHR(10)||'         WHERE ('||pi_where_clause||')'
        ||CASE
@@ -5799,7 +5799,7 @@ dbms_output.put_line(lv_sql);
            THEN
               CHR(10)||'           AND no_end_date IS NULL'
          END
-       ||CHR(10)||'         ORDER BY '||NVL(LOWER(pi_order_column),'name asc ')||')'
+       ||CHR(10)||'         ORDER BY '||NVL(LOWER(pi_order_column),'"name" asc ')||')'
     ;
     --
     RETURN lv_retval;
@@ -5841,7 +5841,7 @@ dbms_output.put_line(lv_sql);
     IF pi_order_column IS NOT NULL
      THEN
         --
-        lv_order_by := pi_order_column||' '||NVL(pi_order_asc_desc,'ASC');
+        lv_order_by := '"'||pi_order_column||'" '||NVL(pi_order_asc_desc,'ASC');
         --
     END IF;
     --
@@ -5895,7 +5895,7 @@ dbms_output.put_line(lv_sql);
     IF pi_order_column IS NOT NULL
      THEN
         --
-        lv_order_by := pi_order_column||' '||NVL(pi_order_asc_desc,'ASC');
+        lv_order_by := '"'||pi_order_column||'" '||NVL(pi_order_asc_desc,'ASC');
         --
     END IF;
     --
@@ -6010,7 +6010,7 @@ dbms_output.put_line(lv_sql);
     lv_where := generate_where_clause(pi_theme_types => pi_theme_types
                                      ,pi_criteria    => pi_criteria);
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -6020,7 +6020,7 @@ dbms_output.put_line(lv_sql);
     IF pi_order_column IS NOT NULL
      THEN
         --
-        lv_order_by := pi_order_column||' '||NVL(pi_order_asc_desc,'ASC');
+        lv_order_by := '"'||pi_order_column||'" '||NVL(pi_order_asc_desc,'ASC');
         --
     END IF;
     --
@@ -6081,7 +6081,7 @@ dbms_output.put_line(lv_sql);
     IF pi_order_column IS NOT NULL
      THEN
         --
-        lv_order_by := pi_order_column||' '||NVL(pi_order_asc_desc,'ASC');
+        lv_order_by := '"'||pi_order_column||'" '||NVL(pi_order_asc_desc,'ASC');
         --
     END IF;
     --
@@ -6241,7 +6241,8 @@ dbms_output.put_line(lv_sql);
     ||Get the Order By clause.
     */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
-                                          ,pi_order_asc_desc => pi_order_asc_desc);
+                                          ,pi_order_asc_desc => pi_order_asc_desc
+                                          ,pi_enclose_cols   => TRUE);
     /*
     ||Process the filter.
     */
@@ -6303,8 +6304,8 @@ dbms_output.put_line(lv_sql);
     --
     IF pi_paged
      THEN
-        lv_pagecols := 'rownum ind'
-            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+        lv_pagecols := 'rownum "ind"'
+            ||CHR(10)||'      ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) "row_count"'
             ||CHR(10)||'      ,';
     END IF;
     --
@@ -6315,7 +6316,7 @@ dbms_output.put_line(lv_sql);
         lv_order_by := pi_theme_types.feature_pk_column;
     END IF;
     --
-    lv_retval := 'WITH records AS(SELECT '||pi_theme_types.feature_pk_column||' result_id'
+    lv_retval := 'WITH records AS(SELECT '||pi_theme_types.feature_pk_column||' "result_id"'
                ||pi_select_list
       ||CHR(10)||'                   FROM '||pi_theme_types.feature_table
       ||CHR(10)||'                  WHERE ('||pi_where_clause||')'
@@ -6367,7 +6368,7 @@ dbms_output.put_line(lv_sql);
     IF pi_order_column IS NOT NULL
      THEN
         --
-        lv_order_by := pi_order_column||' '||NVL(pi_order_asc_desc,'ASC');
+        lv_order_by := '"'||pi_order_column||'" '||NVL(pi_order_asc_desc,'ASC');
         --
     END IF;
     --
@@ -6424,7 +6425,7 @@ dbms_output.put_line(lv_sql);
     IF pi_order_column IS NOT NULL
      THEN
         --
-        lv_order_by := pi_order_column||' '||NVL(pi_order_asc_desc,'ASC');
+        lv_order_by := '"'||pi_order_column||'" '||NVL(pi_order_asc_desc,'ASC');
         --
     END IF;
     --
@@ -6666,7 +6667,7 @@ dbms_output.put_line(lv_sql);
     lv_where := generate_where_clause(pi_theme_types => pi_theme_types
                                      ,pi_criteria    => pi_criteria);
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -6680,7 +6681,7 @@ dbms_output.put_line(lv_sql);
     IF pi_order_column IS NOT NULL
      THEN
         --
-        lv_order_by := pi_order_column||' '||NVL(pi_order_asc_desc,'ASC');
+        lv_order_by := '"'||pi_order_column||'" '||NVL(pi_order_asc_desc,'ASC');
         --
     END IF;
     --
@@ -6730,7 +6731,7 @@ dbms_output.put_line(lv_sql);
     --
   BEGIN
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -6746,7 +6747,7 @@ dbms_output.put_line(lv_sql);
     IF pi_order_column IS NOT NULL
      THEN
         --
-        lv_order_by := pi_order_column||' '||NVL(pi_order_asc_desc,'ASC');
+        lv_order_by := '"'||pi_order_column||'" '||NVL(pi_order_asc_desc,'ASC');
         --
     END IF;
     --
@@ -6843,7 +6844,7 @@ dbms_output.put_line(lv_sql);
     --
   BEGIN
     --
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
                                   ,pi_pagesize     => pi_pagesize
                                   ,po_lower_index  => lv_lower_index
@@ -6857,7 +6858,8 @@ dbms_output.put_line(lv_sql);
     ||Get the Order By clause.
     */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
-                                          ,pi_order_asc_desc => pi_order_asc_desc);
+                                          ,pi_order_asc_desc => pi_order_asc_desc
+                                          ,pi_enclose_cols   => TRUE);
     /*
     ||Process the filter.
     */
