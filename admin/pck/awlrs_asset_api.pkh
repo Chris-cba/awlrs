@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.16   Dec 13 2018 18:50:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.17   May 20 2019 20:42:26   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   Dec 13 2018 18:50:38  $
-  --       Date fetched Out : $Modtime:   Dec 11 2018 11:50:58  $
-  --       Version          : $Revision:   1.16  $
+  --       Date into PVCS   : $Date:   May 20 2019 20:42:26  $
+  --       Date fetched Out : $Modtime:   May 08 2019 12:25:38  $
+  --       Version          : $Revision:   1.17  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.16  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.17  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -42,6 +42,7 @@ AS
   --
   TYPE domain_names_tab IS TABLE OF hig_domains.hdo_domain%TYPE INDEX BY BINARY_INTEGER;
   TYPE view_col_names_tab IS TABLE OF nm_inv_type_attribs.ita_view_col_name%TYPE INDEX BY BINARY_INTEGER;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -56,6 +57,38 @@ AS
   FUNCTION get_body_version
     RETURN VARCHAR2;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_subclass_divided_highway(pi_group_type nm_group_types.ngt_group_type%TYPE)
+    RETURN VARCHAR2;
+    
+  --
+  -----------------------------------------------------------------------------
+  --    
+  PROCEDURE get_lref_ambig(pi_locate_mp     IN     VARCHAR2 
+                          ,pi_parent_id     IN     nm_elements_all.ne_id%TYPE
+                          ,pi_offset        IN     NUMBER
+                          ,pi_sub_class     IN     VARCHAR2 DEFAULT NULL
+                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor   OUT sys_refcursor                          
+                          ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_ambiguous_subclass(pi_ne_id         IN     VARCHAR2 
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor                          
+                                  ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_exclusive_subclass(pi_ne_id         IN     VARCHAR2 
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor                          
+                                  ,po_cursor           OUT sys_refcursor);
   --
   -----------------------------------------------------------------------------
   --
@@ -121,26 +154,54 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_network_location(pi_iit_ne_id    IN nm_inv_items_all.iit_ne_id%TYPE
+  /*FUNCTION get_network_location(pi_iit_ne_id    IN nm_inv_items_all.iit_ne_id%TYPE
                                ,pi_nit_inv_type IN nm_inv_types_all.nit_inv_type%TYPE
                                ,pi_ne_id        IN nm_elements_all.ne_id%TYPE
                                ,pi_begin_mp     IN nm_members_all.nm_begin_mp%TYPE
                                ,pi_end_mp       IN nm_members_all.nm_end_mp%TYPE
                                ,pi_startdate    IN nm_members_all.nm_start_date%TYPE)
-    RETURN nm_nw_temp_extents.nte_job_id%TYPE;
+    RETURN nm_nw_temp_extents.nte_job_id%TYPE;*/
 
+  FUNCTION get_network_location(pi_iit_ne_id                IN nm_inv_items_all.iit_ne_id%TYPE
+                               ,pi_nit_inv_type             IN nm_inv_types_all.nit_inv_type%TYPE
+                               ,pi_ne_id                    IN nm_elements_all.ne_id%TYPE
+                               ,pi_begin_mp                 IN nm_members_all.nm_begin_mp%TYPE
+                               ,pi_end_mp                   IN nm_members_all.nm_end_mp%TYPE
+                               ,pi_startdate                IN nm_members_all.nm_start_date%TYPE
+                               --new parameters.            
+                               ,pi_ne_is_datum              IN VARCHAR2
+                               ,pi_begin_sect               IN nm_elements_all.ne_id%TYPE
+                               ,pi_begin_sect_offset        IN NUMBER
+                               ,pi_begin_sect_date_modified IN DATE 
+                               ,pi_end_Sect                 IN nm_elements_all.ne_id%TYPE
+                               ,pi_end_sect_offset          IN NUMBER 
+                               ,pi_end_sect_date_modified   IN DATE
+                               ,pi_ambiguous_sub_class      IN VARCHAR2
+                               ,pi_restrict_excl_sub_class  IN VARCHAR2--y/n checkbox?
+                               ,pi_excl_sub_class           IN nm_elements_all.ne_sub_class%TYPE)
+    RETURN nm_nw_temp_extents.nte_job_id%TYPE;
+    
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE add_asset_location(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
-                              ,pi_nit_inv_type     IN  nm_inv_types_all.nit_inv_type%TYPE
-                              ,pi_ne_id            IN  nm_elements_all.ne_id%TYPE
-                              ,pi_begin_mp         IN  nm_members_all.nm_begin_mp%TYPE
-                              ,pi_end_mp           IN  nm_members_all.nm_end_mp%TYPE
-                              ,pi_startdate        IN  nm_members_all.nm_start_date%TYPE
-                              ,pi_append_replace   IN  VARCHAR2
-                              ,po_message_severity OUT hig_codes.hco_code%TYPE
-                              ,po_message_cursor   OUT sys_refcursor);
+  PROCEDURE add_asset_location(pi_iit_ne_id                IN     nm_inv_items_all.iit_ne_id%TYPE
+                              ,pi_nit_inv_type             IN     nm_inv_types_all.nit_inv_type%TYPE
+                              ,pi_ne_id                    IN     nm_elements_all.ne_id%TYPE
+                              ,pi_begin_mp                 IN     nm_members_all.nm_begin_mp%TYPE
+                              ,pi_end_mp                   IN     nm_members_all.nm_end_mp%TYPE
+                              ,pi_startdate                IN     nm_members_all.nm_start_date%TYPE
+                              ,pi_append_replace           IN     VARCHAR2
+                              ,pi_begin_sect               IN     nm_elements_all.ne_id%TYPE 
+                              ,pi_begin_sect_offset        IN     NUMBER
+                              ,pi_begin_sect_date_modified IN     DATE 
+                              ,pi_end_sect                 IN     nm_elements_all.ne_id%TYPE 
+                              ,pi_end_sect_offset          IN     NUMBER 
+                              ,pi_end_sect_date_modified   IN     DATE                      
+                              ,pi_ambiguous_sub_class      IN     VARCHAR2 DEFAULT NULL 
+                              ,pi_excl_sub_class           IN     nm_elements_all.ne_sub_class%TYPE DEFAULT NULL
+                              ,pi_nse_id                   IN     nm_saved_extents.nse_id%TYPE DEFAULT NULL                              
+                              ,po_message_severity           OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor             OUT  sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
@@ -241,6 +302,16 @@ AS
                         ,pi_nwtype       IN nm_elements.ne_nt_type%TYPE
                         ,pi_grouptype    IN nm_elements.ne_gty_group_type%TYPE)
     RETURN nm_placement_array;
+  --
+  -----------------------------------------------------------------------------
+  --    
+  PROCEDURE get_list_of_elements(pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                                ,pi_filter           IN  VARCHAR2
+                                ,pi_skip_n_rows      IN  PLS_INTEGER
+                                ,pi_pagesize         IN  PLS_INTEGER
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
