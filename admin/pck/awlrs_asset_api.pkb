@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.38   May 20 2019 20:42:28   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.39   May 22 2019 11:06:32   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   May 20 2019 20:42:28  $
-  --       Date fetched Out : $Modtime:   May 17 2019 12:07:50  $
-  --       Version          : $Revision:   1.38  $
+  --       Date into PVCS   : $Date:   May 22 2019 11:06:32  $
+  --       Date fetched Out : $Modtime:   May 22 2019 11:05:20  $
+  --       Version          : $Revision:   1.39  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.38  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.39  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -205,7 +205,7 @@ AS
   --
   --------------------------------------------------------------------------------
   --  
-  PROCEDURE get_ambiguous_subclass(pi_ne_id         IN     VARCHAR2 
+  PROCEDURE get_ambiguous_subclass(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor   OUT sys_refcursor                          
                                   ,po_cursor           OUT sys_refcursor)
@@ -234,7 +234,7 @@ AS
   --
   --------------------------------------------------------------------------------
   --  
-  PROCEDURE get_exclusive_subclass(pi_ne_id         IN     VARCHAR2 
+  PROCEDURE get_exclusive_subclass(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor   OUT sys_refcursor                          
                                   ,po_cursor           OUT sys_refcursor)
