@@ -3,17 +3,17 @@
     -------------------------------------------------------------------------
     --   PVCS Identifiers :-
     --
-    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.15   Dec 19 2018 16:16:42   Peter.Bibby  $
+    --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.16   May 23 2019 10:40:52   Peter.Bibby  $
     --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-    --       Date into PVCS   : $Date:   Dec 19 2018 16:16:42  $
-    --       Date fetched Out : $Modtime:   Dec 19 2018 16:14:28  $
-    --       Version          : $Revision:   1.15  $
+    --       Date into PVCS   : $Date:   May 23 2019 10:40:52  $
+    --       Date fetched Out : $Modtime:   May 23 2019 10:37:56  $
+    --       Version          : $Revision:   1.16  $
     -------------------------------------------------------------------------
     --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
     -------------------------------------------------------------------------
     --
     --g_body_sccsid is the SCCS ID for the package body
-    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.15  $';
+    g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.16  $';
     g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
     --
     g_max_layers      PLS_INTEGER;
@@ -212,15 +212,27 @@
       --
     BEGIN
       --
-      awlrs_asset_api.add_asset_location(pi_iit_ne_id        => pi_iit_ne_id
-                                        ,pi_nit_inv_type     => pi_nit_inv_type
-                                        ,pi_ne_id            => pi_ne_id
-                                        ,pi_begin_mp         => pi_begin_mp
-                                        ,pi_end_mp           => pi_end_mp
-                                        ,pi_startdate        => pi_startdate
-                                        ,pi_append_replace   => 'R'
-                                        ,po_message_severity => po_message_severity
-                                        ,po_message_cursor   => lv_message_cursor);
+      awlrs_asset_api.add_asset_location(pi_iit_ne_id                => pi_iit_ne_id
+                                        ,pi_nit_inv_type             => pi_nit_inv_type
+                                        ,pi_ne_id                    => pi_ne_id
+                                        ,pi_begin_mp                 => pi_begin_mp
+                                        ,pi_end_mp                   => pi_end_mp
+                                        ,pi_startdate                => pi_startdate
+                                        ,pi_append_replace           => 'R'
+                                        /*
+                                        ||temp placeholders so package compiles
+                                        */
+                                        ,pi_begin_sect               => NULL
+                                        ,pi_begin_sect_offset        => NULL
+                                        ,pi_begin_sect_date_modified => NULL
+                                        ,pi_end_sect                 => NULL
+                                        ,pi_end_sect_offset          => NULL
+                                        ,pi_end_sect_date_modified   => NULL
+                                        ,pi_ambiguous_sub_class      => NULL
+                                        ,pi_excl_sub_class           => NULL
+                                        ,pi_nse_id                   => NULL                                           
+                                        ,po_message_severity         => po_message_severity
+                                        ,po_message_cursor           => lv_message_cursor);
       --
       get_messages(pi_message_cursor => lv_message_cursor
                   ,po_message_tab    => po_message_tab);
