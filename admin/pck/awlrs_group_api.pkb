@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.26   23 Oct 2017 18:44:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.27   May 23 2019 16:15:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   23 Oct 2017 18:44:28  $
-  --       Date fetched Out : $Modtime:   23 Oct 2017 18:39:54  $
-  --       Version          : $Revision:   1.26  $
+  --       Date into PVCS   : $Date:   May 23 2019 16:15:56  $
+  --       Date fetched Out : $Modtime:   May 23 2019 14:37:52  $
+  --       Version          : $Revision:   1.27  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.26  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.27  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -614,6 +614,8 @@ AS
     lr_group_ne  nm_elements_all%ROWTYPE;
     lr_db_rec    nm_members%ROWTYPE;
     --
+    lv_is_db  BOOLEAN;
+    --
     PROCEDURE get_db_rec(pi_group_ne_id    IN nm_elements.ne_id%TYPE
                         ,pi_mem_ne_id      IN nm_elements.ne_id%TYPE
                         ,pi_mem_begin_mp   IN nm_members.nm_begin_mp%TYPE
@@ -689,6 +691,25 @@ AS
                      ,pi_id   => 25);
     END IF;
     /*
+    ||If this is a distance break then make sure only the end mp has been changed.
+    */
+    lv_is_db := nm3net.element_is_a_distance_break(pi_ne_id => pi_mem_ne_id);
+    --
+    IF lv_is_db
+     AND (pi_old_mem_begin_mp != pi_new_mem_begin_mp
+          OR (pi_old_mem_begin_mp IS NULL AND pi_new_mem_begin_mp IS NOT NULL)
+          OR (pi_old_mem_begin_mp IS NOT NULL AND pi_new_mem_begin_mp IS NULL)
+          OR pi_old_cardinality != pi_new_cardinality
+          OR (pi_old_cardinality IS NULL AND pi_new_cardinality IS NOT NULL)
+          OR (pi_old_cardinality IS NOT NULL AND pi_new_cardinality IS NULL))
+     THEN
+        /*
+        ||Only the end mp can be changed.
+        */
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 63);     
+    END IF;
+    /*
     ||If start or end have changed check such a change is allowed.
     */
     IF pi_old_mem_begin_mp != pi_new_mem_begin_mp
@@ -722,7 +743,7 @@ AS
     /*
     ||Update the record.
     */
-    UPDATE nm_members
+    UPDATE nm_members_all
        SET nm_begin_mp = pi_new_mem_begin_mp
           ,nm_end_mp = pi_new_mem_end_mp
           ,nm_cardinality = pi_new_cardinality
@@ -731,6 +752,16 @@ AS
        AND nm_begin_mp = pi_old_mem_begin_mp
        AND nm_start_date = pi_mem_start_date
          ;
+    /*
+    ||Update the Distance Break length.
+    */
+    IF lv_is_db
+     THEN
+        UPDATE nm_elements_all
+           SET ne_length = pi_new_mem_end_mp
+         WHERE ne_id = pi_mem_ne_id
+             ;
+    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
