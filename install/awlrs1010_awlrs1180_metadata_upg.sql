@@ -2,19 +2,19 @@
 -- awlrs1010_awlrs1180_metadata_upg.sql
 ------------------------------------------------------------------
 
--------------------------------------------------------------------------
---   PVCS Identifiers :-
+
+------------------------------------------------------------------
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1180_metadata_upg.sql-arc   1.0   May 22 2019 11:57:22   Barbara.Odriscoll  $
---       Date into PVCS   : $Date:   May 22 2019 11:57:22  $
---       Module Name      : $Workfile:   awlrs1010_awlrs1180_metadata_upg.sql  $
---       Date fetched Out : $Modtime:   May 22 2019 11:43:30  $
---       Version          : $Revision:   1.0  $
+--  PVCS Identifiers :-
 --
------------------------------------------------------------------------------------
--- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
------------------------------------------------------------------------------------
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1180_metadata_upg.sql-arc   1.1   May 23 2019 15:57:14   Mike.Huitson  $
+--      Module Name      : $Workfile:   awlrs1010_awlrs1180_metadata_upg.sql  $
+--      Date into PVCS   : $Date:   May 23 2019 15:57:14  $
+--      Date fetched Out : $Modtime:   May 23 2019 15:50:52  $
+--      Version          : $Revision:   1.1  $
 --
+------------------------------------------------------------------
+--  Copyright (c) 2019 Bentley Systems Incorporated. All rights reserved.
 
 SET ECHO OFF
 SET LINESIZE 120
@@ -450,6 +450,29 @@ SELECT 'AWLRS_EXTERNAL_LINK_PARAMS'
                     FROM HIG_SEQUENCE_ASSOCIATIONS
                    WHERE HSA_TABLE_NAME = 'AWLRS_EXTERNAL_LINK_PARAMS'
                      AND HSA_COLUMN_NAME = 'AELP_ID')
+/
+
+------------------------------------------------------------------
+SET TERM ON
+PROMPT Distance Break Edit error message
+SET TERM OFF
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,63
+      ,null
+      ,'Only the To Offset can be updated for a Distance Break'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 63)
 /
 
 ------------------------------------------------------------------
