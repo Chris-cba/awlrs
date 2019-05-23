@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.15   Jan 21 2019 20:51:20   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.16   May 23 2019 15:58:10   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Jan 21 2019 20:51:20  $
---       Date fetched Out : $Modtime:   Jan 21 2019 20:26:20  $
---       Version          : $Revision:   1.15  $
+--       Date into PVCS   : $Date:   May 23 2019 15:58:10  $
+--       Date fetched Out : $Modtime:   May 23 2019 14:39:10  $
+--       Version          : $Revision:   1.16  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 21-JAN-2019 20:26
+--       Generation Date  : 23-MAY-2019 14:39
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -1155,6 +1155,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 62);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,63
+      ,null
+      ,'Only the To Offset can be updated for a Distance Break'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 63);
 --
 ----------------------------------------------------------------------------------------
 --
