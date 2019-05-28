@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.28   May 28 2019 12:37:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.29   May 28 2019 12:47:06   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   May 28 2019 12:37:14  $
-  --       Date fetched Out : $Modtime:   May 28 2019 12:19:00  $
-  --       Version          : $Revision:   1.28  $
+  --       Date into PVCS   : $Date:   May 28 2019 12:47:06  $
+  --       Date fetched Out : $Modtime:   May 28 2019 12:41:30  $
+  --       Version          : $Revision:   1.29  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.28  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.29  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -742,6 +742,16 @@ AS
         --
     END IF;
     /*
+    ||Update the Distance Break length.
+    */
+    IF lv_is_db
+     THEN
+        UPDATE nm_elements_all
+           SET ne_length = pi_new_mem_end_mp
+         WHERE ne_id = pi_mem_ne_id
+             ;
+    END IF;
+    /*
     ||Update the record.
     */
     UPDATE nm_members_all
@@ -753,16 +763,6 @@ AS
        AND nm_begin_mp = pi_old_mem_begin_mp
        AND nm_start_date = pi_mem_start_date
          ;
-    /*
-    ||Update the Distance Break length.
-    */
-    IF lv_is_db
-     THEN
-        UPDATE nm_elements_all
-           SET ne_length = pi_new_mem_end_mp
-         WHERE ne_id = pi_mem_ne_id
-             ;
-    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
