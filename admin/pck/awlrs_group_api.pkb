@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.27   May 23 2019 16:15:56   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.28   May 28 2019 12:37:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   May 23 2019 16:15:56  $
-  --       Date fetched Out : $Modtime:   May 23 2019 14:37:52  $
-  --       Version          : $Revision:   1.27  $
+  --       Date into PVCS   : $Date:   May 28 2019 12:37:14  $
+  --       Date fetched Out : $Modtime:   May 28 2019 12:19:00  $
+  --       Version          : $Revision:   1.28  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.27  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.28  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -712,12 +712,13 @@ AS
     /*
     ||If start or end have changed check such a change is allowed.
     */
-    IF pi_old_mem_begin_mp != pi_new_mem_begin_mp
+    IF NOT lv_is_db
+     AND (pi_old_mem_begin_mp != pi_new_mem_begin_mp
      OR (pi_old_mem_begin_mp IS NULL AND pi_new_mem_begin_mp IS NOT NULL)
      OR (pi_old_mem_begin_mp IS NOT NULL AND pi_new_mem_begin_mp IS NULL)
      OR pi_old_mem_end_mp != pi_new_mem_end_mp
      OR (pi_old_mem_end_mp IS NULL AND pi_new_mem_end_mp IS NOT NULL)
-     OR (pi_old_mem_end_mp IS NOT NULL AND pi_new_mem_end_mp IS NULL)
+     OR (pi_old_mem_end_mp IS NOT NULL AND pi_new_mem_end_mp IS NULL))
      THEN
         --
         IF nm3net.is_gty_partial(lr_group_ne.ne_gty_group_type) = 'N'
