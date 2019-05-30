@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.4   May 09 2019 14:11:10   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.5   May 30 2019 16:06:38   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   May 09 2019 14:11:10  $
-  --       Date fetched Out : $Modtime:   Apr 18 2019 12:23:16  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   May 30 2019 16:06:38  $
+  --       Date fetched Out : $Modtime:   May 29 2019 09:03:54  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -4255,8 +4255,7 @@ AS
                                                     ,hmr_role   role_
                                                     ,hmr_mode   mode_
                                                FROM hig_module_roles
-                                              WHERE hmr_role   = :pi_role
-                                              ORDER BY hmr_module';
+                                              WHERE hmr_role   = :pi_role';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  module_'
                                                   ||',role_'
@@ -5265,7 +5264,7 @@ AS
     --
     OPEN po_cursor FOR
     SELECT hstf_child module_name 
-          ,hstf_descr module_desc
+          ,decode(hstf_descr,'v3 Errors','Error Messages',hstf_descr) module_desc
           ,hstf_order module_order
       FROM hig_standard_favourites
      WHERE hstf_parent = pi_parent
