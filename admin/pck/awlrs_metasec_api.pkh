@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkh-arc   1.2   May 09 2019 14:11:08   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkh-arc   1.3   May 30 2019 16:06:34   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkh  $
-  --       Date into PVCS   : $Date:   May 09 2019 14:11:08  $
-  --       Date fetched Out : $Modtime:   Apr 18 2019 12:19:10  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   May 30 2019 16:06:34  $
+  --       Date fetched Out : $Modtime:   May 29 2019 09:00:38  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -379,6 +379,22 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_paged_module_roles(pi_module               IN     hig_module_roles.hmr_module%TYPE
+                                  ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                  ,pi_skip_n_rows          IN     PLS_INTEGER
+                                  ,pi_pagesize             IN     PLS_INTEGER
+                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor          OUT sys_refcursor
+                                  ,po_cursor                  OUT sys_refcursor);
+                                  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_module_roles(pi_role                 IN     hig_module_roles.hmr_role%TYPE
                                   ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                   ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                   ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
