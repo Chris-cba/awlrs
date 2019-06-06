@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.22   Dec 03 2018 16:56:58   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.23   Jun 06 2019 17:20:12   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Dec 03 2018 16:56:58  $
-  --       Date fetched Out : $Modtime:   Nov 23 2018 13:13:32  $
-  --       Version          : $Revision:   1.22  $
+  --       Date into PVCS   : $Date:   Jun 06 2019 17:20:12  $
+  --       Date fetched Out : $Modtime:   Jun 06 2019 17:19:38  $
+  --       Version          : $Revision:   1.23  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.23  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   -----------------------------------------------------------------------------
@@ -329,7 +329,7 @@ AS
             lv_shape := sdo_util.rectify_geometry(sdo_util.remove_duplicate_vertices(lv_shape,lv_tol),lv_tol);
             lv_valid := nm3sdo.validate_geometry(lv_shape,NULL,lv_tol);
         END IF;
-        --        
+        --
     END IF;
     --
     IF lv_valid != 'TRUE'
@@ -1749,7 +1749,9 @@ AS
     */
     IF nm3net.is_nt_linear(p_nt_type => nm3net.get_ne(pi_start_element_id).ne_nt_type) != 'Y'
      THEN
-        raise_application_error(-20001,'Theme must be linear');
+        --Theme must be linear
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 69);
     END IF;
     --
     /*
@@ -2155,7 +2157,9 @@ AS
     --
     IF nm_cncts.g_cnct.nc_link.ncla_link(lv_end).cost IS NULL
      THEN
-        raise_application_error(-20001, 'No path');
+        --No path
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 70);
     ELSE
         lv_link := nm_cncts.g_cnct.nc_link.ncla_link(lv_end);
     END IF;
@@ -2252,7 +2256,9 @@ AS
         --
         --nm_debug.debug('Probs ne.pa.last is '||TO_CHAR(lt_ne.pa.LAST ));
         --
-        raise_application_error(-20001, 'No street elements close enough to the xy co-ordinates');
+        --No network elements close enough to the xy co-ordinates
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 71);
     END IF;
     --
     lv_geom := nm3sdo.get_projection(p_layer => pi_nth_id
@@ -2346,7 +2352,9 @@ AS
     --
     IF nm_cncts.is_cnct_instantiated = 0
      THEN
-        raise_application_error(-20001, 'Network not instantiated, cannot compute the connectivity');
+        --Network not instantiated, cannot compute the connectivity
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 72);
     END IF;
     --
     --nm_debug.debug_on;
@@ -2374,7 +2382,9 @@ AS
                                                                           ,lv_end.lr_offset
                                                                           ,0 )));
         ELSE
-            raise_application_error(-20001, 'Points are the same - no distance between them');
+            --Points are the same - no distance between them
+            hig.raise_ner(pi_appl               => 'AWLRS'
+                         ,pi_id                 => 73);
         END IF;
     ELSE
         --nm_debug.debug('different element - need for walking');
@@ -2964,7 +2974,7 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_theme_features;
-  
+
 --
 ------------------------------------------------------------------------------
 --
