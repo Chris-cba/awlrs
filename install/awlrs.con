@@ -1,16 +1,22 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.11   Mar 01 2019 11:41:06   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.12   Jun 06 2019 18:01:56   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.con  $
---       Date into PVCS   : $Date:   Mar 01 2019 11:41:06  $
---       Date fetched Out : $Modtime:   Mar 01 2019 11:28:10  $
---       Version          : $Revision:   1.11  $
+--       Date into PVCS   : $Date:   Jun 06 2019 18:01:56  $
+--       Date fetched Out : $Modtime:   Jun 06 2019 17:59:58  $
+--       Version          : $Revision:   1.12  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Fri Mar 01  11:21:18 2019 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Thu Jun 06  17:54:05 2019 by Server Generator 10.1.2.9.28
   
+PROMPT Creating Primary Key on 'AWLRS_ASSET_MAINT_RESULTS'
+ALTER TABLE AWLRS_ASSET_MAINT_RESULTS
+ ADD (CONSTRAINT AAMR_PK PRIMARY KEY 
+  (AAMR_ID))
+/
+
 PROMPT Creating Primary Key on 'AWLRS_EXTERNAL_LINKS'
 ALTER TABLE AWLRS_EXTERNAL_LINKS
  ADD (CONSTRAINT AEL_PK PRIMARY KEY 
@@ -67,6 +73,12 @@ ALTER TABLE AWLRS_QUICK_SEARCH_COLUMNS
   ,AQSC_COLUMN))
 /
 
+PROMPT Creating Primary Key on 'AWLRS_SAVED_ASSET_CRITERIA'
+ALTER TABLE AWLRS_SAVED_ASSET_CRITERIA
+ ADD (CONSTRAINT ASAC_PK PRIMARY KEY 
+  (ASAC_ID))
+/
+
 PROMPT Creating Primary Key on 'AWLRS_SAVED_MAP_CONFIGS'
 ALTER TABLE AWLRS_SAVED_MAP_CONFIGS
  ADD (CONSTRAINT ASMC_PK PRIMARY KEY 
@@ -116,7 +128,7 @@ ALTER TABLE AWLRS_SAVED_SEARCH_CRITERIA
   ,ASSC_NAME))
 /
 
-            
+              
 
 PROMPT Creating Foreign Key on 'AWLRS_FILE_DATUM_ATTRIB_MAP'
 ALTER TABLE AWLRS_FILE_DATUM_ATTRIB_MAP ADD (CONSTRAINT
