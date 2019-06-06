@@ -1,0 +1,91 @@
+-------------------------------------------------------------------------
+--   PVCS Identifiers :-
+--
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.sqs-arc   1.7   Jun 06 2019 18:03:58   Mike.Huitson  $
+--       Module Name      : $Workfile:   awlrs.sqs  $
+--       Date into PVCS   : $Date:   Jun 06 2019 18:03:58  $
+--       Date fetched Out : $Modtime:   Jun 06 2019 18:00:28  $
+--       Version          : $Revision:   1.7  $
+-------------------------------------------------------------------------
+--   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
+-------------------------------------------------------------------------
+-- Generated for Oracle 10g on Thu Jun 06  17:54:05 2019 by Server Generator 10.1.2.9.28
+ 
+PROMPT Creating Sequence 'AAMR_ID_SEQ'
+CREATE SEQUENCE AAMR_ID_SEQ
+ NOMAXVALUE
+ NOMINVALUE
+ NOCYCLE
+/
+
+PROMPT Creating Sequence 'AAMR_JOB_ID_SEQ'
+CREATE SEQUENCE AAMR_JOB_ID_SEQ
+ NOMAXVALUE
+ NOMINVALUE
+ NOCYCLE
+/
+
+PROMPT Creating Sequence 'AELP_ID_SEQ'
+CREATE SEQUENCE AELP_ID_SEQ
+ NOMAXVALUE
+ NOMINVALUE
+ NOCYCLE
+/
+
+PROMPT Creating Sequence 'AEL_ID_SEQ'
+CREATE SEQUENCE AEL_ID_SEQ
+ NOMAXVALUE
+ NOMINVALUE
+ NOCYCLE
+/
+
+PROMPT Creating Sequence 'AFDAM_ID_SEQ'
+CREATE SEQUENCE AFDAM_ID_SEQ
+ NOMAXVALUE
+ NOMINVALUE
+ NOCYCLE
+/
+
+PROMPT Creating Sequence 'AFFM_ID_SEQ'
+CREATE SEQUENCE AFFM_ID_SEQ
+ NOMAXVALUE
+ NOMINVALUE
+ NOCYCLE
+/
+
+PROMPT Creating Sequence 'AFGAM_ID_SEQ'
+CREATE SEQUENCE AFGAM_ID_SEQ
+ NOMAXVALUE
+ NOMINVALUE
+ NOCYCLE
+/
+
+PROMPT Creating Sequence 'AP_ID_SEQ'
+CREATE SEQUENCE AP_ID_SEQ
+ INCREMENT BY 1
+ NOMAXVALUE
+ MINVALUE 1
+ NOCYCLE
+ NOCACHE
+/
+
+PROMPT Creating Sequence 'ASAC_ID_SEQ'
+CREATE SEQUENCE ASAC_ID_SEQ
+ NOMAXVALUE
+ NOMINVALUE
+ NOCYCLE
+/
+
+PROMPT Creating Sequence 'ASMC_ID_SEQ'
+CREATE SEQUENCE ASMC_ID_SEQ
+ NOMAXVALUE
+ NOMINVALUE
+ NOCYCLE
+/
+
+PROMPT Creating Sequence 'ASSC_ID_SEQ'
+CREATE SEQUENCE ASSC_ID_SEQ
+ NOMAXVALUE
+ NOMINVALUE
+ NOCYCLE
+/
