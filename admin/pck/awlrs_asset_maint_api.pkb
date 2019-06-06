@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.0   Jun 06 2019 16:08:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.1   Jun 06 2019 17:20:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_maint_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 06 2019 16:08:20  $
-  --       Date fetched Out : $Modtime:   May 16 2019 10:55:44  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Jun 06 2019 17:20:14  $
+  --       Date fetched Out : $Modtime:   Jun 06 2019 17:17:10  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_maint_api';
   --
   -----------------------------------------------------------------------------
@@ -377,7 +377,7 @@ AS
     */
     FOR i IN 1..lv_max_attribs LOOP
       --
-      lv_retval := lv_retval||CHR(10)||',CASE iit_inv_type'; 
+      lv_retval := lv_retval||CHR(10)||',CASE iit_inv_type';
       --
       FOR j IN 1..lt_nit.COUNT LOOP
         --
@@ -399,7 +399,7 @@ AS
     RETURN lv_retval;
     --
   END get_job_attribs_sql;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -477,13 +477,13 @@ AS
               ELSE
                   lv_ft_sql := lv_ft_sql||' UNION ALL SELECT 1 FROM '||lr_nit.nit_table_name||' WHERE '||lr_nit.nit_foreign_pk_column||' = ngqi_item_id
                   AND ngqi_item_type = '''||lr_nit.nit_inv_type||'''';
-              END IF;              
+              END IF;
           ELSE
               IF lv_temp_sql IS NOT NULL
                THEN
                   lv_inv_sql := lv_inv_sql||CASE WHEN lv_inv_sql IS NOT NULL THEN ' OR ' END||'(iit_inv_type = '''||lr_nit.nit_inv_type||''' AND '||lv_temp_sql||')';
               ELSE
-                  lv_inv_sql := lv_inv_sql||CASE WHEN i > 1 THEN ' OR ' END||'(iit_inv_type = '''||lr_nit.nit_inv_type||''')';          
+                  lv_inv_sql := lv_inv_sql||CASE WHEN i > 1 THEN ' OR ' END||'(iit_inv_type = '''||lr_nit.nit_inv_type||''')';
               END IF;
           END IF;
           --
@@ -529,7 +529,7 @@ AS
                                                       ||',aamr_inv_type'
                                                       ||',aamr_iit_ne_id'
                                                       ||',aamr_ne_id'
-                                      
+
                                       ||',aamr_from_offset'
                                                       ||',aamr_to_offset)'
                                                ||' SELECT aamr_id_seq.NEXTVAL'
@@ -893,7 +893,7 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_query_results;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -948,9 +948,8 @@ AS
      OR (g_iit_rec_1.iit_end_date IS NOT NULL AND g_iit_rec_2.iit_end_date IS NULL)
      THEN
         --Asset Attribution Does Not Match
-        raise_application_error(-20001,'Asset Attribution Does Not Match');
-        --hig.raise_ner(pi_appl => 'AWLRS'
-        --             ,pi_id   => 24);
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 64);
     END IF;
     /*
     ||Check the flexible attributes
@@ -973,9 +972,8 @@ AS
       ||CHR(10)||'   OR (awlrs_asset_api.g_iit_rec_1.'||lt_attr(i).ita_attrib_name||' IS NULL AND awlrs_asset_api.g_iit_rec_2.'||lt_attr(i).ita_attrib_name||' IS NOT NULL)'
       ||CHR(10)||'   OR (awlrs_asset_api.g_iit_rec_1.'||lt_attr(i).ita_attrib_name||' IS NOT NULL AND awlrs_asset_api.g_iit_rec_2.'||lt_attr(i).ita_attrib_name||' IS NULL)'
       ||CHR(10)||'   THEN '
-      ||CHR(10)||'      raise_application_error(-20001,''Asset Attribution Does Not Match'');'
-      --||CHR(10)||'      hig.raise_ner(pi_appl => ''AWLRS'''
-      --||CHR(10)||'                   ,pi_id   => 24);'
+      ||CHR(10)||'      hig.raise_ner(pi_appl => ''AWLRS'''
+      ||CHR(10)||'                   ,pi_id   => 64);'
       ||CHR(10)||'  END IF;'
       ||CHR(10)||'END;'
       ;
@@ -1057,7 +1055,9 @@ AS
     --
     IF lv_remaining_count > 0
      THEN
-        raise_application_error(-20001,'Assets have locations beyond the specified element.');
+        --Assets have locations beyond the specified element
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 65);
     END IF;
     --
     lt_pla := nm3pla.get_connected_chunks(p_nte_job_id => lv_combined_extent
@@ -1068,7 +1068,9 @@ AS
      THEN
         po_placement := lt_pla.npa_placement_array(1);
     ELSE
-        raise_application_error(-20001,'Asset locations are not contigous');
+        --Asset locations are not contiguous
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 66);
     END IF;
     --
   END contiguity_check;
@@ -1094,7 +1096,9 @@ AS
       IF i > 1
        AND lt_iit(i).iit_inv_type != lt_iit(i-1).iit_inv_type
        THEN
-          raise_application_error(-20001,'All assets must be of the same type');
+          --All assets must be of the same type
+          hig.raise_ner(pi_appl               => 'AWLRS'
+                       ,pi_id                 => 67);
       END IF;
       --
     END LOOP;
@@ -1105,7 +1109,9 @@ AS
     */
     IF nm3inv.inv_type_is_hierarchical(pi_type => g_iit_rec_1.iit_inv_type)
      THEN
-        raise_application_error(-20001,'Merge of hierarchical assets is not supported.');
+        --Merge of hierarchical assets is not supported.
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 68);
     END IF;
     /*
     ||Check Assets have the same attribution.
