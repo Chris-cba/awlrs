@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.15   Mar 04 2019 10:46:12   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.16   Jun 06 2019 18:29:06   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   Mar 04 2019 10:46:12  $
---       Date fetched Out : $Modtime:   Mar 04 2019 08:18:08  $
---       Version          : $Revision:   1.15  $
+--       Date into PVCS   : $Date:   Jun 06 2019 18:29:06  $
+--       Date fetched Out : $Modtime:   Jun 06 2019 18:25:56  $
+--       Version          : $Revision:   1.16  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 04-MAR-2019 08:18
+--       Generation Date  : 06-JUN-2019 18:25
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -488,6 +488,38 @@ INSERT
       ,HSA_COLUMN_NAME
       ,HSA_SEQUENCE_NAME
       ,HSA_LAST_REBUILD_DATE)
+SELECT 'AWLRS_ASSET_MAINT_RESULTS'
+      ,'AAMR_ID'
+      ,'AAMR_ID_SEQ'
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_SEQUENCE_ASSOCIATIONS
+                   WHERE HSA_TABLE_NAME = 'AWLRS_ASSET_MAINT_RESULTS'
+                     AND HSA_COLUMN_NAME = 'AAMR_ID');
+--
+INSERT
+  INTO HIG_SEQUENCE_ASSOCIATIONS
+      (HSA_TABLE_NAME
+      ,HSA_COLUMN_NAME
+      ,HSA_SEQUENCE_NAME
+      ,HSA_LAST_REBUILD_DATE)
+SELECT 'AWLRS_ASSET_MAINT_RESULTS'
+      ,'AAMR_JOB_ID'
+      ,'AAMR_JOB_ID_SEQ'
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_SEQUENCE_ASSOCIATIONS
+                   WHERE HSA_TABLE_NAME = 'AWLRS_ASSET_MAINT_RESULTS'
+                     AND HSA_COLUMN_NAME = 'AAMR_JOB_ID');
+--
+INSERT
+  INTO HIG_SEQUENCE_ASSOCIATIONS
+      (HSA_TABLE_NAME
+      ,HSA_COLUMN_NAME
+      ,HSA_SEQUENCE_NAME
+      ,HSA_LAST_REBUILD_DATE)
 SELECT 'AWLRS_EXTERNAL_LINKS'
       ,'AEL_ID'
       ,'AEL_ID_SEQ'
@@ -577,6 +609,22 @@ SELECT 'AWLRS_PERSISTENCE'
                     FROM HIG_SEQUENCE_ASSOCIATIONS
                    WHERE HSA_TABLE_NAME = 'AWLRS_PERSISTENCE'
                      AND HSA_COLUMN_NAME = 'AP_ID');
+--
+INSERT
+  INTO HIG_SEQUENCE_ASSOCIATIONS
+      (HSA_TABLE_NAME
+      ,HSA_COLUMN_NAME
+      ,HSA_SEQUENCE_NAME
+      ,HSA_LAST_REBUILD_DATE)
+SELECT 'AWLRS_SAVED_ASSET_CRITERIA'
+      ,'ASAC_ID'
+      ,'ASAC_ID_SEQ'
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_SEQUENCE_ASSOCIATIONS
+                   WHERE HSA_TABLE_NAME = 'AWLRS_SAVED_ASSET_CRITERIA'
+                     AND HSA_COLUMN_NAME = 'ASAC_ID');
 --
 INSERT
   INTO HIG_SEQUENCE_ASSOCIATIONS
