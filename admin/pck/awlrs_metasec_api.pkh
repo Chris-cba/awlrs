@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkh-arc   1.3   May 30 2019 16:06:34   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkh-arc   1.4   Jun 06 2019 15:22:52   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkh  $
-  --       Date into PVCS   : $Date:   May 30 2019 16:06:34  $
-  --       Date fetched Out : $Modtime:   May 29 2019 09:00:38  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   Jun 06 2019 15:22:52  $
+  --       Date fetched Out : $Modtime:   Jun 06 2019 15:09:12  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -31,9 +31,16 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE validate_notnull(pi_parameter_desc  IN hig_options.hop_id%TYPE
+                            ,pi_parameter_value IN hig_options.hop_value%TYPE);
+                            
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_products(po_message_severity OUT hig_codes.hco_code%TYPE
                         ,po_message_cursor   OUT sys_refcursor
                         ,po_cursor           OUT sys_refcursor);
+                        
   --
   -----------------------------------------------------------------------------
   --
@@ -62,6 +69,7 @@ AS
   PROCEDURE revoke_product_license(pi_product          IN     hig_products.hpr_product%TYPE
                                   ,po_message_severity    OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor      OUT sys_refcursor);
+                                  
   --
   -----------------------------------------------------------------------------
   --
@@ -319,7 +327,8 @@ AS
   PROCEDURE get_admin_unit_tree(pi_admin_type    IN     nm_admin_units.nau_admin_type%TYPE
                                ,po_message_severity OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor   OUT sys_refcursor
-                               ,po_cursor           OUT sys_refcursor);                               
+                               ,po_cursor           OUT sys_refcursor);   
+                               
   --
   -----------------------------------------------------------------------------
   --
@@ -445,6 +454,7 @@ AS
                          ,pi_new_menu             IN      hig_modules.hmo_menu%TYPE
                          ,po_message_severity        OUT hig_codes.hco_code%TYPE
                          ,po_message_cursor          OUT sys_refcursor);
+                         
   --
   -----------------------------------------------------------------------------
   --
