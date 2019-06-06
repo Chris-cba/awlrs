@@ -1,15 +1,27 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.10   Mar 01 2019 11:41:06   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.11   Jun 06 2019 18:04:20   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.tab  $
---       Date into PVCS   : $Date:   Mar 01 2019 11:41:06  $
---       Date fetched Out : $Modtime:   Mar 01 2019 11:26:44  $
---       Version          : $Revision:   1.10  $
+--       Date into PVCS   : $Date:   Jun 06 2019 18:04:20  $
+--       Date fetched Out : $Modtime:   Jun 06 2019 18:00:44  $
+--       Version          : $Revision:   1.11  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Fri Mar 01  11:21:18 2019 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Thu Jun 06  17:54:05 2019 by Server Generator 10.1.2.9.28
+
+PROMPT Creating Table 'AWLRS_ASSET_MAINT_RESULTS'
+CREATE TABLE AWLRS_ASSET_MAINT_RESULTS
+ (AAMR_ID NUMBER(38) NOT NULL
+ ,AAMR_JOB_ID NUMBER(38) NOT NULL
+ ,AAMR_INV_TYPE VARCHAR2(4) NOT NULL
+ ,AAMR_IIT_NE_ID NUMBER(38) NOT NULL
+ ,AAMR_NE_ID NUMBER(38)
+ ,AAMR_FROM_OFFSET NUMBER
+ ,AAMR_TO_OFFSET NUMBER
+ )
+/
 
 PROMPT Creating Table 'AWLRS_EXTERNAL_LINKS'
 CREATE TABLE AWLRS_EXTERNAL_LINKS
@@ -92,6 +104,15 @@ CREATE TABLE AWLRS_QUICK_SEARCH_COLUMNS
  (AQSC_THEME_NAME VARCHAR2(30) NOT NULL
  ,AQSC_COLUMN VARCHAR2(30) NOT NULL
  ,AQSC_PRIORITY NUMBER(3) NOT NULL
+ )
+/
+
+PROMPT Creating Table 'AWLRS_SAVED_ASSET_CRITERIA'
+CREATE TABLE AWLRS_SAVED_ASSET_CRITERIA
+ (ASAC_ID NUMBER(38) NOT NULL
+ ,ASAC_NAME VARCHAR2(200) NOT NULL
+ ,ASAC_DESCRIPTION VARCHAR2(1000)
+ ,ASAC_CRITERIA XMLTYPE NOT NULL
  )
 /
 
