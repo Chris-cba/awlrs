@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.4   May 09 2019 14:11:10   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.5   Jun 14 2019 16:29:18   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaref_api.pkb  $
-  --       Date into PVCS   : $Date:   May 09 2019 14:11:10  $
-  --       Date fetched Out : $Modtime:   Mar 25 2019 11:16:12  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   Jun 14 2019 16:29:18  $
+  --       Date fetched Out : $Modtime:   Jun 14 2019 11:59:44  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -326,25 +326,6 @@ AS
      END IF;
     --
   END validate_option_value;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE validate_notnull(pi_parameter_desc  IN hig_options.hop_id%TYPE
-                            ,pi_parameter_value IN hig_options.hop_value%TYPE) 
-  IS
-  --
-  BEGIN
-    --
-    IF pi_parameter_value IS NULL THEN 
-      --
-      hig.raise_ner(pi_appl               => 'HIG'
-                   ,pi_id                 => 22
-                   ,pi_supplementary_info => pi_parameter_desc || ' has not been specified');         
-      --
-    END IF;
-    --
-  END validate_notnull;
 
   --
   -----------------------------------------------------------------------------
@@ -2685,11 +2666,11 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Domain name'
-                    ,pi_parameter_value => pi_unit_domain_name);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Domain name'
+                               ,pi_parameter_value => pi_unit_domain_name);
     --
-    validate_notnull(pi_parameter_desc  => 'Domain text'
-                    ,pi_parameter_value => pi_unit_domain_text);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Domain text'
+                               ,pi_parameter_value => pi_unit_domain_text);
 
     --    
     INSERT 
@@ -2725,14 +2706,14 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Domain'
-                    ,pi_parameter_value => pi_unit_domain_id);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Domain'
+                               ,pi_parameter_value => pi_unit_domain_id);
     --
-    validate_notnull(pi_parameter_desc  => 'Unit name'
-                    ,pi_parameter_value => pi_unit_name);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Unit name'
+                               ,pi_parameter_value => pi_unit_name);
     --
-    validate_notnull(pi_parameter_desc  => 'Unit format mask'
-                    ,pi_parameter_value => pi_unit_format_mask);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Unit format mask'
+                               ,pi_parameter_value => pi_unit_format_mask);
     --
     /*
     ||Check domain exists
@@ -2788,20 +2769,20 @@ AS
       --
     END IF;
     --
-    validate_notnull(pi_parameter_desc  => 'Unit'
-                    ,pi_parameter_value => pi_unit_conv_id_in);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Unit'
+                               ,pi_parameter_value => pi_unit_conv_id_in);
     --
-    validate_notnull(pi_parameter_desc  => 'Unit out'
-                    ,pi_parameter_value => pi_unit_conv_id_out);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Unit out'
+                               ,pi_parameter_value => pi_unit_conv_id_out);
     --
-    validate_notnull(pi_parameter_desc  => 'Function'
-                    ,pi_parameter_value => pi_unit_conv_function);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Function'
+                               ,pi_parameter_value => pi_unit_conv_function);
     --
-    validate_notnull(pi_parameter_desc  => 'Conversion'
-                    ,pi_parameter_value => pi_unit_conv_conversion);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Conversion'
+                               ,pi_parameter_value => pi_unit_conv_conversion);
     --
-    validate_notnull(pi_parameter_desc  => 'Factor'
-                    ,pi_parameter_value => pi_unit_conv_factor);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Factor'
+                               ,pi_parameter_value => pi_unit_conv_factor);
     --
     IF unit_exists(pi_unit_id => pi_unit_conv_id_in) = 'N' THEN
         hig.raise_ner(pi_appl               => 'HIG'
@@ -3357,11 +3338,11 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Unit Name'
-                    ,pi_parameter_value => pi_new_name);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Unit Name'
+                               ,pi_parameter_value => pi_new_name);
     --
-    validate_notnull(pi_parameter_desc  => 'Unit Description'
-                    ,pi_parameter_value => pi_new_desc);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Unit Description'
+                               ,pi_parameter_value => pi_new_desc);
     --    
     get_db_rec(pi_unit_domain_id   => pi_unit_domain_id);
     --          
@@ -3461,11 +3442,11 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Unit Name'
-                    ,pi_parameter_value => pi_new_name);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Unit Name'
+                               ,pi_parameter_value => pi_new_name);
     --
-    validate_notnull(pi_parameter_desc  => 'Unit format mask'
-                    ,pi_parameter_value => pi_new_format_mask);                
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Unit format mask'
+                               ,pi_parameter_value => pi_new_format_mask);                
     --    
     get_db_rec(pi_unit_id          => pi_unit_id);
     --          
@@ -3570,14 +3551,14 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Function'
-                    ,pi_parameter_value => pi_new_function);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Function'
+                               ,pi_parameter_value => pi_new_function);
     --
-    validate_notnull(pi_parameter_desc  => 'Conversion'
-                    ,pi_parameter_value => pi_new_conversion);                
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Conversion'
+                               ,pi_parameter_value => pi_new_conversion);                
     --
-    validate_notnull(pi_parameter_desc  => 'Conversion factod'
-                    ,pi_parameter_value => pi_new_conversion_factor);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Conversion factod'
+                               ,pi_parameter_value => pi_new_conversion_factor);
     -- 
     get_db_rec(pi_unit_id_in   => pi_unit_id_in
               ,pi_unit_id_out  => pi_unit_id_out);

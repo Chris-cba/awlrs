@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.5   May 30 2019 16:06:38   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.6   Jun 14 2019 16:29:18   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   May 30 2019 16:06:38  $
-  --       Date fetched Out : $Modtime:   May 29 2019 09:03:54  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   Jun 14 2019 16:29:18  $
+  --       Date fetched Out : $Modtime:   Jun 14 2019 12:04:32  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -308,26 +308,7 @@ AS
     RETURN TRUE;
     --
   END;
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE validate_notnull(pi_parameter_desc  IN hig_options.hop_id%TYPE
-                            ,pi_parameter_value IN hig_options.hop_value%TYPE) 
-  IS
-  --
-  BEGIN
-    --
-    IF pi_parameter_value IS NULL THEN 
-      --
-      hig.raise_ner(pi_appl               => 'HIG'
-                   ,pi_id                 => 22
-                   ,pi_supplementary_info => pi_parameter_desc || ' has not been specified');         
-      --
-    END IF;
-    --
-  END validate_notnull;
-  
+ 
   --
   -----------------------------------------------------------------------------
   --
@@ -942,16 +923,16 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Admin Type'
-                    ,pi_parameter_value => pi_admin_type);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
+                               ,pi_parameter_value => pi_admin_type);
                     
     --
-    validate_notnull(pi_parameter_desc  => 'Description'
-                    ,pi_parameter_value => pi_desc);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Description'
+                               ,pi_parameter_value => pi_desc);
                     
     --
-    validate_notnull(pi_parameter_desc  => 'Exclusive Flag'
-                    ,pi_parameter_value => pi_exclusive);                    
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Exclusive Flag'
+                               ,pi_parameter_value => pi_exclusive);                    
 
     IF admin_type_exists(pi_admin_type => pi_admin_type) = 'Y' 
      THEN   
@@ -1029,14 +1010,14 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Admin unit type'
-                    ,pi_parameter_value => pi_new_admin_type);  
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin unit type'
+                               ,pi_parameter_value => pi_new_admin_type);  
     --                    
-    validate_notnull(pi_parameter_desc  => 'Description'
-                    ,pi_parameter_value => pi_new_description);   
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Description'
+                               ,pi_parameter_value => pi_new_description);   
     --                    
-    validate_notnull(pi_parameter_desc  => 'Exclusive'
-                    ,pi_parameter_value => pi_new_exclusive);                    
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Exclusive'
+                               ,pi_parameter_value => pi_new_exclusive);                    
     --
     IF pi_old_admin_type <> pi_new_admin_type 
      THEN
@@ -1624,17 +1605,17 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Admin Type'
-                    ,pi_parameter_value => pi_admin_type);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
+                               ,pi_parameter_value => pi_admin_type);
     --
-    validate_notnull(pi_parameter_desc  => 'Name'
-                    ,pi_parameter_value => pi_name);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Name'
+                               ,pi_parameter_value => pi_name);
     --
-    validate_notnull(pi_parameter_desc  => 'Start Date'
-                    ,pi_parameter_value => pi_start_date);   
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
+                               ,pi_parameter_value => pi_start_date);   
     --
-    validate_notnull(pi_parameter_desc  => 'Code'
-                    ,pi_parameter_value => pi_unit_code);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Code'
+                               ,pi_parameter_value => pi_unit_code);
     --
     IF admin_unit_exists (pi_admin_type => pi_admin_type
                          ,pi_unit_code  => pi_unit_code) = 'Y'
@@ -1761,35 +1742,35 @@ AS
     END get_db_rec;    
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Parent Admin Type'
-                    ,pi_parameter_value => pi_parent_admin_type);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Parent Admin Type'
+                               ,pi_parameter_value => pi_parent_admin_type);
     --
-    validate_notnull(pi_parameter_desc  => 'Parent Name'
-                    ,pi_parameter_value => pi_parent_name);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Parent Name'
+                               ,pi_parameter_value => pi_parent_name);
     --
-    validate_notnull(pi_parameter_desc  => 'Parent Start Date'
-                    ,pi_parameter_value => pi_parent_start_date);   
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Parent Start Date'
+                               ,pi_parameter_value => pi_parent_start_date);   
     --
-    validate_notnull(pi_parameter_desc  => 'Parent Level'
-                    ,pi_parameter_value => pi_parent_level);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Parent Level'
+                               ,pi_parameter_value => pi_parent_level);
     --
-    validate_notnull(pi_parameter_desc  => 'Parent Code'
-                    ,pi_parameter_value => pi_parent_unit_code);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Parent Code'
+                               ,pi_parameter_value => pi_parent_unit_code);
     --
-    validate_notnull(pi_parameter_desc  => 'Admin Type'
-                    ,pi_parameter_value => pi_admin_type);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
+                               ,pi_parameter_value => pi_admin_type);
     --
-    validate_notnull(pi_parameter_desc  => 'Name'
-                    ,pi_parameter_value => pi_name);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Name'
+                               ,pi_parameter_value => pi_name);
     --
-    validate_notnull(pi_parameter_desc  => 'Start Date'
-                    ,pi_parameter_value => pi_start_date);   
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
+                               ,pi_parameter_value => pi_start_date);   
     --
-    validate_notnull(pi_parameter_desc  => 'Level'
-                    ,pi_parameter_value => pi_level);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Level'
+                               ,pi_parameter_value => pi_level);
     --
-    validate_notnull(pi_parameter_desc  => 'Code'
-                    ,pi_parameter_value => pi_unit_code);                    
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Code'
+                               ,pi_parameter_value => pi_unit_code);                    
     --
     /*
     ||check parent exists
@@ -1972,20 +1953,20 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Admin Type'
-                    ,pi_parameter_value => pi_new_admin_type);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
+                               ,pi_parameter_value => pi_new_admin_type);
     --
-    validate_notnull(pi_parameter_desc  => 'Name'
-                    ,pi_parameter_value => pi_new_name);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Name'
+                               ,pi_parameter_value => pi_new_name);
     --
-    validate_notnull(pi_parameter_desc  => 'Start Date'
-                    ,pi_parameter_value => pi_new_start_date);   
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
+                               ,pi_parameter_value => pi_new_start_date);   
     --
-    validate_notnull(pi_parameter_desc  => 'Level'
-                    ,pi_parameter_value => pi_new_level);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Level'
+                               ,pi_parameter_value => pi_new_level);
     --
-    validate_notnull(pi_parameter_desc  => 'Code'
-                    ,pi_parameter_value => pi_new_unit_code);                    
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Code'
+                               ,pi_parameter_value => pi_new_unit_code);                    
     --
     IF pi_new_minor_undertaker IS NOT NULL AND pi_new_minor_undertaker NOT IN ('Y','N') 
      THEN
@@ -3455,26 +3436,26 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Module'
-                    ,pi_parameter_value => pi_module);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Module'
+                               ,pi_parameter_value => pi_module);
     --
-    validate_notnull(pi_parameter_desc  => 'Title'
-                    ,pi_parameter_value => pi_title);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Title'
+                               ,pi_parameter_value => pi_title);
     --
-    validate_notnull(pi_parameter_desc  => 'Filename'
-                    ,pi_parameter_value => pi_filename);                    
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Filename'
+                               ,pi_parameter_value => pi_filename);                    
     --
-    validate_notnull(pi_parameter_desc  => 'Module Type'
-                    ,pi_parameter_value => pi_module_type);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Module Type'
+                               ,pi_parameter_value => pi_module_type);
     --
-    validate_notnull(pi_parameter_desc  => 'Fsatpath Invalid'
-                    ,pi_parameter_value => pi_fastpath_invalid);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Fsatpath Invalid'
+                               ,pi_parameter_value => pi_fastpath_invalid);
     --
-    validate_notnull(pi_parameter_desc  => 'Product'
-                    ,pi_parameter_value => pi_application);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Product'
+                               ,pi_parameter_value => pi_application);
     --
-    validate_notnull(pi_parameter_desc  => 'Menu'
-                    ,pi_parameter_value => pi_menu);                    
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Menu'
+                               ,pi_parameter_value => pi_menu);                    
     --
     IF module_exists(pi_module => pi_module) = 'Y' 
      THEN   
@@ -3582,26 +3563,26 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Module'
-                    ,pi_parameter_value => pi_new_module);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Module'
+                               ,pi_parameter_value => pi_new_module);
     --
-    validate_notnull(pi_parameter_desc  => 'Title'
-                    ,pi_parameter_value => pi_new_title);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Title'
+                               ,pi_parameter_value => pi_new_title);
     --
-    validate_notnull(pi_parameter_desc  => 'Filename'
-                    ,pi_parameter_value => pi_new_filename);                    
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Filename'
+                               ,pi_parameter_value => pi_new_filename);                    
     --
-    validate_notnull(pi_parameter_desc  => 'Module Type'
-                    ,pi_parameter_value => pi_new_module_type);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Module Type'
+                               ,pi_parameter_value => pi_new_module_type);
     --
-    validate_notnull(pi_parameter_desc  => 'Fsatpath Invalid'
-                    ,pi_parameter_value => pi_new_fastpath_invalid);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Fsatpath Invalid'
+                               ,pi_parameter_value => pi_new_fastpath_invalid);
     --
-    validate_notnull(pi_parameter_desc  => 'Product'
-                    ,pi_parameter_value => pi_new_application);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Product'
+                               ,pi_parameter_value => pi_new_application);
     --
-    validate_notnull(pi_parameter_desc  => 'Menu'
-                    ,pi_parameter_value => pi_new_menu);                    
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Menu'
+                               ,pi_parameter_value => pi_new_menu);                    
     --
     IF pi_new_fastpath_invalid NOT IN ('Y','N') OR pi_new_use_gri NOT IN ('Y','N')
      THEN
@@ -3773,14 +3754,14 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Module'
-                    ,pi_parameter_value => pi_module);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Module'
+                               ,pi_parameter_value => pi_module);
     --
-    validate_notnull(pi_parameter_desc  => 'Role'
-                    ,pi_parameter_value => pi_role);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Role'
+                               ,pi_parameter_value => pi_role);
     --
-    validate_notnull(pi_parameter_desc  => 'Mode'
-                    ,pi_parameter_value => pi_mode);                                       
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Mode'
+                               ,pi_parameter_value => pi_mode);                                       
     --
     IF module_role_exists(pi_module => pi_module
                          ,pi_role   => pi_role) = 'Y' 
@@ -3860,14 +3841,14 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Module'
-                    ,pi_parameter_value => pi_new_module);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Module'
+                               ,pi_parameter_value => pi_new_module);
     --
-    validate_notnull(pi_parameter_desc  => 'Role'
-                    ,pi_parameter_value => pi_new_role);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Role'
+                               ,pi_parameter_value => pi_new_role);
     --
-    validate_notnull(pi_parameter_desc  => 'Mode'
-                    ,pi_parameter_value => pi_old_mode);                       
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Mode'
+                               ,pi_parameter_value => pi_old_mode);                       
     --
     IF module_exists(pi_module => pi_new_module) <> 'Y' 
      THEN   
@@ -4852,14 +4833,14 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Product'
-                    ,pi_parameter_value => pi_product);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Product'
+                               ,pi_parameter_value => pi_product);
     --
-    validate_notnull(pi_parameter_desc  => 'Role'
-                    ,pi_parameter_value => pi_role);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Role'
+                               ,pi_parameter_value => pi_role);
     --
-    validate_notnull(pi_parameter_desc  => 'Description'
-                    ,pi_parameter_value => pi_description);                                     
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Description'
+                               ,pi_parameter_value => pi_description);                                     
     --    
     IF  product_exists(pi_product => pi_product) <> 'Y'
      THEN
@@ -4981,11 +4962,11 @@ AS
     --
   BEGIN
     --
-    validate_notnull(pi_parameter_desc  => 'Product'
-                    ,pi_parameter_value => pi_new_product);
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Product'
+                               ,pi_parameter_value => pi_new_product);
     --
-    validate_notnull(pi_parameter_desc  => 'Description'
-                    ,pi_parameter_value => pi_new_descr);                      
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Description'
+                               ,pi_parameter_value => pi_new_descr);                      
     --
     IF  product_exists(pi_product => pi_new_product) <> 'Y'
      THEN
