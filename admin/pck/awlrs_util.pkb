@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.25   Apr 03 2019 12:27:10   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.26   Jun 14 2019 11:55:46   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Apr 03 2019 12:27:10  $
-  --       Date fetched Out : $Modtime:   Apr 03 2019 12:26:02  $
-  --       Version          : $Revision:   1.25  $
+  --       Date into PVCS   : $Date:   Jun 14 2019 11:55:46  $
+  --       Date fetched Out : $Modtime:   Jun 14 2019 11:54:04  $
+  --       Version          : $Revision:   1.26  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.25  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.26  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -1652,8 +1652,25 @@ AS
                                    ,po_cursor           => po_message_cursor);
   END ref_cursor_to_csv;
   
---
------------------------------------------------------------------------------
---
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_notnull(pi_parameter_desc  IN hig_options.hop_id%TYPE
+                            ,pi_parameter_value IN hig_options.hop_value%TYPE) 
+  IS
+  --
+  BEGIN
+    --
+    IF pi_parameter_value IS NULL THEN 
+      --
+      hig.raise_ner(pi_appl               => 'HIG'
+                   ,pi_id                 => 22
+                   ,pi_supplementary_info => pi_parameter_desc || ' has not been specified');         
+      --
+    END IF;
+    --
+  END validate_notnull;
+  --
+
 END awlrs_util;
 /

@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.18   Jan 18 2019 11:34:36   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.19   Jun 14 2019 11:55:46   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   Jan 18 2019 11:34:36  $
-  --       Date fetched Out : $Modtime:   Jan 10 2019 15:15:58  $
-  --       Version          : $Revision:   1.18  $
+  --       Date into PVCS   : $Date:   Jun 14 2019 11:55:46  $
+  --       Date fetched Out : $Modtime:   Jun 14 2019 11:53:06  $
+  --       Version          : $Revision:   1.19  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -366,8 +366,12 @@ AS
                              ,po_message_cursor   OUT sys_refcursor
                              ,po_cursor           OUT sys_refcursor);
 
---
------------------------------------------------------------------------------
---
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_notnull(pi_parameter_desc  IN hig_options.hop_id%TYPE
+                            ,pi_parameter_value IN hig_options.hop_value%TYPE);
+  --
+  
 END awlrs_util;
 /
