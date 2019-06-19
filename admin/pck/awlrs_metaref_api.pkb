@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.5   Jun 14 2019 16:29:18   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.6   Jun 19 2019 15:16:38   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaref_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 14 2019 16:29:18  $
-  --       Date fetched Out : $Modtime:   Jun 14 2019 11:59:44  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   Jun 19 2019 15:16:38  $
+  --       Date fetched Out : $Modtime:   Jun 19 2019 15:01:22  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -2558,12 +2558,8 @@ AS
       --
     END IF;
     --
-    IF pi_system NOT IN ('Y','N') THEN
-      --
-      hig.raise_ner(pi_appl => 'HIG'
-                   ,pi_id   => 1);
-      --
-    END IF;
+    awlrs_util.validate_yn(pi_parameter_desc  => 'System'
+                          ,pi_parameter_value => pi_system);
     --
     /*
     ||check value length does not exceed domain value
@@ -2883,12 +2879,8 @@ AS
       -- 
     END IF;
     --
-    IF pi_new_system NOT IN ('Y','N') THEN
-      --
-      hig.raise_ner(pi_appl => 'HIG'
-                   ,pi_id   => 1);
-      --
-    END IF;
+    awlrs_util.validate_yn(pi_parameter_desc  => 'System'
+                          ,pi_parameter_value => pi_new_system);
     /*
     ||check value length does not exceed domain value
     */
