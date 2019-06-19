@@ -1,0 +1,384 @@
+CREATE OR REPLACE PACKAGE awlrs_util
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.21   Jun 19 2019 14:56:48   Peter.Bibby  $
+  --       Module Name      : $Workfile:   awlrs_util.pkh  $
+  --       Date into PVCS   : $Date:   Jun 19 2019 14:56:48  $
+  --       Date fetched Out : $Modtime:   Jun 19 2019 14:55:34  $
+  --       Version          : $Revision:   1.21  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
+  --
+  TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE product_codes_tab IS TABLE OF hig_products.hpr_product%TYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE ne_id_tab IS TABLE OF nm_elements_all.ne_id%TYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE offset_tab IS TABLE OF nm_members_all.nm_begin_mp%TYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE admin_unit_rec IS RECORD(admin_unit  nm_admin_units_all.nau_admin_unit%TYPE
+                               ,unit_code   nm_admin_units_all.nau_unit_code%TYPE
+                               ,name        nm_admin_units_all.nau_name%TYPE);
+  TYPE admin_unit_tab IS TABLE OF admin_unit_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE message_rec IS RECORD(category VARCHAR2(20)
+                            ,message  VARCHAR2(4000));
+  TYPE message_tab IS TABLE OF message_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE column_data_rec IS RECORD(cursor_col VARCHAR2(30)
+                                ,query_col  nm3type.max_varchar2
+                                ,datatype   VARCHAR2(30)
+                                ,mask       VARCHAR2(100));
+  TYPE column_data_tab IS TABLE OF column_data_rec INDEX BY BINARY_INTEGER;
+  /*
+  ||Constants for datatype.
+  */
+  c_varchar2_col CONSTANT VARCHAR2(10) := 'VARCHAR2';
+  c_date_col     CONSTANT VARCHAR2(10) := 'DATE';
+  c_datetime_col CONSTANT VARCHAR2(10) := 'DATETIME';
+  c_number_col   CONSTANT VARCHAR2(10) := 'NUMBER';
+  /*
+  ||Constants for datatype mask.
+  */
+  c_date_mask     CONSTANT VARCHAR2(20) := 'DD-MON-YYYY';
+  c_datetime_mask CONSTANT VARCHAR2(20) := 'DD-MON-YYYY HH24:MI';
+  /*
+  ||Constants for Filter Functions.
+  */
+  c_equals                  CONSTANT VARCHAR2(30) := 'Equals';
+  c_does_not_equal          CONSTANT VARCHAR2(30) := 'DoesNotEqual';
+  c_contains                CONSTANT VARCHAR2(30) := 'Contains';
+  c_does_not_contain        CONSTANT VARCHAR2(30) := 'DoesNotContain';
+  c_starts_with             CONSTANT VARCHAR2(30) := 'StartsWith';
+  c_ends_with               CONSTANT VARCHAR2(30) := 'EndsWith';
+  c_less_than               CONSTANT VARCHAR2(30) := 'LessThan';
+  c_greater_than            CONSTANT VARCHAR2(30) := 'GreaterThan';
+  c_less_than_or_equal_to   CONSTANT VARCHAR2(30) := 'LessThanOrEqualTo';
+  c_geater_than_or_equal_to CONSTANT VARCHAR2(30) := 'GeaterThanOrEqualTo';
+  c_between                 CONSTANT VARCHAR2(30) := 'Between';
+  c_not_between             CONSTANT VARCHAR2(30) := 'NotBetween';
+  c_has_value               CONSTANT VARCHAR2(30) := 'HasValue';
+  c_does_not_have_value     CONSTANT VARCHAR2(30) := 'DoesNotHaveValue';
+  /*
+  ||Constants for message severity.
+  */
+  c_msg_cat_success        CONSTANT hig_codes.hco_code%TYPE := 'SUCCESS';
+  c_msg_cat_info           CONSTANT hig_codes.hco_code%TYPE := 'INFORMATION';
+  c_msg_cat_warning        CONSTANT hig_codes.hco_code%TYPE := 'WARNING';
+  c_msg_cat_ask_continue   CONSTANT hig_codes.hco_code%TYPE := 'ASK_CONTINUE';
+  c_msg_cat_circular_route CONSTANT hig_codes.hco_code%TYPE := 'CIRCULAR_ROUTE';
+  c_msg_cat_error          CONSTANT hig_codes.hco_code%TYPE := 'ERROR';
+  /*
+  ||Constants for Preferred LRM.
+  */
+  c_all_lrms_code   CONSTANT VARCHAR2(10) := 'ALL LRMS';
+  c_all_lrms_descr  CONSTANT VARCHAR2(10) := 'All LRMS';
+  /*
+  ||Module used to assign AWLRS to Asset Categories.
+  */
+  c_awlrs_module  CONSTANT hig_modules.hmo_module%TYPE := 'AWLRS0001';
+  /*
+  ||Constants for Column Type for use with DBMS_SQL.
+  */
+  c_date             CONSTANT PLS_INTEGER := 12;
+  c_number           CONSTANT PLS_INTEGER := 2;
+  c_raw              CONSTANT PLS_INTEGER := 95;
+  c_char             CONSTANT PLS_INTEGER := 96;
+  c_varchar2         CONSTANT PLS_INTEGER := 9;
+  c_varchar          CONSTANT PLS_INTEGER := 1;
+  c_mlslabel         CONSTANT PLS_INTEGER := 105;
+  c_blob             CONSTANT PLS_INTEGER := 113;
+  c_bfile            CONSTANT PLS_INTEGER := 114;
+  c_clob             CONSTANT PLS_INTEGER := 112;
+  c_cfile            CONSTANT PLS_INTEGER := 115;
+  c_timestamp        CONSTANT PLS_INTEGER := 187;
+  c_timestamp_tz     CONSTANT PLS_INTEGER := 188;
+  c_timestamp_ltz    CONSTANT PLS_INTEGER := 232;
+  c_interval_ym      CONSTANT PLS_INTEGER := 189;
+  c_interval_ds      CONSTANT PLS_INTEGER := 190;
+  c_ref              CONSTANT PLS_INTEGER := 110;
+  c_object           CONSTANT PLS_INTEGER := 108;
+  c_varray           CONSTANT PLS_INTEGER := 247;
+  c_table            CONSTANT PLS_INTEGER := 248;
+  c_namedcollection  CONSTANT PLS_INTEGER := 122;
+  c_opaque           CONSTANT PLS_INTEGER := 58;
+  c_nchar            CONSTANT PLS_INTEGER := 286;
+  c_nvarchar2        CONSTANT PLS_INTEGER := 287;
+  c_nclob            CONSTANT PLS_INTEGER := 288;
+  c_bfloat           CONSTANT PLS_INTEGER := 100;
+  c_bdouble          CONSTANT PLS_INTEGER := 101;
+  c_urowid           CONSTANT PLS_INTEGER := 104;
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION set_effective_date(pi_date IN DATE)
+    RETURN PLS_INTEGER;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION historic_mode
+    RETURN BOOLEAN;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION escape_single_quotes(pi_string IN VARCHAR2)
+    RETURN nm3type.max_varchar2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION tokenise_string(pi_string      IN VARCHAR2
+                          ,pi_token       IN VARCHAR2 DEFAULT ','
+                          ,pi_trim_values IN BOOLEAN DEFAULT TRUE)
+    RETURN nm3type.tab_varchar32767;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_assignment(pi_value       IN VARCHAR2
+                         ,pi_datatype    IN VARCHAR2
+                         ,pi_format_mask IN VARCHAR2)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE set_attribute(pi_obj_type    IN VARCHAR2
+                         ,pi_inv_or_ne   IN VARCHAR2
+                         ,pi_global      IN VARCHAR2
+                         ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE
+                         ,pi_prompt      IN nm_type_columns.ntc_prompt%TYPE
+                         ,pi_value       IN VARCHAR2);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION user_has_normal_access(pi_admin_unit IN nm_admin_units_all.nau_admin_unit%TYPE)
+    RETURN BOOLEAN;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user_normal_admin_units(po_message_severity OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor   OUT sys_refcursor
+                                       ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_product_versions(pi_product_codes    IN  product_codes_tab
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_hig_option_values(pi_option_names     IN  option_names_tab
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE gen_row_restriction(pi_index_column IN  VARCHAR2
+                               ,pi_where_clause IN  BOOLEAN DEFAULT TRUE
+                               ,pi_skip_n_rows  IN  PLS_INTEGER
+                               ,pi_pagesize     IN  PLS_INTEGER
+                               ,po_lower_index  OUT PLS_INTEGER
+                               ,po_upper_index  OUT PLS_INTEGER
+                               ,po_statement    OUT VARCHAR2);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION gen_order_by(pi_order_columns  IN nm3type.tab_varchar30
+                       ,pi_order_asc_desc IN nm3type.tab_varchar4
+                       ,pi_enclose_cols   IN BOOLEAN DEFAULT FALSE)
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE add_column_data(pi_cursor_col   IN     VARCHAR2
+                           ,pi_query_col    IN     VARCHAR2
+                           ,pi_datatype     IN     VARCHAR2
+                           ,pi_mask         IN     VARCHAR2
+                           ,pio_column_data IN OUT column_data_tab);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE process_filter(pi_columns      IN  nm3type.tab_varchar30
+                          ,pi_column_data IN  column_data_tab
+                          ,pi_operators    IN  nm3type.tab_varchar30
+                          ,pi_values_1     IN  nm3type.tab_varchar32767
+                          ,pi_values_2     IN  nm3type.tab_varchar32767
+                          ,pi_where_or_and IN  VARCHAR2 DEFAULT 'WHERE'
+                          ,po_where_clause OUT nm3type.max_varchar2);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_preferred_lrm
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_preferred_lrm(po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_lrms(pi_filter           IN  VARCHAR2
+                            ,pi_skip_n_rows      IN  PLS_INTEGER
+                            ,pi_pagesize         IN  PLS_INTEGER
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE set_preferred_lrm(pi_group_type   IN VARCHAR2
+                             ,pi_set_user_opt IN BOOLEAN DEFAULT TRUE);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE set_preferred_lrm(pi_group_type       IN  VARCHAR2
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_length_units(po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION gen_row_restriction(pi_index_column   IN VARCHAR2
+                              ,pi_where_clause   IN BOOLEAN DEFAULT TRUE
+                              ,pi_start_index    IN PLS_INTEGER
+                              ,pi_number_of_rows IN PLS_INTEGER)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_message(pi_category    IN     hig_codes.hco_code%TYPE
+                       ,pi_message     IN     VARCHAR2
+                       ,po_message_tab IN OUT NOCOPY awlrs_message_tab);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_message_cursor(pi_message_tab IN  awlrs_message_tab
+                              ,po_cursor      OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_highest_severity(pi_message_tab      IN  awlrs_message_tab
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_default_success_tab(po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_tab      OUT NOCOPY awlrs_message_tab);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_default_success_cursor(po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_ner_to_message_tab(pi_ner_appl           IN     nm_errors.ner_appl%TYPE
+                                  ,pi_ner_id             IN     nm_errors.ner_id%TYPE
+                                  ,pi_supplementary_info IN     VARCHAR2 DEFAULT NULL
+                                  ,pi_category           IN     hig_codes.hco_code%TYPE
+                                  ,po_message_tab        IN OUT NOCOPY awlrs_message_tab);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE handle_exception(po_message_severity IN OUT hig_codes.hco_code%TYPE
+                            ,po_message_tab      IN OUT NOCOPY awlrs_message_tab);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE handle_exception(po_message_severity IN OUT hig_codes.hco_code%TYPE
+                            ,po_cursor              OUT sys_refcursor);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION inv_category_is_updatable(pi_category IN nm_inv_categories.nic_category%TYPE)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION ref_cursor_to_csv(pi_cursor    IN sys_refcursor
+                            ,pi_title_row IN BOOLEAN DEFAULT TRUE)
+    RETURN CLOB;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE ref_cursor_to_csv(pi_cursor           IN  sys_refcursor
+                             ,pi_title_row        IN  VARCHAR2 DEFAULT 'Y'
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_notnull(pi_parameter_desc  IN hig_options.hop_id%TYPE
+                            ,pi_parameter_value IN hig_options.hop_value%TYPE);
+                           
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_yn(pi_parameter_desc  IN hig_options.hop_id%TYPE
+                       ,pi_parameter_value IN hig_options.hop_value%TYPE);          
+                       
+  --
+  
+END awlrs_util;
+/
