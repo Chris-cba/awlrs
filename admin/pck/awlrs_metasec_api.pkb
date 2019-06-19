@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.6   Jun 14 2019 16:29:18   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.7   Jun 19 2019 15:17:46   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 14 2019 16:29:18  $
-  --       Date fetched Out : $Modtime:   Jun 14 2019 12:04:32  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   Jun 19 2019 15:17:46  $
+  --       Date fetched Out : $Modtime:   Jun 19 2019 15:14:58  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -929,22 +929,15 @@ AS
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Description'
                                ,pi_parameter_value => pi_desc);
-                    
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Exclusive Flag'
-                               ,pi_parameter_value => pi_exclusive);                    
-
     IF admin_type_exists(pi_admin_type => pi_admin_type) = 'Y' 
      THEN   
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 64);     
     END IF;
     --
-    IF pi_exclusive NOT IN ('Y','N') 
-     THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 1);
-    END IF;
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Exclusive Flag'
+                          ,pi_parameter_value => pi_exclusive);      
     --    
     INSERT 
       INTO nm_au_types_full 
@@ -1014,10 +1007,7 @@ AS
                                ,pi_parameter_value => pi_new_admin_type);  
     --                    
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Description'
-                               ,pi_parameter_value => pi_new_description);   
-    --                    
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Exclusive'
-                               ,pi_parameter_value => pi_new_exclusive);                    
+                               ,pi_parameter_value => pi_new_description);                    
     --
     IF pi_old_admin_type <> pi_new_admin_type 
      THEN
@@ -1032,12 +1022,9 @@ AS
                          ,pi_id   => 158);
         END IF;
     END IF;
-    
-    IF pi_new_exclusive NOT IN ('Y','N') 
-     THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 1);
-    END IF;
+    --
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Exclusive'
+                          ,pi_parameter_value => pi_new_exclusive);   
     --    
     get_db_rec(pi_old_admin_type => pi_old_admin_type);
     --
@@ -1632,12 +1619,8 @@ AS
                      ,pi_id   => 26);
     END IF;
     --
-    IF pi_minor_undertaker NOT IN ('Y','N') 
-     THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 1
-                     ,pi_supplementary_info => 'Minor undertaker');
-    END IF;
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Minor Undertaker'
+                          ,pi_parameter_value => pi_minor_undertaker); 
     /*
     ||build record for insert.
     */    
@@ -1968,11 +1951,8 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Code'
                                ,pi_parameter_value => pi_new_unit_code);                    
     --
-    IF pi_new_minor_undertaker IS NOT NULL AND pi_new_minor_undertaker NOT IN ('Y','N') 
-     THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 1);
-    END IF;
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Minor Undertaker'
+                          ,pi_parameter_value => pi_new_minor_undertaker);                     
     --
     /*
     ||check if the name or code will be unique
@@ -3463,11 +3443,11 @@ AS
                      ,pi_id   => 64);     
     END IF;
     --
-    IF pi_fastpath_invalid NOT IN ('Y','N') OR pi_use_gri NOT IN ('Y','N')
-     THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 1);
-    END IF;
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Fastpath Invalid'
+                          ,pi_parameter_value => pi_fastpath_invalid);  
+    --
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Use GRI'
+                          ,pi_parameter_value => pi_use_gri);  
     --    
     IF product_exists(pi_product => pi_application) <> 'Y'
      THEN
@@ -3584,11 +3564,11 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Menu'
                                ,pi_parameter_value => pi_new_menu);                    
     --
-    IF pi_new_fastpath_invalid NOT IN ('Y','N') OR pi_new_use_gri NOT IN ('Y','N')
-     THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 1);
-    END IF;
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Fastpath Invalid'
+                          ,pi_parameter_value => pi_new_fastpath_invalid); 
+    --
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Use GRI'
+                          ,pi_parameter_value => pi_new_use_gri); 
     --    
     IF  product_exists(pi_product => pi_new_application) <> 'Y'
      THEN
