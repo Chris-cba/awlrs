@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.26   Jun 14 2019 11:55:46   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.27   Jun 19 2019 14:30:04   Barbara.Odriscoll  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Jun 14 2019 11:55:46  $
-  --       Date fetched Out : $Modtime:   Jun 14 2019 11:54:04  $
-  --       Version          : $Revision:   1.26  $
+  --       Date into PVCS   : $Date:   Jun 19 2019 14:30:04  $
+  --       Date fetched Out : $Modtime:   Jun 19 2019 14:26:58  $
+  --       Version          : $Revision:   1.27  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.26  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.27  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -1670,6 +1670,34 @@ AS
     END IF;
     --
   END validate_notnull;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_notnull_yn(pi_parameter_desc  IN hig_options.hop_id%TYPE
+                               ,pi_parameter_value IN hig_options.hop_value%TYPE)  
+  IS
+  --
+  BEGIN
+    --
+    IF pi_parameter_value IS NULL THEN 
+      --
+      hig.raise_ner(pi_appl               => 'HIG'
+                   ,pi_id                 => 22
+                   ,pi_supplementary_info => pi_parameter_desc || ' has not been specified');   
+                   
+    ELSE
+      --
+      IF pi_parameter_value NOT IN ('Y','N') THEN   
+       
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 1
+                      ,pi_supplementary_info => pi_parameter_desc);
+      END IF;                               
+      --
+    END IF;
+    --
+  END validate_notnull_yn;                                
   --
 
 END awlrs_util;
