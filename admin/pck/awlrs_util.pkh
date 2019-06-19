@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.20   Jun 19 2019 14:30:04   Barbara.Odriscoll  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.21   Jun 19 2019 14:56:48   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   Jun 19 2019 14:30:04  $
-  --       Date fetched Out : $Modtime:   Jun 19 2019 14:26:16  $
-  --       Version          : $Revision:   1.20  $
+  --       Date into PVCS   : $Date:   Jun 19 2019 14:56:48  $
+  --       Date fetched Out : $Modtime:   Jun 19 2019 14:55:34  $
+  --       Version          : $Revision:   1.21  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.20  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -371,12 +371,13 @@ AS
   --
   PROCEDURE validate_notnull(pi_parameter_desc  IN hig_options.hop_id%TYPE
                             ,pi_parameter_value IN hig_options.hop_value%TYPE);
-                            
+                           
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE validate_notnull_yn(pi_parameter_desc  IN hig_options.hop_id%TYPE
-                               ,pi_parameter_value IN hig_options.hop_value%TYPE);                            
+  PROCEDURE validate_yn(pi_parameter_desc  IN hig_options.hop_id%TYPE
+                       ,pi_parameter_value IN hig_options.hop_value%TYPE);          
+                       
   --
   
 END awlrs_util;
