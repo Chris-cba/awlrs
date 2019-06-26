@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkh-arc   1.5   Jun 14 2019 11:56:54   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkh-arc   1.6   Jun 26 2019 07:56:56   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkh  $
-  --       Date into PVCS   : $Date:   Jun 14 2019 11:56:54  $
-  --       Date fetched Out : $Modtime:   Jun 14 2019 11:56:32  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   Jun 26 2019 07:56:56  $
+  --       Date fetched Out : $Modtime:   Jun 25 2019 15:29:06  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -262,7 +262,6 @@ AS
                              ,pi_old_fax               IN     nm_admin_units_all.nau_fax%TYPE
                              ,pi_old_comments          IN     nm_admin_units_all.nau_comments%TYPE
                              ,pi_old_last_wor_no       IN     nm_admin_units_all.nau_last_wor_no%TYPE
-                             ,pi_old_start_date        IN     nm_admin_units_all.nau_start_date%TYPE
                              ,pi_old_end_date          IN     nm_admin_units_all.nau_end_date%TYPE
                              ,pi_old_nsty_sub_type     IN     nm_admin_units_all.nau_nsty_sub_type%TYPE
                              ,pi_old_prefix            IN     nm_admin_units_all.nau_prefix%TYPE
@@ -286,7 +285,6 @@ AS
                              ,pi_new_fax               IN     nm_admin_units_all.nau_fax%TYPE
                              ,pi_new_comments          IN     nm_admin_units_all.nau_comments%TYPE
                              ,pi_new_last_wor_no       IN     nm_admin_units_all.nau_last_wor_no%TYPE
-                             ,pi_new_start_date        IN     nm_admin_units_all.nau_start_date%TYPE
                              ,pi_new_end_date          IN     nm_admin_units_all.nau_end_date%TYPE
                              ,pi_new_nsty_sub_type     IN     nm_admin_units_all.nau_nsty_sub_type%TYPE
                              ,pi_new_prefix            IN     nm_admin_units_all.nau_prefix%TYPE
