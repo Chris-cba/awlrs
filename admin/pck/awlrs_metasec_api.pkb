@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.7   Jun 19 2019 15:17:46   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.8   Jun 26 2019 07:56:54   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 19 2019 15:17:46  $
-  --       Date fetched Out : $Modtime:   Jun 19 2019 15:14:58  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   Jun 26 2019 07:56:54  $
+  --       Date fetched Out : $Modtime:   Jun 25 2019 15:27:04  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -1864,7 +1864,6 @@ AS
                              ,pi_old_fax               IN     nm_admin_units_all.nau_fax%TYPE
                              ,pi_old_comments          IN     nm_admin_units_all.nau_comments%TYPE
                              ,pi_old_last_wor_no       IN     nm_admin_units_all.nau_last_wor_no%TYPE
-                             ,pi_old_start_date        IN     nm_admin_units_all.nau_start_date%TYPE
                              ,pi_old_end_date          IN     nm_admin_units_all.nau_end_date%TYPE
                              ,pi_old_nsty_sub_type     IN     nm_admin_units_all.nau_nsty_sub_type%TYPE
                              ,pi_old_prefix            IN     nm_admin_units_all.nau_prefix%TYPE
@@ -1888,7 +1887,6 @@ AS
                              ,pi_new_fax               IN     nm_admin_units_all.nau_fax%TYPE
                              ,pi_new_comments          IN     nm_admin_units_all.nau_comments%TYPE
                              ,pi_new_last_wor_no       IN     nm_admin_units_all.nau_last_wor_no%TYPE
-                             ,pi_new_start_date        IN     nm_admin_units_all.nau_start_date%TYPE
                              ,pi_new_end_date          IN     nm_admin_units_all.nau_end_date%TYPE
                              ,pi_new_nsty_sub_type     IN     nm_admin_units_all.nau_nsty_sub_type%TYPE
                              ,pi_new_prefix            IN     nm_admin_units_all.nau_prefix%TYPE
@@ -1941,9 +1939,6 @@ AS
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Name'
                                ,pi_parameter_value => pi_new_name);
-    --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
-                               ,pi_parameter_value => pi_new_start_date);   
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Level'
                                ,pi_parameter_value => pi_new_level);
@@ -2027,10 +2022,6 @@ AS
      OR (lr_db_nau_rec.nau_last_wor_no != pi_old_last_wor_no)
      OR (lr_db_nau_rec.nau_last_wor_no IS NULL AND pi_old_last_wor_no IS NOT NULL)
      OR (lr_db_nau_rec.nau_last_wor_no IS NOT NULL AND pi_old_last_wor_no IS NULL)
-     --
-     OR (lr_db_nau_rec.nau_start_date != pi_old_start_date)
-     OR (lr_db_nau_rec.nau_start_date IS NULL AND pi_old_start_date IS NOT NULL)
-     OR (lr_db_nau_rec.nau_start_date IS NOT NULL AND pi_old_start_date IS NULL)
      --
      OR (lr_db_nau_rec.nau_end_date != pi_old_end_date)
      OR (lr_db_nau_rec.nau_end_date IS NULL AND pi_old_end_date IS NOT NULL)
@@ -2172,14 +2163,7 @@ AS
        OR (pi_old_last_wor_no IS NOT NULL AND pi_new_last_wor_no IS NULL)
        THEN
          lv_upd := 'Y';
-      END IF;   
-      --
-      IF pi_old_start_date != pi_new_start_date
-       OR (pi_old_start_date IS NULL AND pi_new_start_date IS NOT NULL)
-       OR (pi_old_start_date IS NOT NULL AND pi_new_start_date IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;     
+      END IF;       
       --      
       IF pi_old_end_date != pi_new_end_date
        OR (pi_old_end_date IS NULL AND pi_new_end_date IS NOT NULL)
@@ -2265,8 +2249,7 @@ AS
               ,nau_phone            = pi_new_phone           
               ,nau_fax              = pi_new_fax             
               ,nau_comments         = pi_new_comments        
-              ,nau_last_wor_no      = pi_new_last_wor_no     
-              ,nau_start_date       = TRUNC(pi_new_start_date)      
+              ,nau_last_wor_no      = pi_new_last_wor_no      
               ,nau_end_date         = TRUNC(pi_new_end_date)   
               ,nau_nsty_sub_type    = pi_new_nsty_sub_type   
               ,nau_prefix           = pi_new_prefix          
