@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_external_links_api.pkb-arc   1.4   Jun 19 2019 17:03:48   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_external_links_api.pkb-arc   1.5   Jun 27 2019 12:41:02   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_external_links_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 19 2019 17:03:48  $
-  --       Date fetched Out : $Modtime:   Jun 19 2019 15:10:32  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   Jun 27 2019 12:41:02  $
+  --       Date fetched Out : $Modtime:   Jun 27 2019 12:40:02  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_external_links_api';
   --
   g_theme_name   nm_themes_all.nth_theme_name%TYPE;
@@ -121,7 +121,7 @@ AS
         WHEN 'FUNCTION'
          THEN
             --
-            lv_source := lt_aelp(i).aelp_source||'('||nm3flx.string(pi_entity_type)||','||nm3flx.string(pi_entity_type_type)||','||pi_entity_id||')';
+            lv_source := awlrs_util.escape_single_quotes(lt_aelp(i).aelp_source)||'('||nm3flx.string(pi_entity_type)||','||nm3flx.string(pi_entity_type_type)||','||pi_entity_id||')';
             --
       END CASE;
       --
