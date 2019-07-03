@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_external_links_api.pkb-arc   1.5   Jun 27 2019 12:41:02   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_external_links_api.pkb-arc   1.6   Jul 03 2019 15:52:00   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_external_links_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 27 2019 12:41:02  $
-  --       Date fetched Out : $Modtime:   Jun 27 2019 12:40:02  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   Jul 03 2019 15:52:00  $
+  --       Date fetched Out : $Modtime:   Jul 01 2019 18:50:42  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_external_links_api';
   --
   g_theme_name   nm_themes_all.nth_theme_name%TYPE;
@@ -54,7 +54,7 @@ AS
     --
     RETURN g_theme_types;
     --
-  END;
+  END get_theme_types;
 
   --
   ------------------------------------------------------------------------------
@@ -139,31 +139,35 @@ AS
       --
     END LOOP;
     --
-    IF pi_entity_type = c_network
+    IF lv_sql IS NOT NULL
      THEN
-        --
-        IF lv_ad_asset_attrib
+        IF pi_entity_type = c_network
          THEN
-            lv_sql := 'SELECT '||lv_sql||' FROM nm_elements_all,nm_nw_ad_link,nm_inv_items_all WHERE ne_id = :entity_id AND ne_id = nad_ne_id(+) AND nad_primary_ad(+) = ''Y'' AND nad_iit_ne_id = iit_ne_id(+)';
-        ELSE
-            lv_sql := 'SELECT '||lv_sql||' FROM nm_elements_all WHERE ne_id = :entity_id';
+            --
+            IF lv_ad_asset_attrib
+             THEN
+                lv_sql := 'SELECT '||lv_sql||' FROM nm_elements_all,nm_nw_ad_link,nm_inv_items_all WHERE ne_id = :entity_id AND ne_id = nad_ne_id(+) AND nad_primary_ad(+) = ''Y'' AND nad_iit_ne_id = iit_ne_id(+)';
+            ELSE
+                lv_sql := 'SELECT '||lv_sql||' FROM nm_elements_all WHERE ne_id = :entity_id';
+            END IF;
+            --
+        ELSIF pi_entity_type = c_asset
+         THEN
+            --
+            lr_nit := nm3get.get_nit(pi_nit_inv_type => pi_entity_type_type);
+            --
+            IF lr_nit.nit_table_name IS NULL
+             THEN
+                lv_sql := 'SELECT '||lv_sql||' FROM nm_inv_items_all WHERE iit_ne_id = :entity_id';
+            ELSE
+                lv_sql := 'SELECT '||lv_sql||' FROM '||lr_nit.nit_table_name||' WHERE '||lr_nit.nit_foreign_pk_column||' = :entity_id';
+            END IF;
+            --
         END IF;
         --
-    ELSIF pi_entity_type = c_asset
-     THEN
-        --
-        lr_nit := nm3get.get_nit(pi_nit_inv_type => pi_entity_type_type);
-        --
-        IF lr_nit.nit_table_name IS NULL
-         THEN
-            lv_sql := 'SELECT '||lv_sql||' FROM nm_inv_items_all WHERE iit_ne_id = :entity_id';
-        ELSE
-            lv_sql := 'SELECT '||lv_sql||' FROM '||lr_nit.nit_table_name||' WHERE '||lr_nit.nit_foreign_pk_column||' = :entity_id';
-        END IF;
+        EXECUTE IMMEDIATE lv_sql INTO lv_retval USING lv_retval, pi_entity_id;
         --
     END IF;
-    --
-    EXECUTE IMMEDIATE lv_sql INTO lv_retval USING lv_retval, pi_entity_id;
     --
     RETURN lv_retval;
     --
