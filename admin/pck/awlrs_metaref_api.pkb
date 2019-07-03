@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.6   Jun 19 2019 15:16:38   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.7   Jul 03 2019 16:00:12   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaref_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 19 2019 15:16:38  $
-  --       Date fetched Out : $Modtime:   Jun 19 2019 15:01:22  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   Jul 03 2019 16:00:12  $
+  --       Date fetched Out : $Modtime:   Jul 03 2019 15:52:18  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -353,6 +353,12 @@ AS
     PRAGMA EXCEPTION_INIT(e_no_object_in_string, -20307);    
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     BEGIN
       nm3ddl.create_object_and_syns(p_object_name => pi_unit_conv_function
@@ -2488,6 +2494,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;  
+    --
     IF pi_product IS NOT NULL THEN
       --
       IF product_exists(pi_product => pi_product) = 'N' THEN   
@@ -2550,6 +2562,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     IF code_exists(pi_domain => pi_domain
                   ,pi_code   => pi_code) = 'Y' THEN      
       --
@@ -2608,6 +2626,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;  
+    --
     /*
     || Check no user option exists, if it does then error
     */
@@ -2662,6 +2686,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Domain name'
                                ,pi_parameter_value => pi_unit_domain_name);
     --
@@ -2701,6 +2731,12 @@ AS
     lv_unit_id nm_unit_domains.ud_domain_id%TYPE := nm3unit.get_next_unit_id;
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Domain'
                                ,pi_parameter_value => pi_unit_domain_id);
@@ -2757,6 +2793,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     IF unit_conversion_exists (pi_unit_conv_id_in      => pi_unit_conv_id_in
                               ,pi_unit_conv_id_out => pi_unit_conv_id_out) = 'Y' THEN
       --
@@ -2792,6 +2834,13 @@ AS
                      ,pi_supplementary_info => 'Unit does not exist');   
     END IF;
     --
+    IF SYS_CONTEXT('NM3_SECURITY_CTX','HIG_OWNER') <> 'Y'
+     THEN
+       --Vague message on purpose. Only Owner can create.
+       hig.raise_ner(pi_appl => 'HIG'
+                    ,pi_id   => 83);
+    END IF;  
+    --    
     gen_unit_conversion_fun(pi_unit_conv_function     => UPPER(pi_unit_conv_function)
                            ,pi_unit_conv_conversion   => pi_unit_conv_conversion);
     --
@@ -2863,6 +2912,12 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     IF pi_old_system = 'Y' THEN
       --
@@ -3034,6 +3089,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     /*
     ||if there is a value then check it has not been updated by another user.
     */
@@ -3130,6 +3191,12 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --    
     get_db_rec(pi_user_id   => pi_user_id
               ,pi_option_id => pi_option_id);
@@ -3233,6 +3300,12 @@ AS
     END get_db_rec;
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     get_db_rec(pi_product_id  => pi_product_id
               ,pi_error_id    => pi_error_id);
     --
@@ -3329,6 +3402,12 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Unit Name'
                                ,pi_parameter_value => pi_new_name);
@@ -3433,6 +3512,12 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Unit Name'
                                ,pi_parameter_value => pi_new_name);
@@ -3543,6 +3628,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Function'
                                ,pi_parameter_value => pi_new_function);
     --
@@ -3604,6 +3695,13 @@ AS
           hig.raise_ner(pi_appl => 'AWLRS'
                        ,pi_id   => 25);
       ELSE
+        --
+        IF SYS_CONTEXT('NM3_SECURITY_CTX','HIG_OWNER') <> 'Y'
+         THEN
+           --Vague message on purpose. Only Owner can create.
+           hig.raise_ner(pi_appl => 'HIG'
+                        ,pi_id   => 83);
+        END IF;
         --
         BEGIN
           --
@@ -3673,6 +3771,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     IF domain_exists(pi_domain => pi_domain) <> 'Y' THEN 
       hig.raise_ner(pi_appl => 'NET'
                    ,pi_id   => 26);
@@ -3722,6 +3826,12 @@ AS
     lv_cnt  NUMBER;
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     IF unit_domain_exists (pi_unit_domain_id => pi_unit_domain_id) <> 'Y' THEN 
       hig.raise_ner(pi_appl => 'NET'
@@ -3774,6 +3884,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     IF unit_exists (pi_unit_id => pi_unit_id) <> 'Y' THEN
       hig.raise_ner(pi_appl => 'NET'
                    ,pi_id   => 26);
@@ -3818,6 +3934,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     IF user_option_exists (pi_user_id    => pi_user_id      
                           ,pi_option_id  => pi_option_id) <> 'Y' 
      THEN
@@ -3850,6 +3972,12 @@ AS
     IS
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     IF unit_conversion_exists (pi_unit_conv_id_in  => pi_unit_conv_id_in
                               ,pi_unit_conv_id_out => pi_unit_conv_id_out) <> 'Y' THEN

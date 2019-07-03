@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.8   Jun 26 2019 07:56:54   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.9   Jul 03 2019 16:00:12   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 26 2019 07:56:54  $
-  --       Date fetched Out : $Modtime:   Jun 25 2019 15:27:04  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   Jul 03 2019 16:00:12  $
+  --       Date fetched Out : $Modtime:   Jul 03 2019 15:57:34  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -319,6 +319,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     UPDATE hig_products
        SET hpr_key = ascii(hpr_product)
      WHERE hpr_product = pi_product;
@@ -341,8 +347,13 @@ AS
                                   ,po_message_cursor      OUT sys_refcursor)
     IS
     --
-    --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     UPDATE hig_products
        SET hpr_key = ''
@@ -923,6 +934,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
                                ,pi_parameter_value => pi_admin_type);
                     
@@ -1002,6 +1019,12 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin unit type'
                                ,pi_parameter_value => pi_new_admin_type);  
@@ -1118,6 +1141,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     IF admin_type_exists(pi_admin_type => pi_admin_type) <> 'Y' 
      THEN 
         hig.raise_ner(pi_appl => 'NET'
@@ -1157,7 +1186,6 @@ AS
                            ,po_message_cursor   OUT sys_refcursor
                            ,po_cursor           OUT sys_refcursor)
     IS
-    --
     --
   BEGIN
     --
@@ -1592,6 +1620,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
                                ,pi_parameter_value => pi_admin_type);
     --
@@ -1724,6 +1758,12 @@ AS
           --      
     END get_db_rec;    
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Parent Admin Type'
                                ,pi_parameter_value => pi_parent_admin_type);
@@ -1933,6 +1973,12 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
                                ,pi_parameter_value => pi_new_admin_type);
@@ -2329,6 +2375,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     IF admin_unit_exists(pi_admin_unit => pi_admin_unit) <> 'Y' 
      THEN 
         hig.raise_ner(pi_appl => 'NET'
@@ -2342,9 +2394,7 @@ AS
     END IF;
     --    
     /*
-    ||pb to do This has option to end all children defaulted to true.
-    ||Do we want to give this option?
-    
+    ||
     */
     nm3api_admin_unit.end_date_admin_unit(pi_admin_unit  => pi_admin_unit
                                          ,pi_end_date    => TRUNC(pi_end_date));     
@@ -3399,6 +3449,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Module'
                                ,pi_parameter_value => pi_module);
     --
@@ -3525,6 +3581,12 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Module'
                                ,pi_parameter_value => pi_new_module);
@@ -3717,6 +3779,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Module'
                                ,pi_parameter_value => pi_module);
     --
@@ -3803,6 +3871,12 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Module'
                                ,pi_parameter_value => pi_new_module);
@@ -3911,6 +3985,12 @@ AS
     IS
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     IF module_role_exists(pi_module => pi_module
                          ,pi_role   => pi_role) <> 'Y' 
@@ -4743,17 +4823,18 @@ AS
     --
   BEGIN
     --
-    nm_Debug.debug_on;
-   nm_Debug.debug('pb1');
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --    
     sql_string := 'CREATE ROLE '||pi_role;
-     nm_Debug.debug(sql_string);
     hig.execute_ddl(sql_string);   
     --
   EXCEPTION    
     WHEN ddl_error
        THEN
-       nm_Debug.debug('whnen ddl error');
-       nm_Debug.debug_off;
           hig.raise_ner(pi_appl => 'HIG'
                        ,pi_id   => 83);
   END gen_role; 
@@ -4769,6 +4850,12 @@ AS
     sql_string nm3type.max_varchar2;
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     sql_string := 'DROP ROLE '||pi_role;
     hig.execute_ddl(sql_string);   
@@ -4795,6 +4882,12 @@ AS
     lt_messages awlrs_message_tab := awlrs_message_tab();
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Product'
                                ,pi_parameter_value => pi_product);
@@ -4925,6 +5018,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Product'
                                ,pi_parameter_value => pi_new_product);
     --
@@ -5010,6 +5109,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     IF role_exists(pi_role => pi_role) <> 'Y' 
      THEN
         hig.raise_ner(pi_appl => 'HIG'
@@ -5067,6 +5172,12 @@ AS
     --
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     proc_input := 'GRANT '||pi_priv||' TO '||pi_role;
     hig.execute_ddl(proc_input);
     --
@@ -5123,6 +5234,12 @@ AS
            );
   BEGIN
     --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
+    --
     proc_input := 'REVOKE '||pi_priv||' FROM '||pi_role;
     hig.execute_ddl(proc_input);
     --
@@ -5145,6 +5262,12 @@ AS
     IS
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     IF role_exists(pi_role => pi_role) <> 'Y' 
      THEN
@@ -5175,6 +5298,12 @@ AS
     IS
     --
   BEGIN
+    --
+    IF awlrs_util.historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;    
     --
     IF role_exists(pi_role => pi_role) <> 'Y' 
      THEN
