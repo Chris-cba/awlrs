@@ -7,11 +7,11 @@
 --
 --  PVCS Identifiers :-
 --
---      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1260_metadata_upg.sql-arc   1.0   Jun 06 2019 18:39:32   Mike.Huitson  $
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1260_metadata_upg.sql-arc   1.1   Jul 04 2019 10:45:02   Peter.Bibby  $
 --      Module Name      : $Workfile:   awlrs1010_awlrs1260_metadata_upg.sql  $
---      Date into PVCS   : $Date:   Jun 06 2019 18:39:32  $
---      Date fetched Out : $Modtime:   Jun 06 2019 18:29:26  $
---      Version          : $Revision:   1.0  $
+--      Date into PVCS   : $Date:   Jul 04 2019 10:45:02  $
+--      Date fetched Out : $Modtime:   Jul 04 2019 10:01:10  $
+--      Version          : $Revision:   1.1  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2019 Bentley Systems Incorporated. All rights reserved.

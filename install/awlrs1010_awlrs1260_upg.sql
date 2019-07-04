@@ -3,11 +3,11 @@
 --
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1260_upg.sql-arc   1.0   Jun 06 2019 18:39:32   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1260_upg.sql-arc   1.1   Jul 04 2019 10:45:02   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrs1010_awlrs1260_upg.sql  $
---       Date into PVCS   : $Date:   Jun 06 2019 18:39:32  $
---       Date fetched Out : $Modtime:   Jun 06 2019 18:37:10  $
---       Version          : $Revision:   1.0  $
+--       Date into PVCS   : $Date:   Jul 04 2019 10:45:02  $
+--       Date fetched Out : $Modtime:   Jul 04 2019 10:42:14  $
+--       Version          : $Revision:   1.1  $
 --
 --   Product upgrade script
 --
@@ -43,8 +43,7 @@ begin
    hig2.pre_upgrade_check (p_product               => 'AWLRS'
                           ,p_new_version           => '1.2.6.0'
                           ,p_allowed_old_version_1 => '1.0.1.0'
-                          ,p_allowed_old_version_2 => '1.1.8.2'
-                          ,p_allowed_old_version_3 => '1.2.5.1'
+                          ,p_allowed_old_version_1 => '1.1.8.3'
                           );
 END;
 /
@@ -76,6 +75,16 @@ FROM dual
 SET FEEDBACK ON
 start &&run_file
 SET FEEDBACK OFF
+--
+---------------------------------------------------------------------------------------------------
+--                        **************** VIEWS   ****************
+--
+---------------------------------------------------------------------------------------------------
+--                        **************** TRIGGERS   ****************
+--
+---------------------------------------------------------------------------------------------------
+--                        **************** APPLICATION CONTEXTS ****************
+--
 --
 ---------------------------------------------------------------------------------------------------
 --                  **************** PACKAGE HEADERS AND BODIES   ****************
@@ -188,7 +197,7 @@ SET TERM ON
 Prompt Setting The Version Number...
 SET TERM OFF
 BEGIN
-      hig2.upgrade('AWLRS','awlrs1010_awlrs1260_upg.sql','Upgrade from 1.0.1.0 to 1.2.6.1','1.2.6.1');
+      hig2.upgrade('AWLRS','awlrs1010_awlrs1260_upg.sql','Upgrade to 1.2.6.0','1.2.6.0');
 END;
 /
 COMMIT;
