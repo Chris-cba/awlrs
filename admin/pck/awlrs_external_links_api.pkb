@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_external_links_api.pkb-arc   1.6   Jul 03 2019 15:52:00   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_external_links_api.pkb-arc   1.7   Jul 04 2019 13:05:42   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_external_links_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 03 2019 15:52:00  $
-  --       Date fetched Out : $Modtime:   Jul 01 2019 18:50:42  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   Jul 04 2019 13:05:42  $
+  --       Date fetched Out : $Modtime:   Jul 04 2019 13:02:54  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_external_links_api';
   --
   g_theme_name   nm_themes_all.nth_theme_name%TYPE;
@@ -87,7 +87,7 @@ AS
        AND aelp_entity_type_type = cp_entity_type_type
      ORDER
         BY aelp_sequence
-    ;
+         ;
     --
   BEGIN
     --
@@ -99,48 +99,48 @@ AS
      INTO lt_aelp;
     CLOSE get_aelp;
     --
-    FOR i IN 1..lt_aelp.COUNT LOOP
-      --
-      CASE lt_aelp(i).aelp_source_type
-        WHEN 'COLUMN'
-         THEN
-            --
-            lv_source := lt_aelp(i).aelp_source;
-            --
-            IF pi_entity_type = c_network
-             AND SUBSTR(lv_source,1,3) = 'IIT'
-             THEN
-                lv_ad_asset_attrib := TRUE;
-            END IF;
-            --
-        WHEN 'VALUE'
-         THEN
-            --
-            lv_source := ''''||awlrs_util.escape_single_quotes(lt_aelp(i).aelp_source)||'''';
-            --
-        WHEN 'FUNCTION'
-         THEN
-            --
-            lv_source := awlrs_util.escape_single_quotes(lt_aelp(i).aelp_source)||'('||nm3flx.string(pi_entity_type)||','||nm3flx.string(pi_entity_type_type)||','||pi_entity_id||')';
-            --
-      END CASE;
-      --
-      IF lt_aelp(i).aelp_default_value IS NOT NULL
-       THEN
-          lv_source := 'NVL(TO_CHAR('||lv_source||'),'''||lt_aelp(i).aelp_default_value||''')';
-      END IF;
-      --
-      IF i = 1
-       THEN
-          lv_sql := 'REPLACE(:lv_retval,''{1}'','||lv_source||')';
-      ELSE
-          lv_sql := 'REPLACE('||lv_sql||',''{'||i||'}'','||lv_source||')';
-      END IF;
-      --
-    END LOOP;
-    --
-    IF lv_sql IS NOT NULL
+    IF lt_aelp.COUNT > 0
      THEN
+        FOR i IN 1..lt_aelp.COUNT LOOP
+          --
+          CASE lt_aelp(i).aelp_source_type
+            WHEN 'COLUMN'
+             THEN
+                --
+                lv_source := lt_aelp(i).aelp_source;
+                --
+                IF pi_entity_type = c_network
+                 AND SUBSTR(lv_source,1,3) = 'IIT'
+                 THEN
+                    lv_ad_asset_attrib := TRUE;
+                END IF;
+                --
+            WHEN 'VALUE'
+             THEN
+                --
+                lv_source := ''''||awlrs_util.escape_single_quotes(lt_aelp(i).aelp_source)||'''';
+                --
+            WHEN 'FUNCTION'
+             THEN
+                --
+                lv_source := awlrs_util.escape_single_quotes(lt_aelp(i).aelp_source)||'('||nm3flx.string(pi_entity_type)||','||nm3flx.string(pi_entity_type_type)||','||pi_entity_id||')';
+                --
+          END CASE;
+          --
+          IF lt_aelp(i).aelp_default_value IS NOT NULL
+           THEN
+              lv_source := 'NVL(TO_CHAR('||lv_source||'),'''||lt_aelp(i).aelp_default_value||''')';
+          END IF;
+          --
+          IF i = 1
+           THEN
+              lv_sql := 'REPLACE(:lv_retval,''{1}'','||lv_source||')';
+          ELSE
+              lv_sql := 'REPLACE('||lv_sql||',''{'||i||'}'','||lv_source||')';
+          END IF;
+          --
+        END LOOP;
+        --
         IF pi_entity_type = c_network
          THEN
             --
@@ -167,6 +167,8 @@ AS
         --
         EXECUTE IMMEDIATE lv_sql INTO lv_retval USING lv_retval, pi_entity_id;
         --
+    ELSE
+        lv_retval := NULL;
     END IF;
     --
     RETURN lv_retval;
@@ -204,19 +206,21 @@ AS
                            END;
     --
     OPEN po_cursor FOR
-    SELECT awlrs_external_links_api.get_url(ael_id
-                                           ,ael_url_template
-                                           ,lv_entity_type
-                                           ,lv_entity_type_type
-                                           ,pi_feature_id) external_link_url
-      FROM awlrs_external_links
-     WHERE ael_name = pi_external_link_name
-       AND EXISTS(SELECT 'x'
-                    FROM awlrs_external_link_params
-                   WHERE aelp_ael_id = ael_id
-                     AND aelp_entity_type = lv_entity_type
-                     AND aelp_entity_type_type = lv_entity_type_type)
-    ;
+    SELECT *
+      FROM(SELECT awlrs_external_links_api.get_url(ael_id
+                                                  ,ael_url_template
+                                                  ,lv_entity_type
+                                                  ,lv_entity_type_type
+                                                  ,pi_feature_id) external_link_url
+             FROM awlrs_external_links
+            WHERE ael_name = pi_external_link_name
+              AND EXISTS(SELECT 'x'
+                           FROM awlrs_external_link_params
+                          WHERE aelp_ael_id = ael_id
+                            AND aelp_entity_type = lv_entity_type
+                            AND aelp_entity_type_type = lv_entity_type_type))
+     WHERE external_link_url IS NOT NULL
+         ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -336,8 +340,6 @@ AS
                               ,po_message_cursor   OUT sys_refcursor
                               ,po_cursor           OUT sys_refcursor)
     IS
-    --
-
     --
   BEGIN
     --
