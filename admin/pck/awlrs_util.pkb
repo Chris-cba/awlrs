@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.28   Jun 19 2019 14:56:48   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.29   Jul 11 2019 11:21:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Jun 19 2019 14:56:48  $
-  --       Date fetched Out : $Modtime:   Jun 19 2019 14:56:32  $
-  --       Version          : $Revision:   1.28  $
+  --       Date into PVCS   : $Date:   Jul 11 2019 11:21:48  $
+  --       Date fetched Out : $Modtime:   Jul 11 2019 11:20:54  $
+  --       Version          : $Revision:   1.29  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.28  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.29  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -61,6 +61,21 @@ AS
     RETURN NOT(TRUNC(SYSDATE) = TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY'));
     --
   END;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE check_historic_mode
+    IS
+  BEGIN
+    --
+    IF historic_mode
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 6);
+    END IF;
+    --
+  END check_historic_mode;
 
   --
   -----------------------------------------------------------------------------
@@ -1610,12 +1625,12 @@ AS
     --
     RETURN lv_retval;
     --
-  EXCEPTION 
+  EXCEPTION
     WHEN others
      THEN
         IF dbms_sql.is_open(lv_cursor_id)
-         THEN 
-            dbms_sql.close_cursor(lv_cursor_id); 
+         THEN
+            dbms_sql.close_cursor(lv_cursor_id);
         END IF;
         RAISE;
   END ref_cursor_to_csv;
@@ -1651,54 +1666,54 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END ref_cursor_to_csv;
-  
+
   --
   -----------------------------------------------------------------------------
   --
   PROCEDURE validate_notnull(pi_parameter_desc  IN hig_options.hop_id%TYPE
-                            ,pi_parameter_value IN hig_options.hop_value%TYPE) 
+                            ,pi_parameter_value IN hig_options.hop_value%TYPE)
     IS
     --
   BEGIN
     --
-    IF pi_parameter_value IS NULL THEN 
+    IF pi_parameter_value IS NULL THEN
       --
       hig.raise_ner(pi_appl               => 'HIG'
                    ,pi_id                 => 22
-                   ,pi_supplementary_info => pi_parameter_desc || ' has not been specified');         
+                   ,pi_supplementary_info => pi_parameter_desc || ' has not been specified');
       --
     END IF;
     --
   END validate_notnull;
-  
+
   --
   -----------------------------------------------------------------------------
   --
   PROCEDURE validate_yn(pi_parameter_desc  IN hig_options.hop_id%TYPE
-                       ,pi_parameter_value IN hig_options.hop_value%TYPE)  
+                       ,pi_parameter_value IN hig_options.hop_value%TYPE)
     IS
     --
   BEGIN
     --
-    IF pi_parameter_value IS NULL THEN 
+    IF pi_parameter_value IS NULL THEN
       --
       hig.raise_ner(pi_appl               => 'HIG'
                    ,pi_id                 => 22
-                   ,pi_supplementary_info => pi_parameter_desc || ' has not been specified');   
-                   
+                   ,pi_supplementary_info => pi_parameter_desc || ' has not been specified');
+
     ELSE
       --
-      IF pi_parameter_value NOT IN ('Y','N') THEN   
-        --  
+      IF pi_parameter_value NOT IN ('Y','N') THEN
+        --
         hig.raise_ner(pi_appl               => 'HIG'
                      ,pi_id                 => 1
                      ,pi_supplementary_info => pi_parameter_desc);
         --
-      END IF;                               
+      END IF;
       --
     END IF;
     --
-  END validate_yn;                                
+  END validate_yn;
   --
 
 END awlrs_util;
