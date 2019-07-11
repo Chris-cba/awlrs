@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.21   Jun 19 2019 14:56:48   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.22   Jul 11 2019 11:21:46   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   Jun 19 2019 14:56:48  $
-  --       Date fetched Out : $Modtime:   Jun 19 2019 14:55:34  $
-  --       Version          : $Revision:   1.21  $
+  --       Date into PVCS   : $Date:   Jul 11 2019 11:21:46  $
+  --       Date fetched Out : $Modtime:   Jul 11 2019 11:20:54  $
+  --       Version          : $Revision:   1.22  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -139,6 +139,11 @@ AS
   --
   FUNCTION historic_mode
     RETURN BOOLEAN;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE check_historic_mode;
 
   --
   -----------------------------------------------------------------------------
@@ -371,14 +376,14 @@ AS
   --
   PROCEDURE validate_notnull(pi_parameter_desc  IN hig_options.hop_id%TYPE
                             ,pi_parameter_value IN hig_options.hop_value%TYPE);
-                           
+
   --
   -----------------------------------------------------------------------------
   --
   PROCEDURE validate_yn(pi_parameter_desc  IN hig_options.hop_id%TYPE
-                       ,pi_parameter_value IN hig_options.hop_value%TYPE);          
-                       
+                       ,pi_parameter_value IN hig_options.hop_value%TYPE);
+
   --
-  
+
 END awlrs_util;
 /
