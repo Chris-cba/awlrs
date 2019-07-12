@@ -1,0 +1,694 @@
+CREATE OR REPLACE PACKAGE awlrs_metaast_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkh-arc   1.0   Jul 12 2019 16:28:26   Peter.Bibby  $
+  --       Module Name      : $Workfile:   awlrs_metaast_api.pkh  $
+  --       Date into PVCS   : $Date:   Jul 12 2019 16:28:26  $
+  --       Date fetched Out : $Modtime:   Jul 12 2019 14:09:20  $
+  --       Version          : $Revision:   1.0  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_domains(po_message_severity OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT  sys_refcursor
+                             ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_domain(pi_asset_domain        IN      nm_inv_domains.id_domain%TYPE
+                            ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor          OUT sys_refcursor
+                            ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_asset_domains(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                   ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                   ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                   ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                   ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                   ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                   ,pi_skip_n_rows          IN     PLS_INTEGER
+                                   ,pi_pagesize             IN     PLS_INTEGER
+                                   ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor          OUT sys_refcursor
+                                   ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_visual_attributes(po_message_severity       OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor         OUT  sys_refcursor
+                                 ,po_cursor                 OUT  sys_refcursor);
+                                  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_domain_types(pi_asset_domain        IN      nm_inv_domains.id_domain%TYPE
+                                  ,po_message_severity       OUT  hig_codes.hco_code%TYPE
+                                  ,po_message_cursor         OUT  sys_refcursor
+                                  ,po_cursor                 OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_domain_type(pi_asset_domain        IN      nm_inv_domains.id_domain%TYPE
+                                 ,pi_inv_type            IN      nm_inv_type_attribs.ita_inv_type%TYPE
+                                 ,pi_attrib_name         IN      nm_inv_type_attribs.ita_attrib_name%TYPE
+                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT sys_refcursor
+                                 ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_asset_domain_types(pi_asset_domain         IN     nm_inv_domains.id_domain%TYPE
+                                        ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                        ,pi_skip_n_rows          IN     PLS_INTEGER
+                                        ,pi_pagesize             IN     PLS_INTEGER
+                                        ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor          OUT sys_refcursor
+                                        ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_domain_values(pi_asset_domain        IN      nm_inv_attri_lookup_all.ial_domain%TYPE
+                                   ,po_message_severity       OUT  hig_codes.hco_code%TYPE
+                                   ,po_message_cursor         OUT  sys_refcursor
+                                   ,po_cursor                 OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_domain_value(pi_asset_domain        IN      nm_inv_attri_lookup_all.ial_domain%TYPE
+                                  ,pi_asset_domain_value  IN      nm_inv_attri_lookup_all.ial_value%TYPE
+                                  ,pi_start_date          IN      nm_inv_attri_lookup_all.ial_start_date%TYPE
+                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor          OUT sys_refcursor
+                                  ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_asset_domain_values(pi_asset_domain         IN     nm_inv_attri_lookup_all.ial_domain%TYPE
+                                         ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                         ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                         ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                         ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                         ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                         ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                         ,pi_skip_n_rows          IN     PLS_INTEGER
+                                         ,pi_pagesize             IN     PLS_INTEGER
+                                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                         ,po_message_cursor          OUT sys_refcursor
+                                         ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_xsp_network_types(po_message_severity       OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor         OUT  sys_refcursor
+                                 ,po_cursor                 OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_xsp_inv_types(pi_nw_type            IN       nm_xsp_restraints.xsr_nw_type%TYPE
+                             ,po_message_severity       OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor         OUT  sys_refcursor
+                             ,po_cursor                 OUT  sys_refcursor);
+
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_xsp_inv_types(po_message_severity       OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor         OUT  sys_refcursor
+                             ,po_cursor                 OUT  sys_refcursor);
+                             
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_xsp_restraint(pi_nw_type             IN      nm_xsp_restraints.xsr_nw_type%TYPE
+                             ,pi_inv_code            IN      nm_xsp_restraints.xsr_ity_inv_code%TYPE
+                             ,pi_sub_class           IN      nm_xsp_restraints.xsr_scl_class%TYPE
+                             ,pi_xsp                 IN      nm_xsp_restraints.xsr_x_sect_value%TYPE
+                             ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor          OUT sys_refcursor
+                             ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_xsp_restraints(pi_nw_type             IN      nm_xsp_restraints.xsr_nw_type%TYPE
+                              ,pi_inv_code            IN      nm_xsp_restraints.xsr_ity_inv_code%TYPE
+                              ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor          OUT sys_refcursor
+                              ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_xsp_restraints(pi_nw_type              IN     nm_xsp_restraints.xsr_nw_type%TYPE
+                                    ,pi_inv_code             IN     nm_xsp_restraints.xsr_ity_inv_code%TYPE
+                                    ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                    ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                    ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                    ,pi_skip_n_rows          IN     PLS_INTEGER
+                                    ,pi_pagesize             IN     PLS_INTEGER
+                                    ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor          OUT sys_refcursor
+                                    ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_xsp_restraints(pi_nw_type             IN      nm_xsp_restraints.xsr_nw_type%TYPE
+                              ,pi_sub_class           IN      nm_xsp_restraints.xsr_scl_class%TYPE
+                              ,pi_xsp                 IN      nm_xsp_restraints.xsr_x_sect_value%TYPE
+                              ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor          OUT sys_refcursor
+                              ,po_cursor                  OUT sys_refcursor);
+                              
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_xsp_restraints(pi_nw_type              IN     nm_xsp_restraints.xsr_nw_type%TYPE
+                                    ,pi_sub_class            IN     nm_xsp_restraints.xsr_scl_class%TYPE
+                                    ,pi_xsp                  IN     nm_xsp_restraints.xsr_x_sect_value%TYPE
+                                    ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                    ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                    ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                    ,pi_skip_n_rows          IN     PLS_INTEGER
+                                    ,pi_pagesize             IN     PLS_INTEGER
+                                    ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor          OUT sys_refcursor
+                                    ,po_cursor                  OUT sys_refcursor);                
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nw_xsp(pi_nw_type             IN      nm_nw_xsp.nwx_nw_type%TYPE
+                      ,pi_xsp                 IN      nm_nw_xsp.nwx_x_sect%TYPE
+                      ,pi_sub_class           IN      nm_nw_xsp.nwx_nsc_sub_class%TYPE
+                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                      ,po_message_cursor          OUT sys_refcursor
+                      ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nw_xsps(po_message_severity        OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor          OUT sys_refcursor
+                       ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_nw_xsps(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                             ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                             ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                             ,pi_skip_n_rows          IN     PLS_INTEGER
+                             ,pi_pagesize             IN     PLS_INTEGER
+                             ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor          OUT sys_refcursor
+                             ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_sub_class(pi_nw_type             IN      nm_xsp_restraints.xsr_nw_type%TYPE
+                         ,po_message_severity       OUT  hig_codes.hco_code%TYPE
+                         ,po_message_cursor         OUT  sys_refcursor
+                         ,po_cursor                 OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_xsps(pi_nw_type             IN      nm_xsp_restraints.xsr_nw_type%TYPE
+                    ,pi_sub_class           IN      nm_xsp_restraints.xsr_scl_class%TYPE
+                    ,po_message_severity       OUT  hig_codes.hco_code%TYPE
+                    ,po_message_cursor         OUT  sys_refcursor
+                    ,po_cursor                 OUT  sys_refcursor);
+                    
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_xsp_reversal(pi_nw_type             IN      nm_xsp_reversal.xrv_nw_type%TYPE
+                            ,pi_xsp                 IN      nm_xsp_reversal.xrv_old_xsp%TYPE
+                            ,pi_sub_class           IN      nm_xsp_reversal.xrv_old_sub_class%TYPE
+                            ,po_message_severity       OUT  hig_codes.hco_code%TYPE
+                            ,po_message_cursor         OUT  sys_refcursor
+                            ,po_cursor                 OUT  sys_refcursor);
+                            
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_asset_domain(pi_asset_domain     IN      nm_inv_domains_all.id_domain%TYPE
+                               ,pi_title            IN      nm_inv_domains_all.id_title%TYPE
+                               ,pi_datatype         IN      nm_inv_domains_all.id_datatype%TYPE
+                               ,pi_start_date       IN      nm_inv_domains_all.id_start_date%TYPE
+                               ,pi_end_date         IN      nm_inv_domains_all.id_end_date%TYPE
+                               ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor       OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_asset_domain(pi_old_domain           IN      nm_inv_domains_all.id_domain%TYPE
+                               ,pi_old_title            IN      nm_inv_domains_all.id_title%TYPE 
+                               ,pi_old_datatype         IN      nm_inv_domains_all.id_datatype%TYPE
+                               ,pi_old_end_date         IN      nm_inv_domains_all.id_end_date%TYPE
+                               ,pi_new_domain           IN      nm_inv_domains_all.id_domain%TYPE
+                               ,pi_new_title            IN      nm_inv_domains_all.id_title%TYPE
+                               ,pi_new_datatype         IN      nm_inv_domains_all.id_datatype%TYPE
+                               ,pi_new_end_date         IN      nm_inv_domains_all.id_end_date%TYPE
+                               ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_asset_domain(pi_asset_domain      IN      hig_roles.hro_role%TYPE
+                               ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor       OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_asset_domain_value(pi_asset_domain         IN      nm_inv_attri_lookup_all.ial_domain%TYPE
+                                     ,pi_asset_domain_value   IN      nm_inv_attri_lookup_all.ial_value%TYPE
+                                     ,pi_dtp_code             IN      nm_inv_attri_lookup_all.ial_dtp_code%TYPE
+                                     ,pi_meaning              IN      nm_inv_attri_lookup_all.ial_meaning%TYPE
+                                     ,pi_seq                  IN      nm_inv_attri_lookup_all.ial_seq%TYPE
+                                     ,pi_nva_id               IN      nm_inv_attri_lookup_all.ial_nva_id%TYPE
+                                     ,pi_start_date           IN      nm_inv_attri_lookup_all.ial_start_date%TYPE
+                                     ,pi_end_date             IN      nm_inv_attri_lookup_all.ial_end_date%TYPE
+                                     ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  
+  PROCEDURE update_asset_domain_value(pi_asset_domain             IN      nm_inv_attri_lookup_all.ial_domain%TYPE
+                                     ,pi_old_asset_domain_value   IN      nm_inv_attri_lookup_all.ial_value%TYPE
+                                     ,pi_old_dtp_code             IN      nm_inv_attri_lookup_all.ial_dtp_code%TYPE
+                                     ,pi_old_meaning              IN      nm_inv_attri_lookup_all.ial_meaning%TYPE 
+                                     ,pi_old_seq                  IN      nm_inv_attri_lookup_all.ial_seq%TYPE
+                                     ,pi_old_nva_id               IN      nm_inv_attri_lookup_all.ial_nva_id%TYPE
+                                     ,pi_old_start_date           IN      nm_inv_attri_lookup_all.ial_start_date%TYPE
+                                     ,pi_old_end_date             IN      nm_inv_attri_lookup_all.ial_end_date%TYPE
+                                     ,pi_new_asset_domain_value   IN      nm_inv_attri_lookup_all.ial_value%TYPE                                     
+                                     ,pi_new_dtp_code             IN      nm_inv_attri_lookup_all.ial_dtp_code%TYPE                                     
+                                     ,pi_new_meaning              IN      nm_inv_attri_lookup_all.ial_meaning%TYPE                                     
+                                     ,pi_new_seq                  IN      nm_inv_attri_lookup_all.ial_seq%TYPE                                     
+                                     ,pi_new_nva_id               IN      nm_inv_attri_lookup_all.ial_nva_id%TYPE                                     
+                                     ,pi_new_start_date           IN      nm_inv_attri_lookup_all.ial_start_date%TYPE                                     
+                                     ,pi_new_end_date             IN      nm_inv_attri_lookup_all.ial_end_date%TYPE                                        
+                                     ,po_message_severity             OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor               OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  
+  PROCEDURE delete_asset_domain_value(pi_asset_domain       IN      nm_inv_attri_lookup_all.ial_domain%TYPE
+                                     ,pi_asset_domain_value IN      nm_inv_attri_lookup_all.ial_value%TYPE
+                                     ,pi_start_date         IN      nm_inv_attri_lookup_all.ial_start_date%TYPE
+                                     ,po_message_severity      OUT  hig_codes.hco_code%TYPE
+                                     ,po_message_cursor        OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_xsp_restraint(pi_nw_type               IN     nm_xsp_restraints.xsr_nw_type%TYPE
+                                ,pi_xsp                   IN     nm_xsp_restraints.xsr_x_sect_value%TYPE
+                                ,pi_sub_class             IN     nm_xsp_restraints.xsr_scl_class%TYPE
+                                ,pi_inv_code              IN     nm_xsp_restraints.xsr_ity_inv_code%TYPE
+                                ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor           OUT sys_refcursor);
+                                
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_xsp_restraint(pi_nw_type             IN      nm_xsp_restraints.xsr_nw_type%TYPE
+                                ,pi_inv_code            IN      nm_xsp_restraints.xsr_ity_inv_code%TYPE
+                                ,pi_sub_class           IN      nm_xsp_restraints.xsr_scl_class%TYPE
+                                ,pi_xsp                 IN      nm_xsp_restraints.xsr_x_sect_value%TYPE
+                                ,pi_old_description     IN      nm_xsp_restraints.xsr_descr%TYPE
+                                ,pi_new_description     IN      nm_xsp_restraints.xsr_descr%TYPE
+                                ,po_message_severity       OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor         OUT  sys_refcursor);
+                                 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_xsp_restraint(pi_nw_type             IN      nm_xsp_restraints.xsr_nw_type%TYPE
+                                ,pi_inv_code            IN      nm_xsp_restraints.xsr_ity_inv_code%TYPE
+                                ,pi_sub_class           IN      nm_xsp_restraints.xsr_scl_class%TYPE
+                                ,pi_xsp                 IN      nm_xsp_restraints.xsr_x_sect_value%TYPE
+                                ,po_message_severity       OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor         OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_nw_xsp(pi_nw_type               IN     nm_nw_xsp.nwx_nw_type%TYPE
+                         ,pi_xsp                   IN     nm_nw_xsp.nwx_x_sect%TYPE
+                         ,pi_sub_class             IN     nm_nw_xsp.nwx_nsc_sub_class%TYPE
+                         ,pi_desc                  IN     nm_nw_xsp.nwx_descr%TYPE
+                         ,pi_seq                   IN     nm_nw_xsp.nwx_seq%TYPE
+                         ,pi_offset                IN     nm_nw_xsp.nwx_offset%TYPE
+                         ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_nw_xsp(pi_old_nw_type        IN      nm_nw_xsp.nwx_nw_type%TYPE
+                         ,pi_old_sub_class      IN      nm_nw_xsp.nwx_nsc_sub_class%TYPE
+                         ,pi_old_xsp            IN      nm_nw_xsp.nwx_x_sect%TYPE 
+                         ,pi_old_desc           IN      nm_nw_xsp.nwx_descr%TYPE
+                         ,pi_old_seq            IN      nm_nw_xsp.nwx_seq%TYPE
+                         ,pi_old_offset         IN      nm_nw_xsp.nwx_offset%TYPE
+                         ,pi_new_nw_type        IN      nm_nw_xsp.nwx_nw_type%TYPE                                     
+                         ,pi_new_sub_class      IN      nm_nw_xsp.nwx_nsc_sub_class%TYPE 
+                         ,pi_new_xsp            IN      nm_nw_xsp.nwx_x_sect%TYPE                         
+                         ,pi_new_desc           IN      nm_nw_xsp.nwx_descr%TYPE                          
+                         ,pi_new_seq            IN      nm_nw_xsp.nwx_seq%TYPE                                     
+                         ,pi_new_offset         IN      nm_nw_xsp.nwx_offset%TYPE                                                                    
+                         ,po_message_severity       OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor         OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_nw_xsp(pi_nw_type               IN     nm_nw_xsp.nwx_nw_type%TYPE
+                         ,pi_xsp                   IN     nm_nw_xsp.nwx_x_sect%TYPE
+                         ,pi_sub_class             IN     nm_nw_xsp.nwx_nsc_sub_class%TYPE
+                         ,po_message_severity        OUT  hig_codes.hco_code%TYPE
+                         ,po_message_cursor          OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_xsp_reversal(pi_nw_type             IN      nm_xsp_reversal.xrv_nw_type%TYPE
+                               ,pi_sub_class           IN      nm_xsp_reversal.xrv_old_sub_class%TYPE
+                               ,pi_xsp                 IN      nm_xsp_reversal.xrv_old_xsp%TYPE                               
+                               ,pi_new_xsp             IN      nm_xsp_reversal.xrv_new_xsp%TYPE
+                               ,pi_new_sub_class       IN      nm_xsp_reversal.xrv_new_sub_class%TYPE
+                               ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_xsp_reversal(pi_nw_type             IN      nm_xsp_reversal.xrv_nw_type%TYPE
+                               ,pi_sub_class           IN      nm_xsp_reversal.xrv_old_sub_class%TYPE
+                               ,pi_xsp                 IN      nm_xsp_reversal.xrv_old_xsp%TYPE
+                               ,pi_old_new_subclass    IN      nm_xsp_reversal.xrv_new_sub_class%TYPE 
+                               ,pi_new_new_subclass    IN      nm_xsp_reversal.xrv_new_sub_class%TYPE 
+                               ,pi_old_new_xsp         IN      nm_xsp_reversal.xrv_new_xsp%TYPE 
+                               ,pi_new_new_xsp         IN      nm_xsp_reversal.xrv_new_xsp%TYPE                           
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_xsp_reversal(pi_nw_type             IN      nm_xsp_reversal.xrv_nw_type%TYPE
+                               ,pi_sub_class           IN      nm_xsp_reversal.xrv_old_sub_class%TYPE
+                               ,pi_xsp                 IN      nm_xsp_reversal.xrv_old_xsp%TYPE
+                               ,po_message_severity       OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor         OUT  sys_refcursor);
+                                     
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_type(pi_asset_type          IN      nm_inv_types_all.nit_inv_type%TYPE
+                          ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor          OUT sys_refcursor
+                          ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_types(po_message_severity        OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor          OUT sys_refcursor
+                           ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_asset_types(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                 ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                 ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                 ,pi_skip_n_rows          IN     PLS_INTEGER
+                                 ,pi_pagesize             IN     PLS_INTEGER
+                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT sys_refcursor
+                                 ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_attribute(pi_asset_type          IN      nm_inv_type_attribs.ita_inv_type%TYPE
+                               ,pi_asset_attribute     IN      nm_inv_type_attribs.ita_attrib_name%TYPE
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_attributes(pi_asset_type          IN      nm_inv_type_attribs.ita_inv_type%TYPE
+                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_asset_attributes(pi_asset_type          IN      nm_inv_type_attribs.ita_inv_type%TYPE
+                                      ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                      ,pi_skip_n_rows          IN     PLS_INTEGER
+                                      ,pi_pagesize             IN     PLS_INTEGER
+                                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor          OUT sys_refcursor
+                                      ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_nw(pi_asset_type          IN      nm_inv_nw_all.nin_nit_inv_code%TYPE
+                        ,pi_nw_type             IN      nm_inv_nw_all.nin_nw_type%TYPE
+                        ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor          OUT sys_refcursor
+                        ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_nws(pi_asset_type          IN      nm_inv_nw_all.nin_nit_inv_code%TYPE
+                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor          OUT sys_refcursor
+                         ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_asset_nws(pi_asset_type           IN     nm_inv_nw_all.nin_nit_inv_code%TYPE
+                               ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                               ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                               ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                               ,pi_skip_n_rows          IN     PLS_INTEGER
+                               ,pi_pagesize             IN     PLS_INTEGER
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_type_role(pi_asset_type          IN      nm_inv_type_roles.itr_inv_type%TYPE
+                               ,pi_asset_role          IN      nm_inv_type_roles.itr_hro_role%TYPE
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_type_roles(pi_asset_type          IN      nm_inv_type_roles.itr_inv_type%TYPE
+                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_asset_type_roles(pi_asset_type           IN     nm_inv_type_roles.itr_inv_type%TYPE
+                                      ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                      ,pi_skip_n_rows          IN     PLS_INTEGER
+                                      ,pi_pagesize             IN     PLS_INTEGER
+                                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor          OUT sys_refcursor
+                                      ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_grouping(pi_asset_type          IN      nm_inv_type_groupings_all.itg_inv_type%TYPE
+                              ,pi_parent_asset_type   IN      nm_inv_type_groupings_all.itg_parent_inv_type%TYPE
+                              ,pi_start_date          IN      nm_inv_type_groupings_all.itg_start_date%TYPE
+                              ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor          OUT sys_refcursor
+                              ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_groupings(pi_asset_type          IN      nm_inv_type_groupings_all.itg_inv_type%TYPE
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_asset_groupings(pi_asset_type           IN     nm_inv_type_groupings_all.itg_inv_type%TYPE
+                                     ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                     ,pi_skip_n_rows          IN     PLS_INTEGER
+                                     ,pi_pagesize             IN     PLS_INTEGER
+                                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor          OUT sys_refcursor
+                                     ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_view(pi_asset_type         IN      nm_inv_type_groupings_all.itg_inv_type%TYPE
+                          ,po_message_severity      OUT  hig_codes.hco_code%TYPE
+                          ,po_message_cursor        OUT  sys_refcursor
+                          ,po_cursor                OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_tree(pi_asset_type         IN      nm_inv_type_groupings_all.itg_inv_type%TYPE
+                          ,po_message_severity      OUT  hig_codes.hco_code%TYPE
+                          ,po_message_cursor        OUT  sys_refcursor
+                          ,po_cursor                OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_categories(po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_ft_names(po_message_severity        OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor          OUT sys_refcursor
+                        ,po_cursor                  OUT sys_refcursor);
+                        
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_col_names(pi_asset_type           IN     nm_inv_type_groupings_all.itg_inv_type%TYPE
+                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor          OUT sys_refcursor
+                         ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_domains(pi_asset_format         IN     nm_inv_domains.id_datatype%TYPE
+                             ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor          OUT sys_refcursor
+                             ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_units(po_message_severity        OUT hig_codes.hco_code%TYPE
+                     ,po_message_cursor          OUT sys_refcursor
+                     ,po_cursor                  OUT sys_refcursor);
+                     
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nw_types(po_message_severity        OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor          OUT sys_refcursor
+                        ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_parent_asset_types(po_message_severity        OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor          OUT sys_refcursor
+                                  ,po_cursor                  OUT sys_refcursor);
+  --
+END awlrs_metaast_api;
+/
