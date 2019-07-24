@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.17   Jun 06 2019 17:22:56   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.18   Jul 24 2019 16:15:14   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Jun 06 2019 17:22:56  $
---       Date fetched Out : $Modtime:   Jun 06 2019 17:20:48  $
---       Version          : $Revision:   1.17  $
+--       Date into PVCS   : $Date:   Jul 24 2019 16:15:14  $
+--       Date fetched Out : $Modtime:   Jul 24 2019 16:14:14  $
+--       Version          : $Revision:   1.18  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 06-JUN-2019 17:20
+--       Generation Date  : 24-JUL-2019 16:14
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -19,6 +19,7 @@
 --   TABLES PROCESSED
 --   ================
 --   NM_ERRORS
+--   HIG_STANDARD_FAVOURITES
 --
 -----------------------------------------------------------------------------
 --
@@ -1353,6 +1354,468 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 73);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,74
+      ,null
+      ,'Update not allowed on an end dated record'
+      ,'10'
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 74);
+--
+----------------------------------------------------------------------------------------
+-- HIG_STANDARD_FAVOURITES
+--
+-- select * from awlrs_metadata.hig_standard_favourites
+-- order by hstf_parent
+--         ,hstf_child
+--
+----------------------------------------------------------------------------------------
+SET TERM ON
+PROMPT hig_standard_favourites
+SET TERM OFF
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_ASSET'
+      ,'NM0301'
+      ,'Asset Domains'
+      ,'M'
+      ,1
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_ASSET'
+                     AND HSTF_CHILD = 'NM0301');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_ASSET'
+      ,'NM0305'
+      ,'XSP and Reversal Rules'
+      ,'M'
+      ,5
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_ASSET'
+                     AND HSTF_CHILD = 'NM0305');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_ASSET'
+      ,'NM0306'
+      ,'Asset XSPs'
+      ,'M'
+      ,6
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_ASSET'
+                     AND HSTF_CHILD = 'NM0306');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_ASSET'
+      ,'NM0410'
+      ,'Asset Types'
+      ,'M'
+      ,2
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_ASSET'
+                     AND HSTF_CHILD = 'NM0410');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_LAUNCHPAD'
+      ,'AWLRS_ASSET'
+      ,'Asset Metadata'
+      ,'F'
+      ,20
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_LAUNCHPAD'
+                     AND HSTF_CHILD = 'AWLRS_ASSET');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_LAUNCHPAD'
+      ,'AWLRS_NETWORK'
+      ,'Network Metadata'
+      ,'F'
+      ,10
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_LAUNCHPAD'
+                     AND HSTF_CHILD = 'AWLRS_NETWORK');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_LAUNCHPAD'
+      ,'AWLRS_NSG'
+      ,'NSG Metadata'
+      ,'F'
+      ,40
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_LAUNCHPAD'
+                     AND HSTF_CHILD = 'AWLRS_NSG');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_LAUNCHPAD'
+      ,'AWLRS_REFERENCE'
+      ,'Reference Data'
+      ,'F'
+      ,50
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_LAUNCHPAD'
+                     AND HSTF_CHILD = 'AWLRS_REFERENCE');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_LAUNCHPAD'
+      ,'AWLRS_SECURITY'
+      ,'Security'
+      ,'F'
+      ,60
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_LAUNCHPAD'
+                     AND HSTF_CHILD = 'AWLRS_SECURITY');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_LAUNCHPAD'
+      ,'AWLRS_SPATIAL'
+      ,'Spatial Metadata'
+      ,'F'
+      ,30
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_LAUNCHPAD'
+                     AND HSTF_CHILD = 'AWLRS_SPATIAL');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_NETWORK'
+      ,'NM0001'
+      ,'Node Types'
+      ,'M'
+      ,1
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_NETWORK'
+                     AND HSTF_CHILD = 'NM0001');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_NETWORK'
+      ,'NM0002'
+      ,'Network Types'
+      ,'M'
+      ,2
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_NETWORK'
+                     AND HSTF_CHILD = 'NM0002');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_NETWORK'
+      ,'NM0004'
+      ,'Group Types'
+      ,'M'
+      ,3
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_NETWORK'
+                     AND HSTF_CHILD = 'NM0004');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_REFERENCE'
+      ,'HIG1820'
+      ,'Units and Conversions'
+      ,'M'
+      ,16
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_REFERENCE'
+                     AND HSTF_CHILD = 'HIG1820');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_REFERENCE'
+      ,'HIG1837'
+      ,'User Option Administration'
+      ,'M'
+      ,7
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_REFERENCE'
+                     AND HSTF_CHILD = 'HIG1837');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_REFERENCE'
+      ,'HIG9120'
+      ,'Domains'
+      ,'M'
+      ,2
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_REFERENCE'
+                     AND HSTF_CHILD = 'HIG9120');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_REFERENCE'
+      ,'HIG9130'
+      ,'Product Options'
+      ,'M'
+      ,4
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_REFERENCE'
+                     AND HSTF_CHILD = 'HIG9130');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_REFERENCE'
+      ,'HIG9135'
+      ,'Product and User Option List'
+      ,'M'
+      ,3
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_REFERENCE'
+                     AND HSTF_CHILD = 'HIG9135');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_REFERENCE'
+      ,'HIG9185'
+      ,'Error Messages'
+      ,'M'
+      ,14
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_REFERENCE'
+                     AND HSTF_CHILD = 'HIG9185');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_SECURITY'
+      ,'HIG1836'
+      ,'Roles'
+      ,'M'
+      ,3
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_SECURITY'
+                     AND HSTF_CHILD = 'HIG1836');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_SECURITY'
+      ,'HIG1860'
+      ,'Admin Units'
+      ,'M'
+      ,1
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_SECURITY'
+                     AND HSTF_CHILD = 'HIG1860');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_SECURITY'
+      ,'HIG1870'
+      ,'Upgrades'
+      ,'M'
+      ,6
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_SECURITY'
+                     AND HSTF_CHILD = 'HIG1870');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_SECURITY'
+      ,'HIG1880'
+      ,'Modules'
+      ,'M'
+      ,4
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_SECURITY'
+                     AND HSTF_CHILD = 'HIG1880');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_SECURITY'
+      ,'HIG1890'
+      ,'Products'
+      ,'M'
+      ,5
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_SECURITY'
+                     AND HSTF_CHILD = 'HIG1890');
 --
 ----------------------------------------------------------------------------------------
 --
