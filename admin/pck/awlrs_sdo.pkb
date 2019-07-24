@@ -3,18 +3,19 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.23   Jun 06 2019 17:20:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.24   Jul 24 2019 14:25:42   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Jun 06 2019 17:20:12  $
-  --       Date fetched Out : $Modtime:   Jun 06 2019 17:19:38  $
-  --       Version          : $Revision:   1.23  $
+  --       Date into PVCS   : $Date:   Jul 24 2019 14:25:42  $
+  --       Date fetched Out : $Modtime:   Jul 24 2019 14:06:34  $
+  --       Version          : $Revision:   1.24  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.23  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.24  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
+  --
   --
   -----------------------------------------------------------------------------
   --
@@ -472,8 +473,8 @@ AS
           ,unit_id
           ,unit_name
           ,ntd_distance
-          ,nm3sdo.get_x_from_pt_geometry(nm3sdo.get_xy_from_measure(ne_id,offset)) snapped_x
-          ,nm3sdo.get_y_from_pt_geometry(nm3sdo.get_xy_from_measure(ne_id,offset)) snapped_y
+          ,awlrs_util.apply_max_digits(nm3sdo.get_x_from_pt_geometry(nm3sdo.get_xy_from_measure(ne_id,offset))) snapped_x
+          ,awlrs_util.apply_max_digits(nm3sdo.get_y_from_pt_geometry(nm3sdo.get_xy_from_measure(ne_id,offset))) snapped_y
       FROM (SELECT ntd_pk_id ne_id
                   ,CASE ne_nt_type
                      WHEN 'ESU' THEN ne_name_1
@@ -700,8 +701,8 @@ AS
     ||CHR(10)||'      ,nt_length_unit unit_id'
     ||CHR(10)||'      ,un_unit_name unit_name'
     ||CHR(10)||'      ,snap_dist distance'
-    ||CHR(10)||'      ,nm3sdo.get_x_from_pt_geometry(snaps.snap_pnt) snapped_x'
-    ||CHR(10)||'      ,nm3sdo.get_y_from_pt_geometry(snaps.snap_pnt) snapped_y'
+    ||CHR(10)||'      ,awlrs_util.apply_max_digits(nm3sdo.get_x_from_pt_geometry(snaps.snap_pnt)) snapped_x'
+    ||CHR(10)||'      ,awlrs_util.apply_max_digits(nm3sdo.get_y_from_pt_geometry(snaps.snap_pnt)) snapped_y'
     ||CHR(10)||'  FROM nm_elements ne'
     ||CHR(10)||'      ,nm_types'
     ||CHR(10)||'      ,nm_units'
@@ -886,8 +887,8 @@ AS
                                  ,po_y        => lv_y);
     --
     OPEN po_cursor FOR
-    SELECT lv_x x_coord
-          ,lv_y y_coord
+    SELECT awlrs_util.apply_max_digits(lv_x) x_coord
+          ,awlrs_util.apply_max_digits(lv_y) y_coord
       FROM dual
          ;
     --
@@ -918,10 +919,6 @@ AS
     --
     lr_theme := nm3get.get_nth(pi_nth_theme_name => pi_theme_name);
     --
-    /*
-    ||Temp fix to round the m value based on the unit of measure of network type. Need to get unit id.
-    */
-    --
     SELECT nt_length_unit
       INTO lv_unit_id
       FROM nm_elements
@@ -934,8 +931,8 @@ AS
             ||CHR(10)||'                        FROM '||lr_theme.nth_feature_table
             ||CHR(10)||'                       WHERE '||lr_theme.nth_feature_pk_column||' = :pi_ne_id)'
             ||CHR(10)||'SELECT a.id'
-            ||CHR(10)||'      ,a.x x '
-            ||CHR(10)||'      ,a.y y '
+            ||CHR(10)||'      ,awlrs_util.apply_max_digits(a.x) x'
+            ||CHR(10)||'      ,awlrs_util.apply_max_digits(a.y) y'
             ||CHR(10)||'      ,TO_NUMBER(nm3unit.get_formatted_value(a.z, :pi_unit_id)) m '
             ||CHR(10)||'  FROM element_shape'
             ||CHR(10)||'      ,TABLE(sdo_util.getvertices(geom)) a'
@@ -1890,8 +1887,8 @@ AS
             ||CHR(10)||'                          AND nt.nt_length_unit = nu.un_unit_id(+)'
             ||CHR(10)||'                          AND e.ne_id = f.'||lr_datum_theme.nth_feature_pk_column||')'
             ||CHR(10)||'SELECT a.id'
-            ||CHR(10)||'      ,a.x x'
-            ||CHR(10)||'      ,a.y y'
+            ||CHR(10)||'      ,awlrs_util.apply_max_digits(a.x) x'
+            ||CHR(10)||'      ,awlrs_util.apply_max_digits(a.y) y'
             ||CHR(10)||'      ,TO_NUMBER(nm3unit.get_formatted_value(a.z,element_shapes.unit_id)) m '
             ||CHR(10)||'      ,element_shapes.ne_id'
             ||CHR(10)||'      ,element_shapes.ne_unique'
