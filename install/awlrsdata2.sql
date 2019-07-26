@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.18   Jul 24 2019 16:15:14   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.19   Jul 26 2019 15:30:50   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Jul 24 2019 16:15:14  $
---       Date fetched Out : $Modtime:   Jul 24 2019 16:14:14  $
---       Version          : $Revision:   1.18  $
+--       Date into PVCS   : $Date:   Jul 26 2019 15:30:50  $
+--       Date fetched Out : $Modtime:   Jul 26 2019 15:29:46  $
+--       Version          : $Revision:   1.19  $
 --       Table Owner      : AWLRS_METADATA
 --       Generation Date  : 24-JUL-2019 16:14
 --
@@ -1372,6 +1372,42 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 74);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,75
+      ,null
+      ,'Only one of Domain, Query, Sequence Name or Default can be specified'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 75);
+-- 
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,76
+      ,null
+      ,'The String End value must be greater than the String Start value'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 76);
 --
 ----------------------------------------------------------------------------------------
 -- HIG_STANDARD_FAVOURITES
