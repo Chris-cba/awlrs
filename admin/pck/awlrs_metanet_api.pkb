@@ -4,11 +4,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.0   Jul 19 2019 14:30:20   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jul 19 2019 14:30:20  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.1   Jul 29 2019 11:26:38   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jul 29 2019 11:26:38  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkb  $
-  --       Date fetched Out : $Modtime:   Jul 19 2019 14:25:52  $
-  --       Version          : $Revision:   1.0  $
+  --       Date fetched Out : $Modtime:   Jul 29 2019 11:25:14  $
+  --       Version          : $Revision:   1.1  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -16,7 +16,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.0  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metanet_api';
   --
@@ -265,10 +265,15 @@ AS
     lv_exists VARCHAR2(1):= 'N';
   BEGIN
     --
-    SELECT 'Y'
-      INTO lv_exists
-      FROM nm_node_types
-     WHERE nnt_type = UPPER(pi_node_type);
+    IF pi_node_type IS NOT NULL
+      THEN
+        SELECT 'Y'
+          INTO lv_exists
+          FROM nm_node_types
+         WHERE nnt_type = UPPER(pi_node_type);
+    ELSE
+      lv_exists := 'Y';   
+    END IF;     
     --
     RETURN lv_exists;
     --
@@ -281,6 +286,55 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION unit_type_exists(pi_units   IN  nm_types.nt_length_unit%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    IF pi_units IS NOT NULL
+      THEN
+        SELECT 'Y'
+          INTO lv_exists
+          FROM nm_units
+         WHERE un_unit_id   = pi_units;
+    ELSE
+      lv_exists := 'Y';  
+    END IF;     
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+  END unit_type_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION admin_type_exists(pi_admin_type  IN  nm_types.nt_admin_type%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM nm_au_types
+     WHERE nat_admin_type =  pi_admin_type;
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+  END admin_type_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
   FUNCTION group_type_exists(pi_group_type IN nm_group_types_all.ngt_group_type%TYPE)
     RETURN VARCHAR2
   IS
@@ -289,7 +343,7 @@ AS
     --
     SELECT 'Y'
       INTO lv_exists
-      FROM nm_group_types
+      FROM nm_group_types_all
      WHERE ngt_group_type = UPPER(pi_group_type);
     --
     RETURN lv_exists;
@@ -394,10 +448,119 @@ AS
      THEN
         RETURN lv_exists;
   END sub_class_exists;
+  
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION column_type_exists(pi_column_type  IN  nm_type_columns.ntc_column_type%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM hig_codes 
+     WHERE hco_domain = 'DATA_FORMAT'
+       AND hco_code   =  UPPER(pi_column_type);
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+  END column_type_exists;
   
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION column_name_exists(pi_column_name  IN  nm_type_columns.ntc_column_name%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    IF pi_column_name IS NOT NULL 
+     THEN  
+        SELECT 'Y'
+          INTO lv_exists
+          FROM all_tab_columns
+         WHERE owner = Sys_Context('NM3CORE','APPLICATION_OWNER')
+           AND table_name  = 'NM_ELEMENTS'
+           AND UPPER(column_name) = UPPER(pi_column_name);
+    ELSE  
+        lv_exists := 'Y';  
+    END IF;
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+  END column_name_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION seq_name_exists(pi_seq_name IN  nm_type_columns.ntc_seq_name%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    IF pi_seq_name IS NOT NULL 
+     THEN  
+        SELECT 'Y'
+          INTO lv_exists
+          FROM all_sequences 
+         WHERE sequence_owner = sys_context('NM3CORE','APPLICATION_OWNER')
+           AND sequence_name  = pi_seq_name;
+    ELSE  
+        lv_exists := 'Y';  
+    END IF;         
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found THEN
+      --
+      RETURN lv_exists;
+      --
+  END seq_name_exists;
+    
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION domain_exists(pi_domain IN hig_codes.hco_domain%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    IF pi_domain IS NOT NULL 
+     THEN  
+        SELECT 'Y'
+          INTO lv_exists
+          FROM hig_domains 
+         WHERE hdo_domain = UPPER(pi_domain);
+    ELSE  
+        lv_exists := 'Y';  
+    END IF; 
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found THEN
+      --
+      RETURN lv_exists;
+      --
+  END domain_exists;
+ 
+  --
+  -----------------------------------------------------------------------------
+  -- 
   PROCEDURE create_node_type(pi_node_type         IN     nm_node_types.nnt_type%TYPE
                             ,pi_name              IN     nm_node_types.nnt_name%TYPE
                             ,pi_description       IN     nm_node_types.nnt_descr%TYPE
@@ -595,7 +758,62 @@ AS
                                    ,po_cursor           => po_message_cursor);
   END update_node_type;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION nm_nodes_exist(pi_node_type  IN  nm_node_types.nnt_type%TYPE)
+      RETURN VARCHAR2
+    IS
+      lv_exists VARCHAR2(1):= 'N';
+      lv_cnt    NUMBER;
+    BEGIN
+      --
+      SELECT COUNT(no_node_id)
+        INTO lv_cnt
+        FROM nm_nodes
+       WHERE no_node_type = pi_node_type;        
+      --
+      IF lv_cnt > 0
+       THEN
+         lv_exists :='Y';
+      END IF;
+      --
+      RETURN lv_exists;
+      --
+    EXCEPTION
+      WHEN no_data_found
+       THEN
+          RETURN 'N';
+    END nm_nodes_exist;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION nm_types_exist(pi_node_type  IN  nm_node_types.nnt_type%TYPE)
+      RETURN VARCHAR2
+    IS
+      lv_exists VARCHAR2(1):= 'N';
+      lv_cnt    NUMBER;
+    BEGIN
+      --
+      SELECT COUNT(nt_type)
+        INTO lv_cnt
+        FROM nm_types
+       WHERE nt_node_type = pi_node_type;
+      --
+      IF lv_cnt > 0
+       THEN
+         lv_exists :='Y';
+      END IF;
+      --
+      RETURN lv_exists;
+      --
+    EXCEPTION
+      WHEN no_data_found
+       THEN
+          RETURN 'N';
+    END nm_types_exist;
+    
   --
   -----------------------------------------------------------------------------
   --
@@ -614,6 +832,20 @@ AS
                      ,pi_id   => 30
                      ,pi_supplementary_info  => 'Node Type:  '||pi_node_type);
     END IF;
+    --
+    IF nm_nodes_exist(pi_node_type => pi_node_type) = 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 2
+                     ,pi_supplementary_info => 'Nodes');
+    END IF;
+    
+    IF nm_types_exist(pi_node_type => pi_node_type) = 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 2
+                     ,pi_supplementary_info => 'Network Types');
+    END IF;                 
     --
     DELETE
       FROM nm_node_types
@@ -754,7 +986,7 @@ AS
     OPEN po_cursor FOR
     SELECT ngt_group_type     
           ,ngt_descr             
-      FROM nm_group_types
+      FROM nm_group_types_all
      WHERE ngt_nt_type = NVL(pi_nt_type,ngt_nt_type) 
      ORDER BY ngt_group_type;
     --
@@ -772,7 +1004,7 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_network_group_type(pi_nt_type           IN     nm_types.nt_type%TYPE
-                                  ,pi_ngt_group_type    IN     nm_group_types.ngt_group_type%TYPE
+                                  ,pi_ngt_group_type    IN     nm_group_types_all.ngt_group_type%TYPE
                                   ,po_message_severity     OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor       OUT sys_refcursor
                                   ,po_cursor               OUT sys_refcursor)
@@ -783,7 +1015,7 @@ AS
     OPEN po_cursor FOR
     SELECT ngt_group_type     
           ,ngt_descr             
-      FROM nm_group_types
+      FROM nm_group_types_all
      WHERE ngt_nt_type    = NVL(pi_nt_type,ngt_nt_type) 
        AND ngt_group_type = pi_ngt_group_type;    
     --
@@ -861,7 +1093,7 @@ AS
           ,ngt_mandatory           mandatory
           ,ngt_reverse_allowed     reverse_allowed
           ,ngt_icon_name           icon_name          
-      FROM nm_group_types
+      FROM nm_group_types_all
      ORDER BY ngt_group_type;
      
     --
@@ -878,7 +1110,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_group_type(pi_group_type           IN     nm_group_types.ngt_group_type%TYPE
+  PROCEDURE get_group_type(pi_group_type           IN     nm_group_types_all.ngt_group_type%TYPE
                           ,po_message_severity        OUT hig_codes.hco_code%TYPE
                           ,po_message_cursor          OUT sys_refcursor
                           ,po_cursor                  OUT sys_refcursor)
@@ -902,7 +1134,7 @@ AS
           ,ngt_mandatory           mandatory
           ,ngt_reverse_allowed     reverse_allowed
           ,ngt_icon_name           icon_name          
-      FROM nm_group_types
+      FROM nm_group_types_all
      WHERE ngt_group_type = pi_group_type;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -952,7 +1184,7 @@ AS
                                                     ,ngt_mandatory           mandatory
                                                     ,ngt_reverse_allowed     reverse_allowed
                                                     ,ngt_icon_name           icon_name          
-                                                FROM nm_group_types ';
+                                                FROM nm_group_types_all ';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  seq_no'
                                                   ||',group_type'
@@ -1136,7 +1368,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_nt_groupings(pi_group_type       IN      nm_nt_groupings.nng_group_type%TYPE
+  PROCEDURE get_nt_groupings(pi_group_type       IN      nm_nt_groupings_all.nng_group_type%TYPE
                             ,po_message_severity    OUT  hig_codes.hco_code%TYPE
                             ,po_message_cursor      OUT  sys_refcursor
                             ,po_cursor              OUT  sys_refcursor)
@@ -1149,7 +1381,7 @@ AS
           ,nng_nt_type           nt_type
           ,TRUNC(nng_start_date) start_date
           ,TRUNC(nng_end_date)   end_date
-      FROM nm_nt_groupings
+      FROM nm_nt_groupings_all
      WHERE nng_group_type = pi_group_type 
      ORDER BY nng_nt_type;
     --
@@ -1166,8 +1398,8 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_nt_grouping(pi_group_type           IN     nm_nt_groupings.nng_group_type%TYPE
-                           ,pi_nt_type              IN     nm_nt_groupings.nng_nt_type%TYPE
+  PROCEDURE get_nt_grouping(pi_group_type           IN     nm_nt_groupings_all.nng_group_type%TYPE
+                           ,pi_nt_type              IN     nm_nt_groupings_all.nng_nt_type%TYPE
                            ,po_message_severity        OUT hig_codes.hco_code%TYPE
                            ,po_message_cursor          OUT sys_refcursor
                            ,po_cursor                  OUT sys_refcursor)
@@ -1180,7 +1412,7 @@ AS
           ,nng_nt_type           nt_type
           ,TRUNC(nng_start_date) start_date
           ,TRUNC(nng_end_date)   end_date
-      FROM nm_nt_groupings
+      FROM nm_nt_groupings_all
      WHERE nng_group_type = pi_group_type 
        AND nng_nt_type    = pi_nt_type;
     --
@@ -1197,7 +1429,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_paged_nt_groupings(pi_group_type           IN     nm_nt_groupings.nng_group_type%TYPE
+  PROCEDURE get_paged_nt_groupings(pi_group_type           IN     nm_nt_groupings_all.nng_group_type%TYPE
                                   ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                   ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                   ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
@@ -1221,7 +1453,7 @@ AS
                                                     ,nng_nt_type           nt_type
                                                     ,TRUNC(nng_start_date) start_date
                                                     ,TRUNC(nng_end_date)   end_date
-                                                FROM nm_nt_groupings
+                                                FROM nm_nt_groupings_all
                                                WHERE nng_group_type = :pi_group_type ';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  group_type'
@@ -1331,7 +1563,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_group_relations(pi_parent_group_type   IN      nm_group_relations.ngr_parent_group_type%TYPE
+  PROCEDURE get_group_relations(pi_parent_group_type   IN      nm_group_relations_all.ngr_parent_group_type%TYPE
                                ,po_message_severity       OUT  hig_codes.hco_code%TYPE
                                ,po_message_cursor         OUT  sys_refcursor
                                ,po_cursor                 OUT  sys_refcursor)
@@ -1344,7 +1576,7 @@ AS
           ,ngr_child_group_type  child_group_type
           ,TRUNC(ngr_start_date) start_date
           ,TRUNC(ngr_end_date)   end_date
-      FROM nm_group_relations
+      FROM nm_group_relations_all
      WHERE ngr_parent_group_type = pi_parent_group_type 
      ORDER BY ngr_child_group_type;
     --
@@ -1361,7 +1593,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_group_relations_tree(pi_parent_group_type   IN      nm_group_relations.ngr_parent_group_type%TYPE
+  PROCEDURE get_group_relations_tree(pi_parent_group_type   IN      nm_group_relations_all.ngr_parent_group_type%TYPE
                                     ,po_message_severity       OUT  hig_codes.hco_code%TYPE
                                     ,po_message_cursor         OUT  sys_refcursor
                                     ,po_cursor                 OUT  sys_refcursor)
@@ -1375,7 +1607,7 @@ AS
           ,ngt_descr                                   group_descr
           ,REPLACE(UPPER(ngt_icon_name), '.ICO', '')   icon
           ,ngt_group_type                              group_type
-    FROM  nm_group_types 
+    FROM  nm_group_types_all
     WHERE ngt_group_type = pi_parent_group_type
     UNION ALL 
     SELECT 1                                           initial_state
@@ -1383,7 +1615,7 @@ AS
           ,nm3net.get_gty_descr(ngr_child_group_type)  group_descr
           ,REPLACE(UPPER(nm3net.get_gty_icon(ngr_child_group_type)), '.ICO', '') icon
           ,ngr_child_group_type                        group_type
-    FROM nm_group_relations 
+    FROM nm_group_relations_all 
     CONNECT BY PRIOR ngr_child_group_type  = ngr_parent_group_type
     START WITH       ngr_parent_group_type = pi_parent_group_type;
     --
@@ -1400,8 +1632,8 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_group_relation(pi_parent_group_type   IN     nm_group_relations.ngr_parent_group_type%TYPE
-                              ,pi_child_group_type    IN     nm_group_relations.ngr_child_group_type%TYPE
+  PROCEDURE get_group_relation(pi_parent_group_type   IN     nm_group_relations_all.ngr_parent_group_type%TYPE
+                              ,pi_child_group_type    IN     nm_group_relations_all.ngr_child_group_type%TYPE
                               ,po_message_severity       OUT hig_codes.hco_code%TYPE
                               ,po_message_cursor         OUT sys_refcursor
                               ,po_cursor                 OUT sys_refcursor)
@@ -1414,7 +1646,7 @@ AS
           ,ngr_child_group_type  child_group_type
           ,TRUNC(ngr_start_date) start_date
           ,TRUNC(ngr_end_date)   end_date
-      FROM nm_group_relations
+      FROM nm_group_relations_all
      WHERE ngr_parent_group_type = pi_parent_group_type 
        AND ngr_child_group_type  = pi_child_group_type
      ORDER BY ngr_child_group_type;
@@ -1432,7 +1664,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_paged_group_relations(pi_parent_group_type    IN     nm_group_relations.ngr_parent_group_type%TYPE
+  PROCEDURE get_paged_group_relations(pi_parent_group_type    IN     nm_group_relations_all.ngr_parent_group_type%TYPE
                                      ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                      ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                      ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
@@ -1456,7 +1688,7 @@ AS
                                                     ,ngr_child_group_type  child_group_type
                                                     ,TRUNC(ngr_start_date) start_date
                                                     ,TRUNC(ngr_end_date)   end_date
-                                                FROM nm_group_relations
+                                                FROM nm_group_relations_all
                                                WHERE ngr_parent_group_type = :pi_parent_group_type ';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  parent_group_type'
@@ -1566,7 +1798,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_child_group_types_lov(pi_parent_group_type  IN      nm_group_types.ngt_group_type%TYPE
+  PROCEDURE get_child_group_types_lov(pi_parent_group_type  IN      nm_group_types_all.ngt_group_type%TYPE
                                      ,pi_parent_admin_type  IN      nm_types.nt_admin_type%TYPE
                                      ,po_message_severity      OUT  hig_codes.hco_code%TYPE
                                      ,po_message_cursor        OUT  sys_refcursor
@@ -1578,7 +1810,7 @@ AS
     OPEN po_cursor FOR
     SELECT ngt_group_type,
            ngt_descr
-    FROM   nm_group_types,
+    FROM   nm_group_types_all,
            nm_types
     WHERE  ngt_group_type != pi_parent_group_type
       AND  ngt_nt_type     = nt_type
@@ -1599,7 +1831,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_child_group_type_lov(pi_child_group_type   IN     nm_group_types.ngt_group_type%TYPE
+  PROCEDURE get_child_group_type_lov(pi_child_group_type   IN     nm_group_types_all.ngt_group_type%TYPE
                                     ,pi_parent_admin_type  IN     nm_types.nt_admin_type%TYPE
                                     ,po_message_severity      OUT hig_codes.hco_code%TYPE
                                     ,po_message_cursor        OUT sys_refcursor
@@ -1611,7 +1843,7 @@ AS
     OPEN po_cursor FOR
     SELECT ngt_group_type,
            ngt_descr
-    FROM   nm_group_types,
+    FROM   nm_group_types_all,
            nm_types
     WHERE  ngt_group_type  = pi_child_group_type
       AND  ngt_nt_type     = nt_type
@@ -1633,7 +1865,7 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE create_group_type_view(pi_nt_type            IN      nm_types.nt_type%TYPE
-                                  ,pi_group_type         IN      nm_group_types.ngt_group_type%TYPE   
+                                  ,pi_group_type         IN      nm_group_types_all.ngt_group_type%TYPE   
                                   ,po_message_severity      OUT  hig_codes.hco_code%TYPE
                                   ,po_message_cursor        OUT  sys_refcursor)
                                   
@@ -1684,7 +1916,7 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE create_group_asset_data(pi_nt_type                  IN      nm_types.nt_type%TYPE
-                                   ,pi_group_type               IN      nm_group_types.ngt_group_type%TYPE   
+                                   ,pi_group_type               IN      nm_group_types_all.ngt_group_type%TYPE   
                                    ,pi_delete_existing_inv_type IN      varchar2
                                    ,po_message_severity            OUT  hig_codes.hco_code%TYPE
                                    ,po_message_cursor              OUT  sys_refcursor)
@@ -1742,10 +1974,10 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE validate_group_type_flags(pi_linear_flag       IN     nm_group_types.ngt_linear_flag%TYPE
-                                     ,pi_partial           IN     nm_group_types.ngt_partial%TYPE
-                                     ,pi_sub_group_allowed IN     nm_group_types.ngt_sub_group_allowed%TYPE
-                                     ,pi_mandatory         IN     nm_group_types.ngt_mandatory%TYPE)
+  PROCEDURE validate_group_type_flags(pi_linear_flag       IN     nm_group_types_all.ngt_linear_flag%TYPE
+                                     ,pi_partial           IN     nm_group_types_all.ngt_partial%TYPE
+                                     ,pi_sub_group_allowed IN     nm_group_types_all.ngt_sub_group_allowed%TYPE
+                                     ,pi_mandatory         IN     nm_group_types_all.ngt_mandatory%TYPE)
   IS
   --
   BEGIN
@@ -1769,16 +2001,16 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE validate_network_type(pi_new_network_type  IN  nm_group_types.ngt_nt_type%TYPE
-                                 ,pi_old_network_type  IN  nm_group_types.ngt_nt_type%TYPE)
+  PROCEDURE validate_network_type(pi_new_network_type  IN  nm_group_types_all.ngt_nt_type%TYPE
+                                 ,pi_old_network_type  IN  nm_group_types_all.ngt_nt_type%TYPE)
   IS
   --
   l_num  NUMBER;
   --
   CURSOR c1 IS
         SELECT 1
-        FROM   nm_group_relations,
-               nm_group_types,
+        FROM   nm_group_relations_all,
+               nm_group_types_all,
                nm_types
         WHERE  ngr_child_group_type = pi_new_network_type
         AND	   ngr_parent_group_type = ngt_group_type
@@ -1812,19 +2044,19 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE create_group_type(pi_group_type        IN     nm_group_types.ngt_group_type%TYPE   
-                             ,pi_description       IN     nm_group_types.ngt_descr%TYPE  
-                             ,pi_exclusive_flag    IN     nm_group_types.ngt_exclusive_flag%TYPE
-                             ,pi_seq_no            IN     nm_group_types.ngt_search_group_no%TYPE
-                             ,pi_linear_flag       IN     nm_group_types.ngt_linear_flag%TYPE
-                             ,pi_network_type      IN     nm_group_types.ngt_nt_type%TYPE
-                             ,pi_partial           IN     nm_group_types.ngt_partial%TYPE
-                             ,pi_start_date        IN     nm_group_types.ngt_start_date%TYPE 
-                             ,pi_end_date          IN     nm_group_types.ngt_end_date%TYPE
-                             ,pi_sub_group_allowed IN     nm_group_types.ngt_sub_group_allowed%TYPE
-                             ,pi_mandatory         IN     nm_group_types.ngt_mandatory%TYPE
-                             ,pi_reverse_allowed   IN     nm_group_types.ngt_reverse_allowed%TYPE
-                             ,pi_icon_name         IN     nm_group_types.ngt_icon_name%TYPE                            
+  PROCEDURE create_group_type(pi_group_type        IN     nm_group_types_all.ngt_group_type%TYPE   
+                             ,pi_description       IN     nm_group_types_all.ngt_descr%TYPE  
+                             ,pi_exclusive_flag    IN     nm_group_types_all.ngt_exclusive_flag%TYPE
+                             ,pi_seq_no            IN     nm_group_types_all.ngt_search_group_no%TYPE
+                             ,pi_linear_flag       IN     nm_group_types_all.ngt_linear_flag%TYPE
+                             ,pi_network_type      IN     nm_group_types_all.ngt_nt_type%TYPE
+                             ,pi_partial           IN     nm_group_types_all.ngt_partial%TYPE
+                             ,pi_start_date        IN     nm_group_types_all.ngt_start_date%TYPE 
+                             ,pi_end_date          IN     nm_group_types_all.ngt_end_date%TYPE
+                             ,pi_sub_group_allowed IN     nm_group_types_all.ngt_sub_group_allowed%TYPE
+                             ,pi_mandatory         IN     nm_group_types_all.ngt_mandatory%TYPE
+                             ,pi_reverse_allowed   IN     nm_group_types_all.ngt_reverse_allowed%TYPE
+                             ,pi_icon_name         IN     nm_group_types_all.ngt_icon_name%TYPE                            
                              ,po_message_severity     OUT hig_codes.hco_code%TYPE
                              ,po_message_cursor       OUT sys_refcursor)
                              
@@ -1846,11 +2078,8 @@ AS
     awlrs_util.validate_yn(pi_parameter_desc  => 'Linear'
                            ,pi_parameter_value => pi_linear_flag);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Network Type'
-                               ,pi_parameter_value => pi_network_type);
-    --
     awlrs_util.validate_yn(pi_parameter_desc  => 'Partial'
-                           ,pi_parameter_value => pi_partial);
+                          ,pi_parameter_value => pi_partial);
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
                                ,pi_parameter_value => pi_start_date);
@@ -1874,6 +2103,14 @@ AS
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 64
                      ,pi_supplementary_info  => 'Group Type:  '||pi_group_type);
+    END IF;
+    --
+    --lov validation--
+    IF network_type_exists(pi_network_type => pi_network_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Network Type:  '||pi_network_type);
     END IF;
     --
     /*
@@ -1923,32 +2160,32 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE update_group_type(pi_old_group_type        IN     nm_group_types.ngt_group_type%TYPE   
-                             ,pi_old_description       IN     nm_group_types.ngt_descr%TYPE  
-                             ,pi_old_exclusive_flag    IN     nm_group_types.ngt_exclusive_flag%TYPE
-                             ,pi_old_seq_no            IN     nm_group_types.ngt_search_group_no%TYPE
-                             ,pi_old_linear_flag       IN     nm_group_types.ngt_linear_flag%TYPE
-                             ,pi_old_network_type      IN     nm_group_types.ngt_nt_type%TYPE
-                             ,pi_old_partial           IN     nm_group_types.ngt_partial%TYPE
-                             --,pi_old_start_date        IN     nm_group_types.ngt_start_date%TYPE 
-                             ,pi_old_end_date          IN     nm_group_types.ngt_end_date%TYPE
-                             ,pi_old_sub_group_allowed IN     nm_group_types.ngt_sub_group_allowed%TYPE
-                             ,pi_old_mandatory         IN     nm_group_types.ngt_mandatory%TYPE
-                             ,pi_old_reverse_allowed   IN     nm_group_types.ngt_reverse_allowed%TYPE
-                             ,pi_old_icon_name         IN     nm_group_types.ngt_icon_name%TYPE
-                             ,pi_new_group_type        IN     nm_group_types.ngt_group_type%TYPE   
-                             ,pi_new_description       IN     nm_group_types.ngt_descr%TYPE  
-                             ,pi_new_exclusive_flag    IN     nm_group_types.ngt_exclusive_flag%TYPE
-                             ,pi_new_seq_no            IN     nm_group_types.ngt_search_group_no%TYPE
-                             ,pi_new_linear_flag       IN     nm_group_types.ngt_linear_flag%TYPE
-                             ,pi_new_network_type      IN     nm_group_types.ngt_nt_type%TYPE
-                             ,pi_new_partial           IN     nm_group_types.ngt_partial%TYPE
-                             --,pi_new_start_date        IN     nm_group_types.ngt_start_date%TYPE 
-                             ,pi_new_end_date          IN     nm_group_types.ngt_end_date%TYPE
-                             ,pi_new_sub_group_allowed IN     nm_group_types.ngt_sub_group_allowed%TYPE
-                             ,pi_new_mandatory         IN     nm_group_types.ngt_mandatory%TYPE
-                             ,pi_new_reverse_allowed   IN     nm_group_types.ngt_reverse_allowed%TYPE
-                             ,pi_new_icon_name         IN     nm_group_types.ngt_icon_name%TYPE  
+  PROCEDURE update_group_type(pi_old_group_type        IN     nm_group_types_all.ngt_group_type%TYPE   
+                             ,pi_old_description       IN     nm_group_types_all.ngt_descr%TYPE  
+                             ,pi_old_exclusive_flag    IN     nm_group_types_all.ngt_exclusive_flag%TYPE
+                             ,pi_old_seq_no            IN     nm_group_types_all.ngt_search_group_no%TYPE
+                             ,pi_old_linear_flag       IN     nm_group_types_all.ngt_linear_flag%TYPE
+                             ,pi_old_network_type      IN     nm_group_types_all.ngt_nt_type%TYPE
+                             ,pi_old_partial           IN     nm_group_types_all.ngt_partial%TYPE
+                             --,pi_old_start_date        IN     nm_group_types_all.ngt_start_date%TYPE 
+                             ,pi_old_end_date          IN     nm_group_types_all.ngt_end_date%TYPE
+                             ,pi_old_sub_group_allowed IN     nm_group_types_all.ngt_sub_group_allowed%TYPE
+                             ,pi_old_mandatory         IN     nm_group_types_all.ngt_mandatory%TYPE
+                             ,pi_old_reverse_allowed   IN     nm_group_types_all.ngt_reverse_allowed%TYPE
+                             ,pi_old_icon_name         IN     nm_group_types_all.ngt_icon_name%TYPE
+                             ,pi_new_group_type        IN     nm_group_types_all.ngt_group_type%TYPE   
+                             ,pi_new_description       IN     nm_group_types_all.ngt_descr%TYPE  
+                             ,pi_new_exclusive_flag    IN     nm_group_types_all.ngt_exclusive_flag%TYPE
+                             ,pi_new_seq_no            IN     nm_group_types_all.ngt_search_group_no%TYPE
+                             ,pi_new_linear_flag       IN     nm_group_types_all.ngt_linear_flag%TYPE
+                             ,pi_new_network_type      IN     nm_group_types_all.ngt_nt_type%TYPE
+                             ,pi_new_partial           IN     nm_group_types_all.ngt_partial%TYPE
+                             --,pi_new_start_date        IN     nm_group_types_all.ngt_start_date%TYPE 
+                             ,pi_new_end_date          IN     nm_group_types_all.ngt_end_date%TYPE
+                             ,pi_new_sub_group_allowed IN     nm_group_types_all.ngt_sub_group_allowed%TYPE
+                             ,pi_new_mandatory         IN     nm_group_types_all.ngt_mandatory%TYPE
+                             ,pi_new_reverse_allowed   IN     nm_group_types_all.ngt_reverse_allowed%TYPE
+                             ,pi_new_icon_name         IN     nm_group_types_all.ngt_icon_name%TYPE  
                              ,po_message_severity         OUT hig_codes.hco_code%TYPE
                              ,po_message_cursor           OUT sys_refcursor)
 
@@ -1993,11 +2230,8 @@ AS
     awlrs_util.validate_yn(pi_parameter_desc  => 'Linear'
                            ,pi_parameter_value => pi_new_linear_flag);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Network Type'
-                               ,pi_parameter_value => pi_new_network_type);
-    --
     awlrs_util.validate_yn(pi_parameter_desc  => 'Partial'
-                           ,pi_parameter_value => pi_new_partial);
+                          ,pi_parameter_value => pi_new_partial);
     --
     /*
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
@@ -2005,7 +2239,7 @@ AS
     */                           
     --
     awlrs_util.validate_yn(pi_parameter_desc  => 'Sub Group Allowed'
-                         ,pi_parameter_value => pi_new_sub_group_allowed);
+                          ,pi_parameter_value => pi_new_sub_group_allowed);
     --
     awlrs_util.validate_yn(pi_parameter_desc  => 'Mandatory'
                           ,pi_parameter_value => pi_new_mandatory);
@@ -2018,8 +2252,16 @@ AS
                              ,pi_sub_group_allowed =>  pi_new_sub_group_allowed
                              ,pi_mandatory         =>  pi_new_mandatory); 
     --
-    validate_network_type(pi_new_network_type => pi_new_network_type
-                         ,pi_old_network_type => pi_old_network_type);
+    --lov validation--
+    IF network_type_exists(pi_network_type => pi_new_network_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Network Type:  '||pi_new_network_type);
+    ELSE                 
+        validate_network_type(pi_new_network_type => pi_new_network_type
+                             ,pi_old_network_type => pi_old_network_type);
+    END IF;                     
     --                                               
     get_db_rec;
     --
@@ -2223,7 +2465,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE delete_group_type(pi_group_type        IN      nm_group_types.ngt_group_type%TYPE   
+  PROCEDURE delete_group_type(pi_group_type        IN      nm_group_types_all.ngt_group_type%TYPE   
                              ,po_message_severity     OUT  hig_codes.hco_code%TYPE
                              ,po_message_cursor       OUT  sys_refcursor)
                              
@@ -2231,7 +2473,7 @@ AS
     --
     CURSOR c_nt_groupings IS
     SELECT COUNT(nng_nt_type) 
-      FROM nm_nt_groupings
+      FROM nm_nt_groupings_all
      WHERE nng_group_type = pi_group_type; 
     --
     lv_cnt  NUMBER;
@@ -2255,7 +2497,7 @@ AS
     IF lv_cnt = 0 THEN
     --
        DELETE
-         FROM nm_group_types
+         FROM nm_group_types_all
         WHERE ngt_group_type = UPPER(pi_group_type);
     ELSE
       --
@@ -2292,9 +2534,6 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Group Type'
                                ,pi_parameter_value => pi_group_type);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Nt Type'
-                               ,pi_parameter_value => pi_nt_type);
-    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
                                ,pi_parameter_value => pi_start_date);
     --
@@ -2306,6 +2545,14 @@ AS
                      ,pi_supplementary_info  => 'Group Type:  '||pi_group_type||', Nt Type: '||pi_nt_type);
     END IF;
     --
+    --lov validation--
+    IF network_type_exists(pi_network_type => pi_nt_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Network Type Grouping:  '||pi_nt_type);
+    END IF;
+    -- 
     /*
     ||insert into nm_nt_groupings_all.
     */
@@ -2378,11 +2625,16 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Group Type'
                                ,pi_parameter_value => pi_new_group_type);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Network Type'
-                               ,pi_parameter_value => pi_new_nt_type);
-    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
                                ,pi_parameter_value => pi_new_start_date);
+    --
+    --lov validation--
+    IF network_type_exists(pi_network_type => pi_new_nt_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Network Type Grouping:  '||pi_new_nt_type);
+    END IF;
     --
     get_db_rec;
     --
@@ -2525,9 +2777,6 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Parent Group Type'
                                ,pi_parameter_value => pi_parent_group_type);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Child Group Type'
-                               ,pi_parameter_value => pi_child_group_type);
-    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
                                ,pi_parameter_value => pi_start_date);
     --
@@ -2540,6 +2789,14 @@ AS
                                             ||', Start Date: '|| pi_start_date);
     END IF;
     --
+    --lov validation--
+    IF network_type_exists(pi_network_type => pi_child_group_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Child Network Type:  '||pi_child_group_type);
+    END IF;
+    --                 
     /*
     ||insert into nm_group_relations_all.
     */
@@ -2555,7 +2812,15 @@ AS
            ,pi_start_date
            ,pi_end_date
            );
-    --  
+    --
+    IF NOT nm3net.check_for_ngr_loops(pi_parent_group_type => UPPER(pi_parent_group_type)
+                                     ,pi_child_group_type  => UPPER(pi_child_group_type))
+     THEN
+       hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 83
+                     ,pi_supplementary_info  => 'Loop In Group Data created by: '||pi_child_group_type);
+    END IF;                                 
+    -- 
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
@@ -2614,11 +2879,16 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Parent Group Type'
                                ,pi_parameter_value => pi_new_parent_group_type);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Child Group Type'
-                               ,pi_parameter_value => pi_new_child_group_type);
-    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
                                ,pi_parameter_value => pi_new_start_date);
+    --
+    --lov validation--
+    IF network_type_exists(pi_network_type => pi_new_child_group_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Child Group Relation:  '||pi_new_child_group_type);
+    END IF;
     --
     get_db_rec;
     --
@@ -2692,6 +2962,14 @@ AS
          WHERE ngr_parent_group_type  = lr_db_rec.ngr_parent_group_type
            AND ngr_child_group_type   = lr_db_rec.ngr_child_group_type
            AND ngr_start_date         = lr_db_rec.ngr_start_date;         
+        --
+        IF NOT nm3net.check_for_ngr_loops(pi_parent_group_type => UPPER(pi_new_parent_group_type)
+                                         ,pi_child_group_type  => UPPER(pi_new_child_group_type))
+          THEN
+               hig.raise_ner(pi_appl => 'HIG'
+                            ,pi_id   => 83
+                            ,pi_supplementary_info  => 'Loop In Group Data created by: '||pi_new_child_group_type);
+        END IF;                                 
         --
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                              ,po_cursor           => po_message_cursor);
@@ -3197,15 +3475,33 @@ AS
     awlrs_util.validate_yn(pi_parameter_desc  => 'Pop Unique'
                           ,pi_parameter_value => pi_is_unique);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
-                               ,pi_parameter_value => pi_admin_type);
-    --
-    
     IF network_type_exists(pi_network_type => pi_network_type) = 'Y'
      THEN
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 64
                      ,pi_supplementary_info  => 'Network Type:  '||pi_network_type);
+    END IF;
+    --
+    --lov validation--
+    IF node_type_exists(pi_node_type => pi_node_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Node Type:  '||pi_node_type);
+    END IF;
+    --
+    IF unit_type_exists(pi_units => pi_units) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Unit Type:  '||pi_units);
+    END IF;
+    --
+    IF admin_type_exists(pi_admin_type => pi_admin_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Admin Type:  '||pi_admin_type);
     END IF;
     --
     /*
@@ -3325,9 +3621,27 @@ AS
     awlrs_util.validate_yn(pi_parameter_desc  => 'Pop Unique'
                           ,pi_parameter_value => pi_new_is_unique);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
-                               ,pi_parameter_value => pi_new_admin_type);
+    --lov validation--
+    IF node_type_exists(pi_node_type => pi_new_node_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Node Type:  '||pi_new_node_type);
+    END IF;
     --
+    IF unit_type_exists(pi_units => pi_new_units) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Unit Type:  '||pi_new_units);
+    END IF;
+    --
+    IF admin_type_exists(pi_admin_type => pi_new_admin_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Admin Type:  '||pi_new_admin_type);
+    END IF;
     --
     get_db_rec;
     --
@@ -3806,6 +4120,78 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE validate_data_val_columns(pi_domain           IN     nm_type_columns.ntc_domain%TYPE
+                                     ,pi_seq_name         IN     nm_type_columns.ntc_seq_name%TYPE
+                                     ,pi_default_value    IN     nm_type_columns.ntc_default%TYPE
+                                     ,pi_query            IN     nm_type_columns.ntc_query%TYPE)
+  IS
+  
+  BEGIN
+    
+    IF  (pi_domain IS NOT NULL AND (pi_query IS NOT NULL OR pi_seq_name IS NOT NULL OR pi_default_value IS NOT NULL))
+  	 OR (pi_query  IS NOT NULL AND (pi_domain IS NOT NULL OR pi_seq_name IS NOT NULL OR pi_default_value IS NOT NULL))
+  	 OR (pi_seq_name IS NOT NULL AND (pi_query IS NOT NULL OR pi_domain IS NOT NULL OR pi_default_value IS NOT NULL))
+  	 OR (pi_default_value IS NOT NULL AND (pi_domain IS NOT NULL OR pi_seq_name IS NOT NULL OR pi_query IS NOT NULL)) 
+  	  THEN
+  	     hig.raise_ner(pi_appl => 'AWLRS'
+                      ,pi_id   =>  75);  
+  	END IF;  
+  
+  END validate_data_val_columns;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_string_start_end(pi_string_start  IN   nm_type_columns.ntc_string_start%TYPE
+                                     ,pi_string_end    IN   nm_type_columns.ntc_string_end%TYPE)
+  IS
+  
+  BEGIN
+    
+    IF (pi_string_start IS NOT NULL AND pi_string_end IS NOT NULL)
+  	  THEN
+  	    IF pi_string_start > pi_string_end 
+  	      THEN 
+  	         hig.raise_ner(pi_appl => 'AWLRS'
+                          ,pi_id   =>  76);  
+        END IF;                  
+  	END IF;  
+  
+  END validate_string_start_end;    
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_default_value(pi_default_value IN OUT nm_type_columns.ntc_default%TYPE)
+  IS
+  
+  l_default_value nm_type_columns.ntc_default%TYPE  :=  pi_default_value;
+  BEGIN
+    
+  IF pi_default_value IS NOT NULL
+     AND NOT(nm3nwval.is_nm_elements_col(p_column => pi_default_value))
+	 AND NOT(nm3flx.can_string_be_select_from_tab(pi_string       => pi_default_value
+                                                 ,pi_table        => 'NM_ELEMENTS'
+                                                 ,pi_remove_binds => TRUE))
+    AND NOT(nm3flx.can_string_be_select_from_dual(p_string => pi_default_value))
+  THEN
+    IF nm3flx.can_string_be_select_from_dual(p_string => pi_default_value)
+    THEN
+      --value works with quotes so add them
+      pi_default_value := nm3flx.string(pi_default_value);
+    ELSE
+    	 hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   =>  110
+                      ,pi_supplementary_info  => 'Default Value:  '||pi_default_value);  
+    END IF;
+  END IF;
+
+  END validate_default_value;                                       
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  
   PROCEDURE create_nt_type_column(pi_nt_type          IN     nm_type_columns.ntc_nt_type%TYPE
                                  ,pi_column_name      IN     nm_type_columns.ntc_column_name%TYPE
                                  ,pi_seq_no           IN     nm_type_columns.ntc_seq_no%TYPE
@@ -3825,9 +4211,12 @@ AS
                                  ,pi_string_end       IN     nm_type_columns.ntc_string_end%TYPE
                                  ,pi_inherit          IN     nm_type_columns.ntc_inherit%TYPE
                                  ,pi_query            IN     nm_type_columns.ntc_query%TYPE
+                                 ,pi_updatable        IN     nm_type_columns.ntc_updatable%TYPE  DEFAULT 'Y'
                                  ,po_message_severity    OUT hig_codes.hco_code%TYPE
                                  ,po_message_cursor      OUT sys_refcursor)
   IS
+  
+  lv_default_value nm_type_columns.ntc_default%TYPE  :=  pi_default_value;
     --
   BEGIN
     --
@@ -3836,14 +4225,8 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Network Type'
                                ,pi_parameter_value => pi_nt_type);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Column Name'
-                               ,pi_parameter_value => pi_column_name);
-    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Seq No'
                                ,pi_parameter_value => pi_seq_no);
-    --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Column Type'
-                               ,pi_parameter_value => pi_column_type);
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Length'
                                ,pi_parameter_value => pi_length);   
@@ -3857,12 +4240,51 @@ AS
     awlrs_util.validate_yn(pi_parameter_desc  => 'Inherit'
                           ,pi_parameter_value => pi_inherit);   
     --
+    validate_data_val_columns(pi_domain         =>  pi_domain
+                             ,pi_seq_name       =>  pi_seq_name
+                             ,pi_default_value  =>  pi_default_value
+                             ,pi_query          =>  pi_query);
+    --
+    validate_string_start_end(pi_string_start => pi_string_start
+                             ,pi_string_end   => pi_string_end);
+    --
+    validate_default_value(pi_default_value => lv_default_value);                                                   
+    --
     IF nt_column_exists(pi_nt_type     => pi_nt_type
                        ,pi_column_name => pi_column_name) = 'Y'
      THEN
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 64
                      ,pi_supplementary_info  => 'Network Type Column:  '||pi_nt_type||' - '||pi_column_name);
+    END IF;
+    --
+    --lov validation
+    IF column_type_exists(pi_column_type => pi_column_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Column Type:  '||pi_column_type);
+    END IF;
+    --
+    IF column_name_exists(pi_column_name => pi_column_name) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Column Name:  '||pi_column_name);
+    END IF;
+    --
+    IF seq_name_exists(pi_seq_name => pi_seq_name) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Sequence Name:  '||pi_seq_name);
+    END IF;
+    --
+    IF domain_exists(pi_domain => pi_domain) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Domain:  '||pi_domain);
     END IF;
     --
     /*
@@ -3907,12 +4329,12 @@ AS
            ,pi_seq_name
            ,pi_format
            ,pi_prompt
-           ,pi_default_value
+           ,lv_default_value
            ,Null
            ,pi_separator
            ,pi_unique_seq
            ,pi_unique_format
-           ,Null
+           ,pi_updatable
            );
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -3972,6 +4394,7 @@ AS
     --
     lr_db_rec        nm_type_columns%ROWTYPE;
     lv_upd           VARCHAR2(1) := 'N';
+    lv_default_value  nm_type_columns.ntc_default%TYPE  :=  pi_new_default_value;
     --
     PROCEDURE get_db_rec
       IS
@@ -3981,7 +4404,7 @@ AS
         INTO lr_db_rec
         FROM nm_type_columns
        WHERE ntc_nt_type     = UPPER(pi_old_nt_type)
-         AND ntc_column_name = UPPER(pi_old_nt_type)
+         AND ntc_column_name = UPPER(pi_old_column_name)
          FOR UPDATE NOWAIT;
       --
     EXCEPTION
@@ -4001,14 +4424,8 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Network Type'
                                ,pi_parameter_value => pi_new_nt_type);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Column Name'
-                               ,pi_parameter_value => pi_new_column_name);
-    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Seq No'
                                ,pi_parameter_value => pi_new_seq_no);
-    --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Column Type'
-                               ,pi_parameter_value => pi_new_column_type);
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Length'
                                ,pi_parameter_value => pi_new_length);   
@@ -4021,6 +4438,45 @@ AS
     --
     awlrs_util.validate_yn(pi_parameter_desc  => 'Inherit'
                           ,pi_parameter_value => pi_new_inherit);   
+    --
+    validate_data_val_columns(pi_domain         =>  pi_new_domain
+                             ,pi_seq_name       =>  pi_new_seq_name
+                             ,pi_default_value  =>  pi_new_default_value
+                             ,pi_query          =>  pi_new_query);
+    --
+    validate_string_start_end(pi_string_start => pi_new_string_start
+                             ,pi_string_end   => pi_new_string_end);
+    --
+    validate_default_value(pi_default_value => lv_default_value);                                                   
+    --
+    --lov validation
+    IF column_type_exists(pi_column_type => pi_new_column_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Column Type:  '||pi_new_column_type);
+    END IF;
+    --
+    IF column_name_exists(pi_column_name => pi_new_column_name) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Column Name:  '||pi_new_column_name);
+    END IF;
+    --
+    IF seq_name_exists(pi_seq_name => pi_new_seq_name) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Sequence Name:  '||pi_new_seq_name);
+    END IF;
+    --
+    IF domain_exists(pi_domain => pi_new_domain) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Domain:  '||pi_new_domain);
+    END IF;
     --
     get_db_rec;
     --
@@ -4264,7 +4720,7 @@ AS
               ,ntc_separator     = pi_new_separator
               ,ntc_format        = pi_new_format 
               ,ntc_unique_format = pi_new_unique_format
-              ,ntc_default       = pi_new_default_value
+              ,ntc_default       = lv_default_value
               ,ntc_string_start  = pi_new_string_start
               ,ntc_string_end    = pi_new_string_end
               ,ntc_inherit       = pi_new_inherit
@@ -4716,6 +5172,36 @@ AS
   
   --
   -----------------------------------------------------------------------------
+  --
+  FUNCTION xsp_restraint_exists(pi_nt_type    IN nm_xsp.nwx_nw_type%TYPE
+                               ,pi_sub_class  IN nm_xsp.nwx_nsc_sub_class%TYPE)
+      RETURN VARCHAR2
+    IS
+      lv_exists VARCHAR2(1):= 'N';
+      lv_cnt    NUMBER;
+    BEGIN
+      --
+      SELECT COUNT(nwx_nw_type)
+        INTO lv_cnt
+        FROM nm_xsp
+       WHERE nwx_nw_type       = pi_nt_type
+         AND nwx_nsc_sub_class = pi_sub_class;
+      --
+      IF lv_cnt > 0
+       THEN
+         lv_exists :='Y';
+      END IF;
+      --
+      RETURN lv_exists;
+      --
+    EXCEPTION
+      WHEN no_data_found
+       THEN
+          RETURN 'N';
+    END xsp_restraint_exists;
+    
+  --
+  -----------------------------------------------------------------------------
   --                                                                              
   PROCEDURE delete_nt_sub_class(pi_nt_type          IN     nm_type_subclass.nsc_nw_type%TYPE
                                ,pi_sub_class        IN     nm_type_subclass.nsc_sub_class%TYPE
@@ -4734,6 +5220,14 @@ AS
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 30
                      ,pi_supplementary_info  => 'Sub Class:  '||pi_sub_class);
+    END IF;
+    --
+    IF  xsp_restraint_exists(pi_nt_type    => pi_nt_type
+                            ,pi_sub_class  => pi_sub_class)  = 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 2
+                     ,pi_supplementary_info => 'XSP Restraints');
     END IF;
     --
     DELETE
@@ -5114,11 +5608,34 @@ AS
      THEN
         RETURN lv_exists;
   END nt_inclusion_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  FUNCTION nt_inclusion_uk_exists(pi_nti_child_type     IN    nm_type_inclusion.nti_nw_child_type%TYPE
+                                 ,pi_nti_child_column   IN    nm_type_inclusion.nti_child_column%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM nm_type_inclusion
+     WHERE nti_nw_child_type = UPPER(pi_nti_child_type)
+       AND nti_child_column  = UPPER(pi_nti_child_column);
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+  END nt_inclusion_uk_exists;
 
   --
   -----------------------------------------------------------------------------
   --
-
   PROCEDURE create_nt_inclusion(pi_nti_parent_type       IN     nm_type_inclusion.nti_nw_parent_type%TYPE
                                ,pi_nti_child_type        IN     nm_type_inclusion.nti_nw_child_type%TYPE
                                ,pi_nti_parent_column     IN     nm_type_inclusion.nti_parent_column%TYPE
@@ -5152,13 +5669,49 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Reverse Allowed'
                                ,pi_parameter_value => pi_nti_reverse_allowed);
     --
-    
     IF nt_inclusion_exists(pi_nti_parent_type =>  pi_nti_parent_type
                           ,pi_nti_child_type  =>  pi_nti_child_type) = 'Y'
      THEN
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 64
-                     ,pi_supplementary_info  => 'Inclusion:  '||pi_nti_parent_type||' - '||pi_nti_child_type);
+                     ,pi_supplementary_info  => 'Parent Type:  '||pi_nti_parent_type);
+    END IF;
+    --
+    IF nt_inclusion_uk_exists(pi_nti_child_type    =>  pi_nti_child_type
+                             ,pi_nti_child_column  =>  pi_nti_child_column) = 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 64
+                     ,pi_supplementary_info  => 'Child Type and Column combination:  '||pi_nti_child_type||' - '||pi_nti_child_column);
+    END IF;
+    --
+    --lov validation--
+    IF network_type_exists(pi_network_type => pi_nti_parent_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Parent Type:  '||pi_nti_parent_type);
+    END IF;
+    --
+    IF column_name_exists(pi_column_name => pi_nti_parent_column) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Parent Column:  '||pi_nti_parent_column);
+    END IF;
+    --
+    IF column_name_exists(pi_column_name => pi_nti_child_column) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Child Column:  '||pi_nti_child_column);
+    END IF;
+    --
+    IF column_name_exists(pi_column_name => pi_nti_code_control_col) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Code Control Column:  '||pi_nti_code_control_col);
     END IF;
     --
     /*
@@ -5268,6 +5821,43 @@ AS
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Reverse Allowed'
                                ,pi_parameter_value => pi_new_nti_reverse_allowed);
+    --
+    IF nt_inclusion_exists(pi_nti_parent_type =>  pi_new_nti_parent_type
+                          ,pi_nti_child_type  =>  pi_new_nti_child_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Parent Type:  '||pi_new_nti_parent_type);
+    END IF;
+    --
+    --lov validation--
+    IF network_type_exists(pi_network_type => pi_new_nti_parent_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Parent Type:  '||pi_new_nti_parent_type);
+    END IF;
+    --
+    IF column_name_exists(pi_column_name => pi_new_nti_parent_column) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Parent Column:  '||pi_new_nti_parent_column);
+    END IF;
+    --
+    IF column_name_exists(pi_column_name => pi_new_nti_child_column) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Child Column:  '||pi_new_nti_child_column);
+    END IF;
+    --
+    IF column_name_exists(pi_column_name => pi_new_nti_code_control_col) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 29
+                     ,pi_supplementary_info  => 'Code Control Column:  '||pi_new_nti_code_control_col);
+    END IF;                      
     --
     get_db_rec;
     --
