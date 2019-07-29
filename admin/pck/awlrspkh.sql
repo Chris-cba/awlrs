@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrspkh.sql-arc   1.12   Jun 06 2019 16:20:52   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrspkh.sql-arc   1.13   Jul 29 2019 11:30:42   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrspkh.sql  $
---       Date into PVCS   : $Date:   Jun 06 2019 16:20:52  $
---       Date fetched Out : $Modtime:   Jun 06 2019 16:17:52  $
---       Version          : $Revision:   1.12  $
+--       Date into PVCS   : $Date:   Jul 29 2019 11:30:42  $
+--       Date fetched Out : $Modtime:   Jul 29 2019 11:30:04  $
+--       Version          : $Revision:   1.13  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
@@ -374,6 +374,34 @@ SET TERM OFF
 SET define ON
 SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
        ||'&terminator'||'awlrs_asset_maint_api.pkh' run_file
+  FROM dual
+     ;
+SET feedback ON
+START '&run_file'
+SET feedback OFF
+--
+-------------------------------------------------------------------------
+--
+SET TERM ON
+PROMPT awlrs_metaast_api
+SET TERM OFF
+SET define ON
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
+       ||'&terminator'||'awlrs_metaast_api.pkh' run_file
+  FROM dual
+     ;
+SET feedback ON
+START '&run_file'
+SET feedback OFF
+--
+-------------------------------------------------------------------------
+--
+SET TERM ON
+PROMPT awlrs_metanet_api
+SET TERM OFF
+SET define ON
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
+       ||'&terminator'||'awlrs_metanet_api.pkh' run_file
   FROM dual
      ;
 SET feedback ON
