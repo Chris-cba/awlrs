@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.9   Jul 03 2019 16:00:12   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.10   Jul 30 2019 11:40:38   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 03 2019 16:00:12  $
-  --       Date fetched Out : $Modtime:   Jul 03 2019 15:57:34  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   Jul 30 2019 11:40:38  $
+  --       Date fetched Out : $Modtime:   Jul 30 2019 10:57:36  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -319,11 +319,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     UPDATE hig_products
        SET hpr_key = ascii(hpr_product)
@@ -349,11 +345,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     UPDATE hig_products
        SET hpr_key = ''
@@ -934,11 +926,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
                                ,pi_parameter_value => pi_admin_type);
@@ -1020,11 +1008,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin unit type'
                                ,pi_parameter_value => pi_new_admin_type);  
@@ -1141,11 +1125,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     IF admin_type_exists(pi_admin_type => pi_admin_type) <> 'Y' 
      THEN 
@@ -1620,11 +1600,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode; 
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
                                ,pi_parameter_value => pi_admin_type);
@@ -1759,11 +1735,9 @@ AS
     END get_db_rec;    
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode; 
+    --
+    awlrs_util.validate_enddate_isnull(pi_parent_end_date); 
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Parent Admin Type'
                                ,pi_parameter_value => pi_parent_admin_type);
@@ -1974,11 +1948,9 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
+    --
+    awlrs_util.validate_enddate_isnull(pi_enddate => pi_old_end_date);
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
                                ,pi_parameter_value => pi_new_admin_type);
@@ -2375,11 +2347,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     IF admin_unit_exists(pi_admin_unit => pi_admin_unit) <> 'Y' 
      THEN 
@@ -2456,7 +2424,7 @@ AS
     BEGIN
        SELECT nau_admin_unit
          INTO lv_top_admin_unit
-         FROM nm_admin_units
+         FROM nm_admin_units_all
         WHERE nau_admin_type = pi_admin_type
           AND nau_level = 1;
     EXCEPTION
@@ -2473,7 +2441,7 @@ AS
           ,nau_unit_code || ' - ' || nau_name        label
           ,nau_admin_unit                            admin_unit
           ,null                                      parent_admin_unit
-      FROM nm_admin_units nau
+      FROM nm_admin_units_all nau
      WHERE nau.Nau_Admin_Unit = lv_top_admin_unit
      UNION ALL
     SELECT l_level + 1                              depth
@@ -2491,7 +2459,7 @@ AS
                            nau.nau_name,
                            nau.nau_admin_unit,
                            nau.nau_unit_code
-                      FROM nm_admin_groups nag, nm_admin_units nau
+                      FROM nm_admin_groups nag, nm_admin_units_all nau
                      WHERE nag.nag_direct_link = 'Y'
                        AND nau.nau_admin_unit = nag.nag_child_admin_unit)
                    tre
@@ -2511,12 +2479,11 @@ AS
   
   --
   -----------------------------------------------------------------------------
-  --
+  --No longer used according to RC so do not include. PV decided to exclude
   PROCEDURE get_admin_subtypes(po_message_severity OUT hig_codes.hco_code%TYPE
                               ,po_message_cursor   OUT sys_refcursor
                               ,po_cursor           OUT sys_refcursor)
     IS
-    --
     --
   BEGIN
     --
@@ -2608,7 +2575,7 @@ AS
   
   --
   -----------------------------------------------------------------------------
-  --No longer used according to RC so do not include. PV to decide
+  --No longer used according to RC so do not include. PV decided to exclude
   PROCEDURE get_paged_admin_subtypes(pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                     ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                     ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
@@ -3449,11 +3416,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Module'
                                ,pi_parameter_value => pi_module);
@@ -3582,11 +3545,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;  
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Module'
                                ,pi_parameter_value => pi_new_module);
@@ -3779,11 +3738,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;  
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Module'
                                ,pi_parameter_value => pi_module);
@@ -3872,11 +3827,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;  
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Module'
                                ,pi_parameter_value => pi_new_module);
@@ -3986,11 +3937,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     IF module_role_exists(pi_module => pi_module
                          ,pi_role   => pi_role) <> 'Y' 
@@ -4823,11 +4770,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --    
     sql_string := 'CREATE ROLE '||pi_role;
     hig.execute_ddl(sql_string);   
@@ -4851,11 +4794,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     sql_string := 'DROP ROLE '||pi_role;
     hig.execute_ddl(sql_string);   
@@ -4883,11 +4822,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;   
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Product'
                                ,pi_parameter_value => pi_product);
@@ -5018,11 +4953,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Product'
                                ,pi_parameter_value => pi_new_product);
@@ -5109,11 +5040,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     IF role_exists(pi_role => pi_role) <> 'Y' 
      THEN
@@ -5172,11 +5099,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode; 
     --
     proc_input := 'GRANT '||pi_priv||' TO '||pi_role;
     hig.execute_ddl(proc_input);
@@ -5234,11 +5157,7 @@ AS
            );
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode; 
     --
     proc_input := 'REVOKE '||pi_priv||' FROM '||pi_role;
     hig.execute_ddl(proc_input);
@@ -5263,11 +5182,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode; 
     --
     IF role_exists(pi_role => pi_role) <> 'Y' 
      THEN
@@ -5299,11 +5214,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode; 
     --
     IF role_exists(pi_role => pi_role) <> 'Y' 
      THEN
@@ -5354,5 +5265,38 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_launchpad_detail;  
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_launchpad_detail(po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT hstf_child  module_name
+          ,hstf_parent parent_module
+          ,hstf_descr  module_desc
+          ,hstf_order  module_order
+          ,hstf_type   module_type
+          ,level
+      FROM hig_standard_favourites
+     START WITH hstf_parent = 'AWLRS_LAUNCHPAD'
+     CONNECT BY prior hstf_child = hstf_parent
+       AND ((hstf_type = 'M' AND nm3user.user_can_run_module_vc(hstf_child) = 'Y') OR (hstf_type = 'F'))
+     ORDER BY  level,hstf_parent,hstf_order; 
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_launchpad_detail;    
   --
 END awlrs_metasec_api;
