@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkh-arc   1.1   Jul 29 2019 11:26:40   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jul 29 2019 11:26:40  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkh-arc   1.2   Jul 30 2019 11:43:18   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jul 30 2019 11:43:18  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkh  $
-  --       Date fetched Out : $Modtime:   Jul 29 2019 11:23:06  $
-  --       Version          : $Revision:   1.1  $
+  --       Date fetched Out : $Modtime:   Jul 29 2019 15:06:48  $
+  --       Version          : $Revision:   1.2  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
 
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -343,7 +343,7 @@ AS
                              ,pi_old_linear_flag       IN     nm_group_types_all.ngt_linear_flag%TYPE
                              ,pi_old_network_type      IN     nm_group_types_all.ngt_nt_type%TYPE
                              ,pi_old_partial           IN     nm_group_types_all.ngt_partial%TYPE
-                             --,pi_old_start_date        IN     nm_group_types_all.ngt_start_date%TYPE 
+                             ,pi_old_start_date        IN     nm_group_types_all.ngt_start_date%TYPE
                              ,pi_old_end_date          IN     nm_group_types_all.ngt_end_date%TYPE
                              ,pi_old_sub_group_allowed IN     nm_group_types_all.ngt_sub_group_allowed%TYPE
                              ,pi_old_mandatory         IN     nm_group_types_all.ngt_mandatory%TYPE
@@ -356,7 +356,7 @@ AS
                              ,pi_new_linear_flag       IN     nm_group_types_all.ngt_linear_flag%TYPE
                              ,pi_new_network_type      IN     nm_group_types_all.ngt_nt_type%TYPE
                              ,pi_new_partial           IN     nm_group_types_all.ngt_partial%TYPE
-                             --,pi_new_start_date        IN     nm_group_types_all.ngt_start_date%TYPE 
+                             ,pi_new_start_date        IN     nm_group_types_all.ngt_start_date%TYPE
                              ,pi_new_end_date          IN     nm_group_types_all.ngt_end_date%TYPE
                              ,pi_new_sub_group_allowed IN     nm_group_types_all.ngt_sub_group_allowed%TYPE
                              ,pi_new_mandatory         IN     nm_group_types_all.ngt_mandatory%TYPE
