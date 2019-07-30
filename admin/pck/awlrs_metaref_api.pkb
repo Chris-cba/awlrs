@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.7   Jul 03 2019 16:00:12   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.8   Jul 30 2019 11:40:36   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaref_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 03 2019 16:00:12  $
-  --       Date fetched Out : $Modtime:   Jul 03 2019 15:52:18  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   Jul 30 2019 11:40:36  $
+  --       Date fetched Out : $Modtime:   Jul 23 2019 08:50:46  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -354,11 +354,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;    
     --
     BEGIN
       nm3ddl.create_object_and_syns(p_object_name => pi_unit_conv_function
@@ -2494,11 +2490,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;  
+    awlrs_util.check_historic_mode;
     --
     IF pi_product IS NOT NULL THEN
       --
@@ -2562,11 +2554,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     IF code_exists(pi_domain => pi_domain
                   ,pi_code   => pi_code) = 'Y' THEN      
@@ -2626,11 +2614,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;  
+    awlrs_util.check_historic_mode;
     --
     /*
     || Check no user option exists, if it does then error
@@ -2686,11 +2670,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Domain name'
                                ,pi_parameter_value => pi_unit_domain_name);
@@ -2732,11 +2712,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;   
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Domain'
                                ,pi_parameter_value => pi_unit_domain_id);
@@ -2793,11 +2769,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;  
     --
     IF unit_conversion_exists (pi_unit_conv_id_in      => pi_unit_conv_id_in
                               ,pi_unit_conv_id_out => pi_unit_conv_id_out) = 'Y' THEN
@@ -2913,11 +2885,9 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
+    --
+    awlrs_util.validate_enddate_isnull(pi_enddate => pi_old_end_date);
     --
     IF pi_old_system = 'Y' THEN
       --
@@ -3089,11 +3059,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode; 
     --
     /*
     ||if there is a value then check it has not been updated by another user.
@@ -3192,11 +3158,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --    
     get_db_rec(pi_user_id   => pi_user_id
               ,pi_option_id => pi_option_id);
@@ -3300,11 +3262,7 @@ AS
     END get_db_rec;
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode; 
     --
     get_db_rec(pi_product_id  => pi_product_id
               ,pi_error_id    => pi_error_id);
@@ -3403,11 +3361,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Unit Name'
                                ,pi_parameter_value => pi_new_name);
@@ -3513,11 +3467,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Unit Name'
                                ,pi_parameter_value => pi_new_name);
@@ -3628,11 +3578,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Function'
                                ,pi_parameter_value => pi_new_function);
@@ -3771,11 +3717,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode; 
     --
     IF domain_exists(pi_domain => pi_domain) <> 'Y' THEN 
       hig.raise_ner(pi_appl => 'NET'
@@ -3827,11 +3769,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode; 
     --
     IF unit_domain_exists (pi_unit_domain_id => pi_unit_domain_id) <> 'Y' THEN 
       hig.raise_ner(pi_appl => 'NET'
@@ -3884,11 +3822,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode; 
     --
     IF unit_exists (pi_unit_id => pi_unit_id) <> 'Y' THEN
       hig.raise_ner(pi_appl => 'NET'
@@ -3934,11 +3868,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;  
     --
     IF user_option_exists (pi_user_id    => pi_user_id      
                           ,pi_option_id  => pi_option_id) <> 'Y' 
@@ -3973,11 +3903,7 @@ AS
     --
   BEGIN
     --
-    IF awlrs_util.historic_mode
-     THEN
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 6);
-    END IF;    
+    awlrs_util.check_historic_mode;
     --
     IF unit_conversion_exists (pi_unit_conv_id_in  => pi_unit_conv_id_in
                               ,pi_unit_conv_id_out => pi_unit_conv_id_out) <> 'Y' THEN
@@ -4001,7 +3927,6 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_unit_conversion;
-  
 
   --
 END awlrs_metaref_api;
