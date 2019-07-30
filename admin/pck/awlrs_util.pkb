@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.29   Jul 11 2019 11:21:48   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.30   Jul 30 2019 09:57:04   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Jul 11 2019 11:21:48  $
-  --       Date fetched Out : $Modtime:   Jul 11 2019 11:20:54  $
-  --       Version          : $Revision:   1.29  $
+  --       Date into PVCS   : $Date:   Jul 30 2019 09:57:04  $
+  --       Date fetched Out : $Modtime:   Jul 24 2019 13:20:46  $
+  --       Version          : $Revision:   1.30  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.29  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.30  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -1714,7 +1714,78 @@ AS
     END IF;
     --
   END validate_yn;
-  --
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_enddate_isnull(pi_enddate IN DATE)
+    IS
+    --
+  BEGIN
+    --
+    IF pi_enddate IS NOT NULL THEN
+      --
+      hig.raise_ner(pi_appl               => 'AWLRS'
+                   ,pi_id                 => 74);
+      --                   
+    END IF;
+    --    
+  END validate_enddate_isnull;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE set_decimal_point
+    IS
+    --
+  BEGIN
+    --
+    SELECT SUBSTR(value,1,1) decimal_point
+      INTO g_decimal_point
+      FROM v$nls_parameters
+     WHERE parameter ='NLS_NUMERIC_CHARACTERS'
+         ;
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        --
+        g_decimal_point := '.';
+        --
+  END set_decimal_point;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_decimal_point
+    RETURN VARCHAR IS
+    --
+  BEGIN
+    --
+    RETURN g_decimal_point;
+    --
+  END get_decimal_point;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION apply_max_digits(pi_value IN NUMBER)
+    RETURN NUMBER IS
+    --
+  BEGIN
+    /*
+    ||The .Net Decimal Class can only deal with 28 digits so
+    ||we need to round the number returned to make sure we
+    ||respect that limit.
+    */
+    RETURN ROUND(pi_value,c_max_digits - INSTR(TO_CHAR(pi_value),g_decimal_point) -1);
+    --
+  END apply_max_digits;
+  
+  --
+BEGIN
+  --
+  set_decimal_point;
+  --
 END awlrs_util;
 /
