@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.0   Jul 12 2019 16:28:26   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.1   Jul 30 2019 11:36:02   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaast_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 12 2019 16:28:26  $
-  --       Date fetched Out : $Modtime:   Jul 12 2019 15:40:06  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Jul 30 2019 11:36:02  $
+  --       Date fetched Out : $Modtime:   Jul 30 2019 11:04:26  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -83,6 +83,28 @@ AS
      THEN
         RETURN lv_exists;
   END nw_xsp_exists;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION unit_exists(pi_unit_id    IN nm_units.un_unit_id%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM nm_units
+     WHERE un_unit_id = pi_unit_id;
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found 
+     THEN
+        RETURN lv_exists;
+  END unit_exists;
 
   --
   -----------------------------------------------------------------------------
@@ -376,7 +398,8 @@ AS
   -----------------------------------------------------------------------------
   --
   FUNCTION asset_grouping_exists(pi_asset_type         IN      nm_inv_type_groupings_all.itg_inv_type%TYPE    
-                                ,pi_parent_asset_type  IN      nm_inv_type_groupings_all.itg_parent_inv_type%TYPE)
+                                ,pi_parent_asset_type  IN      nm_inv_type_groupings_all.itg_parent_inv_type%TYPE
+                                ,pi_start_date         IN      nm_inv_type_groupings_all.itg_start_date%TYPE)
     RETURN VARCHAR2
   IS
     lv_exists VARCHAR2(1):= 'N';
@@ -386,7 +409,8 @@ AS
       INTO lv_exists
       FROM nm_inv_type_groupings
      WHERE itg_inv_type = pi_asset_type
-       AND itg_parent_inv_type = pi_parent_asset_type;
+       AND itg_parent_inv_type = pi_parent_asset_type
+       AND itg_start_date = pi_start_date;
     --
     RETURN lv_exists;
     --
@@ -394,7 +418,7 @@ AS
     WHEN no_data_found 
      THEN
         RETURN lv_exists;
-  END asset_grouping_exists;    
+  END asset_grouping_exists;
   
   --
   -----------------------------------------------------------------------------
@@ -477,7 +501,69 @@ AS
       END IF;
     END IF;
     --
-  END check_format;                         
+  END check_format;    
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION col_name_exists(pi_asset_type           IN     nm_inv_type_groupings_all.itg_inv_type%TYPE
+                          ,pi_col_name             IN     all_tab_columns.column_name%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM all_tab_columns
+     WHERE owner = Sys_Context('NM3CORE','APPLICATION_OWNER')
+       AND table_name = 'NM_INV_ITEMS'
+       AND nm3inv.is_column_allowable_for_flex(column_id) = nm3type.get_true
+       AND column_name = pi_col_name
+       AND column_name NOT IN (SELECT ita_attrib_name
+    			                       FROM nm_inv_type_attribs
+    			                      WHERE ita_inv_type = pi_asset_type
+                                  AND column_name = ita_attrib_name) 
+       AND column_name NOT IN ('IIT_ANGLE_TXT', 'IIT_CLASS_TXT', 'IIT_COLOUR_TXT', 'IIT_COORD_FLAG', 
+                               'IIT_END_DATE', 'IIT_INV_OWNERSHIP', 'IIT_LCO_LAMP_CONFIG_ID', 'IIT_MATERIAL_TXT', 
+                               'IIT_METHOD_TXT', 'IIT_OFFSET', 'IIT_OPTIONS_TXT', 'IIT_OUN_ORG_ID_ELEC_BOARD', 
+                               'IIT_OWNER_TXT', 'IIT_PROV_FLAG', 'IIT_REV_BY', 'IIT_REV_DATE', 'IIT_TYPE_TXT', 
+                               'IIT_XTRA_DOMAIN_TXT_1');
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found 
+     THEN
+        RETURN lv_exists;
+  END col_name_exists;  
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION tab_name_exists(pi_tab_name IN all_tab_columns.column_name%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM all_objects
+     WHERE owner = SYS_CONTEXT('NM3CORE','APPLICATION_OWNER')
+       AND object_type IN ('TABLE','VIEW')
+       AND object_name NOT LIKE 'MDRT%$'
+       AND object_name NOT LIKE 'BIN$%'
+       AND object_name = pi_tab_name;
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found 
+     THEN
+        RETURN lv_exists;
+    --
+  END tab_name_exists;  
 
   --
   -----------------------------------------------------------------------------
@@ -499,7 +585,7 @@ AS
           ,id_date_modified   modified_date
           ,id_modified_by     modified_by
           ,id_created_by      created_by
-      FROM nm_inv_domains
+      FROM nm_inv_domains_all
      ORDER BY id_domain; 
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -515,7 +601,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_asset_domain(pi_asset_domain        IN      nm_inv_domains.id_domain%TYPE
+  PROCEDURE get_asset_domain(pi_asset_domain        IN      nm_inv_domains_all.id_domain%TYPE
                             ,po_message_severity        OUT hig_codes.hco_code%TYPE
                             ,po_message_cursor          OUT sys_refcursor
                             ,po_cursor                  OUT sys_refcursor)
@@ -533,7 +619,7 @@ AS
           ,id_date_modified   modified_date
           ,id_modified_by     modified_by
           ,id_created_by      created_by
-      FROM nm_inv_domains 
+      FROM nm_inv_domains_all 
       WHERE id_domain = pi_asset_domain;  
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -577,7 +663,7 @@ AS
                                                     ,id_date_modified   modified_date
                                                     ,id_modified_by     modified_by
                                                     ,id_created_by      created_by
-                                              FROM nm_inv_domains ';
+                                              FROM nm_inv_domains_all ';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  asset_domain'
                                                   ||',title'
@@ -745,7 +831,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_asset_domain_types(pi_asset_domain        IN      nm_inv_domains.id_domain%TYPE
+  PROCEDURE get_asset_domain_types(pi_asset_domain        IN      nm_inv_type_attribs_all.ita_id_domain%TYPE
                                   ,po_message_severity       OUT  hig_codes.hco_code%TYPE
                                   ,po_message_cursor         OUT  sys_refcursor
                                   ,po_cursor                 OUT  sys_refcursor)
@@ -756,7 +842,7 @@ AS
     OPEN po_cursor FOR
       SELECT ita_inv_type    inv_type
             ,ita_attrib_name attrib_name
-        FROM nm_inv_type_attribs
+        FROM nm_inv_type_attribs_all
        WHERE ita_id_domain = pi_asset_domain
        ORDER BY ita_inv_type; 
     --
@@ -773,9 +859,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_asset_domain_type(pi_asset_domain        IN      nm_inv_domains.id_domain%TYPE
-                                 ,pi_inv_type            IN      nm_inv_type_attribs.ita_inv_type%TYPE
-                                 ,pi_attrib_name         IN      nm_inv_type_attribs.ita_attrib_name%TYPE
+  PROCEDURE get_asset_domain_type(pi_asset_domain        IN      nm_inv_domains_all.id_domain%TYPE
+                                 ,pi_inv_type            IN      nm_inv_type_attribs_all.ita_inv_type%TYPE
+                                 ,pi_attrib_name         IN      nm_inv_type_attribs_all.ita_attrib_name%TYPE
                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                  ,po_message_cursor          OUT sys_refcursor
                                  ,po_cursor                  OUT sys_refcursor)
@@ -786,7 +872,7 @@ AS
     OPEN po_cursor FOR
       SELECT ita_inv_type    inv_type
             ,ita_attrib_name attrib_name
-        FROM nm_inv_type_attribs
+        FROM nm_inv_type_attribs_all
        WHERE ita_id_domain = pi_asset_domain
          AND ita_inv_type   = pi_inv_type
          AND ita_attrib_name = pi_attrib_name;  
@@ -804,7 +890,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_paged_asset_domain_types(pi_asset_domain         IN     nm_inv_domains.id_domain%TYPE
+  PROCEDURE get_paged_asset_domain_types(pi_asset_domain         IN     nm_inv_type_attribs_all.ita_id_domain%TYPE
                                         ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                         ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                         ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
@@ -826,7 +912,7 @@ AS
       --
       lv_driving_sql  nm3type.max_varchar2 :='SELECT ita_inv_type    inv_type
                                                     ,ita_attrib_name attrib_name
-                                                FROM nm_inv_type_attribs
+                                                FROM nm_inv_type_attribs_all
                                                WHERE ita_id_domain = :pi_asset_domain';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  inv_type'
@@ -943,7 +1029,7 @@ AS
             ,ial_date_modified  date_modified
             ,ial_modified_by    modified_by
             ,ial_created_by     created_by
-        FROM nm_inv_attri_lookup
+        FROM nm_inv_attri_lookup_all
        WHERE ial_domain = pi_asset_domain
        ORDER BY ial_value; 
     --
@@ -983,7 +1069,7 @@ AS
             ,ial_date_modified  date_modified
             ,ial_modified_by    modified_by
             ,ial_created_by     created_by
-        FROM nm_inv_attri_lookup
+        FROM nm_inv_attri_lookup_all
        WHERE ial_domain = pi_asset_domain
          AND ial_value = pi_asset_domain_value
          AND ial_start_date = pi_start_date
@@ -1034,7 +1120,7 @@ AS
                                                     ,ial_date_modified  date_modified
                                                     ,ial_modified_by    modified_by
                                                     ,ial_created_by     created_by
-                                                FROM nm_inv_attri_lookup
+                                                FROM nm_inv_attri_lookup_all
                                                WHERE ial_domain = :pi_asset_domain';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  asset_domain'
@@ -2204,7 +2290,7 @@ AS
                                                     ,nit_foreign_pk_column   primary_key_column
                                                     ,nit_update_allowed      update_allowed
                                                     ,nit_notes               notes
-                                                FROM nm_inv_types';
+                                                FROM nm_inv_types_all';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  asset_type'
                                                   ||',p_or_c'
@@ -2485,8 +2571,8 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_asset_attribute(pi_asset_type          IN      nm_inv_type_attribs.ita_inv_type%TYPE
-                               ,pi_asset_attribute     IN      nm_inv_type_attribs.ita_attrib_name%TYPE
+  PROCEDURE get_asset_attribute(pi_asset_type          IN      nm_inv_type_attribs_all.ita_inv_type%TYPE
+                               ,pi_asset_attribute     IN      nm_inv_type_attribs_all.ita_attrib_name%TYPE
                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor          OUT sys_refcursor
                                ,po_cursor                  OUT sys_refcursor)
@@ -2525,7 +2611,7 @@ AS
             ,ita_disp_width            display_width
             ,ita_inspectable           inspectable_yn
             ,ita_case                  case_
-        FROM  nm_inv_type_attribs
+        FROM nm_inv_type_attribs_all
        WHERE ita_inv_type = pi_asset_type
          AND ita_attrib_name = pi_asset_attribute
        ORDER BY ita_disp_seq_no, ita_attrib_name
@@ -2544,7 +2630,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_asset_attributes(pi_asset_type          IN      nm_inv_type_attribs.ita_inv_type%TYPE
+  PROCEDURE get_asset_attributes(pi_asset_type          IN      nm_inv_type_attribs_all.ita_inv_type%TYPE
                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                 ,po_message_cursor          OUT sys_refcursor
                                 ,po_cursor                  OUT sys_refcursor)
@@ -2583,7 +2669,7 @@ AS
             ,ita_disp_width            display_width
             ,ita_inspectable           inspectable_yn
             ,ita_case                  case_
-        FROM  nm_inv_type_attribs
+        FROM nm_inv_type_attribs_all
        WHERE ita_inv_type = pi_asset_type
        ORDER BY ita_disp_seq_no, ita_attrib_name; 
     --
@@ -2600,7 +2686,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_paged_asset_attributes(pi_asset_type          IN      nm_inv_type_attribs.ita_inv_type%TYPE
+  PROCEDURE get_paged_asset_attributes(pi_asset_type          IN      nm_inv_type_attribs_all.ita_inv_type%TYPE
                                       ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                       ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                       ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
@@ -2650,7 +2736,7 @@ AS
                                                     ,ita_disp_width            display_width
                                                     ,ita_inspectable           inspectable_yn
                                                     ,ita_case                  case_
-                                                FROM  nm_inv_type_attribs
+                                                FROM  nm_inv_type_attribs_all
                                                WHERE ita_inv_type = :pi_asset_type';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  asset_type'
@@ -2956,7 +3042,7 @@ AS
             ,nin_loc_mandatory location_mandatory_yn
             ,nm3inv.get_nt_unique(nin_nw_type)  nw_unique
             ,nm3net.get_nt_descr(nin_nw_type)   nw_descr         
-        FROM nm_inv_nw
+        FROM nm_inv_nw_all
        WHERE nin_nit_inv_code = pi_asset_type
          AND nin_nw_type = pi_nw_type
       ;   
@@ -2988,7 +3074,7 @@ AS
             ,nin_loc_mandatory location_mandatory_yn
             ,nm3inv.get_nt_unique(nin_nw_type)  nw_unique
             ,nm3net.get_nt_descr(nin_nw_type)   nw_descr                    
-        FROM nm_inv_nw
+        FROM nm_inv_nw_all
        WHERE nin_nit_inv_code = pi_asset_type;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -3029,7 +3115,7 @@ AS
                                                     ,nin_loc_mandatory location_mandatory_yn
                                                     ,nm3inv.get_nt_unique(nin_nw_type)  nw_unique
                                                     ,nm3net.get_nt_descr(nin_nw_type)   nw_descr                                                            
-                                                FROM nm_inv_nw
+                                                FROM nm_inv_nw_all
                                                WHERE nin_nit_inv_code = :pi_asset_type';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  nw_type'
@@ -3349,7 +3435,7 @@ AS
             ,itg_relation          relation
             ,itg_start_date        start_date
             ,itg_end_date          end_date
-        FROM nm_inv_type_groupings
+        FROM nm_inv_type_groupings_all
        WHERE itg_inv_type = pi_asset_type
          AND itg_parent_inv_type = pi_parent_asset_type
          AND itg_start_date = pi_start_date
@@ -3384,7 +3470,7 @@ AS
             ,itg_relation          relation
             ,itg_start_date        start_date
             ,itg_end_date          end_date
-        FROM nm_inv_type_groupings
+        FROM nm_inv_type_groupings_all
        WHERE itg_inv_type = pi_asset_type;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -3427,7 +3513,7 @@ AS
                                                     ,itg_relation          relation
                                                     ,itg_start_date        start_date
                                                     ,itg_end_date          end_date
-                                                FROM nm_inv_type_groupings
+                                                FROM nm_inv_type_groupings_all
                                                WHERE itg_inv_type = :pi_asset_type';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  asset_type'
@@ -3558,9 +3644,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_asset_categories(po_message_severity        OUT hig_codes.hco_code%TYPE
-                                ,po_message_cursor          OUT sys_refcursor
-                                ,po_cursor                  OUT sys_refcursor)
+  PROCEDURE get_asset_categories_lov(po_message_severity        OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor          OUT sys_refcursor
+                                    ,po_cursor                  OUT sys_refcursor)
     IS
     --
   BEGIN
@@ -3579,14 +3665,14 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END get_asset_categories;
+  END get_asset_categories_lov;
 
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_ft_names(po_message_severity        OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor          OUT sys_refcursor
-                        ,po_cursor                  OUT sys_refcursor)
+  PROCEDURE get_ft_names_lov(po_message_severity        OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor          OUT sys_refcursor
+                            ,po_cursor                  OUT sys_refcursor)
     IS
     --
   BEGIN
@@ -3608,15 +3694,15 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END get_ft_names;
+  END get_ft_names_lov;
 
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_col_names(pi_asset_type           IN     nm_inv_type_groupings_all.itg_inv_type%TYPE
-                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
-                         ,po_message_cursor          OUT sys_refcursor
-                         ,po_cursor                  OUT sys_refcursor)
+  PROCEDURE get_col_names_lov(pi_asset_type           IN     nm_inv_type_groupings_all.itg_inv_type%TYPE
+                             ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor          OUT sys_refcursor
+                             ,po_cursor                  OUT sys_refcursor)
     IS
     --
   BEGIN
@@ -3664,15 +3750,15 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END get_col_names;
+  END get_col_names_lov;
 
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_asset_domains(pi_asset_format         IN     nm_inv_domains.id_datatype%TYPE
-                             ,po_message_severity        OUT hig_codes.hco_code%TYPE
-                             ,po_message_cursor          OUT sys_refcursor
-                             ,po_cursor                  OUT sys_refcursor)
+  PROCEDURE get_asset_domains_lov(pi_asset_format         IN     nm_inv_domains_all.id_datatype%TYPE
+                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT sys_refcursor
+                                 ,po_cursor                  OUT sys_refcursor)
     IS
     --
   BEGIN
@@ -3691,14 +3777,14 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END get_asset_domains;
+  END get_asset_domains_lov;
 
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_units(po_message_severity        OUT hig_codes.hco_code%TYPE
-                     ,po_message_cursor          OUT sys_refcursor
-                     ,po_cursor                  OUT sys_refcursor)
+  PROCEDURE get_units_lov(po_message_severity        OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor          OUT sys_refcursor
+                         ,po_cursor                  OUT sys_refcursor)
     IS
     --
   BEGIN
@@ -3720,14 +3806,14 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END get_units;
+  END get_units_lov;
 
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_nw_types(po_message_severity        OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor          OUT sys_refcursor
-                        ,po_cursor                  OUT sys_refcursor)
+  PROCEDURE get_nw_types_lov(po_message_severity        OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor          OUT sys_refcursor
+                            ,po_cursor                  OUT sys_refcursor)
     IS
     --
   BEGIN
@@ -3748,14 +3834,14 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END get_nw_types;
+  END get_nw_types_lov;
   
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_parent_asset_types(po_message_severity        OUT hig_codes.hco_code%TYPE
-                                  ,po_message_cursor          OUT sys_refcursor
-                                  ,po_cursor                  OUT sys_refcursor)
+  PROCEDURE get_parent_asset_types_lov(po_message_severity        OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor          OUT sys_refcursor
+                                      ,po_cursor                  OUT sys_refcursor)
     IS
     --
   BEGIN
@@ -3783,7 +3869,7 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END get_parent_asset_types;
+  END get_parent_asset_types_lov;
    
   --
   -----------------------------------------------------------------------------
@@ -3889,6 +3975,8 @@ AS
   BEGIN
     --
     awlrs_util.check_historic_mode;
+    --
+    awlrs_util.validate_enddate_isnull(pi_enddate => pi_old_end_date);
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Asset Domain'
                                ,pi_parameter_value => pi_new_domain);
@@ -4014,7 +4102,8 @@ AS
     --
     UPDATE nm_inv_domains_all
        SET id_end_date = TRUNC(SYSDATE)
-     WHERE id_domain = UPPER(pi_asset_domain);
+     WHERE id_domain = UPPER(pi_asset_domain)
+       AND id_end_date IS NULL;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -4150,6 +4239,8 @@ AS
   BEGIN
     --
     awlrs_util.check_historic_mode;
+    --
+    awlrs_util.validate_enddate_isnull(pi_enddate => pi_old_end_date);
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Value'
                                ,pi_parameter_value => pi_new_asset_domain_value);
@@ -4323,7 +4414,8 @@ AS
        SET ial_end_date = TRUNC(SYSDATE)
      WHERE ial_domain = UPPER(pi_asset_domain)
        AND ial_value  = UPPER(pi_asset_domain_value)
-       AND ial_start_date = TRUNC(pi_start_date);
+       AND ial_start_date = TRUNC(pi_start_date)
+       AND ial_end_date IS NULL;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -4516,9 +4608,10 @@ AS
                            ,pi_sub_class  => pi_sub_class
                            ,pi_inv_code   => pi_inv_code) <> 'Y'      
      THEN
-                             
+        --
         hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 29);    
+                     ,pi_id   => 29);
+        --
     END IF;
     --
     DELETE
@@ -5142,11 +5235,9 @@ AS
                              ,pi_use_xy             IN      nm_inv_types.nit_use_xy%TYPE
                              ,pi_multiple_allowed   IN      nm_inv_types.nit_multiple_allowed%TYPE
                              ,pi_screen_seq         IN      nm_inv_types.nit_screen_seq%TYPE
-                             ,pi_view_name          IN      nm_inv_types.nit_view_name%TYPE
                              ,pi_start_date         IN      nm_inv_types.nit_start_date%TYPE
                              ,pi_end_date           IN      nm_inv_types.nit_end_date%TYPE
                              ,pi_short_descr        IN      nm_inv_types.nit_short_descr%TYPE
-                             ,pi_flex_item_flag     IN      nm_inv_types.nit_flex_item_flag%TYPE
                              ,pi_table_name         IN      nm_inv_types.nit_table_name%TYPE
                              ,pi_lr_ne_column_name  IN      nm_inv_types.nit_lr_ne_column_name%TYPE
                              ,pi_lr_st_chain        IN      nm_inv_types.nit_lr_st_chain%TYPE
@@ -5155,13 +5246,13 @@ AS
                              ,pi_icon_name          IN      nm_inv_types.nit_icon_name%TYPE        
                              ,pi_top_of_hier        IN      nm_inv_types.nit_top%TYPE
                              ,pi_end_loc_only       IN      nm_inv_types.nit_end_loc_only%TYPE
-                             ,pi_update_allowed     IN      nm_inv_types.nit_update_allowed%TYPE
                              ,pi_ft_pk_column       IN      nm_inv_types.nit_foreign_pk_column%TYPE
                              ,po_message_severity       OUT hig_codes.hco_code%TYPE
                              ,po_message_cursor         OUT sys_refcursor)
     IS
     --
     lv_view_name nm_inv_types.nit_view_name%TYPE;
+    lv_flex_item_flag nm_inv_types.nit_flex_item_flag%TYPE;
     --
   BEGIN
     --
@@ -5203,9 +5294,6 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Multiple Allowed'
                                ,pi_parameter_value => pi_multiple_allowed);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Flex Item Flag'
-                               ,pi_parameter_value => pi_flex_item_flag);
-    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
                                ,pi_parameter_value => pi_start_date);
     --
@@ -5242,6 +5330,11 @@ AS
     --  
     awlrs_util.validate_yn(pi_parameter_desc  => 'Top of hierarchy'
                           ,pi_parameter_value => pi_top_of_hier);    
+    /*
+    ||Validate domain codes
+    */
+    hig.valid_fk_hco(pi_hco_domain => 'ELEC_DRAIN_CARR'
+                    ,pi_hco_code   => pi_elec_drain_carr);
     --
     IF pi_pnt_or_cont NOT IN ('P','C') THEN
       hig.raise_ner(pi_appl               => 'HIG'
@@ -5269,16 +5362,59 @@ AS
                      ,pi_id                 => 29
                      ,pi_supplementary_info => 'Admin type does not exist');    
     END IF; 
+    --    
+    IF pi_lr_ne_column_name IS NOT NULL 
+     AND col_name_exists(pi_asset_type   => pi_asset_type
+                        ,pi_col_name       => pi_lr_ne_column_name) <> 'Y'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 30
+                      ,pi_supplementary_info => 'LR Column Name');    
+    END IF;
     --
+    IF pi_ft_pk_column IS NOT NULL
+     AND col_name_exists(pi_asset_type   => pi_asset_type
+                        ,pi_col_name     => pi_ft_pk_column) <> 'Y'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 30
+                      ,pi_supplementary_info => 'FK primary Key');    
+    END IF;
+    --
+    IF pi_lr_st_chain IS NOT NULL
+     AND col_name_exists(pi_asset_type   => pi_asset_type
+                        ,pi_col_name     => pi_lr_st_chain) <> 'Y'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 30
+                      ,pi_supplementary_info => 'LR Start Chain');    
+    END IF;
+    --
+    IF pi_lr_end_chain IS NOT NULL
+     AND col_name_exists(pi_asset_type   => pi_asset_type
+                        ,pi_col_name       => pi_lr_end_chain) <> 'Y'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 30
+                      ,pi_supplementary_info => 'LR End Chain');    
+    END IF;
+    --
+    IF pi_table_name IS NOT NULL AND tab_name_exists(pi_tab_name => pi_table_name) <> 'Y'
+     THEN
+       hig.raise_ner(pi_appl => 'HIG'
+                    ,pi_id   => 30
+                    ,pi_supplementary_info => 'Table Name');    
+    END IF;
     /*
     || Derive the View name
     */
     lv_view_name := nm3inv.derive_inv_type_view_name (pi_asset_type);
+    lv_flex_item_flag := 'N'; --like form we default to N.
     /*
     ||insert into asset_domain. Upper things that are upper case.
     */
     INSERT 
-      INTO nm_inv_types
+      INTO nm_inv_types_all
            (nit_inv_type
            ,nit_pnt_or_cont
            ,nit_x_sect_allow_flag
@@ -5306,7 +5442,6 @@ AS
            ,nit_icon_name
            ,nit_top
            ,nit_foreign_pk_column
-           ,nit_update_allowed
            )
     VALUES (UPPER(pi_asset_type)
            ,pi_pnt_or_cont
@@ -5326,7 +5461,7 @@ AS
            ,pi_start_date
            ,pi_end_date
            ,pi_short_descr
-           ,pi_flex_item_flag
+           ,lv_flex_item_flag
            ,UPPER(pi_table_name)
            ,UPPER(pi_lr_ne_column_name)
            ,UPPER(pi_lr_st_chain)
@@ -5334,8 +5469,7 @@ AS
            ,UPPER(pi_admin_type)
            ,UPPER(pi_icon_name)
            ,pi_top_of_hier
-           ,UPPER(pi_ft_pk_column)
-           ,pi_update_allowed       
+           ,UPPER(pi_ft_pk_column)  
            );     
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -5366,7 +5500,6 @@ AS
                              ,pi_old_screen_seq         IN      nm_inv_types_all.nit_screen_seq%TYPE
                              ,pi_old_end_date           IN      nm_inv_types_all.nit_end_date%TYPE
                              ,pi_old_short_descr        IN      nm_inv_types_all.nit_short_descr%TYPE
-                             ,pi_old_flex_item_flag     IN      nm_inv_types_all.nit_flex_item_flag%TYPE
                              ,pi_old_table_name         IN      nm_inv_types_all.nit_table_name%TYPE
                              ,pi_old_lr_ne_column_name  IN      nm_inv_types_all.nit_lr_ne_column_name%TYPE
                              ,pi_old_lr_st_chain        IN      nm_inv_types_all.nit_lr_st_chain%TYPE
@@ -5375,7 +5508,6 @@ AS
                              ,pi_old_icon_name          IN      nm_inv_types_all.nit_icon_name%TYPE        
                              ,pi_old_top_of_hier        IN      nm_inv_types_all.nit_top%TYPE
                              ,pi_old_end_loc_only       IN      nm_inv_types_all.nit_end_loc_only%TYPE
-                             ,pi_old_update_allowed     IN      nm_inv_types_all.nit_update_allowed%TYPE
                              ,pi_old_ft_pk_column       IN      nm_inv_types_all.nit_foreign_pk_column%TYPE
                              ,pi_new_pnt_or_cont        IN      nm_inv_types_all.nit_pnt_or_cont%TYPE
                              ,pi_new_linear             IN      nm_inv_types_all.nit_linear%TYPE
@@ -5391,7 +5523,6 @@ AS
                              ,pi_new_screen_seq         IN      nm_inv_types_all.nit_screen_seq%TYPE
                              ,pi_new_end_date           IN      nm_inv_types_all.nit_end_date%TYPE
                              ,pi_new_short_descr        IN      nm_inv_types_all.nit_short_descr%TYPE
-                             ,pi_new_flex_item_flag     IN      nm_inv_types_all.nit_flex_item_flag%TYPE
                              ,pi_new_table_name         IN      nm_inv_types_all.nit_table_name%TYPE
                              ,pi_new_lr_ne_column_name  IN      nm_inv_types_all.nit_lr_ne_column_name%TYPE
                              ,pi_new_lr_st_chain        IN      nm_inv_types_all.nit_lr_st_chain%TYPE
@@ -5400,7 +5531,6 @@ AS
                              ,pi_new_icon_name          IN      nm_inv_types_all.nit_icon_name%TYPE        
                              ,pi_new_top_of_hier        IN      nm_inv_types_all.nit_top%TYPE
                              ,pi_new_end_loc_only       IN      nm_inv_types_all.nit_end_loc_only%TYPE
-                             ,pi_new_update_allowed     IN      nm_inv_types_all.nit_update_allowed%TYPE
                              ,pi_new_ft_pk_column       IN      nm_inv_types_all.nit_foreign_pk_column%TYPE            
                              ,po_message_severity           OUT hig_codes.hco_code%TYPE
                              ,po_message_cursor             OUT sys_refcursor)
@@ -5432,6 +5562,8 @@ AS
   BEGIN       
     --
     awlrs_util.check_historic_mode;  
+    --
+    awlrs_util.validate_enddate_isnull(pi_enddate => pi_old_end_date);
     --    
     get_db_rec;
     --
@@ -5469,10 +5601,7 @@ AS
                                ,pi_parameter_value => pi_new_use_xy);
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Multiple Allowed'
-                               ,pi_parameter_value => pi_new_multiple_allowed); 
-    --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Flex Item Flag'
-                               ,pi_parameter_value => pi_new_flex_item_flag);                                
+                               ,pi_parameter_value => pi_new_multiple_allowed);                               
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
                                ,pi_parameter_value => pi_new_admin_type);                                
@@ -5528,6 +5657,78 @@ AS
                      ,pi_id                 => 29
                      ,pi_supplementary_info => 'Admin type does not exist');    
     END IF; 
+    /*
+    ||Validate domain codes
+    */
+    IF pi_new_elec_drain_carr != pi_old_elec_drain_carr 
+     THEN
+        hig.valid_fk_hco(pi_hco_domain => 'ELEC_DRAIN_CARR'
+                        ,pi_hco_code   => pi_new_elec_drain_carr);
+    END IF;
+    --
+    IF pi_old_lr_ne_column_name != pi_new_lr_ne_column_name
+     OR (pi_old_lr_ne_column_name IS NULL AND pi_new_lr_ne_column_name IS NOT NULL)
+     OR (pi_old_lr_ne_column_name IS NOT NULL AND pi_new_lr_ne_column_name IS NULL)
+     THEN
+       IF col_name_exists(pi_asset_type           => pi_asset_type
+                         ,pi_col_name             => pi_new_lr_ne_column_name) <> 'Y'
+        THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 30
+                       ,pi_supplementary_info => 'LR Column Name');    
+       END IF;
+    END IF;
+    --
+    IF pi_old_ft_pk_column != pi_new_ft_pk_column
+     OR (pi_old_ft_pk_column IS NULL AND pi_new_ft_pk_column IS NOT NULL)
+     OR (pi_old_ft_pk_column IS NOT NULL AND pi_new_ft_pk_column IS NULL)
+     THEN
+       IF col_name_exists(pi_asset_type           => pi_asset_type
+                         ,pi_col_name             => pi_new_ft_pk_column) <> 'Y'
+        THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 30
+                       ,pi_supplementary_info => 'FK primary Key');    
+       END IF;
+    END IF;
+    --
+    IF pi_old_lr_st_chain != pi_new_lr_st_chain
+     OR (pi_old_lr_st_chain IS NULL AND pi_new_lr_st_chain IS NOT NULL)
+     OR (pi_old_lr_st_chain IS NOT NULL AND pi_new_lr_st_chain IS NULL)
+     THEN
+       IF col_name_exists(pi_asset_type           => pi_asset_type
+                         ,pi_col_name             => pi_new_lr_st_chain) <> 'Y'
+        THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 30
+                       ,pi_supplementary_info => 'LR Start Chain');    
+       END IF;
+    END IF;
+    --
+    IF pi_old_lr_end_chain != pi_new_lr_end_chain
+     OR (pi_old_lr_end_chain IS NULL AND pi_new_lr_end_chain IS NOT NULL)
+     OR (pi_old_lr_end_chain IS NOT NULL AND pi_new_lr_end_chain IS NULL)
+     THEN
+       IF col_name_exists(pi_asset_type           => pi_asset_type
+                         ,pi_col_name             => pi_new_lr_end_chain) <> 'Y'
+        THEN
+          hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   => 30
+                       ,pi_supplementary_info => 'LR End Chain');    
+       END IF;
+    END IF;
+    --
+    IF pi_old_table_name != pi_new_table_name
+     OR (pi_old_table_name IS NULL AND pi_new_table_name IS NOT NULL)
+     OR (pi_old_table_name IS NOT NULL AND pi_new_table_name IS NULL)
+      THEN
+         IF tab_name_exists(pi_tab_name => pi_new_table_name) <> 'Y'
+          THEN
+            hig.raise_ner(pi_appl => 'HIG'
+                         ,pi_id   => 30
+                         ,pi_supplementary_info => 'Table Name');    
+         END IF;
+    END IF;
     --    
     /*
     ||Compare old with DB
@@ -5588,10 +5789,6 @@ AS
      OR (lr_db_nit_rec.nit_short_descr IS NULL AND pi_old_short_descr IS NOT NULL)
      OR (lr_db_nit_rec.nit_short_descr IS NOT NULL AND pi_old_short_descr IS NULL)
      --
-     OR (lr_db_nit_rec.nit_flex_item_flag != pi_old_flex_item_flag)
-     OR (lr_db_nit_rec.nit_flex_item_flag IS NULL AND pi_old_flex_item_flag IS NOT NULL)
-     OR (lr_db_nit_rec.nit_flex_item_flag IS NOT NULL AND pi_old_flex_item_flag IS NULL)
-     --
      OR (lr_db_nit_rec.nit_table_name != pi_old_table_name)
      OR (lr_db_nit_rec.nit_table_name IS NULL AND pi_old_table_name IS NOT NULL)
      OR (lr_db_nit_rec.nit_table_name IS NOT NULL AND pi_old_table_name IS NULL)     
@@ -5623,10 +5820,6 @@ AS
      OR (lr_db_nit_rec.nit_end_loc_only != pi_old_end_loc_only)
      OR (lr_db_nit_rec.nit_end_loc_only IS NULL AND pi_old_end_loc_only IS NOT NULL)
      OR (lr_db_nit_rec.nit_end_loc_only IS NOT NULL AND pi_old_end_loc_only IS NULL)
-     --
-     OR (lr_db_nit_rec.nit_update_allowed != pi_old_update_allowed)
-     OR (lr_db_nit_rec.nit_update_allowed IS NULL AND pi_old_update_allowed IS NOT NULL)
-     OR (lr_db_nit_rec.nit_update_allowed IS NOT NULL AND pi_old_update_allowed IS NULL)
      --
      OR (lr_db_nit_rec.nit_foreign_pk_column != pi_old_ft_pk_column)
      OR (lr_db_nit_rec.nit_foreign_pk_column IS NULL AND pi_old_ft_pk_column IS NOT NULL)
@@ -5737,13 +5930,6 @@ AS
          lv_upd := 'Y';
       END IF;
       --
-      IF pi_old_flex_item_flag != pi_new_flex_item_flag
-       OR (pi_old_flex_item_flag IS NULL AND pi_new_flex_item_flag IS NOT NULL)
-       OR (pi_old_flex_item_flag IS NOT NULL AND pi_new_flex_item_flag IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;
-      --
       IF pi_old_table_name != pi_new_table_name
        OR (pi_old_table_name IS NULL AND pi_new_table_name IS NOT NULL)
        OR (pi_old_table_name IS NOT NULL AND pi_new_table_name IS NULL)
@@ -5800,13 +5986,6 @@ AS
          lv_upd := 'Y';
       END IF;
       --
-      IF pi_old_update_allowed != pi_new_update_allowed
-       OR (pi_old_update_allowed IS NULL AND pi_new_update_allowed IS NOT NULL)
-       OR (pi_old_update_allowed IS NOT NULL AND pi_new_update_allowed IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;
-      --
       IF pi_old_ft_pk_column != pi_new_ft_pk_column
        OR (pi_old_ft_pk_column IS NULL AND pi_new_ft_pk_column IS NOT NULL)
        OR (pi_old_ft_pk_column IS NOT NULL AND pi_new_ft_pk_column IS NULL)
@@ -5835,8 +6014,7 @@ AS
               ,nit_multiple_allowed  = pi_new_multiple_allowed  
               ,nit_screen_seq        = pi_new_screen_seq             
               ,nit_end_date          = TRUNC(pi_new_end_date)          
-              ,nit_short_descr       = pi_new_short_descr       
-              ,nit_flex_item_flag    = pi_new_flex_item_flag    
+              ,nit_short_descr       = pi_new_short_descr         
               ,nit_table_name        = UPPER(pi_new_table_name)      
               ,nit_lr_ne_column_name = UPPER(pi_new_lr_ne_column_name) 
               ,nit_lr_st_chain       = UPPER(pi_new_lr_st_chain)    
@@ -5844,8 +6022,7 @@ AS
               ,nit_admin_type        = UPPER(pi_new_admin_type)        
               ,nit_icon_name         = UPPER(pi_new_icon_name)      
               ,nit_top               = pi_new_top_of_hier       
-              ,nit_end_loc_only      = pi_new_end_loc_only      
-              ,nit_update_allowed    = pi_new_update_allowed    
+              ,nit_end_loc_only      = pi_new_end_loc_only        
               ,nit_foreign_pk_column = UPPER(pi_new_ft_pk_column)                  
          WHERE nit_inv_type = pi_asset_type;
         --
@@ -5883,7 +6060,8 @@ AS
     --
     UPDATE nm_inv_types_all
        SET nit_end_date = TRUNC(SYSDATE)
-     WHERE nit_inv_type = pi_asset_type;
+     WHERE nit_inv_type = pi_asset_type
+       AND nit_end_date IS NULL;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -5900,7 +6078,6 @@ AS
   --
   PROCEDURE create_asset_attribute(pi_asset_type         IN      nm_inv_type_attribs.ita_inv_type%TYPE    
                                   ,pi_attrib_name        IN      nm_inv_type_attribs.ita_attrib_name%TYPE
-                                  ,pi_dynamic_attrib_yn  IN      nm_inv_type_attribs.ita_dynamic_attrib%TYPE 
                                   ,pi_disp_seq_no        IN      nm_inv_type_attribs.ita_disp_seq_no%TYPE 
                                   ,pi_mandatory_yn       IN      nm_inv_type_attribs.ita_mandatory_yn%TYPE 
                                   ,pi_format             IN      nm_inv_type_attribs.ita_format%TYPE 
@@ -5965,9 +6142,6 @@ AS
     ||Do validation checks on y/n flags
     */
     --
-    awlrs_util.validate_yn(pi_parameter_desc  => 'Dynamic Attribute'
-                          ,pi_parameter_value => pi_dynamic_attrib_yn);
-    --
     awlrs_util.validate_yn(pi_parameter_desc  => 'Mandatory'
                           ,pi_parameter_value => pi_mandatory_yn);
     --
@@ -5993,6 +6167,30 @@ AS
                      ,pi_supplementary_info => 'Asset Type does not exist');    
     END IF;
     --
+    /*
+    ||Validate domain codes
+    */
+    --
+    hig.valid_fk_hco(pi_hco_domain => 'DATA_FORMAT'
+                    ,pi_hco_code   => pi_format);    
+    --
+    hig.valid_fk_hco(pi_hco_domain => 'ATTRIBUTE_CASE'
+                    ,pi_hco_code   => pi_case);  
+    --
+    IF pi_format_mask IS NOT NULL
+     THEN
+        hig.valid_fk_hco(pi_hco_domain => 'DATE_FORMAT_MASK'
+                        ,pi_hco_code   => pi_format_mask);    
+    END IF;   
+    --
+    IF col_name_exists(pi_asset_type           => pi_asset_type
+                      ,pi_col_name             => pi_attrib_name) <> 'Y'
+     THEN
+       hig.raise_ner(pi_appl => 'HIG'
+                    ,pi_id   => 30
+                    ,pi_supplementary_info => 'Column Name');    
+    END IF;
+    --
 	  IF nm3inv.attrib_in_use(pi_inv_type    => pi_asset_type
 	  	                     ,pi_attrib_name => pi_attrib_name)	                     
 	   THEN
@@ -6014,9 +6212,32 @@ AS
     */
     IF pi_id_domain IS NOT NULL
      THEN
+       /*
+       ||validate the domain
+       */
+       IF asset_domain_exists(pi_asset_domain => pi_id_domain) <> 'Y' 
+        THEN
+           hig.raise_ner(pi_appl => 'HIG'
+                        ,pi_id   => 29
+                        ,pi_supplementary_info => 'Asset Domain does not exist');    
+       END IF;       
+       --
        lv_validate_yn := 'Y';
     ELSE
        lv_validate_yn := 'N';
+    END IF;
+    --
+    /*
+    ||validate units 
+    */
+    IF pi_units IS NOT NULL 
+     THEN
+       IF unit_exists(pi_unit_id => pi_units) != 'Y' 
+        THEN
+		       hig.raise_ner(pi_appl => 'HIG'
+		       	            ,pi_id   => 30
+                        ,pi_supplementary_info => 'Units');        
+       END IF;
     END IF;
     --
     IF nm3flx.is_reserved_word(pi_view_col_name) 
@@ -6074,7 +6295,7 @@ AS
            ,ita_case)
     VALUES (pi_asset_type              
            ,UPPER(pi_attrib_name)
-           ,NVL(pi_dynamic_attrib_yn,'N')
+           ,'N'--pi_dynamic_attrib_yn is N in form always
            ,pi_disp_seq_no           
            ,NVL(pi_mandatory_yn,'N') 
            ,UPPER(pi_format)
@@ -6117,7 +6338,6 @@ AS
   --
   PROCEDURE update_asset_attribute(pi_asset_type            IN      nm_inv_type_attribs.ita_inv_type%TYPE    
                                   ,pi_attrib_name           IN      nm_inv_type_attribs.ita_attrib_name%TYPE
-                                  ,pi_old_dynamic_attrib_yn IN      nm_inv_type_attribs.ita_dynamic_attrib%TYPE 
                                   ,pi_old_disp_seq_no       IN      nm_inv_type_attribs.ita_disp_seq_no%TYPE 
                                   ,pi_old_mandatory_yn      IN      nm_inv_type_attribs.ita_mandatory_yn%TYPE 
                                   ,pi_old_format            IN      nm_inv_type_attribs.ita_format%TYPE 
@@ -6142,7 +6362,6 @@ AS
                                   ,pi_old_disp_width        IN      nm_inv_type_attribs.ita_disp_width%TYPE 
                                   ,pi_old_inspectable_yn    IN      nm_inv_type_attribs.ita_inspectable%TYPE 
                                   ,pi_old_case              IN      nm_inv_type_attribs.ita_case%TYPE
-                                  ,pi_new_dynamic_attrib_yn IN      nm_inv_type_attribs.ita_dynamic_attrib%TYPE 
                                   ,pi_new_disp_seq_no       IN      nm_inv_type_attribs.ita_disp_seq_no%TYPE 
                                   ,pi_new_mandatory_yn      IN      nm_inv_type_attribs.ita_mandatory_yn%TYPE 
                                   ,pi_new_format            IN      nm_inv_type_attribs.ita_format%TYPE 
@@ -6201,6 +6420,8 @@ AS
     --
     awlrs_util.check_historic_mode;  
     --
+    awlrs_util.validate_enddate_isnull(pi_enddate => pi_old_end_date);
+    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Sequence'
                                ,pi_parameter_value => pi_new_disp_seq_no);
     --
@@ -6226,9 +6447,6 @@ AS
     ||Do validation checks on y/n flags
     */
     --
-    awlrs_util.validate_yn(pi_parameter_desc  => 'Dynamic Attribute'
-                          ,pi_parameter_value => pi_new_dynamic_attrib_yn);
-    --
     awlrs_util.validate_yn(pi_parameter_desc  => 'Mandatory'
                           ,pi_parameter_value => pi_new_mandatory_yn);
     --
@@ -6253,6 +6471,41 @@ AS
                      ,pi_id   => 29
                      ,pi_supplementary_info => 'Asset Type does not exist');    
     END IF;
+    --
+    IF pi_old_format != pi_new_format
+     THEN
+        hig.valid_fk_hco(pi_hco_domain => 'DATA_FORMAT'
+                        ,pi_hco_code   => pi_new_format);  
+    END IF;      
+    --
+    IF pi_old_case != pi_new_case
+     THEN
+        hig.valid_fk_hco(pi_hco_domain => 'ATTRIBUTE_CASE'
+                        ,pi_hco_code   => pi_new_case);  
+    END IF;       
+    --
+    IF pi_old_format_mask != pi_new_format_mask
+     OR (pi_old_format_mask IS NULL AND pi_new_format_mask IS NOT NULL)
+     OR (pi_old_format_mask IS NOT NULL AND pi_new_format_mask IS NULL)
+     THEN
+        hig.valid_fk_hco(pi_hco_domain => 'DATE_FORMAT_MASK'
+                        ,pi_hco_code   => pi_new_format_mask);  
+    END IF; 
+    /*
+    ||validate units 
+    */
+    IF pi_old_units != pi_new_units
+     OR (pi_old_units IS NULL AND pi_new_units IS NOT NULL)
+     OR (pi_old_units IS NOT NULL AND pi_new_units IS NULL)
+     THEN
+       IF unit_exists(pi_unit_id => pi_new_units) != 'Y' 
+        THEN
+		       hig.raise_ner(pi_appl => 'HIG'
+		       	            ,pi_id   => 30
+                        ,pi_supplementary_info => 'Units');        
+       END IF;
+    END IF;
+    --
     /*
     ||make sure view colname doesnt exist
     */
@@ -6271,6 +6524,22 @@ AS
     */
     IF pi_new_id_domain IS NOT NULL
      THEN
+       IF pi_new_id_domain <> pi_old_id_domain 
+        THEN
+          /*
+          ||validate the domain
+          */
+          IF asset_domain_exists(pi_asset_domain => pi_new_id_domain) <> 'Y' 
+           THEN
+              hig.raise_ner(pi_appl => 'HIG'
+                           ,pi_id   => 29
+                           ,pi_supplementary_info => 'Asset Domain does not exist');    
+          END IF;       
+          --
+          lv_validate_yn := 'Y';
+       ELSE
+          lv_validate_yn := 'N';
+       END IF;     
        lv_validate_yn := 'Y';
     ELSE
        lv_validate_yn := 'N';
@@ -6303,11 +6572,7 @@ AS
     /*
     ||Compare old with DB
     */
-    IF lr_db_ita_rec.ita_dynamic_attrib != pi_old_dynamic_attrib_yn
-     OR (lr_db_ita_rec.ita_dynamic_attrib IS NULL AND pi_old_dynamic_attrib_yn IS NOT NULL)
-     OR (lr_db_ita_rec.ita_dynamic_attrib IS NOT NULL AND pi_old_dynamic_attrib_yn IS NULL)
-     --    
-     OR (lr_db_ita_rec.ita_disp_seq_no != pi_old_disp_seq_no)
+    IF lr_db_ita_rec.ita_disp_seq_no != pi_old_disp_seq_no
      OR (lr_db_ita_rec.ita_disp_seq_no IS NULL AND pi_old_disp_seq_no IS NOT NULL)
      OR (lr_db_ita_rec.ita_disp_seq_no IS NOT NULL AND pi_old_disp_seq_no IS NULL)     
      --
@@ -6410,13 +6675,6 @@ AS
       /*
       ||Compare old with New
       */
-      IF pi_old_dynamic_attrib_yn != pi_new_dynamic_attrib_yn
-       OR (pi_old_dynamic_attrib_yn IS NULL AND pi_new_dynamic_attrib_yn IS NOT NULL)
-       OR (pi_old_dynamic_attrib_yn IS NOT NULL AND pi_new_dynamic_attrib_yn IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;
-      --
       IF pi_old_disp_seq_no != pi_new_disp_seq_no
        OR (pi_old_disp_seq_no IS NULL AND pi_new_disp_seq_no IS NOT NULL)
        OR (pi_old_disp_seq_no IS NOT NULL AND pi_new_disp_seq_no IS NULL)
@@ -6593,8 +6851,7 @@ AS
       ELSE
         --
         UPDATE nm_inv_type_attribs_all
-           SET ita_dynamic_attrib   = pi_new_dynamic_attrib_yn       
-              ,ita_disp_seq_no      = pi_new_disp_seq_no          
+           SET ita_disp_seq_no      = pi_new_disp_seq_no          
               ,ita_mandatory_yn     = pi_new_mandatory_yn         
               ,ita_format           = UPPER(pi_new_format) 
               ,ita_fld_length       = pi_new_fld_length           
@@ -6664,7 +6921,8 @@ AS
     UPDATE nm_inv_type_attribs_all
        SET ita_end_date = TRUNC(SYSDATE)
      WHERE ita_inv_type = pi_asset_type
-       AND ita_attrib_name = pi_attrib_name;
+       AND ita_attrib_name = pi_attrib_name
+       AND ita_end_date IS NULL;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -6723,7 +6981,7 @@ AS
      THEN
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 29
-                     ,pi_supplementary_info => 'Asset Network already not exist');    
+                     ,pi_supplementary_info => 'Asset Network already exists');    
     END IF;
     --
     INSERT 
@@ -6790,6 +7048,8 @@ AS
   BEGIN
     --
     awlrs_util.check_historic_mode;
+    --
+    awlrs_util.validate_enddate_isnull(pi_enddate => pi_old_end_date);
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Asset Type'
                                ,pi_parameter_value => pi_asset_type);
@@ -6917,7 +7177,8 @@ AS
     UPDATE nm_inv_nw_all
        SET nin_end_date = TRUNC(SYSDATE)
      WHERE nin_nit_inv_code = pi_asset_type
-       AND nin_nw_type = pi_nw_type;
+       AND nin_nw_type = pi_nw_type
+       AND nin_end_date IS NULL;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -7198,7 +7459,8 @@ AS
                           ,pi_parameter_value => pi_mandatory_yn); 
     --                          
     IF asset_grouping_exists(pi_asset_type              => pi_asset_type
-                            ,pi_parent_asset_type       => pi_parent_asset_type) = 'Y' 
+                            ,pi_parent_asset_type       => pi_parent_asset_type
+                            ,pi_start_date              => pi_start_date) = 'Y' 
      THEN
         hig.raise_ner(pi_appl               => 'HIG'
                      ,pi_id                 => 64
@@ -7218,6 +7480,9 @@ AS
                      ,pi_id   => 29
                      ,pi_supplementary_info => 'Parent Asset Type does not exist');    
     END IF;    
+    --
+    hig.valid_fk_hco(pi_hco_domain => 'INV_RELATION'
+                    ,pi_hco_code   => pi_relation);
     --
     INSERT 
       INTO nm_inv_type_groupings_all
@@ -7288,6 +7553,8 @@ AS
   BEGIN
     --
     awlrs_util.check_historic_mode;
+    --
+    awlrs_util.validate_enddate_isnull(pi_enddate => pi_old_end_date);
     --    
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Asset Type'
                                ,pi_parameter_value => pi_asset_type);               
@@ -7399,7 +7666,8 @@ AS
     awlrs_util.check_historic_mode;  
     --
     IF asset_grouping_exists(pi_asset_type        => pi_asset_type
-                            ,pi_parent_asset_type => pi_parent_asset_type) <> 'Y'      
+                            ,pi_parent_asset_type => pi_parent_asset_type
+                            ,pi_start_date        => pi_start_date) <> 'Y'      
      THEN
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 29
@@ -7410,7 +7678,8 @@ AS
        SET itg_end_date = TRUNC(SYSDATE)
      WHERE itg_inv_type = pi_asset_type
        AND itg_parent_inv_type = pi_parent_asset_type
-       AND itg_start_date = pi_start_date;
+       AND itg_start_date = pi_start_date
+       AND itg_end_date IS NULL;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
