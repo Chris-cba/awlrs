@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.22   Jul 11 2019 11:21:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.23   Jul 30 2019 09:57:02   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   Jul 11 2019 11:21:46  $
-  --       Date fetched Out : $Modtime:   Jul 11 2019 11:20:54  $
-  --       Version          : $Revision:   1.22  $
+  --       Date into PVCS   : $Date:   Jul 30 2019 09:57:02  $
+  --       Date fetched Out : $Modtime:   Jul 24 2019 13:17:52  $
+  --       Version          : $Revision:   1.23  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.23  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -382,6 +382,26 @@ AS
   --
   PROCEDURE validate_yn(pi_parameter_desc  IN hig_options.hop_id%TYPE
                        ,pi_parameter_value IN hig_options.hop_value%TYPE);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_enddate_isnull(pi_enddate IN DATE);
+
+  g_decimal_point  VARCHAR2(1);
+  c_max_digits CONSTANT NUMBER := 28;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_decimal_point
+    RETURN VARCHAR;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION apply_max_digits(pi_value IN NUMBER)
+    RETURN NUMBER;
 
   --
 
