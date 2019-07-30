@@ -4,11 +4,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.1   Jul 29 2019 11:26:38   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jul 29 2019 11:26:38  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.2   Jul 30 2019 11:43:16   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jul 30 2019 11:43:16  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkb  $
-  --       Date fetched Out : $Modtime:   Jul 29 2019 11:25:14  $
-  --       Version          : $Revision:   1.1  $
+  --       Date fetched Out : $Modtime:   Jul 30 2019 11:39:38  $
+  --       Version          : $Revision:   1.2  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -16,7 +16,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metanet_api';
   --
@@ -343,7 +343,7 @@ AS
     --
     SELECT 'Y'
       INTO lv_exists
-      FROM nm_group_types_all
+      FROM nm_group_types
      WHERE ngt_group_type = UPPER(pi_group_type);
     --
     RETURN lv_exists;
@@ -366,7 +366,7 @@ AS
     --
     SELECT 'Y'
       INTO lv_exists
-      FROM nm_nt_groupings_all
+      FROM nm_nt_groupings
      WHERE nng_group_type = UPPER(pi_group_type)
        AND nng_nt_type    = UPPER(pi_nt_type);
     --
@@ -390,7 +390,7 @@ AS
     --
     SELECT 'Y'
       INTO lv_exists
-      FROM nm_group_relations_all
+      FROM nm_group_relations
      WHERE ngr_parent_group_type = UPPER(pi_parent_group_type)
        AND ngr_child_group_type  = UPPER(pi_child_group_type);
     --
@@ -1216,7 +1216,7 @@ AS
       --
       awlrs_util.add_column_data(pi_cursor_col => 'seq_no'
                                 ,pi_query_col  => 'ngt_search_group_no'
-                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_datatype   => awlrs_util.c_number_col
                                 ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
       --
@@ -1233,15 +1233,15 @@ AS
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'start_date'
-                                ,pi_query_col  => TRUNC('ngt_start_date')
+                                ,pi_query_col  => 'ngt_start_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => NULL
+                                ,pi_mask       => 'DD-MM-YYYY'
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'end_date'
-                                ,pi_query_col  => TRUNC('ngt_end_date')
+                                ,pi_query_col  => 'ngt_end_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => NULL
+                                ,pi_mask       => 'DD-MM-YYYY'
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'network_type'
@@ -1486,15 +1486,15 @@ AS
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'start_date'
-                                ,pi_query_col  => 'TRUNC(nng_start_date)'
+                                ,pi_query_col  => 'nng_start_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => NULL
+                                ,pi_mask       => 'DD-MM-YYYY'
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'end_date'
-                                ,pi_query_col  => 'TRUNC(nng_end_date)'
+                                ,pi_query_col  => 'nng_end_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => NULL
+                                ,pi_mask       => 'DD-MM-YYYY'
                                 ,pio_column_data => po_column_data);
       --
     END set_column_data;
@@ -1721,15 +1721,15 @@ AS
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'start_date'
-                                ,pi_query_col  => 'TRUNC(ngr_start_date)'
+                                ,pi_query_col  => 'ngr_start_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => NULL
+                                ,pi_mask       => 'DD-MM-YYYY'
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'end_date'
-                                ,pi_query_col  => 'TRUNC(ngr_end_date)'
+                                ,pi_query_col  => 'ngr_end_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => NULL
+                                ,pi_mask       => 'DD-MM-YYYY'
                                 ,pio_column_data => po_column_data);
       --
     END set_column_data;
@@ -1810,7 +1810,7 @@ AS
     OPEN po_cursor FOR
     SELECT ngt_group_type,
            ngt_descr
-    FROM   nm_group_types_all,
+    FROM   nm_group_types,
            nm_types
     WHERE  ngt_group_type != pi_parent_group_type
       AND  ngt_nt_type     = nt_type
@@ -1843,7 +1843,7 @@ AS
     OPEN po_cursor FOR
     SELECT ngt_group_type,
            ngt_descr
-    FROM   nm_group_types_all,
+    FROM   nm_group_types,
            nm_types
     WHERE  ngt_group_type  = pi_child_group_type
       AND  ngt_nt_type     = nt_type
@@ -2167,7 +2167,7 @@ AS
                              ,pi_old_linear_flag       IN     nm_group_types_all.ngt_linear_flag%TYPE
                              ,pi_old_network_type      IN     nm_group_types_all.ngt_nt_type%TYPE
                              ,pi_old_partial           IN     nm_group_types_all.ngt_partial%TYPE
-                             --,pi_old_start_date        IN     nm_group_types_all.ngt_start_date%TYPE 
+                             ,pi_old_start_date        IN     nm_group_types_all.ngt_start_date%TYPE
                              ,pi_old_end_date          IN     nm_group_types_all.ngt_end_date%TYPE
                              ,pi_old_sub_group_allowed IN     nm_group_types_all.ngt_sub_group_allowed%TYPE
                              ,pi_old_mandatory         IN     nm_group_types_all.ngt_mandatory%TYPE
@@ -2180,7 +2180,7 @@ AS
                              ,pi_new_linear_flag       IN     nm_group_types_all.ngt_linear_flag%TYPE
                              ,pi_new_network_type      IN     nm_group_types_all.ngt_nt_type%TYPE
                              ,pi_new_partial           IN     nm_group_types_all.ngt_partial%TYPE
-                             --,pi_new_start_date        IN     nm_group_types_all.ngt_start_date%TYPE 
+                             ,pi_new_start_date        IN     nm_group_types_all.ngt_start_date%TYPE
                              ,pi_new_end_date          IN     nm_group_types_all.ngt_end_date%TYPE
                              ,pi_new_sub_group_allowed IN     nm_group_types_all.ngt_sub_group_allowed%TYPE
                              ,pi_new_mandatory         IN     nm_group_types_all.ngt_mandatory%TYPE
@@ -2218,6 +2218,8 @@ AS
     --
     awlrs_util.check_historic_mode; 
     --
+    awlrs_util.validate_enddate_isnull(pi_enddate => pi_old_end_date);
+    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Group Type'
                                ,pi_parameter_value => pi_new_group_type);
     --
@@ -2233,10 +2235,8 @@ AS
     awlrs_util.validate_yn(pi_parameter_desc  => 'Partial'
                           ,pi_parameter_value => pi_new_partial);
     --
-    /*
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
                                ,pi_parameter_value => pi_new_start_date);
-    */                           
     --
     awlrs_util.validate_yn(pi_parameter_desc  => 'Sub Group Allowed'
                           ,pi_parameter_value => pi_new_sub_group_allowed);
@@ -2296,11 +2296,9 @@ AS
      OR (lr_db_rec.ngt_partial IS NULL AND pi_old_partial IS NOT NULL)
      OR (lr_db_rec.ngt_partial IS NOT NULL AND pi_old_partial IS NULL)
      --
-     /*
      OR (lr_db_rec.ngt_start_date != pi_old_start_date)
      OR (lr_db_rec.ngt_start_date IS NULL AND pi_old_start_date IS NOT NULL)
      OR (lr_db_rec.ngt_start_date IS NOT NULL AND pi_old_start_date IS NULL)
-     */
      --
      OR (lr_db_rec.ngt_end_date != pi_old_end_date)
      OR (lr_db_rec.ngt_end_date IS NULL AND pi_old_end_date IS NOT NULL)
@@ -2379,15 +2377,6 @@ AS
          lv_upd := 'Y';
       END IF;
       --
-      /*
-      IF pi_old_start_date != pi_new_start_date
-       OR (pi_old_start_date IS NULL AND pi_new_start_date IS NOT NULL)
-       OR (pi_old_start_date IS NOT NULL AND pi_new_start_date IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;
-      */
-      --
       IF pi_old_end_date != pi_new_end_date
        OR (pi_old_end_date IS NULL AND pi_new_end_date IS NOT NULL)
        OR (pi_old_end_date IS NOT NULL AND pi_new_end_date IS NULL)
@@ -2437,7 +2426,7 @@ AS
               ,ngt_linear_flag       = pi_new_linear_flag
               ,ngt_nt_type           = UPPER(pi_new_network_type)
               ,ngt_partial           = pi_new_partial
-              --,ngt_start_date        = pi_new_start_date   -- raises error --
+              --,ngt_start_date        = pi_new_start_date   -- Start date can not be updated --
               ,ngt_end_date          = pi_new_end_date
               ,ngt_sub_group_allowed = pi_new_sub_group_allowed
               ,ngt_mandatory         = pi_new_mandatory
@@ -2622,6 +2611,8 @@ AS
     --
     awlrs_util.check_historic_mode;  
     --
+    awlrs_util.validate_enddate_isnull(pi_enddate => pi_old_end_date);
+    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Group Type'
                                ,pi_parameter_value => pi_new_group_type);
     --
@@ -2679,13 +2670,6 @@ AS
          lv_upd := 'Y';
       END IF;
       --
-      IF pi_old_start_date != pi_new_start_date
-       OR (pi_old_start_date IS NULL AND pi_new_start_date IS NOT NULL)
-       OR (pi_old_start_date IS NOT NULL AND pi_new_start_date IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;
-      --
       IF pi_old_end_date != pi_new_end_date
        OR (pi_old_end_date IS NULL AND pi_new_end_date IS NOT NULL)
        OR (pi_old_end_date IS NOT NULL AND pi_new_end_date IS NULL)
@@ -2702,7 +2686,6 @@ AS
         --
         UPDATE nm_nt_groupings_all
            SET nng_nt_type           = UPPER(pi_new_nt_type)
-              ,nng_start_date        = pi_new_start_date
               ,nng_end_date          = pi_new_end_date
          WHERE nng_group_type        = lr_db_rec.nng_group_type
            AND nng_nt_type           = lr_db_rec.nng_nt_type;         
@@ -2876,6 +2859,8 @@ AS
     --
     awlrs_util.check_historic_mode; 
     --
+    awlrs_util.validate_enddate_isnull(pi_enddate => pi_old_end_date);
+    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Parent Group Type'
                                ,pi_parameter_value => pi_new_parent_group_type);
     --
@@ -2883,7 +2868,7 @@ AS
                                ,pi_parameter_value => pi_new_start_date);
     --
     --lov validation--
-    IF network_type_exists(pi_network_type => pi_new_child_group_type) <> 'Y'
+    IF group_type_exists(pi_group_type => pi_new_child_group_type) <> 'Y'
      THEN
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 29
@@ -2933,13 +2918,6 @@ AS
          lv_upd := 'Y';
       END IF;
       --
-      IF pi_old_start_date != pi_new_start_date
-       OR (pi_old_start_date IS NULL AND pi_new_start_date IS NOT NULL)
-       OR (pi_old_start_date IS NOT NULL AND pi_new_start_date IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;
-      --
       IF pi_old_end_date != pi_new_end_date
        OR (pi_old_end_date IS NULL AND pi_new_end_date IS NOT NULL)
        OR (pi_old_end_date IS NOT NULL AND pi_new_end_date IS NULL)
@@ -2957,7 +2935,6 @@ AS
         UPDATE nm_group_relations_all
            SET ngr_parent_group_type  = UPPER(pi_new_parent_group_type)
               ,ngr_child_group_type   = UPPER(pi_new_child_group_type)
-              ,ngr_start_date         = pi_new_start_date
               ,ngr_end_date           = pi_new_end_date
          WHERE ngr_parent_group_type  = lr_db_rec.ngr_parent_group_type
            AND ngr_child_group_type   = lr_db_rec.ngr_child_group_type
@@ -5597,7 +5574,7 @@ AS
     --
     SELECT 'Y'
       INTO lv_exists
-      FROM nm_type_inclusion
+      FROM nm_type_inclusion  
      WHERE nti_nw_parent_type = UPPER(pi_nti_parent_type)
        AND nti_nw_child_type  = UPPER(pi_nti_child_type);
     --
