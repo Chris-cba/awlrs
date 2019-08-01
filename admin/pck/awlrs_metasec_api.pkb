@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.10   Jul 30 2019 11:40:38   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.11   Aug 01 2019 11:05:50   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 30 2019 11:40:38  $
-  --       Date fetched Out : $Modtime:   Jul 30 2019 10:57:36  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   Aug 01 2019 11:05:50  $
+  --       Date fetched Out : $Modtime:   Jul 31 2019 10:39:22  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -2441,6 +2441,7 @@ AS
           ,nau_unit_code || ' - ' || nau_name        label
           ,nau_admin_unit                            admin_unit
           ,null                                      parent_admin_unit
+          ,DECODE(nvl(nau_end_date,''),'','N','Y')   end_dated
       FROM nm_admin_units_all nau
      WHERE nau.Nau_Admin_Unit = lv_top_admin_unit
      UNION ALL
@@ -2448,17 +2449,20 @@ AS
           ,x.nau_unit_code || ' - ' || x.nau_name   label
           ,nau_admin_unit                           admin_unit
           ,nag_parent_admin_unit                    parent_admin_unit
+          ,end_dated                                end_dated
       FROM (SELECT tre.Nag_Parent_Admin_Unit,
                    tre.Nag_Child_Admin_Unit,
                    tre.Nau_Name,
                    tre.Nau_Admin_Unit,
                    tre.Nau_Unit_Code,
+                   tre.end_dated,
                    LEVEL L_Level
               FROM (SELECT nag.nag_parent_admin_unit,
                            nag.nag_child_admin_unit,
                            nau.nau_name,
                            nau.nau_admin_unit,
-                           nau.nau_unit_code
+                           nau.nau_unit_code,
+                           DECODE(nvl(nau_end_date,''),'','N','Y')   end_dated
                       FROM nm_admin_groups nag, nm_admin_units_all nau
                      WHERE nag.nag_direct_link = 'Y'
                        AND nau.nau_admin_unit = nag.nag_child_admin_unit)
