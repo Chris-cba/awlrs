@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.8   Jul 30 2019 11:40:36   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.9   Aug 01 2019 11:05:30   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaref_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 30 2019 11:40:36  $
-  --       Date fetched Out : $Modtime:   Jul 23 2019 08:50:46  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   Aug 01 2019 11:05:30  $
+  --       Date fetched Out : $Modtime:   Jul 31 2019 14:28:20  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -2556,6 +2556,13 @@ AS
     --
     awlrs_util.check_historic_mode;
     --
+    IF domain_exists(pi_domain => pi_domain) <> 'Y' THEN
+      --
+      hig.raise_ner(pi_appl => 'NET'
+                   ,pi_id   => 26);
+      -- 
+    END IF;
+    --    
     IF code_exists(pi_domain => pi_domain
                   ,pi_code   => pi_code) = 'Y' THEN      
       --
