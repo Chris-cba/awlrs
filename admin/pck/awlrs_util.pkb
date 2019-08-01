@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.30   Jul 30 2019 09:57:04   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.31   Aug 01 2019 17:44:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Jul 30 2019 09:57:04  $
-  --       Date fetched Out : $Modtime:   Jul 24 2019 13:20:46  $
-  --       Version          : $Revision:   1.30  $
+  --       Date into PVCS   : $Date:   Aug 01 2019 17:44:30  $
+  --       Date fetched Out : $Modtime:   Aug 01 2019 17:42:26  $
+  --       Version          : $Revision:   1.31  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.30  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.31  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -1521,11 +1521,16 @@ AS
     */
     FOR i IN 1 .. lv_column_count LOOP
       --
-      IF i > 1
+      IF pi_title_row
        THEN
-          lv_title := lv_title||',"'||INITCAP(REPLACE(lt_desc(i).col_name,'_',' '))||'"';
-      ELSE
-          lv_title := lv_title||'"'||INITCAP(REPLACE(lt_desc(i).col_name,'_',' '))||'"';
+          --
+          IF i > 1
+           THEN
+              lv_title := lv_title||',"'||INITCAP(REPLACE(lt_desc(i).col_name,'_',' '))||'"';
+          ELSE
+              lv_title := lv_title||'"'||INITCAP(REPLACE(lt_desc(i).col_name,'_',' '))||'"';
+          END IF;
+          --
       END IF;
       --
       CASE
@@ -1559,8 +1564,11 @@ AS
       --
     END LOOP;
     --
-    lv_title := lv_title||CHR(10);
-    lv_retval := lv_title;
+    IF pi_title_row
+     THEN
+        lv_title := lv_title||CHR(10);
+        lv_retval := lv_title;
+    END IF;
     /*
     ||Get the data from the cursor and write it to the output.
     */
@@ -1653,7 +1661,7 @@ AS
                                              ,pi_title_row => (pi_title_row = 'Y'));
     --
     OPEN po_cursor FOR
-    SELECT lv_retval
+    SELECT lv_retval csv_output
       FROM dual
          ;
     --
@@ -1727,9 +1735,9 @@ AS
       --
       hig.raise_ner(pi_appl               => 'AWLRS'
                    ,pi_id                 => 74);
-      --                   
+      --
     END IF;
-    --    
+    --
   END validate_enddate_isnull;
 
   --
@@ -1781,8 +1789,10 @@ AS
     RETURN ROUND(pi_value,c_max_digits - INSTR(TO_CHAR(pi_value),g_decimal_point) -1);
     --
   END apply_max_digits;
-  
-  --
+
+--
+--------------------------------------------------------------------------------
+--
 BEGIN
   --
   set_decimal_point;
