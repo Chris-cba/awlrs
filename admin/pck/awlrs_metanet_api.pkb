@@ -4,11 +4,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.2   Jul 30 2019 11:43:16   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jul 30 2019 11:43:16  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.3   Aug 02 2019 16:21:36   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Aug 02 2019 16:21:36  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkb  $
-  --       Date fetched Out : $Modtime:   Jul 30 2019 11:39:38  $
-  --       Version          : $Revision:   1.2  $
+  --       Date fetched Out : $Modtime:   Aug 02 2019 16:20:18  $
+  --       Version          : $Revision:   1.3  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -16,7 +16,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.3  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metanet_api';
   --
@@ -335,16 +335,50 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION group_type_exists(pi_group_type IN nm_group_types_all.ngt_group_type%TYPE)
+  FUNCTION group_type_exists(pi_group_type   IN nm_group_types_all.ngt_group_type%TYPE)
     RETURN VARCHAR2
   IS
     lv_exists VARCHAR2(1):= 'N';
   BEGIN
     --
-    SELECT 'Y'
-      INTO lv_exists
-      FROM nm_group_types
-     WHERE ngt_group_type = UPPER(pi_group_type);
+    IF pi_group_type IS NOT NULL
+      THEN
+        SELECT 'Y'
+          INTO lv_exists
+          FROM nm_group_types
+         WHERE ngt_group_type = UPPER(pi_group_type);
+    ELSE
+      lv_exists := 'Y';     
+    END IF;     
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+  END group_type_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION group_type_exists(pi_network_type IN nm_group_types_all.ngt_nt_type%TYPE
+                            ,pi_group_type   IN nm_group_types_all.ngt_group_type%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    IF pi_group_type IS NOT NULL
+      THEN
+        SELECT 'Y'
+          INTO lv_exists
+          FROM nm_group_types
+         WHERE ngt_nt_type    = UPPER(pi_network_type)
+           AND ngt_group_type = UPPER(pi_group_type);
+    ELSE
+      lv_exists := 'Y';     
+    END IF;     
     --
     RETURN lv_exists;
     --
@@ -685,7 +719,7 @@ AS
      OR (lr_db_rec.nnt_name IS NULL AND pi_old_name IS NOT NULL)
      OR (lr_db_rec.nnt_name IS NOT NULL AND pi_old_name IS NULL)
      --
-     OR (lr_db_rec.nnt_descr != pi_old_description)
+     OR (UPPER(lr_db_rec.nnt_descr) != UPPER(pi_old_description))
      OR (lr_db_rec.nnt_descr IS NULL AND pi_old_description IS NOT NULL)
      OR (lr_db_rec.nnt_descr IS NOT NULL AND pi_old_description IS NULL)
      --
@@ -715,7 +749,7 @@ AS
          lv_upd := 'Y';
       END IF;
       --
-      IF pi_old_description != pi_new_description
+      IF UPPER(pi_old_description) != UPPER(pi_new_description)
        OR (pi_old_description IS NULL AND pi_new_description IS NOT NULL)
        OR (pi_old_description IS NOT NULL AND pi_new_description IS NULL)
        THEN
@@ -740,7 +774,7 @@ AS
            SET nnt_name           = UPPER(pi_new_name)
               ,nnt_descr          = pi_new_description
               ,nnt_no_name_format = pi_new_node_name_format
-         WHERE nnt_type           = lr_db_rec.nnt_type;
+         WHERE nnt_type           = pi_old_node_type;
         --
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                              ,po_cursor           => po_message_cursor);
@@ -869,7 +903,7 @@ AS
                                  ,po_message_cursor   OUT  sys_refcursor
                                  ,po_cursor           OUT  sys_refcursor)
   IS
-    --
+  --
   BEGIN
     --
     OPEN po_cursor FOR
@@ -2098,7 +2132,7 @@ AS
                              ,pi_sub_group_allowed =>  pi_sub_group_allowed
                              ,pi_mandatory         =>  pi_mandatory);                             
     --
-    IF group_type_exists(pi_group_type => pi_group_type) = 'Y'
+    IF group_type_exists(pi_group_type   => pi_group_type) = 'Y'
      THEN
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 64
@@ -2272,7 +2306,7 @@ AS
      OR (lr_db_rec.ngt_group_type IS NULL AND pi_old_group_type IS NOT NULL)
      OR (lr_db_rec.ngt_group_type IS NOT NULL AND pi_old_group_type IS NULL)
      --
-     OR (lr_db_rec.ngt_descr != pi_old_description)
+     OR (UPPER(lr_db_rec.ngt_descr) != UPPER(pi_old_description))
      OR (lr_db_rec.ngt_descr IS NULL AND pi_old_description IS NOT NULL)
      OR (lr_db_rec.ngt_descr IS NOT NULL AND pi_old_description IS NULL)
      --
@@ -2432,7 +2466,7 @@ AS
               ,ngt_mandatory         = pi_new_mandatory
               ,ngt_reverse_allowed   = pi_new_reverse_allowed
               ,ngt_icon_name         = pi_new_icon_name
-         WHERE ngt_group_type        = lr_db_rec.ngt_group_type;
+         WHERE ngt_group_type        = pi_old_group_type;
          
         --
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -2463,7 +2497,7 @@ AS
     CURSOR c_nt_groupings IS
     SELECT COUNT(nng_nt_type) 
       FROM nm_nt_groupings_all
-     WHERE nng_group_type = pi_group_type; 
+     WHERE nng_group_type = UPPER(pi_group_type); 
     --
     lv_cnt  NUMBER;
     --    
@@ -2685,10 +2719,10 @@ AS
       ELSE
         --
         UPDATE nm_nt_groupings_all
-           SET nng_nt_type           = UPPER(pi_new_nt_type)
-              ,nng_end_date          = pi_new_end_date
-         WHERE nng_group_type        = lr_db_rec.nng_group_type
-           AND nng_nt_type           = lr_db_rec.nng_nt_type;         
+           SET nng_nt_type    = UPPER(pi_new_nt_type)
+              ,nng_end_date   = pi_new_end_date
+         WHERE nng_group_type = pi_old_group_type
+           AND nng_nt_type    = pi_old_nt_type;        
         --
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                              ,po_cursor           => po_message_cursor);
@@ -2936,9 +2970,9 @@ AS
            SET ngr_parent_group_type  = UPPER(pi_new_parent_group_type)
               ,ngr_child_group_type   = UPPER(pi_new_child_group_type)
               ,ngr_end_date           = pi_new_end_date
-         WHERE ngr_parent_group_type  = lr_db_rec.ngr_parent_group_type
-           AND ngr_child_group_type   = lr_db_rec.ngr_child_group_type
-           AND ngr_start_date         = lr_db_rec.ngr_start_date;         
+         WHERE ngr_parent_group_type  = pi_old_parent_group_type
+           AND ngr_child_group_type   = pi_old_child_group_type
+           AND TRUNC(ngr_start_date)  = TRUNC(pi_old_start_date);         
         --
         IF NOT nm3net.check_for_ngr_loops(pi_parent_group_type => UPPER(pi_new_parent_group_type)
                                          ,pi_child_group_type  => UPPER(pi_new_child_group_type))
@@ -3633,7 +3667,7 @@ AS
      OR (lr_db_rec.nt_unique IS NULL AND pi_old_unique_name IS NOT NULL)
      OR (lr_db_rec.nt_unique IS NOT NULL AND pi_old_unique_name IS NULL)
      --
-     OR (lr_db_rec.nt_descr != pi_old_description)
+     OR (UPPER(lr_db_rec.nt_descr) != UPPER(pi_old_description))
      OR (lr_db_rec.nt_descr IS NULL AND pi_old_description IS NOT NULL)
      OR (lr_db_rec.nt_descr IS NOT NULL AND pi_old_description IS NULL)
      --
@@ -3748,7 +3782,7 @@ AS
               ,nt_pop_unique   = pi_new_is_unique
               ,nt_length_unit  = pi_new_units
               ,nt_admin_type   = pi_new_admin_type
-         WHERE nt_type         = lr_db_rec.nt_type;
+         WHERE nt_type         = pi_old_network_type;
         --       
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                              ,po_cursor           => po_message_cursor);
@@ -4703,7 +4737,7 @@ AS
               ,ntc_inherit       = pi_new_inherit
               ,ntc_query         = pi_new_query
          WHERE ntc_nt_type       = UPPER(pi_new_nt_type)
-           AND ntc_column_name   = UPPER(pi_new_column_name);
+           AND ntc_column_name   = UPPER(pi_new_column_name);          
         --       
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                              ,po_cursor           => po_message_cursor);
@@ -5073,7 +5107,7 @@ AS
      OR (lr_db_rec.nsc_sub_class IS NULL AND pi_old_sub_class IS NOT NULL)
      OR (lr_db_rec.nsc_sub_class IS NOT NULL AND pi_old_sub_class IS NULL)
      --
-     OR (lr_db_rec.nsc_descr != pi_old_description)
+     OR (UPPER(lr_db_rec.nsc_descr) != UPPER(pi_old_description))
      OR (lr_db_rec.nsc_descr IS NULL AND pi_old_description IS NOT NULL)
      OR (lr_db_rec.nsc_descr IS NOT NULL AND pi_old_description IS NULL)
      --
@@ -5128,8 +5162,8 @@ AS
            SET nsc_sub_class = UPPER(pi_new_sub_class)
               ,nsc_descr     = UPPER(pi_new_description)
               ,nsc_seq_no    = pi_new_seq_no            
-         WHERE nsc_nw_type   = lr_db_rec.nsc_nw_type
-           AND nsc_sub_class = lr_db_rec.nsc_sub_class;
+         WHERE nsc_nw_type   = pi_old_nt_type
+           AND nsc_sub_class = pi_old_sub_class;
         --       
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                              ,po_cursor           => po_message_cursor);
@@ -5975,8 +6009,8 @@ AS
               ,nti_code_control_column = pi_new_nti_code_control_col
               ,nti_group_name          = pi_new_nti_group_name  
               ,nti_search              = pi_new_nti_search    
-         WHERE nti_nw_parent_type      = lr_db_rec.nti_nw_parent_type
-           AND nti_nw_child_type       = lr_db_rec.nti_nw_child_type;
+         WHERE nti_nw_parent_type      = pi_old_nti_parent_type
+         AND nti_nw_child_type         = pi_old_nti_child_type;
         --   
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                              ,po_cursor           => po_message_cursor);
@@ -6029,7 +6063,897 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_nt_inclusion;       
-                                                                                                                                                                                                                                                       
+   
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_network_ad_types(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT  sys_refcursor
+                                ,po_cursor           OUT  sys_refcursor)
+  IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT nad_id                 nad_id
+          ,nad_nt_type            network_type
+          ,nad_gty_type           group_type
+          ,nad_inv_type           inv_type
+          ,nad_descr              description
+          ,nad_start_date         start_date
+          ,nad_end_date           end_date
+          ,nad_primary_ad         primary_ad
+          ,nad_display_order      display_order
+          ,nad_single_row         single_row
+          ,nad_mandatory          mandatory 
+      FROM nm_nw_ad_types
+     ORDER BY nad_nt_type
+             ,nad_gty_type 
+             ,nad_display_order;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_network_ad_types;                                 
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_network_ad_type(pi_nt_type             IN      nm_nw_ad_types.nad_nt_type%TYPE
+                               ,pi_group_type          IN      nm_nw_ad_types.nad_gty_type%TYPE
+                               ,pi_inv_type            IN      nm_nw_ad_types.nad_nt_type%TYPE
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor)
+   IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT nad_id                 nad_id
+          ,nad_nt_type            network_type
+          ,nad_gty_type           group_type
+          ,nad_inv_type           inv_type
+          ,nad_descr              description
+          ,nad_start_date         start_date
+          ,nad_end_date           end_date
+          ,nad_primary_ad         primary_ad
+          ,nad_display_order      display_order
+          ,nad_single_row         single_row
+          ,nad_mandatory          mandatory 
+      FROM nm_nw_ad_types
+     WHERE nad_nt_type  = pi_nt_type
+       AND nad_gty_type = pi_group_type
+       AND nad_inv_type = pi_inv_type
+     ORDER BY nad_nt_type
+             ,nad_gty_type 
+             ,nad_display_order;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_network_ad_type;                                 
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_group_types_lov(pi_nt_type          IN      nm_nw_ad_types.nad_nt_type%TYPE
+                               ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT  sys_refcursor
+                               ,po_cursor              OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT ngt_group_type
+          ,ngt_descr
+     FROM  nm_group_types
+    WHERE  ngt_nt_type = pi_nt_type 
+     ORDER BY ngt_group_type;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_group_types_lov;                                
+                               
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_group_type_lov(pi_group_type       IN     nm_nw_ad_types.nad_gty_type%TYPE
+                              ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor      OUT sys_refcursor
+                              ,po_cursor              OUT sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT ngt_group_type
+          ,ngt_descr
+     FROM  nm_group_types
+    WHERE  ngt_group_type = UPPER(pi_group_type);   
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_group_type_lov;  
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_inv_types_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT  sys_refcursor
+                             ,po_cursor           OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT nit_inv_type
+          ,nit_descr
+      FROM nm_inv_types
+     WHERE nit_category = 'G'
+     ORDER BY nit_inv_type;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_inv_types_lov;                             
+                               
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_inv_type_lov(pi_inv_type         IN     nm_nw_ad_types.nad_inv_type%TYPE
+                            ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor      OUT sys_refcursor
+                            ,po_cursor              OUT sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT nit_inv_type
+          ,nit_descr
+      FROM nm_inv_types
+     WHERE nit_inv_type = pi_inv_type
+       AND nit_category = 'G'
+     ORDER BY nit_inv_type;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_inv_type_lov;                                                   
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_network_ad_types(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                      ,pi_skip_n_rows          IN     PLS_INTEGER
+                                      ,pi_pagesize             IN     PLS_INTEGER
+                                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor          OUT sys_refcursor
+                                      ,po_cursor                  OUT sys_refcursor)
+  IS
+  --
+  lv_lower_index      PLS_INTEGER;
+  lv_upper_index      PLS_INTEGER;
+  lv_row_restriction  nm3type.max_varchar2;
+  lv_order_by         nm3type.max_varchar2;
+  lv_filter           nm3type.max_varchar2;
+  --
+  lv_driving_sql  nm3type.max_varchar2 :='SELECT nad_id                 nad_id
+                                                ,nad_nt_type            network_type
+                                                ,nad_gty_type           group_type
+                                                ,nad_inv_type           inv_type
+                                                ,nad_descr              description
+                                                ,nad_start_date         start_date
+                                                ,nad_end_date           end_date
+                                                ,nad_primary_ad         primary_ad
+                                                ,nad_display_order      display_order
+                                                ,nad_single_row         single_row
+                                                ,nad_mandatory          mandatory 
+                                            FROM nm_nw_ad_types ';
+  --
+  lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  nad_id'
+                                              ||',network_type'
+                                              ||',group_type'
+                                              ||',inv_type'
+                                              ||',description'
+                                              ||',start_date'
+                                              ||',end_date'
+                                              ||',primary_ad'
+                                              ||',display_order'
+                                              ||',single_row'
+                                              ||',mandatory'
+                                              ||',row_count'
+                                        ||' FROM (SELECT rownum ind'
+                                                    ||' ,a.*'
+                                                    ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                ||' FROM ('||lv_driving_sql
+  ;
+  --
+  lt_column_data  awlrs_util.column_data_tab;
+  --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'nad_id'
+                                ,pi_query_col  => 'nad_id'
+                                ,pi_datatype   => awlrs_util.c_number_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'network_type'
+                                ,pi_query_col  => 'nad_nt_type'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'group_type'
+                                ,pi_query_col  => 'nad_gty_type'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'inv_type'
+                                ,pi_query_col  => 'nad_inv_type'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'description'
+                                ,pi_query_col  => 'nad_descr'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'start_date'
+                                ,pi_query_col  => 'nad_start_date'
+                                ,pi_datatype   => awlrs_util.c_date_col
+                                ,pi_mask       => 'DD-MM-YYYY'
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'end_date'
+                                ,pi_query_col  => 'nad_end_date'
+                                ,pi_datatype   => awlrs_util.c_date_col
+                                ,pi_mask       => 'DD-MM-YYYY'
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'primary_ad'
+                                ,pi_query_col  => 'nad_primary_ad'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'display_order' 
+                                ,pi_query_col  => 'nad_display_order'
+                                ,pi_datatype   => awlrs_util.c_number_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'single_row'
+                                ,pi_query_col  => 'nad_single_row'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'mandatory' 
+                                ,pi_query_col  => 'nad_mandatory'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);                                
+      --
+    END set_column_data;
+    --
+    BEGIN
+      /*
+      ||Get the page parameters.
+      */
+      awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                    ,pi_skip_n_rows  => pi_skip_n_rows
+                                    ,pi_pagesize     => pi_pagesize
+                                    ,po_lower_index  => lv_lower_index
+                                    ,po_upper_index  => lv_upper_index
+                                    ,po_statement    => lv_row_restriction);
+      /*
+      ||Get the Order By clause.
+      */
+      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                            ,pi_order_asc_desc => pi_order_asc_desc);
+      /*
+      ||Process the filter.
+      */
+      IF pi_filter_columns.COUNT > 0
+       THEN
+          --
+          set_column_data(po_column_data => lt_column_data);
+          --
+          awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                   ,pi_column_data  => lt_column_data
+                                   ,pi_operators    => pi_filter_operators
+                                   ,pi_values_1     => pi_filter_values_1
+                                   ,pi_values_2     => pi_filter_values_2
+                                   ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,po_where_clause => lv_filter);
+          --
+      END IF;
+      --
+      lv_cursor_sql := lv_cursor_sql
+                       ||CHR(10)||lv_filter
+                       ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'nad_nt_type, nad_gty_type, nad_display_order')||') a)'
+                       ||CHR(10)||lv_row_restriction
+      ;
+      --
+      IF pi_pagesize IS NOT NULL
+       THEN
+          OPEN po_cursor FOR lv_cursor_sql
+          USING lv_lower_index
+               ,lv_upper_index;
+      ELSE
+          OPEN po_cursor FOR lv_cursor_sql
+          USING lv_lower_index;
+      END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+    EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_network_ad_types;                                     
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  FUNCTION network_ad_type_exists(pi_network_type  IN  nm_nw_ad_types.nad_nt_type%TYPE
+                                 ,pi_inv_type      IN  nm_nw_ad_types.nad_inv_type%TYPE)
+       RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM nm_nw_ad_types
+     WHERE nad_nt_type  = UPPER(pi_network_type)
+       AND nad_inv_type = UPPER(pi_inv_type);
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+  END network_ad_type_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  FUNCTION network_ad_type_exists(pi_nad_id  IN  nm_nw_ad_types.nad_id%TYPE)
+                                 
+       RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM nm_nw_ad_types
+     WHERE nad_id = pi_nad_id;
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+  END network_ad_type_exists;
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION inv_type_exists(pi_inv_type IN nm_inv_types_all.nit_inv_type%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM nm_inv_types
+     WHERE nit_inv_type = pi_inv_type;
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found 
+     THEN
+        RETURN lv_exists;
+  END inv_type_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_primary_ad(pi_primary_ad  IN  nm_nw_ad_types.nad_primary_ad%TYPE
+                               ,pi_single_row  IN  nm_nw_ad_types.nad_single_row%TYPE
+                               ,pi_mandatory   IN  nm_nw_ad_types.nad_mandatory%TYPE)
+  IS
+  --
+  BEGIN
+    --                    
+    IF pi_primary_ad = 'Y'
+      AND (pi_single_row = 'N' OR pi_mandatory = 'N')
+        THEN
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   =>  80
+                       ,pi_supplementary_info  => 'Single Row: '||pi_single_row||' , Mandatory: '||pi_mandatory);
+    END IF;  
+    --              
+  END validate_primary_ad;  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_network_ad_type(pi_network_type      IN     nm_nw_ad_types.nad_nt_type%TYPE
+                                  ,pi_group_type        IN     nm_nw_ad_types.nad_gty_type%TYPE
+                                  ,pi_inv_type          IN     nm_nw_ad_types.nad_inv_type%TYPE
+                                  ,pi_description       IN     nm_nw_ad_types.nad_descr%TYPE
+                                  ,pi_start_date        IN     nm_nw_ad_types.nad_start_date%TYPE
+                                  ,pi_end_date          IN     nm_nw_ad_types.nad_end_date%TYPE
+                                  ,pi_primary_ad        IN     nm_nw_ad_types.nad_primary_ad%TYPE
+                                  ,pi_display_order     IN     nm_nw_ad_types.nad_display_order%TYPE
+                                  ,pi_single_row        IN     nm_nw_ad_types.nad_single_row%TYPE
+                                  ,pi_mandatory         IN     nm_nw_ad_types.nad_mandatory%TYPE
+                                  ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor       OUT sys_refcursor)
+  IS
+    --
+  BEGIN
+    --
+    awlrs_util.check_historic_mode; 
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Network Type'
+                               ,pi_parameter_value => pi_network_type);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Inventory Type'
+                               ,pi_parameter_value => pi_inv_type);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
+                               ,pi_parameter_value => pi_start_date);
+    --
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Primary AD'
+                          ,pi_parameter_value => pi_primary_ad);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Display Order'
+                               ,pi_parameter_value => pi_display_order);
+    --
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Single Row'
+                          ,pi_parameter_value => pi_single_row);
+    --
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Mandatory'
+                          ,pi_parameter_value => pi_mandatory);
+    --
+    validate_primary_ad(pi_primary_ad => pi_primary_ad
+                       ,pi_single_row => pi_single_row
+                       ,pi_mandatory  => pi_mandatory); 
+    --
+    IF network_ad_type_exists(pi_network_type => pi_network_type
+                             ,pi_inv_type     => pi_inv_type) = 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   =>  370
+                     ,pi_supplementary_info  => 'Network Type:  '||pi_network_type||', Inventory Type: '||pi_inv_type);
+    END IF;
+    --
+    --lov validation--
+    IF network_type_exists(pi_network_type => pi_network_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   =>  29
+                     ,pi_supplementary_info  => 'Network Type: '||pi_network_type);
+    END IF;
+    --
+    IF group_type_exists(pi_network_type => pi_network_type
+                        ,pi_group_type   => pi_group_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   =>  29
+                     ,pi_supplementary_info  => 'Group Type: '||pi_group_type);
+    END IF;
+    --
+    IF inv_type_exists(pi_inv_type => pi_inv_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   =>  29
+                     ,pi_supplementary_info  => 'Inventory Type: '||pi_inv_type);
+    END IF;
+    --
+    /*
+    ||insert into nm_nw_ad_types.
+    */
+    INSERT
+      INTO nm_nw_ad_types
+           (nad_id
+           ,nad_inv_type
+           ,nad_nt_type
+           ,nad_gty_type
+           ,nad_descr
+           ,nad_start_date
+           ,nad_end_date
+           ,nad_primary_ad
+           ,nad_display_order
+           ,nad_single_row
+           ,nad_mandatory
+           )
+    VALUES (nad_id_seq.nextval
+           ,UPPER(pi_inv_type)
+           ,UPPER(pi_network_type)
+           ,UPPER(pi_group_type)
+           ,UPPER(pi_description)
+           ,pi_start_date
+           ,pi_end_date
+           ,pi_primary_ad
+           ,pi_display_order
+           ,pi_single_row
+           ,pi_mandatory
+           );
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_network_ad_type;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_network_ad_type(pi_old_nad_id            IN     nm_nw_ad_types.nad_id%TYPE                                  
+                                  ,pi_old_network_type      IN     nm_nw_ad_types.nad_nt_type%TYPE
+                                  ,pi_old_group_type        IN     nm_nw_ad_types.nad_gty_type%TYPE
+                                  ,pi_old_inv_type          IN     nm_nw_ad_types.nad_inv_type%TYPE
+                                  ,pi_old_description       IN     nm_nw_ad_types.nad_descr%TYPE
+                                  ,pi_old_start_date        IN     nm_nw_ad_types.nad_start_date%TYPE
+                                  ,pi_old_end_date          IN     nm_nw_ad_types.nad_end_date%TYPE
+                                  ,pi_old_primary_ad        IN     nm_nw_ad_types.nad_primary_ad%TYPE
+                                  ,pi_old_display_order     IN     nm_nw_ad_types.nad_display_order%TYPE
+                                  ,pi_old_single_row        IN     nm_nw_ad_types.nad_single_row%TYPE
+                                  ,pi_old_mandatory         IN     nm_nw_ad_types.nad_mandatory%TYPE
+                                  ,pi_new_nad_id            IN     nm_nw_ad_types.nad_id%TYPE                                  
+                                  ,pi_new_network_type      IN     nm_nw_ad_types.nad_nt_type%TYPE
+                                  ,pi_new_group_type        IN     nm_nw_ad_types.nad_gty_type%TYPE
+                                  ,pi_new_inv_type          IN     nm_nw_ad_types.nad_inv_type%TYPE
+                                  ,pi_new_description       IN     nm_nw_ad_types.nad_descr%TYPE
+                                  ,pi_new_start_date        IN     nm_nw_ad_types.nad_start_date%TYPE
+                                  ,pi_new_end_date          IN     nm_nw_ad_types.nad_end_date%TYPE
+                                  ,pi_new_primary_ad        IN     nm_nw_ad_types.nad_primary_ad%TYPE
+                                  ,pi_new_display_order     IN     nm_nw_ad_types.nad_display_order%TYPE
+                                  ,pi_new_single_row        IN     nm_nw_ad_types.nad_single_row%TYPE
+                                  ,pi_new_mandatory         IN     nm_nw_ad_types.nad_mandatory%TYPE
+                                  ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor           OUT sys_refcursor)
+  IS
+    --
+    lr_db_rec        nm_nw_ad_types%ROWTYPE;
+    lv_upd           VARCHAR2(1) := 'N';
+    --
+    PROCEDURE get_db_rec
+      IS
+    BEGIN
+      --
+      SELECT *
+        INTO lr_db_rec
+        FROM nm_nw_ad_types
+       WHERE nad_id = pi_old_nad_id
+         FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN NO_DATA_FOUND
+       THEN
+          --
+          hig.raise_ner(pi_appl               => 'HIG'
+                       ,pi_id                 =>  85
+                       ,pi_supplementary_info => 'Network AD Type does not exist');
+          --
+    END get_db_rec;
+    --
+  BEGIN
+    --
+    awlrs_util.check_historic_mode; 
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Nad Id'
+                               ,pi_parameter_value => pi_new_nad_id);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Network Type'
+                               ,pi_parameter_value => pi_new_network_type);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Asset Type'
+                               ,pi_parameter_value => pi_new_inv_type);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
+                               ,pi_parameter_value => pi_new_start_date);
+    --
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Primary AD'
+                          ,pi_parameter_value => pi_new_primary_ad);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Display Order'
+                               ,pi_parameter_value => pi_new_display_order);
+    --
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Single Row'
+                          ,pi_parameter_value => pi_new_single_row);
+    --
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Mandatory'
+                          ,pi_parameter_value => pi_new_mandatory);
+    --
+    validate_primary_ad(pi_primary_ad => pi_new_primary_ad
+                       ,pi_single_row => pi_new_single_row
+                       ,pi_mandatory  => pi_new_mandatory); 
+    --
+    --lov validation--
+    IF network_type_exists(pi_network_type => pi_new_network_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   =>  29
+                     ,pi_supplementary_info  => 'Network Type: '||pi_new_network_type);
+    END IF;
+    --
+    IF group_type_exists(pi_network_type => pi_new_network_type
+                        ,pi_group_type   => pi_new_group_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   =>  29
+                     ,pi_supplementary_info  => 'Group Type: '||pi_new_group_type);
+    END IF;
+    --
+    IF inv_type_exists(pi_inv_type => pi_new_inv_type) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   =>  29
+                     ,pi_supplementary_info  => 'Inventory Type: '||pi_new_inv_type);
+    END IF;
+    --
+    get_db_rec;
+    --
+    /*
+    ||Compare Old with DB
+    */
+    IF lr_db_rec.nad_id != pi_old_nad_id
+     OR (lr_db_rec.nad_id IS NULL AND pi_old_nad_id IS NOT NULL)
+     OR (lr_db_rec.nad_id IS NOT NULL AND pi_old_nad_id IS NULL)
+     --
+     OR (lr_db_rec.nad_nt_type != pi_old_network_type)
+     OR (lr_db_rec.nad_nt_type IS NULL AND pi_old_network_type IS NOT NULL)
+     OR (lr_db_rec.nad_nt_type IS NOT NULL AND pi_old_network_type IS NULL)
+     --
+     OR (lr_db_rec.nad_gty_type != pi_old_group_type)
+     OR (lr_db_rec.nad_gty_type IS NULL AND pi_old_group_type IS NOT NULL)
+     OR (lr_db_rec.nad_gty_type IS NOT NULL AND pi_old_group_type IS NULL)
+     --
+     OR (lr_db_rec.nad_inv_type != pi_old_inv_type)
+     OR (lr_db_rec.nad_inv_type IS NULL AND pi_old_inv_type IS NOT NULL)
+     OR (lr_db_rec.nad_inv_type IS NOT NULL AND pi_old_inv_type IS NULL)
+     --
+     OR (UPPER(lr_db_rec.nad_descr) != UPPER(pi_old_description))
+     OR (lr_db_rec.nad_descr IS NULL AND pi_old_description IS NOT NULL)
+     OR (lr_db_rec.nad_descr IS NOT NULL AND pi_old_description IS NULL)
+     --
+     OR (lr_db_rec.nad_start_date != pi_old_start_date)
+     OR (lr_db_rec.nad_start_date IS NULL AND pi_old_start_date IS NOT NULL)
+     OR (lr_db_rec.nad_start_date IS NOT NULL AND pi_old_start_date IS NULL)
+     --
+     OR (lr_db_rec.nad_end_date != pi_old_end_date)
+     OR (lr_db_rec.nad_end_date IS NULL AND pi_old_end_date IS NOT NULL)
+     OR (lr_db_rec.nad_end_date IS NOT NULL AND pi_old_end_date IS NULL)
+     --
+     OR (lr_db_rec.nad_primary_ad != pi_old_primary_ad)
+     OR (lr_db_rec.nad_primary_ad IS NULL AND pi_old_primary_ad IS NOT NULL)
+     OR (lr_db_rec.nad_primary_ad IS NOT NULL AND pi_old_primary_ad IS NULL)
+     --
+     OR (lr_db_rec.nad_display_order != pi_old_display_order)
+     OR (lr_db_rec.nad_display_order IS NULL AND pi_old_display_order IS NOT NULL)
+     OR (lr_db_rec.nad_display_order IS NOT NULL AND pi_old_display_order IS NULL)
+     --
+     OR (lr_db_rec.nad_single_row != pi_old_single_row)
+     OR (lr_db_rec.nad_single_row IS NULL AND pi_old_single_row IS NOT NULL)
+     OR (lr_db_rec.nad_single_row IS NOT NULL AND pi_old_single_row IS NULL)
+     --
+     OR (lr_db_rec.nad_mandatory != pi_old_mandatory)
+     OR (lr_db_rec.nad_mandatory IS NULL AND pi_old_mandatory IS NOT NULL)
+     OR (lr_db_rec.nad_mandatory IS NOT NULL AND pi_old_mandatory IS NULL)
+     --
+     THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    ELSE
+      /*
+      ||Compare Old with New
+      */
+      IF pi_old_nad_id != pi_new_nad_id
+       OR (pi_old_nad_id IS NULL AND pi_new_nad_id IS NOT NULL)
+       OR (pi_old_nad_id IS NOT NULL AND pi_new_nad_id IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_network_type != pi_new_network_type
+       OR (pi_old_network_type IS NULL AND pi_new_network_type IS NOT NULL)
+       OR (pi_old_network_type IS NOT NULL AND pi_new_network_type IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_group_type != pi_new_group_type
+       OR (pi_old_group_type IS NULL AND pi_new_group_type IS NOT NULL)
+       OR (pi_old_group_type IS NOT NULL AND pi_new_group_type IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_inv_type != pi_new_inv_type
+       OR (pi_old_inv_type IS NULL AND pi_new_inv_type IS NOT NULL)
+       OR (pi_old_inv_type IS NOT NULL AND pi_new_inv_type IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_description != pi_new_description
+       OR (pi_old_description IS NULL AND pi_new_description IS NOT NULL)
+       OR (pi_old_description IS NOT NULL AND pi_new_description IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_start_date != pi_new_start_date
+       OR (pi_old_start_date IS NULL AND pi_new_start_date IS NOT NULL)
+       OR (pi_old_start_date IS NOT NULL AND pi_new_start_date IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_end_date != pi_new_end_date
+       OR (pi_old_end_date IS NULL AND pi_new_end_date IS NOT NULL)
+       OR (pi_old_end_date IS NOT NULL AND pi_new_end_date IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_primary_ad != pi_new_primary_ad
+       OR (pi_old_primary_ad IS NULL AND pi_new_primary_ad IS NOT NULL)
+       OR (pi_old_primary_ad IS NOT NULL AND pi_new_primary_ad IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_display_order != pi_new_display_order
+       OR (pi_old_display_order IS NULL AND pi_new_display_order IS NOT NULL)
+       OR (pi_old_display_order IS NOT NULL AND pi_new_display_order IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_single_row != pi_new_single_row
+       OR (pi_old_single_row IS NULL AND pi_new_single_row IS NOT NULL)
+       OR (pi_old_single_row IS NOT NULL AND pi_new_single_row IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_mandatory != pi_new_mandatory
+       OR (pi_old_mandatory IS NULL AND pi_new_mandatory IS NOT NULL)
+       OR (pi_old_mandatory IS NOT NULL AND pi_new_mandatory IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      ELSE
+        --
+        UPDATE nm_nw_ad_types
+           SET nad_nt_type       = UPPER(pi_new_network_type)
+              ,nad_gty_type      = UPPER(pi_new_group_type)  
+              ,nad_inv_type      = UPPER(pi_new_inv_type)
+              ,nad_descr         = UPPER(pi_new_description)
+              ,nad_start_date    = pi_new_start_date
+              ,nad_end_date      = pi_new_end_date
+              ,nad_primary_ad    = pi_new_primary_ad
+              ,nad_display_order = pi_new_display_order
+              ,nad_single_row    = pi_new_single_row
+              ,nad_mandatory     = pi_new_mandatory
+         WHERE nad_id            = pi_old_nad_id;
+        --       
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --
+      END IF;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_network_ad_type;                                                                                                           
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_network_ad_type(pi_nad_id            IN     nm_nw_ad_types.nad_id%TYPE
+                                  ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor       OUT sys_refcursor)
+  IS
+    --
+  BEGIN
+    --
+    awlrs_util.check_historic_mode; 
+    --
+    IF network_ad_type_exists(pi_nad_id => pi_nad_id) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   =>  30
+                     ,pi_supplementary_info  => 'Nad Id: '||pi_nad_id);
+    END IF;
+    --    
+    UPDATE nm_nw_ad_types
+       SET nad_end_date = TRUNC(SYSDATE)
+     WHERE nad_id       = pi_nad_id;      
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_network_ad_type;                                
   --                                  
 
 END awlrs_metanet_api;
