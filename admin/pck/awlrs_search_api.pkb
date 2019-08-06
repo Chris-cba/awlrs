@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.28   Jun 06 2019 16:13:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.29   Aug 06 2019 11:16:06   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 06 2019 16:13:50  $
-  --       Date fetched Out : $Modtime:   May 17 2019 17:44:36  $
-  --       Version          : $Revision:   1.28  $
+  --       Date into PVCS   : $Date:   Aug 06 2019 11:16:06  $
+  --       Date fetched Out : $Modtime:   Aug 05 2019 14:01:22  $
+  --       Version          : $Revision:   1.29  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.28  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.29  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -305,6 +305,35 @@ AS
                ,pi_inv_type;
     END IF;
     --
+  END get_asset_type_attributes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_type_attributes(pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lr_nit  nm_inv_types_all%ROWTYPE;
+    --
+  BEGIN
+    --
+    lr_nit := nm3get.get_nit(pi_nit_inv_type => pi_inv_type);
+    --
+    get_asset_type_attributes(pi_inv_type      => lr_nit.nit_inv_type
+                             ,pi_ft_asset_type => CASE WHEN lr_nit.nit_table_name IS NOT NULL THEN 'Y' ELSE 'N' END
+                             ,po_cursor        => po_cursor);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
   END get_asset_type_attributes;
 
   --
@@ -1256,6 +1285,46 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_asset_domain_values(pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                                   ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
+                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lr_nit  nm_inv_types_all%ROWTYPE;
+    --
+  BEGIN
+    --
+    IF pi_column_name = 'IIT_ADMIN_UNIT'
+     THEN
+        --
+        lr_nit := nm3get.get_nit(pi_nit_inv_type => pi_inv_type);
+        --
+        get_admin_units(pi_admin_type  => lr_nit.nit_admin_type
+                       ,po_cursor      => po_cursor);
+        --
+    ELSE
+        --
+        get_asset_domain(pi_asset_type  => pi_inv_type
+                        ,pi_column_name => pi_column_name
+                        ,po_cursor      => po_cursor);
+        --
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_asset_domain_values;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_domain_values(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
                              ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
                              ,po_message_severity OUT hig_codes.hco_code%TYPE
@@ -1369,6 +1438,54 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_paged_asset_domain_values(pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                                         ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
+                                         ,pi_filter           IN  VARCHAR2
+                                         ,pi_skip_n_rows      IN  PLS_INTEGER
+                                         ,pi_pagesize         IN  PLS_INTEGER
+                                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                         ,po_message_cursor   OUT sys_refcursor
+                                         ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lr_nit  nm_inv_types_all%ROWTYPE;
+    --
+  BEGIN
+    --
+    IF pi_column_name = 'IIT_ADMIN_UNIT'
+     THEN
+        --
+        lr_nit := nm3get.get_nit(pi_nit_inv_type => pi_inv_type);
+        --
+        get_paged_admin_units(pi_admin_type  => lr_nit.nit_admin_type
+                             ,pi_filter      => pi_filter
+                             ,pi_skip_n_rows => pi_skip_n_rows
+                             ,pi_pagesize    => pi_pagesize
+                             ,po_cursor      => po_cursor);
+    ELSE
+        --
+        get_paged_asset_domain(pi_asset_type  => pi_inv_type
+                              ,pi_column_name => pi_column_name
+                              ,pi_filter      => pi_filter
+                              ,pi_skip_n_rows => pi_skip_n_rows
+                              ,pi_pagesize    => pi_pagesize
+                              ,po_cursor      => po_cursor);
+        --
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_asset_domain_values;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_paged_domain_values(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
                                    ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
                                    ,pi_filter           IN  VARCHAR2
@@ -1460,8 +1577,8 @@ AS
                                         ,pi_pagesize    => pi_pagesize
                                         ,po_cursor      => po_cursor);
                   --
-                  po_message_severity := lv_message_severity;
-                  po_message_cursor := lv_message_cursor;
+                  awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                                       ,po_cursor           => po_message_cursor);
                   --
               END IF;
               --
@@ -1472,6 +1589,10 @@ AS
                                       ,pi_skip_n_rows => pi_skip_n_rows
                                       ,pi_pagesize    => pi_pagesize
                                       ,po_cursor      => po_cursor);
+                  --
+                  awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                                       ,po_cursor           => po_message_cursor);
+                  --
               ELSE
                   hig.raise_ner(pi_appl => 'AWLRS'
                                ,pi_id   => 6
@@ -4557,7 +4678,7 @@ AS
       ||CHR(10)||'                    AND nad_iit_ne_id = iit_ne_id(+)'
     ;
 --    IF pi_ordered
---     THEN    
+--     THEN
         lv_retval := lv_retval
           ||CHR(10)||'         ORDER BY '||NVL(LOWER(pi_order_column),'"unique_" asc ');
 --    END IF;
@@ -6747,7 +6868,7 @@ AS
     END IF;
     --
   END get_paged_node_results;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -6912,7 +7033,7 @@ AS
     --
   END get_table_results;
 
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -9069,7 +9190,7 @@ AS
              WHEN ngt_linear_flag = 'Y' THEN 'ROUTE'
              ELSE 'GROUP'
            END net_filter_item_type
-          ,CASE 
+          ,CASE
              WHEN ne_gty_group_type IS NULL THEN nt_unique
              ELSE ngt_descr
            END||' - '||ne_unique||' - '||ne_descr net_filter_item_name
