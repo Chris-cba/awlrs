@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.20   Aug 02 2019 10:28:42   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.21   Aug 06 2019 10:56:52   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Aug 02 2019 10:28:42  $
---       Date fetched Out : $Modtime:   Aug 02 2019 10:13:16  $
---       Version          : $Revision:   1.20  $
+--       Date into PVCS   : $Date:   Aug 06 2019 10:56:52  $
+--       Date fetched Out : $Modtime:   Aug 06 2019 10:48:58  $
+--       Version          : $Revision:   1.21  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 02-AUG-2019 10:13
+--       Generation Date  : 06-AUG-2019 10:48
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -1480,6 +1480,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 80);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,81
+      ,null
+      ,'Including Child Assets:'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 81);
 --
 ----------------------------------------------------------------------------------------
 -- HIG_STANDARD_FAVOURITES
