@@ -7,11 +7,11 @@
 --
 --  PVCS Identifiers :-
 --
---      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1270_metadata_upg.sql-arc   1.0   Jul 24 2019 15:45:28   Peter.Bibby  $
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1270_metadata_upg.sql-arc   1.1   Aug 06 2019 10:56:50   Peter.Bibby  $
 --      Module Name      : $Workfile:   awlrs1010_awlrs1270_metadata_upg.sql  $
---      Date into PVCS   : $Date:   Jul 24 2019 15:45:28  $
---      Date fetched Out : $Modtime:   Jul 24 2019 15:42:42  $
---      Version          : $Revision:   1.0  $
+--      Date into PVCS   : $Date:   Aug 06 2019 10:56:50  $
+--      Date fetched Out : $Modtime:   Aug 06 2019 10:47:52  $
+--      Version          : $Revision:   1.1  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2019 Bentley Systems Incorporated. All rights reserved.
@@ -816,7 +816,7 @@ SELECT 'AWLRS_NETWORK'
       ,'NM0001'
       ,'Node Types'
       ,'M'
-      ,1
+      ,10
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -826,39 +826,11 @@ SELECT 'AWLRS_NETWORK'
 
 Insert into HIG_STANDARD_FAVOURITES
    (HSTF_PARENT, HSTF_CHILD, HSTF_DESCR, HSTF_TYPE, HSTF_ORDER)
-SELECT 'AWLRS_NETWORK'
-      ,'NM0002'
-      ,'Network Types'
-      ,'M'
-      ,2
-  FROM DUAL
- WHERE NOT EXISTS(SELECT 1
-                    FROM HIG_STANDARD_FAVOURITES
-                   WHERE HSTF_PARENT = 'AWLRS_NETWORK'
-                     AND HSTF_CHILD = 'NM0002')
-/
-
-Insert into HIG_STANDARD_FAVOURITES
-   (HSTF_PARENT, HSTF_CHILD, HSTF_DESCR, HSTF_TYPE, HSTF_ORDER)
-SELECT 'AWLRS_NETWORK'
-      ,'NM0004'
-      ,'Group Types'
-      ,'M'
-      ,3
-  FROM DUAL
- WHERE NOT EXISTS(SELECT 1
-                    FROM HIG_STANDARD_FAVOURITES
-                   WHERE HSTF_PARENT = 'AWLRS_NETWORK'
-                     AND HSTF_CHILD = 'NM0004')
-/
-
-Insert into HIG_STANDARD_FAVOURITES
-   (HSTF_PARENT, HSTF_CHILD, HSTF_DESCR, HSTF_TYPE, HSTF_ORDER)
 SELECT 'AWLRS_ASSET'
       ,'NM0301'
       ,'Asset Domains'
       ,'M'
-      ,1
+      ,20
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -872,7 +844,7 @@ SELECT 'AWLRS_ASSET'
       ,'NM0305'
       ,'XSP and Reversal Rules'
       ,'M'
-      ,5
+      ,40
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -886,7 +858,7 @@ SELECT 'AWLRS_ASSET'
       ,'NM0306'
       ,'Asset XSPs'
       ,'M'
-      ,6
+      ,30
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -896,25 +868,11 @@ SELECT 'AWLRS_ASSET'
       
 Insert into HIG_STANDARD_FAVOURITES
    (HSTF_PARENT, HSTF_CHILD, HSTF_DESCR, HSTF_TYPE, HSTF_ORDER)
-SELECT 'AWLRS_ASSET'
-      ,'NM0410'
-      ,'Asset Types'
-      ,'M'
-      ,2
-  FROM DUAL
- WHERE NOT EXISTS(SELECT 1
-                    FROM HIG_STANDARD_FAVOURITES
-                   WHERE HSTF_PARENT = 'AWLRS_ASSET'
-                     AND HSTF_CHILD = 'NM0410')
-/
-
-Insert into HIG_STANDARD_FAVOURITES
-   (HSTF_PARENT, HSTF_CHILD, HSTF_DESCR, HSTF_TYPE, HSTF_ORDER)
 SELECT 'AWLRS_REFERENCE'
       ,'HIG1820'
       ,'Units and Conversions'
       ,'M'
-      ,16
+      ,70
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -928,7 +886,7 @@ SELECT 'AWLRS_REFERENCE'
       ,'HIG1837'
       ,'User Option Administration'
       ,'M'
-      ,7
+      ,50
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -942,7 +900,7 @@ SELECT 'AWLRS_REFERENCE'
       ,'HIG9120'
       ,'Domains'
       ,'M'
-      ,2
+      ,20
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -956,7 +914,7 @@ SELECT 'AWLRS_REFERENCE'
       ,'HIG9130'
       ,'Product Options'
       ,'M'
-      ,4
+      ,40
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -970,7 +928,7 @@ SELECT 'AWLRS_REFERENCE'
       ,'HIG9135'
       ,'Product and User Option List'
       ,'M'
-      ,3
+      ,30
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -984,7 +942,7 @@ SELECT 'AWLRS_REFERENCE'
       ,'HIG9185'
       ,'Error Messages'
       ,'M'
-      ,14
+      ,60
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -998,7 +956,7 @@ SELECT 'AWLRS_SECURITY'
       ,'HIG1836'
       ,'Roles'
       ,'M'
-      ,3
+      ,30
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -1012,7 +970,7 @@ SELECT 'AWLRS_SECURITY'
       ,'HIG1860'
       ,'Admin Units'
       ,'M'
-      ,1
+      ,10
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -1026,7 +984,7 @@ SELECT 'AWLRS_SECURITY'
       ,'HIG1880'
       ,'Modules'
       ,'M'
-      ,4
+      ,40
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -1040,7 +998,7 @@ SELECT 'AWLRS_SECURITY'
       ,'HIG1890'
       ,'Products'
       ,'M'
-      ,5
+      ,50
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -1054,7 +1012,7 @@ SELECT 'AWLRS_SECURITY'
       ,'HIG1870'
       ,'Upgrades'
       ,'M'
-      ,6
+      ,60
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_STANDARD_FAVOURITES
@@ -1072,13 +1030,133 @@ SELECT 'AWLRS'
       ,74
       ,''
       ,'Update not allowed on an end dated record'
-      ,10
+      ,''
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM nm_errors
                    WHERE ner_appl = 'AWLRS'
                      AND ner_id = 74)
 /
+INSERT INTO nm_errors
+   (ner_appl, ner_id, ner_her_no, ner_descr, ner_cause)
+SELECT 'AWLRS'
+      ,75
+      ,''
+      ,'Only one of Domain, Query, Sequence Name or Default can be specified'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM nm_errors
+                   WHERE ner_appl = 'AWLRS'
+                     AND ner_id = 75)
+/
+INSERT INTO nm_errors
+   (ner_appl, ner_id, ner_her_no, ner_descr, ner_cause)
+SELECT 'AWLRS'
+      ,76
+      ,''
+      ,'The String End value must be greater than the String Start value'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM nm_errors
+                   WHERE ner_appl = 'AWLRS'
+                     AND ner_id = 76)
+/
+INSERT INTO nm_errors
+   (ner_appl, ner_id, ner_her_no, ner_descr, ner_cause)
+SELECT 'AWLRS'
+      ,80
+      ,''
+      ,'When Primary is set to Y, both Single Row and Mandatory must also be set to Y'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM nm_errors
+                   WHERE ner_appl = 'AWLRS'
+                     AND ner_id = 80)
+/
+
+------------------------------------------------------------------
+SET TERM ON
+PROMPT New Errors for Asset Maint
+SET TERM OFF
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,78
+      ,null
+      ,'Unable to delete asset'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 78)
+/
+
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,79
+      ,null
+      ,'Asset deleted'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 79)
+/
+
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,77
+      ,null
+      ,'Asset deletion summary'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 77)
+/
+
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,81
+      ,null
+      ,'Including Child Assets:'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 81)
+/
+
 ------------------------------------------------------------------
 Commit;
 
