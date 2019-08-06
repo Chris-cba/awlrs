@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.11   Jun 06 2019 16:11:48   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.12   Aug 06 2019 11:16:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkh  $
-  --       Date into PVCS   : $Date:   Jun 06 2019 16:11:48  $
-  --       Date fetched Out : $Modtime:   Apr 03 2019 18:47:04  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   Aug 06 2019 11:16:04  $
+  --       Date fetched Out : $Modtime:   Jul 10 2019 10:09:52  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
   --
   TYPE group_expression_rec IS RECORD(group_operation        VARCHAR2(100)
                                      ,group_expressions_xml  XMLTYPE
@@ -50,10 +50,27 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_asset_type_attributes(pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_search_attributes(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
                                  ,po_message_cursor   OUT sys_refcursor
                                  ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_domain_values(pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                                   ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
+                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
@@ -63,6 +80,18 @@ AS
                              ,po_message_severity OUT hig_codes.hco_code%TYPE
                              ,po_message_cursor   OUT sys_refcursor
                              ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_asset_domain_values(pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                                         ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
+                                         ,pi_filter           IN  VARCHAR2
+                                         ,pi_skip_n_rows      IN  PLS_INTEGER
+                                         ,pi_pagesize         IN  PLS_INTEGER
+                                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                         ,po_message_cursor   OUT sys_refcursor
+                                         ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
@@ -202,7 +231,7 @@ AS
                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
                                  ,po_message_cursor   OUT sys_refcursor
                                  ,po_cursor           OUT sys_refcursor);
- 
+
   --
   -----------------------------------------------------------------------------
   --
