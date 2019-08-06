@@ -3,19 +3,21 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.39   May 22 2019 11:06:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.40   Aug 06 2019 11:08:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   May 22 2019 11:06:32  $
-  --       Date fetched Out : $Modtime:   May 22 2019 11:05:20  $
-  --       Version          : $Revision:   1.39  $
+  --       Date into PVCS   : $Date:   Aug 06 2019 11:08:58  $
+  --       Date fetched Out : $Modtime:   Aug 06 2019 11:05:50  $
+  --       Version          : $Revision:   1.40  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.39  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.40  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
+  --
+  gr_nit  nm_inv_types_all%ROWTYPE;
   --
   -----------------------------------------------------------------------------
   --
@@ -55,7 +57,7 @@ AS
 
   --
   -----------------------------------------------------------------------------
-  -- 
+  --
   PROCEDURE check_sections_for_updates(pi_begin_sect               IN nm_elements_all.ne_id%TYPE
                                       ,pi_end_sect                 IN nm_elements_all.ne_id%TYPE
                                       ,pi_begin_sect_date_modified IN DATE
@@ -79,14 +81,14 @@ AS
         lr_ne_rec := nm3net.get_ne_all_rowtype(pi_ne_id => pi_begin_sect);
         --
         IF lr_ne_rec.ne_date_modified > pi_begin_sect_date_modified
-         THEN      
+         THEN
             RAISE e_section_updated;
         END IF;
     END IF;
     --
     IF pi_end_sect IS NOT NULL
-     THEN    
-        --      
+     THEN
+        --
         lr_ne_rec := nm3net.get_ne_all_rowtype(pi_ne_id => pi_end_sect);
         --
         IF lr_ne_rec.ne_date_modified > pi_end_sect_date_modified
@@ -100,24 +102,24 @@ AS
      THEN
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 133);
-                   
+
   END check_sections_for_updates;
 
   --
   --------------------------------------------------------------------------------
-  --  
-  PROCEDURE get_lref_ambig(pi_locate_mp     IN     VARCHAR2 
+  --
+  PROCEDURE get_lref_ambig(pi_locate_mp     IN     VARCHAR2
                           ,pi_parent_id     IN     nm_elements_all.ne_id%TYPE
                           ,pi_offset        IN     NUMBER
                           ,pi_sub_class     IN     VARCHAR2 DEFAULT NULL
                           ,po_message_severity OUT hig_codes.hco_code%TYPE
-                          ,po_message_cursor   OUT sys_refcursor                          
+                          ,po_message_cursor   OUT sys_refcursor
                           ,po_cursor           OUT sys_refcursor)
     IS
     --
     /*e_no_datums_at_lref EXCEPTION;
     PRAGMA EXCEPTION_INIT(e_no_datums_at_lref, -20015);*/
-    --    
+    --
     lv_ne_id       nm_elements_all.ne_id%TYPE;
     lv_offset      NUMBER;
     lt_lrefs       nm_lref_array_type := nm_lref_array_type();
@@ -127,20 +129,20 @@ AS
     --
     IF nm3net.is_nt_datum(nm3net.get_nt_type(pi_parent_id)) = 'N'
      THEN
-  	   IF pi_locate_mp = 'BEGIN' 
-        THEN   
+       IF pi_locate_mp = 'BEGIN'
+        THEN
            nm3wrap.get_ambiguous_lrefs(pi_parent_id => pi_parent_id
                                       ,pi_offset    => pi_offset
                                       ,pi_sub_class => pi_sub_class
                                       ,pi_position  => 'S');
-  	   ELSE
-       	  nm3wrap.get_ambiguous_lrefs(pi_parent_id => pi_parent_id
+       ELSE
+           nm3wrap.get_ambiguous_lrefs(pi_parent_id => pi_parent_id
                                       ,pi_offset    => pi_offset
                                       ,pi_sub_class => pi_sub_class
                                       ,pi_position  => 'E');
-  	   END IF;
+       END IF;
        --
-       FOR i IN 1..nm3wrap.lref_count 
+       FOR i IN 1..nm3wrap.lref_count
         LOOP
            --
            nm3wrap.lref_get_row(pi_index  => i
@@ -150,7 +152,7 @@ AS
            lt_lrefs.EXTEND;
            lt_lrefs(lt_lrefs.count) := nm_lref(lv_ne_id
                                               ,lv_offset);
-           --                                         
+           --
        END LOOP;
        --
        /*
@@ -177,13 +179,13 @@ AS
       OPEN po_cursor FOR
         SELECT pi_locate_mp    location_mp
               ,ne_id           element_id
-              ,ne_unique       unique_id 
-              ,ne_descr        description 
+              ,ne_unique       unique_id
+              ,ne_descr        description
               ,pi_offset       offset
               ,ne_sub_class    sub_class
               ,TO_CHAR(ne_date_modified,'DD-MON-YYYY HH24:MI:SS') date_modified
           FROM nm_elements_all
-         WHERE ne_id = pi_parent_id; 
+         WHERE ne_id = pi_parent_id;
          --
     END IF;
     --
@@ -195,19 +197,19 @@ AS
      THEN
         hig.raise_ner(pi_appl => 'NET'
                      ,pi_id   => 85);*/
-    --                     
+    --
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);                     
+                                   ,po_cursor           => po_message_cursor);
   END get_lref_ambig;
 
   --
   --------------------------------------------------------------------------------
-  --  
+  --
   PROCEDURE get_ambiguous_subclass(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                  ,po_message_cursor   OUT sys_refcursor                          
+                                  ,po_message_cursor   OUT sys_refcursor
                                   ,po_cursor           OUT sys_refcursor)
     IS
     --
@@ -228,15 +230,15 @@ AS
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);                     
+                                   ,po_cursor           => po_message_cursor);
   END get_ambiguous_subclass;
-  
+
   --
   --------------------------------------------------------------------------------
-  --  
+  --
   PROCEDURE get_exclusive_subclass(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                  ,po_message_cursor   OUT sys_refcursor                          
+                                  ,po_message_cursor   OUT sys_refcursor
                                   ,po_cursor           OUT sys_refcursor)
     IS
     --
@@ -256,9 +258,9 @@ AS
     WHEN others
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);                     
+                                   ,po_cursor           => po_message_cursor);
   END get_exclusive_subclass;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -324,13 +326,13 @@ AS
     RETURN TRUE;
     --
   END validate_location_limit;
-  
+
   --
   --------------------------------------------------------------------------------
   --
   FUNCTION get_extent_location(pi_nse_id IN nm_saved_extents.nse_id%TYPE)
     RETURN nm_nw_temp_extents.nte_job_id%TYPE IS
-  
+    --
     e_no_extent_selected           EXCEPTION;
     e_extent_updated_since_created EXCEPTION;
     --
@@ -338,22 +340,25 @@ AS
     --
   BEGIN
     --
-  	IF pi_nse_id IS NOT NULL
-  	 THEN
-  	  IF nm3extent.saved_ne_contents_updated(pi_nse_id => pi_nse_id)
-  	   THEN
-  	      RAISE e_extent_updated_since_created;
-  	  END IF;
-  	  --
-  	  nm3extent.create_temp_ne(pi_source_id => pi_nse_id
-                              ,pi_source    => nm3extent.get_saved
-                              ,pi_begin_mp  => NULL
-                              ,pi_end_mp    => NULL
-                              ,po_job_id    => l_job_id);
-      --
-  	ELSE 
-  	   RAISE e_no_extent_selected;
-  	END IF;
+    IF pi_nse_id IS NOT NULL
+     THEN
+        --
+        IF nm3extent.saved_ne_contents_updated(pi_nse_id => pi_nse_id)
+         THEN
+            RAISE e_extent_updated_since_created;
+        END IF;
+        --
+        nm3extent.create_temp_ne(pi_source_id => pi_nse_id
+                                ,pi_source    => nm3extent.get_saved
+                                ,pi_begin_mp  => NULL
+                                ,pi_end_mp    => NULL
+                                ,po_job_id    => l_job_id);
+        --
+    ELSE
+        --
+        RAISE e_no_extent_selected;
+        --
+    END IF;
     --
     RETURN l_job_id;
     --
@@ -367,7 +372,7 @@ AS
         hig.raise_ner(pi_appl => 'NET'
                      ,pi_id   => 191);
   END get_extent_location;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -376,13 +381,13 @@ AS
                                ,pi_ne_id                    IN nm_elements_all.ne_id%TYPE
                                ,pi_begin_mp                 IN nm_members_all.nm_begin_mp%TYPE
                                ,pi_end_mp                   IN nm_members_all.nm_end_mp%TYPE
-                               ,pi_startdate                IN nm_members_all.nm_start_date%TYPE        
+                               ,pi_startdate                IN nm_members_all.nm_start_date%TYPE
                                ,pi_ne_is_datum              IN VARCHAR2
                                ,pi_begin_sect               IN nm_elements_all.ne_id%TYPE
                                ,pi_begin_sect_offset        IN NUMBER
-                               ,pi_begin_sect_date_modified IN DATE 
+                               ,pi_begin_sect_date_modified IN DATE
                                ,pi_end_Sect                 IN nm_elements_all.ne_id%TYPE
-                               ,pi_end_sect_offset          IN NUMBER 
+                               ,pi_end_sect_offset          IN NUMBER
                                ,pi_end_sect_date_modified   IN DATE
                                ,pi_ambiguous_sub_class      IN VARCHAR2
                                ,pi_restrict_excl_sub_class  IN VARCHAR2--y/n checkbox
@@ -448,25 +453,25 @@ AS
     END IF;
     --
     IF lv_pnt_or_cont = 'P'
-	   THEN
+     THEN
         lv_end_mp := pi_begin_mp;
         lv_end_sect := pi_begin_sect;
-        lv_end_sect_offset := pi_begin_sect_offset;        
-	  ELSE
-       --check relative positions of start/end for continuous inventory
-       IF pi_ne_is_datum = 'N' 
-        THEN
-           nm3wrap.check_relative_start_end(pi_route        => pi_ne_id
-                                           ,pi_start_sect   => pi_begin_sect
-                                           ,pi_start_offset => pi_begin_sect_offset
-                                           ,pi_end_sect     => pi_end_sect       
-                                           ,pi_end_offset   => pi_end_sect_offset);
-       END IF;
-       --
-       lv_end_mp := pi_end_mp;
-       lv_end_sect := pi_end_sect;
-       lv_end_sect_offset := pi_end_sect_offset;       
-       --
+        lv_end_sect_offset := pi_begin_sect_offset;
+    ELSE
+        --check relative positions of start/end for continuous inventory
+        IF pi_ne_is_datum = 'N'
+         THEN
+            nm3wrap.check_relative_start_end(pi_route        => pi_ne_id
+                                            ,pi_start_sect   => pi_begin_sect
+                                            ,pi_start_offset => pi_begin_sect_offset
+                                            ,pi_end_sect     => pi_end_sect
+                                            ,pi_end_offset   => pi_end_sect_offset);
+        END IF;
+        --
+        lv_end_mp := pi_end_mp;
+        lv_end_sect := pi_end_sect;
+        lv_end_sect_offset := pi_end_sect_offset;
+        --
     END IF;
     /*
     ||held locally by ui team derived from lref api when offsets are entered
@@ -477,32 +482,35 @@ AS
                               ,pi_end_sect                 => pi_end_Sect
                               ,pi_begin_sect_date_modified => pi_begin_sect_date_modified
                               ,pi_end_sect_date_modified   => pi_end_sect_date_modified);
-	
+    --
     IF pi_ne_is_datum = 'N'
      THEN
-       IF pi_restrict_excl_sub_class = 'Y' 
-        THEN
-           lv_sub_class := pi_excl_sub_class;
-       ELSE
-           lv_sub_class := pi_ambiguous_sub_class;
-       END IF;
-       --
-       nm3wrap.create_temp_ne_from_route(pi_route                   => pi_ne_id
-                                        ,pi_start_ne_id             => pi_begin_sect
-                                        ,pi_start_offset            => pi_begin_sect_offset
-                                        ,pi_end_ne_id               => lv_end_sect
-                                        ,pi_end_offset              => lv_end_sect_offset
-                                        ,pi_sub_class               => lv_sub_class
-                                        ,pi_restrict_excl_sub_class => pi_restrict_excl_sub_class 
-                                        ,pi_homo_check              => TRUE
-                                        ,po_job_id                  => lv_job_id);
+        --
+        IF pi_restrict_excl_sub_class = 'Y'
+         THEN
+            lv_sub_class := pi_excl_sub_class;
+        ELSE
+            lv_sub_class := pi_ambiguous_sub_class;
+        END IF;
+        --
+        nm3wrap.create_temp_ne_from_route(pi_route                   => pi_ne_id
+                                         ,pi_start_ne_id             => pi_begin_sect
+                                         ,pi_start_offset            => pi_begin_sect_offset
+                                         ,pi_end_ne_id               => lv_end_sect
+                                         ,pi_end_offset              => lv_end_sect_offset
+                                         ,pi_sub_class               => lv_sub_class
+                                         ,pi_restrict_excl_sub_class => pi_restrict_excl_sub_class
+                                         ,pi_homo_check              => TRUE
+                                         ,po_job_id                  => lv_job_id);
+        --
     ELSE
-       --
-       nm3extent.create_temp_ne(pi_source_id => pi_ne_id
-                               ,pi_source    => nm3extent.get_route
-                               ,pi_begin_mp  => pi_begin_mp
-                               ,pi_end_mp    => lv_end_mp
-                               ,po_job_id    => lv_job_id);
+        --
+        nm3extent.create_temp_ne(pi_source_id => pi_ne_id
+                                ,pi_source    => nm3extent.get_route
+                                ,pi_begin_mp  => pi_begin_mp
+                                ,pi_end_mp    => lv_end_mp
+                                ,po_job_id    => lv_job_id);
+        --
     END IF;
     --
     RETURN lv_job_id;
@@ -515,7 +523,7 @@ AS
     WHEN e_validation_error
      THEN
         hig.raise_ner(pi_appl => 'AWLRS'
-                     ,pi_id   => 36);           
+                     ,pi_id   => 36);
   END get_network_location;
 
   --
@@ -545,18 +553,15 @@ AS
     --
   BEGIN
     --
-    SELECT count(ita_mandatory_yn) 
+    SELECT count(ita_mandatory_yn)
       INTO lv_cnt
-      FROM nm_inv_type_attribs_all 
-     WHERE ita_inv_type = pi_inv_type 
+      FROM nm_inv_type_attribs_all
+     WHERE ita_inv_type = pi_inv_type
        AND ita_attrib_name = pi_attrib_name
-       AND ita_mandatory_yn = 'Y';
-       
-     IF lv_cnt = 0 THEN 
-       RETURN FALSE;
-     ELSE
-       RETURN TRUE;
-     END IF;
+       AND ita_mandatory_yn = 'Y'
+         ;
+    --
+    RETURN (lv_cnt != 0);
     --
   END is_attrib_mandatory;
 
@@ -564,7 +569,7 @@ AS
   -----------------------------------------------------------------------------
   --
   FUNCTION is_subclass_divided_highway(pi_group_type nm_group_types.ngt_group_type%TYPE)
-    RETURN VARCHAR2 IS  
+    RETURN VARCHAR2 IS
     --
     lv_retval VARCHAR2(1) := 'N';
     --
@@ -574,27 +579,28 @@ AS
      THEN
         lv_retval := 'N';
     ELSE
-       SELECT 'Y' 
-         INTO lv_retval
-         FROM nm_group_types
-             ,nm_linear_types
-        WHERE ngt_group_type = nlt_gty_type
-          AND nlt_nt_type = ngt_nt_type
-          AND ngt_reverse_allowed = 'N'
-          AND EXISTS (SELECT 1  
-                        FROM nm_type_subclass
-                            ,nm_nt_groupings
-                       WHERE ngt_group_type = nng_group_type
-                         AND nng_nt_type = nsc_nw_type)
-          AND ngt_group_type = pi_group_type;
+        SELECT 'Y'
+          INTO lv_retval
+          FROM nm_group_types
+              ,nm_linear_types
+         WHERE ngt_group_type = nlt_gty_type
+           AND nlt_nt_type = ngt_nt_type
+           AND ngt_reverse_allowed = 'N'
+           AND EXISTS (SELECT 1
+                         FROM nm_type_subclass
+                             ,nm_nt_groupings
+                        WHERE ngt_group_type = nng_group_type
+                          AND nng_nt_type = nsc_nw_type)
+           AND ngt_group_type = pi_group_type
+             ;
     END IF;
     --
     RETURN lv_retval;
     --
   EXCEPTION
-    WHEN no_data_found 
+    WHEN no_data_found
      THEN
-        RETURN lv_retval;  
+        RETURN lv_retval;
   END is_subclass_divided_highway;
 
   --
@@ -633,14 +639,15 @@ AS
                       AND au.nau_admin_type = nit_admin_type
                       AND usr.nua_admin_unit = nag_parent_admin_unit
                       AND usr.nua_user_id = hus.hus_user_id)
-     ORDER BY nit_inv_type
-     ;
+     ORDER
+        BY nit_inv_type
+         ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
   END get_asset_types;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -682,48 +689,51 @@ AS
        AND nit_inv_type IN (SELECT itg_inv_type
                               FROM nm_inv_type_groupings
                              WHERE itg_parent_inv_type = pi_parent_type
-                               AND itg_inv_type != pi_parent_type)                      
-     ORDER BY nit_inv_type
+                               AND itg_inv_type != pi_parent_type)
+     ORDER
+        BY nit_inv_type
          ;
      --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
-  END get_child_asset_types;  
-  
+  END get_child_asset_types;
+
   --
   -----------------------------------------------------------------------------
-  --  
+  --
   FUNCTION get_attrib_value(pi_inv_type IN nm_inv_items.iit_inv_type%TYPE
                            ,pi_ne_id IN NM_INV_ITEMS.iit_ne_id%TYPE
                            ,pi_attrib_name IN NM_INV_TYPE_ATTRIBS.ita_attrib_name%TYPE)
     RETURN VARCHAR2 IS
     --
-    lr_nit    nm_inv_types_all%ROWTYPE;
     lv_sql    nm3type.max_varchar2;
-    lv_value  nm3type.max_varchar2;        
+    lv_value  nm3type.max_varchar2;
     --
   BEGIN
     --
-    lr_nit := nm3get.get_nit(pi_inv_type);
-    --
-    IF lr_nit.nit_table_name IS NOT NULL
+    IF NVL(gr_nit.nit_inv_type,'~~~~~') != pi_inv_type
      THEN
-       lv_sql := 'SELECT ' ||pi_attrib_name||' '
-              ||CHR(10)||'  FROM  '||lr_nit.nit_table_name
-              ||CHR(10)||'  WHERE '||lr_nit.nit_foreign_pk_column||' = :p1'
-       ;
-       --       
-       EXECUTE IMMEDIATE lv_sql INTO lv_value USING pi_ne_id;
-       --
+        gr_nit := nm3get.get_nit(pi_inv_type);
+    END IF;
+    --
+    IF gr_nit.nit_table_name IS NOT NULL
+     THEN
+        lv_sql := 'SELECT ' ||pi_attrib_name||' '
+               ||CHR(10)||'  FROM  '||gr_nit.nit_table_name
+               ||CHR(10)||'  WHERE '||gr_nit.nit_foreign_pk_column||' = :p1'
+        ;
+        --
+        EXECUTE IMMEDIATE lv_sql INTO lv_value USING pi_ne_id;
+        --
     ELSE
-       lv_value := nm3inv.get_attrib_value(p_ne_id       => pi_ne_id
-                                          ,p_attrib_name => pi_attrib_name);    
+        lv_value := nm3inv.get_attrib_value(p_ne_id       => pi_ne_id
+                                           ,p_attrib_name => pi_attrib_name);
     END IF;
     --
     RETURN lv_value;
     --
-  END get_attrib_value;  
+  END get_attrib_value;
 
   --
   -----------------------------------------------------------------------------
@@ -744,9 +754,9 @@ AS
     --
     IF lr_retval.iit_inv_type != pi_nit_inv_type
      THEN
-       --invalid Asset ID supplied
-       hig.raise_ner(pi_appl => 'AWLRS'
-                    ,pi_id   => 37);
+        --invalid Asset ID supplied
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 37);
     END IF;
     --
     RETURN lr_retval;
@@ -765,7 +775,7 @@ AS
     --
     lr_iit  nm_inv_items_all%ROWTYPE;
     lr_nit  nm_inv_types_all%ROWTYPE;
-    lv_sql  nm3type.max_varchar2;  
+    lv_sql  nm3type.max_varchar2;
     --
   BEGIN
     --
@@ -773,7 +783,7 @@ AS
     ||Get the asset type data.
     */
     lr_nit := nm3get.get_nit(pi_iit_inv_type);
-    -- 
+    --
     IF lr_nit.nit_table_name IS NOT NULL
      THEN
         lv_sql := 'SELECT '||lr_nit.nit_foreign_pk_column||' ne_id'
@@ -787,7 +797,7 @@ AS
        ||CHR(10)||'      ,CAST(NULL as DATE)                 start_date'
        ||CHR(10)||'      ,CAST(NULL as DATE)                 end_date'
        ||CHR(10)||'      ,CAST(NULL as VARCHAR2(40))         note'
-       ||CHR(10)||'      ,CAST(NULL as VARCHAR2(50))         foreign_key'       
+       ||CHR(10)||'      ,CAST(NULL as VARCHAR2(50))         foreign_key'
        ||CHR(10)||'  FROM  '||lr_nit.nit_table_name
        ||CHR(10)||'  WHERE '||lr_nit.nit_foreign_pk_column||' = :iit_ne_id'
         ;
@@ -795,27 +805,27 @@ AS
         OPEN po_cursor FOR lv_sql USING lr_nit.nit_inv_type, lr_nit.nit_descr, pi_iit_ne_id;
         --
     ELSE
-       --
-       lr_iit := get_asset(pi_iit_ne_id    => pi_iit_ne_id
-                          ,pi_nit_inv_type => pi_iit_inv_type);
-       --
-       OPEN po_cursor FOR
-       SELECT iit_ne_id                                     ne_id
-             ,iit_inv_type                                  inv_type
-             ,iit_primary_key                               primary_key
-             ,iit_x_sect                                    xsp
-             ,iit_descr                                     description
-             ,nm3user.get_username(iit_peo_invent_by_id)    identified_by
-             ,iit_admin_unit                                admin_unit
-             ,nm3inv.get_nit_descr(iit_inv_type)            asset_type_description
-             ,iit_start_date                                start_date
-             ,iit_end_date                                  end_date
-             ,iit_note                                      note
-             ,iit_foreign_key                               foreign_key
-         FROM nm_inv_items_all iit
-        WHERE iit.iit_ne_id = pi_iit_ne_id
-            ;
-       --
+        --
+        lr_iit := get_asset(pi_iit_ne_id    => pi_iit_ne_id
+                           ,pi_nit_inv_type => pi_iit_inv_type);
+        --
+        OPEN po_cursor FOR
+        SELECT iit_ne_id                                     ne_id
+              ,iit_inv_type                                  inv_type
+              ,iit_primary_key                               primary_key
+              ,iit_x_sect                                    xsp
+              ,iit_descr                                     description
+              ,nm3user.get_username(iit_peo_invent_by_id)    identified_by
+              ,iit_admin_unit                                admin_unit
+              ,nm3inv.get_nit_descr(iit_inv_type)            asset_type_description
+              ,iit_start_date                                start_date
+              ,iit_end_date                                  end_date
+              ,iit_note                                      note
+              ,iit_foreign_key                               foreign_key
+          FROM nm_inv_items_all iit
+         WHERE iit.iit_ne_id = pi_iit_ne_id
+             ;
+        --
     END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -1031,7 +1041,7 @@ AS
     lv_disp_derived VARCHAR2(1) := CASE WHEN pi_disp_derived THEN 'Y' ELSE 'N' END;
     lv_disp_inherited VARCHAR2(1) := CASE WHEN pi_disp_inherited THEN 'Y' ELSE 'N' END;
     lt_columns  nm3flx.tab_type_columns;
-    lt_column_names  nm_max_varchar_tbl := nm_max_varchar_tbl();    
+    lt_column_names  nm_max_varchar_tbl := nm_max_varchar_tbl();
     --
   BEGIN
     --
@@ -1040,7 +1050,7 @@ AS
       lt_column_names.extend;
       lt_column_names(i) := pi_exclude_cols(i);
       --
-    END LOOP;    
+    END LOOP;
     --
     OPEN po_cursor FOR
     SELECT column_name
@@ -1055,7 +1065,7 @@ AS
           ,field_case
           ,CAST(domain_id AS VARCHAR2(40)) domain_id
           ,CAST(domain_bind_column AS VARCHAR2(30)) domain_bind_column
-          ,CAST(char_value AS VARCHAR2(240)) char_value          
+          ,CAST(char_value AS VARCHAR2(240)) char_value
           ,required
           ,updateable
       FROM (SELECT ita_attrib_name   column_name
@@ -1084,7 +1094,7 @@ AS
                   ,NULL              domain_bind_column
                   ,awlrs_asset_api.get_attrib_value(pi_inv_type    => pi_inv_type
                                                    ,pi_ne_id       => pi_iit_ne_id
-                                                   ,pi_attrib_name => ita_attrib_name) char_value                                          
+                                                   ,pi_attrib_name => ita_attrib_name) char_value
                   ,ita_mandatory_yn  required
                   ,'Y'               updateable
                   ,ita_disp_seq_no   seq_no
@@ -1242,27 +1252,27 @@ AS
     END IF;
     --
     FOR i IN 1..pi_attrib_names.COUNT LOOP
-      --                           
+      --
       lt_attribs(i).attrib_name := pi_attrib_names(i);
       lt_attribs(i).scrn_text   := pi_attrib_scrn_texts(i);
       lt_attribs(i).char_value  := pi_attrib_char_values(i);
       --
-      IF is_attrib_mandatory(pi_inv_type     => pi_asset_type   
-                            ,pi_attrib_name  => pi_attrib_names(i)) 
+      IF is_attrib_mandatory(pi_inv_type     => pi_asset_type
+                            ,pi_attrib_name  => pi_attrib_names(i))
        AND (NVL(pi_attrib_char_values(i),'') = '' OR  pi_attrib_char_values(i) IS NULL)
         THEN
           hig.raise_ner(pi_appl               => 'NET'
                        ,pi_id                 => 50
-                       ,pi_supplementary_info => pi_attrib_scrn_texts(i));                 
+                       ,pi_supplementary_info => pi_attrib_scrn_texts(i));
       END IF;
       /*
       ||populate foreign_key key flexible attribute
       ||As per Gopi is struggling to populate IIT_FOREIGN_KEY on UI when add child so if null add via API.
-      */  
+      */
       IF pi_iit_foreign_key IS NOT NULL AND lt_attribs(i).attrib_name = 'IIT_FOREIGN_KEY' AND lt_attribs(i).char_value IS NULL
        THEN
-         lt_attribs(i).char_value := lv_iit_foreign_key;     
-      END IF  ;         
+         lt_attribs(i).char_value := lv_iit_foreign_key;
+      END IF  ;
     END LOOP;
     --
     build_asset_rec(pi_inv_type   => g_iit_rec.iit_inv_type
@@ -1660,12 +1670,12 @@ AS
     END IF;
     --
 
-    IF pi_old_attrib_names.COUNT = 1 
-     AND (pi_old_attrib_names(1) is null 
-     AND pi_attrib_names(1) is null 
-     AND pi_old_attrib_scrn_texts(1)  is null 
-     AND pi_attrib_scrn_texts(1) is null 
-     AND pi_old_attrib_char_values(1) is null 
+    IF pi_old_attrib_names.COUNT = 1
+     AND (pi_old_attrib_names(1) is null
+     AND pi_attrib_names(1) is null
+     AND pi_old_attrib_scrn_texts(1)  is null
+     AND pi_attrib_scrn_texts(1) is null
+     AND pi_old_attrib_char_values(1) is null
      AND pi_new_attrib_char_values(1) is null)
       THEN
         /*
@@ -1686,7 +1696,7 @@ AS
         --
       END LOOP;
     END IF;
-    
+
     --
     update_asset(pi_iit_ne_id       => pi_iit_ne_id
                 ,pi_old_primary_key => pi_old_primary_key
@@ -1784,7 +1794,7 @@ AS
   PROCEDURE add_asset_location(pi_iit            IN     nm_inv_items_all%ROWTYPE
                               ,pi_startdate      IN     DATE
                               ,pi_is_datum       IN     VARCHAR2
-                              ,pi_ne_id          IN     nm_elements_all.ne_id%TYPE 
+                              ,pi_ne_id          IN     nm_elements_all.ne_id%TYPE
                               ,pi_nit_inv_type   IN     nm_inv_types_all.nit_inv_type%TYPE
                               ,pi_job_id         IN     nm_nw_temp_extents.nte_job_id%TYPE
                               ,pi_append_replace IN     VARCHAR2
@@ -1794,7 +1804,7 @@ AS
     lv_existing_loc_job_id NUMBER;
     lv_job_id              NUMBER := pi_job_id;
     lv_is_datum            VARCHAR2(1);
-    lv_no_overlaps_job_id  NUMBER;   
+    lv_no_overlaps_job_id  NUMBER;
     lv_warning_code        VARCHAR2(1000);
     lv_warning_msg         VARCHAR2(1000);
     --
@@ -1828,41 +1838,39 @@ AS
                        ,p_effective_date => TRUNC(pi_startdate)
                        ,p_warning_code   => lv_warning_code
                        ,p_warning_msg    => lv_warning_msg);
-    --
     /*
     ||Only if NE is selected. Check contiguity
     */
-    IF pi_ne_id IS NOT NULL 
+    IF pi_ne_id IS NOT NULL
      THEN
         check_contiguity(pi_asset_type   => pi_nit_inv_type
                         ,pi_datum        => lv_is_datum
                         ,pi_ne_id        => pi_ne_id
                         ,pi_x_sect       => pi_iit.iit_x_sect
                         ,po_warning_code => lv_warning_code);
-        
         --
         IF lv_warning_code IS NOT NULL
          THEN
             IF lv_warning_code = nm3homo.get_contiguous_warning_const
              THEN
-               --contiguous warning
-               awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
-                                                ,pi_ner_id             => 95
-                                                ,pi_supplementary_info => '. This check has been done across the whole of this piece of Network.'
-                                                ,pi_category           => awlrs_util.c_msg_cat_warning
-                                                ,po_message_tab        => po_messages);            
+                --contiguous warning
+                awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
+                                                 ,pi_ner_id             => 95
+                                                 ,pi_supplementary_info => '. This check has been done across the whole of this piece of Network.'
+                                                 ,pi_category           => awlrs_util.c_msg_cat_warning
+                                                 ,po_message_tab        => po_messages);
             ELSE
-               --unknown warning
-               awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
-                                                ,pi_ner_id             => 94
-                                                ,pi_supplementary_info => lv_warning_code
-                                                ,pi_category           => awlrs_util.c_msg_cat_warning
-                                                ,po_message_tab        => po_messages);            
+                --unknown warning
+                awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
+                                                 ,pi_ner_id             => 94
+                                                 ,pi_supplementary_info => lv_warning_code
+                                                 ,pi_category           => awlrs_util.c_msg_cat_warning
+                                                 ,po_message_tab        => po_messages);
             END IF;
         END IF;
         --
     END IF;
-    
+
   END add_asset_location;
   --
   -----------------------------------------------------------------------------
@@ -1875,13 +1883,13 @@ AS
                               ,pi_startdate                IN     nm_members_all.nm_start_date%TYPE
                               ,pi_append_replace           IN     VARCHAR2
                               ,pi_begin_sect               IN     nm_elements_all.ne_id%TYPE
-                              ,pi_begin_sect_offset        IN     NUMBER 
+                              ,pi_begin_sect_offset        IN     NUMBER
                               ,pi_begin_sect_date_modified IN     DATE
-                              ,pi_end_sect                 IN     nm_elements_all.ne_id%TYPE 
-                              ,pi_end_sect_offset          IN     NUMBER 
-                              ,pi_end_sect_date_modified   IN     DATE                              
-                              ,pi_ambiguous_sub_class      IN     VARCHAR2 
-                              ,pi_restrict_excl_sub_class  IN     VARCHAR2 
+                              ,pi_end_sect                 IN     nm_elements_all.ne_id%TYPE
+                              ,pi_end_sect_offset          IN     NUMBER
+                              ,pi_end_sect_date_modified   IN     DATE
+                              ,pi_ambiguous_sub_class      IN     VARCHAR2
+                              ,pi_restrict_excl_sub_class  IN     VARCHAR2
                               ,pi_excl_sub_class           IN     nm_elements_all.ne_sub_class%TYPE
                               ,pi_nse_id                   IN     nm_saved_extents.nse_id%TYPE
                               ,po_message_severity IN OUT hig_codes.hco_code%TYPE
@@ -2023,7 +2031,7 @@ AS
     /*
     ||create temp_ne by extent or ne
     */
-    IF pi_nse_id IS NOT NULL 
+    IF pi_nse_id IS NOT NULL
      THEN
        lv_job_id := get_extent_location(pi_nse_id => pi_nse_id);
     ELSE
@@ -2034,15 +2042,15 @@ AS
                                         ,pi_ne_id                    => pi_ne.ne_id
                                         ,pi_begin_mp                 => pi_begin_mp
                                         ,pi_end_mp                   => pi_end_mp
-                                        ,pi_startdate                => pi_startdate           
+                                        ,pi_startdate                => pi_startdate
                                         ,pi_ne_is_datum              => lv_is_datum
-                                        ,pi_begin_sect               => pi_begin_sect              
-                                        ,pi_begin_sect_offset        => pi_begin_sect_offset       
+                                        ,pi_begin_sect               => pi_begin_sect
+                                        ,pi_begin_sect_offset        => pi_begin_sect_offset
                                         ,pi_begin_sect_date_modified => pi_begin_sect_date_modified
-                                        ,pi_end_Sect                 => pi_end_Sect                
-                                        ,pi_end_sect_offset          => pi_end_sect_offset  
-                                        ,pi_end_sect_date_modified   => pi_end_sect_date_modified                                     
-                                        ,pi_ambiguous_sub_class      => pi_ambiguous_sub_class     
+                                        ,pi_end_Sect                 => pi_end_Sect
+                                        ,pi_end_sect_offset          => pi_end_sect_offset
+                                        ,pi_end_sect_date_modified   => pi_end_sect_date_modified
+                                        ,pi_ambiguous_sub_class      => pi_ambiguous_sub_class
                                         ,pi_restrict_excl_sub_class  => pi_restrict_excl_sub_class
                                         ,pi_excl_sub_class           => pi_excl_sub_class);
     END IF;
@@ -2058,7 +2066,7 @@ AS
                       ,pi_startdate      => pi_startdate
                       ,pi_is_datum       => lv_is_datum
                       ,pi_ne_id          => pi_ne.ne_id
-                      ,pi_nit_inv_type   => pi_nit_inv_type                      
+                      ,pi_nit_inv_type   => pi_nit_inv_type
                       ,pi_job_id         => lv_job_id
                       ,pi_append_replace => pi_append_replace
                       ,po_messages       => lt_messages);
@@ -2206,15 +2214,15 @@ AS
                               ,pi_ne_id                    IN     nm_elements_all.ne_id%TYPE
                               ,pi_begin_mp                 IN     nm_members_all.nm_begin_mp%TYPE
                               ,pi_end_mp                   IN     nm_members_all.nm_end_mp%TYPE
-                              ,pi_startdate                IN     nm_members_all.nm_start_date%TYPE           
+                              ,pi_startdate                IN     nm_members_all.nm_start_date%TYPE
                               ,pi_append_replace           IN     VARCHAR2
-                              ,pi_begin_sect               IN     nm_elements_all.ne_id%TYPE 
-                              ,pi_begin_sect_offset        IN     NUMBER 
-                              ,pi_begin_sect_date_modified IN     DATE 
-                              ,pi_end_sect                 IN     nm_elements_all.ne_id%TYPE 
-                              ,pi_end_sect_offset          IN     NUMBER 
-                              ,pi_end_sect_date_modified   IN     DATE                       
-                              ,pi_ambiguous_sub_class      IN     VARCHAR2 DEFAULT NULL 
+                              ,pi_begin_sect               IN     nm_elements_all.ne_id%TYPE
+                              ,pi_begin_sect_offset        IN     NUMBER
+                              ,pi_begin_sect_date_modified IN     DATE
+                              ,pi_end_sect                 IN     nm_elements_all.ne_id%TYPE
+                              ,pi_end_sect_offset          IN     NUMBER
+                              ,pi_end_sect_date_modified   IN     DATE
+                              ,pi_ambiguous_sub_class      IN     VARCHAR2 DEFAULT NULL
                               ,pi_excl_sub_class           IN     nm_elements_all.ne_sub_class%TYPE DEFAULT NULL
                               ,pi_nse_id                   IN     nm_saved_extents.nse_id%TYPE DEFAULT NULL
                               ,po_message_severity           OUT  hig_codes.hco_code%TYPE
@@ -2227,20 +2235,20 @@ AS
     --
   BEGIN
     --
-    SAVEPOINT add_location_sp;   
-    --    
+    SAVEPOINT add_location_sp;
+    --
     lr_iit := get_asset(pi_iit_ne_id    => pi_iit_ne_id
                        ,pi_nit_inv_type => pi_nit_inv_type);
     --
-    IF pi_ne_id IS NOT NULL 
+    IF pi_ne_id IS NOT NULL
      THEN
         lr_ne := nm3net.get_ne(pi_ne_id);
     END IF;
     --
-    IF pi_excl_sub_class IS NOT NULL 
+    IF pi_excl_sub_class IS NOT NULL
      THEN
-        lv_restrict_excl_sub_class := 'Y'; 
-    ELSE 
+        lv_restrict_excl_sub_class := 'Y';
+    ELSE
         lv_restrict_excl_sub_class := 'N';
     END IF;
     --
@@ -2250,15 +2258,15 @@ AS
                       ,pi_begin_mp                 => pi_begin_mp
                       ,pi_end_mp                   => pi_end_mp
                       ,pi_startdate                => pi_startdate
-                      ,pi_append_replace           => pi_append_replace                               
-                      ,pi_begin_sect               => pi_begin_sect              
-                      ,pi_begin_sect_offset        => pi_begin_sect_offset    
-                      ,pi_begin_sect_date_modified => pi_begin_sect_date_modified                          
-                      ,pi_end_Sect                 => pi_end_Sect                
-                      ,pi_end_sect_offset          => pi_end_sect_offset      
-                      ,pi_end_sect_date_modified   => pi_end_sect_date_modified                          
-                      ,pi_ambiguous_sub_class      => pi_ambiguous_sub_class     
-                      ,pi_restrict_excl_sub_class  => lv_restrict_excl_sub_class 
+                      ,pi_append_replace           => pi_append_replace
+                      ,pi_begin_sect               => pi_begin_sect
+                      ,pi_begin_sect_offset        => pi_begin_sect_offset
+                      ,pi_begin_sect_date_modified => pi_begin_sect_date_modified
+                      ,pi_end_Sect                 => pi_end_Sect
+                      ,pi_end_sect_offset          => pi_end_sect_offset
+                      ,pi_end_sect_date_modified   => pi_end_sect_date_modified
+                      ,pi_ambiguous_sub_class      => pi_ambiguous_sub_class
+                      ,pi_restrict_excl_sub_class  => lv_restrict_excl_sub_class
                       ,pi_excl_sub_class           => pi_excl_sub_class
                       ,pi_nse_id                   => pi_nse_id
                       ,po_message_severity         => po_message_severity
@@ -2321,57 +2329,59 @@ AS
         /*
         ||If off network and snap to specified then replace network location with specified ne_id
         ||bp and ep offset will be same as only available for xy points.
-        */      
-        IF pi_ne_id IS NOT NULL AND pi_offset IS NOT NULL THEN
-          --
-          /*
-          ||Get datum elements if route on first row until dialog amended.
-          ||needs refactoring once UI is amended to allow user selection for ambiguous.
-          */
-          IF nm3net.is_nt_datum(nm3net.get_nt_type(pi_ne_id)) = 'N'
-           THEN
-             nm3wrap.get_ambiguous_lrefs(pi_parent_id => pi_ne_id
-                                        ,pi_offset    => pi_offset
-                                        ,pi_sub_class => ''
-                                        ,pi_position  => 'S');
-             --
-             IF nm3wrap.lref_count > 0
-              THEN
-                 nm3wrap.lref_get_row(pi_index  => 1
-                                     ,po_ne_id  => lv_datum_ne_id
-                                     ,po_offset => lv_datum_offset);
-                 --
-                 lr_ne_rec := nm3net.get_ne_all_rowtype(pi_ne_id => lv_datum_ne_id);
-                 --
-             END IF;
-          ELSE
-             --
-             lv_datum_ne_id := pi_ne_id;
-             lv_datum_offset := pi_offset;
-             lr_ne_rec := nm3net.get_ne_all_rowtype(pi_ne_id => lv_datum_ne_id);
-             --
-          END IF;
-          --
-          add_asset_location(pi_iit_ne_id                => pi_iit_ne_id
-                            ,pi_nit_inv_type             => pi_inv_type
-                            ,pi_ne_id                    => pi_ne_id
-                            ,pi_begin_mp                 => pi_offset
-                            ,pi_end_mp                   => pi_offset
-                            ,pi_startdate                => trunc(pi_effective_date)
-                            ,pi_append_replace           => 'R'
-                            ,pi_begin_sect               => lv_datum_ne_id
-                            ,pi_begin_sect_offset        => lv_datum_offset
-                            ,pi_begin_sect_date_modified => lr_ne_rec.ne_date_modified
-                            ,pi_end_sect                 => lv_datum_ne_id
-                            ,pi_end_sect_offset          => lv_datum_offset
-                            ,pi_end_sect_date_modified   => lr_ne_rec.ne_date_modified
-                            ,pi_ambiguous_sub_class      => NULL
-                            ,pi_excl_sub_class           => NULL
-                            ,pi_nse_id                   => NULL
-                            ,po_message_severity         => po_message_severity
-                            ,po_message_cursor           => po_message_cursor);
-         
+        */
+        IF pi_ne_id IS NOT NULL AND pi_offset IS NOT NULL
+         THEN
+            --
+            /*
+            ||Get datum elements if route on first row until dialog amended.
+            ||needs refactoring once UI is amended to allow user selection for ambiguous.
+            */
+            IF nm3net.is_nt_datum(nm3net.get_nt_type(pi_ne_id)) = 'N'
+             THEN
+                nm3wrap.get_ambiguous_lrefs(pi_parent_id => pi_ne_id
+                                           ,pi_offset    => pi_offset
+                                           ,pi_sub_class => ''
+                                           ,pi_position  => 'S');
+                --
+                IF nm3wrap.lref_count > 0
+                 THEN
+                    nm3wrap.lref_get_row(pi_index  => 1
+                                        ,po_ne_id  => lv_datum_ne_id
+                                        ,po_offset => lv_datum_offset);
+                    --
+                    lr_ne_rec := nm3net.get_ne_all_rowtype(pi_ne_id => lv_datum_ne_id);
+                    --
+                END IF;
+            ELSE
+                --
+                lv_datum_ne_id := pi_ne_id;
+                lv_datum_offset := pi_offset;
+                lr_ne_rec := nm3net.get_ne_all_rowtype(pi_ne_id => lv_datum_ne_id);
+                --
+            END IF;
+            --
+            add_asset_location(pi_iit_ne_id                => pi_iit_ne_id
+                              ,pi_nit_inv_type             => pi_inv_type
+                              ,pi_ne_id                    => pi_ne_id
+                              ,pi_begin_mp                 => pi_offset
+                              ,pi_end_mp                   => pi_offset
+                              ,pi_startdate                => trunc(pi_effective_date)
+                              ,pi_append_replace           => 'R'
+                              ,pi_begin_sect               => lv_datum_ne_id
+                              ,pi_begin_sect_offset        => lv_datum_offset
+                              ,pi_begin_sect_date_modified => lr_ne_rec.ne_date_modified
+                              ,pi_end_sect                 => lv_datum_ne_id
+                              ,pi_end_sect_offset          => lv_datum_offset
+                              ,pi_end_sect_date_modified   => lr_ne_rec.ne_date_modified
+                              ,pi_ambiguous_sub_class      => NULL
+                              ,pi_excl_sub_class           => NULL
+                              ,pi_nse_id                   => NULL
+                              ,po_message_severity         => po_message_severity
+                              ,po_message_cursor           => po_message_cursor);
+            --
         END IF;
+        --
     END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -2460,14 +2470,14 @@ AS
                                             ,pi_ner_id             => 95
                                             ,pi_supplementary_info => '. This check has been done across the whole of this piece of Network.'
                                             ,pi_category           => awlrs_util.c_msg_cat_warning
-                                            ,po_message_tab        => lt_messages);            
+                                            ,po_message_tab        => lt_messages);
         ELSE
             --unknown warning
             awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'NET'
                                              ,pi_ner_id             => 94
                                              ,pi_supplementary_info => lv_warning_code
                                              ,pi_category           => awlrs_util.c_msg_cat_warning
-                                             ,po_message_tab        => lt_messages);            
+                                             ,po_message_tab        => lt_messages);
         END IF;
     END IF;
     --
@@ -2912,7 +2922,7 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_list_of_elements;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2960,7 +2970,7 @@ AS
                   ,un_unit_name       element_unit_name
                   ,nau_name           element_admin_unit
                   ,ne_start_date      element_start_date
-                  ,CASE 
+                  ,CASE
                      WHEN pi_grouptype IS NOT NULL
                       THEN
                          (SELECT MIN(im.nm_start_date)
@@ -3386,11 +3396,11 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END asset_reopen;
-  
+
   --
   -----------------------------------------------------------------------------
-  --  
-  FUNCTION is_child_asset_type	(pi_inv_type IN nm_inv_types.nit_inv_type%TYPE) 
+  --
+  FUNCTION is_child_asset_type(pi_inv_type IN nm_inv_types.nit_inv_type%TYPE)
    RETURN BOOLEAN IS
     --
   BEGIN
@@ -3398,7 +3408,7 @@ AS
     RETURN pi_inv_type <> nm3inv.get_top_item_type(pi_inv_type) AND nm3inv.get_itg(pi_inv_type => pi_inv_type).itg_relation <> 'DERIVED';
     --
   END is_child_asset_type;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -3416,7 +3426,7 @@ AS
             ,nm3inv.get_inv_primary_key(p_ne_id => iig_top_id)toplevelpk
             ,iig_item_id   itemid
             ,nm3inv.get_inv_type(iig_item_id) itemlevelassettype
-            ,iig_parent_id parentid 
+            ,iig_parent_id parentid
             ,nm3inv.get_inv_type(iig_parent_id) parentlevelassettype
             ,nm3inv.get_inv_primary_key(p_ne_id => iig_parent_id)parentlevelpk
         FROM nm_inv_item_groupings
