@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.1   Jul 30 2019 11:36:02   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.2   Aug 08 2019 15:43:04   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaast_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 30 2019 11:36:02  $
-  --       Date fetched Out : $Modtime:   Jul 30 2019 11:04:26  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Aug 08 2019 15:43:04  $
+  --       Date fetched Out : $Modtime:   Aug 08 2019 08:28:22  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -3615,7 +3615,7 @@ AS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||CHR(10)||lv_filter
-                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'itr_hro_role')||') a)'
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'itg_inv_type')||') a)'
                      ||CHR(10)||lv_row_restriction
     ;
     --
