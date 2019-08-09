@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.11   Aug 01 2019 11:05:50   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.12   Aug 09 2019 15:26:34   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 01 2019 11:05:50  $
-  --       Date fetched Out : $Modtime:   Jul 31 2019 10:39:22  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   Aug 09 2019 15:26:34  $
+  --       Date fetched Out : $Modtime:   Aug 09 2019 15:24:38  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -4846,7 +4846,8 @@ AS
     IF role_exists(pi_role => pi_role) = 'Y' 
      THEN
         hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 29);    
+                     ,pi_id   => 64
+                     ,pi_supplementary_info => 'Role');    
     END IF;
     --
     /*
