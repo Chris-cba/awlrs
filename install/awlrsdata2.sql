@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.21   Aug 06 2019 10:56:52   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.22   Aug 21 2019 12:23:32   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Aug 06 2019 10:56:52  $
---       Date fetched Out : $Modtime:   Aug 06 2019 10:48:58  $
---       Version          : $Revision:   1.21  $
+--       Date into PVCS   : $Date:   Aug 21 2019 12:23:32  $
+--       Date fetched Out : $Modtime:   Aug 21 2019 12:10:36  $
+--       Version          : $Revision:   1.22  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 06-AUG-2019 10:48
+--       Generation Date  : 21-AUG-2019 12:10
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -1498,6 +1498,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 81);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,82
+      ,null
+      ,'End-Dated assets cannot be merged'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 82);
 --
 ----------------------------------------------------------------------------------------
 -- HIG_STANDARD_FAVOURITES
