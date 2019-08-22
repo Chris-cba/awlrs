@@ -1,0 +1,194 @@
+CREATE OR REPLACE PACKAGE awlrs_asset_maint_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkh-arc   1.2   Aug 22 2019 15:42:00   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_asset_maint_api.pkh  $
+  --       Date into PVCS   : $Date:   Aug 22 2019 15:42:00  $
+  --       Date fetched Out : $Modtime:   Aug 22 2019 10:42:48  $
+  --       Version          : $Revision:   1.2  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  --
+  c_default_where CONSTANT VARCHAR2(6) := '(1=1)';
+  --
+  g_iit_rec_1  nm_inv_items_all%ROWTYPE;
+  g_iit_rec_2  nm_inv_items_all%ROWTYPE;
+  --
+  TYPE asset_types_tab IS TABLE OF nm_inv_types_all.nit_inv_type%TYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE iit_tab IS TABLE OF nm_inv_items_all%ROWTYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE nit_tab IS TABLE OF nm_inv_types_all%ROWTYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE type_criteria_rec IS RECORD(entity_type       VARCHAR2(10)
+                                  ,entity_type_type  nm_inv_types_all.nit_inv_type%TYPE
+                                  ,criteria          XMLTYPE);
+  TYPE type_criteria_tab IS TABLE OF type_criteria_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE ita_tab IS TABLE OF nm_inv_type_attribs_all%ROWTYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE ita_by_nit_tab IS TABLE OF ita_tab INDEX BY nm_inv_types_all.nit_inv_type%TYPE;
+  --
+  TYPE result_id_tab IS TABLE OF awlrs_asset_maint_results.aamr_id%TYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE asset_identifier_rec IS RECORD(asset_id    PLS_INTEGER
+                                     ,asset_type  nm_inv_types_all.nit_inv_type%TYPE);
+  TYPE asset_identifier_tab IS TABLE OF asset_identifier_rec INDEX BY BINARY_INTEGER;
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_types(po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_elements(pi_filter           IN  VARCHAR2
+                                ,pi_skip_n_rows      IN  PLS_INTEGER
+                                ,pi_pagesize         IN  PLS_INTEGER
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE execute_query(pi_asset_type        IN  nm_inv_types_all.nit_inv_type%TYPE DEFAULT NULL
+                         ,pi_asset_criteria    IN  XMLTYPE DEFAULT NULL
+                         ,pi_net_filter_ne_id  IN  nm_elements_all.ne_id%TYPE DEFAULT NULL
+                         ,pi_net_filter_from   IN  NUMBER DEFAULT NULL
+                         ,pi_net_filter_to     IN  NUMBER DEFAULT NULL
+                         ,pi_net_filter_nse_id IN  nm_saved_extents.nse_id%TYPE DEFAULT NULL
+                         ,po_job_id            OUT awlrs_asset_maint_results.aamr_job_id%TYPE
+                         ,po_message_severity  OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor    OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_query_results(pi_job_id           IN  awlrs_asset_maint_results.aamr_job_id%TYPE
+                             ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                             ,pi_skip_n_rows      IN  PLS_INTEGER
+                             ,pi_pagesize         IN  PLS_INTEGER
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_query_results(pi_job_id           IN  awlrs_asset_maint_results.aamr_job_id%TYPE
+                             ,pi_result_ids       IN  result_id_tab
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_query_results(pi_job_id           IN  awlrs_asset_maint_results.aamr_job_id%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE bulk_update_asset_attributes(pi_asset_ids          IN  awlrs_util.ne_id_tab
+                                        ,pi_asset_types        IN  asset_types_tab
+                                        ,pi_attrib_names       IN  awlrs_asset_api.attrib_name_tab
+                                        ,pi_attrib_scrn_texts  IN  awlrs_asset_api.attrib_scrn_text_tab
+                                        ,pi_attrib_char_values IN  awlrs_asset_api.attrib_value_tab
+                                        ,po_message_severity   OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor     OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE check_assets_can_be_merged(pi_asset_ids        IN  awlrs_util.ne_id_tab
+                                      ,pi_asset_types      IN  asset_types_tab
+                                      ,pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE merge_assets(pi_asset_ids        IN  awlrs_util.ne_id_tab
+                        ,pi_asset_types      IN  asset_types_tab
+                        ,pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                        ,po_new_asset_id     OUT nm_inv_items_all.iit_ne_id%TYPE
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_assets(pi_assets  IN  asset_identifier_tab
+                         ,po_summary IN OUT CLOB);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_assets(pi_asset_ids        IN  awlrs_util.ne_id_tab
+                         ,pi_asset_types      IN  asset_types_tab
+                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor
+                         ,po_cursor           OUT sys_refcursor);
+
+  --
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE save_asset_criteria(pi_name                 IN  awlrs_saved_asset_criteria.asac_name%TYPE
+                               ,pi_description          IN  awlrs_saved_asset_criteria.asac_description%TYPE
+                               ,pi_criteria             IN  awlrs_saved_asset_criteria.asac_criteria%TYPE
+                               ,pi_overwrite_existing   IN  VARCHAR2 DEFAULT 'N'
+                               ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor       OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_asset_criteria(pi_asac_id          IN  awlrs_saved_asset_criteria.asac_id%TYPE
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_criteria(pi_asac_id          IN  awlrs_saved_asset_criteria.asac_id%TYPE
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_criteria_list(po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_cursor           OUT sys_refcursor);
+
+END awlrs_asset_maint_api;
+/
