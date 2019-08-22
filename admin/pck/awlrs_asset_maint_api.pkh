@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkh-arc   1.1   Aug 06 2019 11:12:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkh-arc   1.2   Aug 22 2019 15:42:00   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_maint_api.pkh  $
-  --       Date into PVCS   : $Date:   Aug 06 2019 11:12:44  $
-  --       Date fetched Out : $Modtime:   Aug 06 2019 11:10:42  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Aug 22 2019 15:42:00  $
+  --       Date fetched Out : $Modtime:   Aug 22 2019 10:42:48  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
   --
   c_default_where CONSTANT VARCHAR2(6) := '(1=1)';
   --
@@ -111,6 +111,17 @@ AS
   PROCEDURE delete_query_results(pi_job_id           IN  awlrs_asset_maint_results.aamr_job_id%TYPE
                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
                                 ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE bulk_update_asset_attributes(pi_asset_ids          IN  awlrs_util.ne_id_tab
+                                        ,pi_asset_types        IN  asset_types_tab
+                                        ,pi_attrib_names       IN  awlrs_asset_api.attrib_name_tab
+                                        ,pi_attrib_scrn_texts  IN  awlrs_asset_api.attrib_scrn_text_tab
+                                        ,pi_attrib_char_values IN  awlrs_asset_api.attrib_value_tab
+                                        ,po_message_severity   OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor     OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------

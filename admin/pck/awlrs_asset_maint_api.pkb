@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.2   Aug 06 2019 11:12:42   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.3   Aug 22 2019 15:42:00   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_maint_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 06 2019 11:12:42  $
-  --       Date fetched Out : $Modtime:   Aug 06 2019 10:37:30  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   Aug 22 2019 15:42:00  $
+  --       Date fetched Out : $Modtime:   Aug 22 2019 10:31:20  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_maint_api';
   --
   TYPE attr_name_tab IS TABLE OF nm_inv_type_attribs_all.ita_attrib_name%TYPE INDEX BY BINARY_INTEGER;
@@ -918,7 +918,9 @@ AS
      INTO lt_retval;
     CLOSE get_nse;
     --
-  END;
+    RETURN lt_retval;
+    --
+  END get_rpt_tab_from_nse;
 
   --
   -----------------------------------------------------------------------------
@@ -1528,6 +1530,161 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE bulk_update_asset_attributes(pi_assets     IN asset_identifier_tab
+                                        ,pi_attributes IN awlrs_asset_api.flex_attr_tab)
+    IS
+    --
+    lr_nit  nm_inv_types_all%ROWTYPE;
+    --
+    lt_iit                iit_tab;
+    lt_old_asset_attribs  awlrs_asset_api.flex_attr_tab;
+    --
+  BEGIN
+    /*
+    ||Make sure we are not in historic mode.
+    */
+    awlrs_util.check_historic_mode;
+    /*
+    ||Check Assets are the same valid type.
+    */
+    FOR i IN 1..pi_assets.COUNT LOOP
+      --
+      lr_nit := nm3get.get_nit(pi_nit_inv_type => pi_assets(i).asset_type);
+      --
+      IF lr_nit.nit_table_name IS NOT NULL
+       THEN
+          hig.raise_ner(pi_appl => 'NET'
+                       ,pi_id   => 285);
+      END IF;
+      --
+      lt_iit(i) := nm3get.get_iit(pi_iit_ne_id => pi_assets(i).asset_id);
+      --
+      IF i > 1
+       AND lt_iit(i).iit_inv_type != lt_iit(i-1).iit_inv_type
+       THEN
+          --All assets must be of the same type
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 67);
+      END IF;
+      --
+    END LOOP;
+    --
+    FOR i IN 1..lt_iit.COUNT LOOP
+      /*
+      ||Get the existing attribute values
+      */
+      FOR j IN 1..pi_attributes.COUNT LOOP
+        --
+        lt_old_asset_attribs(i).attrib_name := pi_attributes(j).attrib_name;
+        lt_old_asset_attribs(i).scrn_text   := pi_attributes(j).scrn_text;
+        lt_old_asset_attribs(i).char_value  := awlrs_asset_api.get_attrib_value(pi_inv_type  => lt_iit(i).iit_inv_type
+                                                                               ,pi_ne_id => lt_iit(i).iit_ne_id
+                                                                               ,pi_attrib_name => pi_attributes(j).attrib_name);
+        --
+      END LOOP;
+      --
+      awlrs_asset_api.update_asset(pi_iit_ne_id       => lt_iit(i).iit_ne_id
+                                  ,pi_old_primary_key => lt_iit(i).iit_primary_key
+                                  ,pi_old_admin_unit  => lt_iit(i).iit_admin_unit
+                                  ,pi_old_xsp         => lt_iit(i).iit_x_sect
+                                  ,pi_old_description => lt_iit(i).iit_descr
+                                  ,pi_old_start_date  => lt_iit(i).iit_start_date
+                                  ,pi_old_end_date    => lt_iit(i).iit_end_date
+                                  ,pi_old_notes       => lt_iit(i).iit_note
+                                  ,pi_new_primary_key => lt_iit(i).iit_primary_key
+                                  ,pi_new_admin_unit  => lt_iit(i).iit_admin_unit
+                                  ,pi_new_xsp         => lt_iit(i).iit_x_sect
+                                  ,pi_new_description => lt_iit(i).iit_description
+                                  ,pi_new_start_date  => lt_iit(i).iit_start_date
+                                  ,pi_new_end_date    => lt_iit(i).iit_end_date
+                                  ,pi_new_notes       => lt_iit(i).iit_note
+                                  ,pi_old_attributes  => lt_old_asset_attribs
+                                  ,pi_new_attributes  => pi_attributes);
+    END LOOP;
+    --
+  END bulk_update_asset_attributes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE bulk_update_asset_attributes(pi_asset_ids          IN  awlrs_util.ne_id_tab
+                                        ,pi_asset_types        IN  asset_types_tab
+                                        ,pi_attrib_names       IN  awlrs_asset_api.attrib_name_tab
+                                        ,pi_attrib_scrn_texts  IN  awlrs_asset_api.attrib_scrn_text_tab
+                                        ,pi_attrib_char_values IN  awlrs_asset_api.attrib_value_tab
+                                        ,po_message_severity   OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor     OUT sys_refcursor)
+    IS
+    --
+    lt_assets         asset_identifier_tab;
+    lt_asset_attribs  awlrs_asset_api.flex_attr_tab;
+    --
+  BEGIN
+    /*
+    ||Check the parameters
+    */
+    IF pi_asset_ids.COUNT != pi_asset_types.COUNT
+     THEN
+        --The tables passed in must have matching row counts
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_asset_maint_api.bulk_update_asset_attributes');
+    END IF;
+    --
+    FOR i IN 1..pi_asset_ids.COUNT LOOP
+      --
+      IF pi_asset_ids(i) IS NULL
+       THEN
+          hig.raise_ner(pi_appl               => 'HIG'
+                       ,pi_id                 => 214
+                       ,pi_supplementary_info => 'pi_asset_ids('||i||')');
+      END IF;
+      --
+      IF pi_asset_types(i) IS NULL
+       THEN
+          hig.raise_ner(pi_appl               => 'HIG'
+                       ,pi_id                 => 214
+                       ,pi_supplementary_info => 'pi_asset_types('||i||')');
+      END IF;
+      --
+      lt_assets(i).asset_id := pi_asset_ids(i);
+      lt_assets(i).asset_type := pi_asset_types(i);
+      --
+    END LOOP;
+    --
+    IF pi_attrib_names.COUNT != pi_attrib_scrn_texts.COUNT
+     OR pi_attrib_names.COUNT != pi_attrib_char_values.COUNT
+     THEN
+        --The attribute tables passed in must have matching row counts
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_asset_maint_api.bulk_update_asset_attributes');
+    END IF;
+    --
+    FOR i IN 1..pi_attrib_names.COUNT LOOP
+      --
+      lt_asset_attribs(i).attrib_name := pi_attrib_names(i);
+      lt_asset_attribs(i).scrn_text   := pi_attrib_scrn_texts(i);
+      lt_asset_attribs(i).char_value  := pi_attrib_char_values(i);
+      --
+    END LOOP;
+    --
+    bulk_update_asset_attributes(pi_assets     => lt_assets
+                                ,pi_attributes => lt_asset_attribs);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END bulk_update_asset_attributes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE compare_asset_globals
     IS
     --
@@ -1541,7 +1698,19 @@ AS
          ;
     --
   BEGIN
-    --
+    /*
+    ||Check the end dates
+    */
+    IF g_iit_rec_1.iit_end_date IS NOT NULL
+     OR g_iit_rec_2.iit_end_date IS NOT NULL
+     THEN
+        --End Dated assets cannot be merged
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 82);
+    END IF;
+    /*
+    ||Check the fixed attributes
+    */
     IF --Admin Unit
      g_iit_rec_1.iit_admin_unit != g_iit_rec_2.iit_admin_unit
      OR (g_iit_rec_1.iit_admin_unit IS NULL AND g_iit_rec_2.iit_admin_unit IS NOT NULL)
