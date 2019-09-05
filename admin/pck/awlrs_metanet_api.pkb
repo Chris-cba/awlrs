@@ -4,11 +4,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.3   Aug 02 2019 16:21:36   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Aug 02 2019 16:21:36  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.4   Sep 05 2019 12:02:30   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Sep 05 2019 12:02:30  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkb  $
-  --       Date fetched Out : $Modtime:   Aug 02 2019 16:20:18  $
-  --       Version          : $Revision:   1.3  $
+  --       Date fetched Out : $Modtime:   Sep 03 2019 10:40:40  $
+  --       Version          : $Revision:   1.4  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -16,7 +16,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.3  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metanet_api';
   --
@@ -1411,13 +1411,16 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT nng_group_type        group_type
-          ,nng_nt_type           nt_type
-          ,TRUNC(nng_start_date) start_date
-          ,TRUNC(nng_end_date)   end_date
-      FROM nm_nt_groupings_all
-     WHERE nng_group_type = pi_group_type 
-     ORDER BY nng_nt_type;
+    SELECT nng.nng_group_type        group_type
+          ,nng.nng_nt_type           nt_type
+          ,nt.nt_descr               nt_type_descr
+          ,TRUNC(nng.nng_start_date) start_date
+          ,TRUNC(nng.nng_end_date)   end_date
+      FROM nm_nt_groupings_all nng
+          ,nm_types nt
+     WHERE nng.nng_group_type = pi_group_type 
+       AND nng.nng_nt_type    = nt.nt_type
+     ORDER BY nng.nng_nt_type;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1442,13 +1445,16 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT nng_group_type        group_type
-          ,nng_nt_type           nt_type
-          ,TRUNC(nng_start_date) start_date
-          ,TRUNC(nng_end_date)   end_date
-      FROM nm_nt_groupings_all
-     WHERE nng_group_type = pi_group_type 
-       AND nng_nt_type    = pi_nt_type;
+    SELECT nng.nng_group_type        group_type
+          ,nng.nng_nt_type           nt_type
+          ,nt.nt_descr               nt_type_descr
+          ,TRUNC(nng.nng_start_date) start_date
+          ,TRUNC(nng.nng_end_date)   end_date
+      FROM nm_nt_groupings_all nng
+          ,nm_types nt
+     WHERE nng.nng_group_type = pi_group_type
+       AND nng.nng_nt_type    = pi_nt_type 
+       AND nng.nng_nt_type    = nt.nt_type;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1483,15 +1489,19 @@ AS
       lv_order_by         nm3type.max_varchar2;
       lv_filter           nm3type.max_varchar2;
       --
-      lv_driving_sql  nm3type.max_varchar2 :='SELECT nng_group_type        group_type
-                                                    ,nng_nt_type           nt_type
-                                                    ,TRUNC(nng_start_date) start_date
-                                                    ,TRUNC(nng_end_date)   end_date
-                                                FROM nm_nt_groupings_all
-                                               WHERE nng_group_type = :pi_group_type ';
+      lv_driving_sql  nm3type.max_varchar2 :='SELECT nng.nng_group_type        group_type
+                                                    ,nng.nng_nt_type           nt_type
+                                                    ,nt.nt_descr               nt_type_descr
+                                                    ,TRUNC(nng.nng_start_date) start_date
+                                                    ,TRUNC(nng.nng_end_date)   end_date
+                                                FROM nm_nt_groupings_all nng
+                                                    ,nm_types nt
+                                               WHERE nng.nng_group_type = :pi_group_type 
+                                                 AND nng.nng_nt_type    = nt.nt_type ';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  group_type'
                                                   ||',nt_type'
+                                                  ||',nt_type_descr'
                                                   ||',start_date'
                                                   ||',end_date'
                                                   ||',row_count'
@@ -1515,6 +1525,12 @@ AS
       --
       awlrs_util.add_column_data(pi_cursor_col => 'nt_type'
                                 ,pi_query_col  => 'nng_nt_type'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'nt_type_descr'
+                                ,pi_query_col  => 'nt_descr'
                                 ,pi_datatype   => awlrs_util.c_varchar2_col
                                 ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
@@ -1606,13 +1622,16 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT ngr_parent_group_type parent_group_type
-          ,ngr_child_group_type  child_group_type
-          ,TRUNC(ngr_start_date) start_date
-          ,TRUNC(ngr_end_date)   end_date
-      FROM nm_group_relations_all
-     WHERE ngr_parent_group_type = pi_parent_group_type 
-     ORDER BY ngr_child_group_type;
+    SELECT ngr.ngr_parent_group_type parent_group_type
+          ,ngr.ngr_child_group_type  child_group_type
+          ,ngt.ngt_descr             child_group_type_descr
+          ,TRUNC(ngr.ngr_start_date) start_date
+          ,TRUNC(ngr.ngr_end_date)   end_date
+      FROM nm_group_relations_all ngr
+          ,nm_group_types_all ngt
+     WHERE ngr.ngr_parent_group_type = pi_parent_group_type 
+     AND   ngr.ngr_child_group_type  = ngt.ngt_group_type
+     ORDER BY ngr.ngr_child_group_type;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1676,15 +1695,17 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT ngr_parent_group_type parent_group_type
-          ,ngr_child_group_type  child_group_type
-          ,TRUNC(ngr_start_date) start_date
-          ,TRUNC(ngr_end_date)   end_date
-      FROM nm_group_relations_all
-     WHERE ngr_parent_group_type = pi_parent_group_type 
-       AND ngr_child_group_type  = pi_child_group_type
-     ORDER BY ngr_child_group_type;
-    --
+    SELECT ngr.ngr_parent_group_type parent_group_type
+          ,ngr.ngr_child_group_type  child_group_type
+          ,ngt.ngt_descr             child_group_type_descr
+          ,TRUNC(ngr.ngr_start_date) start_date
+          ,TRUNC(ngr.ngr_end_date)   end_date
+      FROM nm_group_relations_all ngr
+          ,nm_group_types_all ngt
+     WHERE ngr.ngr_parent_group_type = pi_parent_group_type 
+     AND   ngr.ngr_child_group_type  = pi_child_group_type
+     AND   ngr.ngr_child_group_type  = ngt.ngt_group_type;
+     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
@@ -1718,15 +1739,19 @@ AS
       lv_order_by         nm3type.max_varchar2;
       lv_filter           nm3type.max_varchar2;
       --
-      lv_driving_sql  nm3type.max_varchar2 :='SELECT ngr_parent_group_type parent_group_type
-                                                    ,ngr_child_group_type  child_group_type
-                                                    ,TRUNC(ngr_start_date) start_date
-                                                    ,TRUNC(ngr_end_date)   end_date
-                                                FROM nm_group_relations_all
-                                               WHERE ngr_parent_group_type = :pi_parent_group_type ';
+      lv_driving_sql  nm3type.max_varchar2 :='SELECT ngr.ngr_parent_group_type parent_group_type
+                                                    ,ngr.ngr_child_group_type  child_group_type
+                                                    ,ngt.ngt_descr             child_group_type_descr
+                                                    ,TRUNC(ngr.ngr_start_date) start_date
+                                                    ,TRUNC(ngr.ngr_end_date)   end_date
+                                                FROM nm_group_relations_all ngr
+                                                    ,nm_group_types_all ngt
+                                               WHERE ngr.ngr_parent_group_type = :pi_parent_group_type 
+                                               AND   ngr.ngr_child_group_type  = ngt.ngt_group_type ';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  parent_group_type'
                                                   ||',child_group_type'
+                                                  ||',child_group_type_descr'
                                                   ||',start_date'
                                                   ||',end_date'
                                                   ||',row_count'
@@ -1750,6 +1775,12 @@ AS
       --
       awlrs_util.add_column_data(pi_cursor_col => 'child_group_type'
                                 ,pi_query_col  => 'ngr_child_group_type'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'child_group_type_descr'
+                                ,pi_query_col  => 'ngt_descr'
                                 ,pi_datatype   => awlrs_util.c_varchar2_col
                                 ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
@@ -3054,9 +3085,12 @@ AS
           ,nt_datum            is_datum
           ,nt_linear           is_linear
           ,nt_pop_unique       is_unique
-          ,nt_length_unit      units
+          ,nt_length_unit      unit_code
+          ,un_unit_name        unit_descr
           ,nt_admin_type       admin_type 
       FROM nm_types
+          ,nm_units
+     WHERE nt_length_unit = un_unit_id(+)    
      ORDER BY nt_type;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -3088,10 +3122,13 @@ AS
           ,nt_datum            is_datum
           ,nt_linear           is_linear
           ,nt_pop_unique       is_unique
-          ,nt_length_unit      units
+          ,nt_length_unit      unit_code
+          ,un_unit_name        unit_descr
           ,nt_admin_type       admin_type 
       FROM nm_types
-     WHERE nt_type = pi_nt_type;
+          ,nm_units
+     WHERE nt_type        = pi_nt_type     
+       AND nt_length_unit = un_unit_id(+);        
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -3132,9 +3169,12 @@ AS
                                                 ,nt_datum            is_datum
                                                 ,nt_linear           is_linear
                                                 ,nt_pop_unique       is_unique
-                                                ,nt_length_unit      units
+                                                ,nt_length_unit      unit_code
+                                                ,un_unit_name        unit_descr
                                                 ,nt_admin_type       admin_type 
-                                           FROM nm_types ';
+                                           FROM  nm_types
+                                                ,nm_units
+                                           WHERE nt_length_unit = un_unit_id(+)' ;
   --
   lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  network_type'
                                               ||',unique_name'
@@ -3143,7 +3183,8 @@ AS
                                               ||',is_datum'
                                               ||',is_linear'
                                               ||',is_unique'
-                                              ||',units'
+                                              ||',unit_code'
+                                              ||',unit_descr'
                                               ||',admin_type'
                                               ||',row_count'
                                         ||' FROM (SELECT rownum ind'
@@ -3200,9 +3241,15 @@ AS
                                 ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
       --
-      awlrs_util.add_column_data(pi_cursor_col => 'units'
+      awlrs_util.add_column_data(pi_cursor_col => 'unit_code'
                                 ,pi_query_col  => 'nt_length_unit'
                                 ,pi_datatype   => awlrs_util.c_number_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'unit_descr'
+                                ,pi_query_col  => 'un_unit_name'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
                                 ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
       --
@@ -3242,7 +3289,7 @@ AS
                                    ,pi_operators    => pi_filter_operators
                                    ,pi_values_1     => pi_filter_values_1
                                    ,pi_values_2     => pi_filter_values_2
-                                   ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
                                    ,po_where_clause => lv_filter);
           --
       END IF;
@@ -3774,7 +3821,8 @@ AS
       ELSE
         --
         UPDATE nm_types
-           SET nt_unique       = UPPER(pi_new_unique_name)
+           SET nt_type         = UPPER(pi_new_network_type)
+              ,nt_unique       = UPPER(pi_new_unique_name)
               ,nt_descr        = pi_new_description
               ,nt_node_type    = pi_new_node_type
               ,nt_datum        = pi_new_is_datum
@@ -6075,21 +6123,30 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT nad_id                 nad_id
-          ,nad_nt_type            network_type
-          ,nad_gty_type           group_type
-          ,nad_inv_type           inv_type
-          ,nad_descr              description
-          ,nad_start_date         start_date
-          ,nad_end_date           end_date
-          ,nad_primary_ad         primary_ad
-          ,nad_display_order      display_order
-          ,nad_single_row         single_row
-          ,nad_mandatory          mandatory 
-      FROM nm_nw_ad_types
-     ORDER BY nad_nt_type
-             ,nad_gty_type 
-             ,nad_display_order;
+    SELECT nad.nad_id                 nad_id
+          ,nad.nad_nt_type            network_type
+          ,nt.nt_descr                network_type_descr 
+          ,nad.nad_gty_type           group_type
+          ,ngt.ngt_descr              group_type_descr
+          ,nad.nad_inv_type           inv_type
+          ,nit.nit_descr              inv_type_descr
+          ,nad.nad_descr              description
+          ,nad.nad_start_date         start_date
+          ,nad.nad_end_date           end_date
+          ,nad.nad_primary_ad         primary_ad
+          ,nad.nad_display_order      display_order
+          ,nad.nad_single_row         single_row
+          ,nad.nad_mandatory          mandatory 
+      FROM nm_nw_ad_types nad
+          ,nm_types nt
+          ,nm_group_types_all ngt
+          ,nm_inv_types_all nit
+     WHERE nad.nad_nt_type  = nt.nt_type  
+       AND nad.nad_gty_type = ngt.ngt_group_type(+)    
+       AND nad.nad_inv_type = nit.nit_inv_type
+     ORDER BY nad.nad_nt_type
+             ,nad.nad_gty_type 
+             ,nad.nad_display_order;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -6115,24 +6172,35 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT nad_id                 nad_id
-          ,nad_nt_type            network_type
-          ,nad_gty_type           group_type
-          ,nad_inv_type           inv_type
-          ,nad_descr              description
-          ,nad_start_date         start_date
-          ,nad_end_date           end_date
-          ,nad_primary_ad         primary_ad
-          ,nad_display_order      display_order
-          ,nad_single_row         single_row
-          ,nad_mandatory          mandatory 
-      FROM nm_nw_ad_types
-     WHERE nad_nt_type  = pi_nt_type
-       AND nad_gty_type = pi_group_type
-       AND nad_inv_type = pi_inv_type
-     ORDER BY nad_nt_type
-             ,nad_gty_type 
-             ,nad_display_order;
+    SELECT nad.nad_id                 nad_id
+          ,nad.nad_nt_type            network_type
+          ,nt.nt_descr                network_type_descr 
+          ,nad.nad_gty_type           group_type
+          ,ngt.ngt_descr              group_type_descr
+          ,nad.nad_inv_type           inv_type
+          ,nit.nit_descr              inv_type_descr
+          ,nad.nad_descr              description
+          ,nad.nad_start_date         start_date
+          ,nad.nad_end_date           end_date
+          ,nad.nad_primary_ad         primary_ad
+          ,nad.nad_display_order      display_order
+          ,nad.nad_single_row         single_row
+          ,nad.nad_mandatory          mandatory 
+      FROM nm_nw_ad_types nad
+          ,nm_types nt
+          ,nm_group_types_all ngt
+          ,nm_inv_types_all nit
+     WHERE nad.nad_nt_type      = pi_nt_type
+       AND nad.nad_nt_type      = nt.nt_type  
+       AND (   nad.nad_gty_type = pi_group_type
+            OR pi_group_type IS NULL AND nad.nad_gty_type IS NULL 
+           )
+       AND nad.nad_gty_type     = ngt.ngt_group_type(+)
+       AND nad.nad_inv_type     = pi_inv_type
+       AND nad.nad_inv_type     = nit.nit_inv_type
+     ORDER BY nad.nad_nt_type
+             ,nad.nad_gty_type 
+             ,nad.nad_display_order;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -6277,23 +6345,35 @@ AS
   lv_order_by         nm3type.max_varchar2;
   lv_filter           nm3type.max_varchar2;
   --
-  lv_driving_sql  nm3type.max_varchar2 :='SELECT nad_id                 nad_id
-                                                ,nad_nt_type            network_type
-                                                ,nad_gty_type           group_type
-                                                ,nad_inv_type           inv_type
-                                                ,nad_descr              description
-                                                ,nad_start_date         start_date
-                                                ,nad_end_date           end_date
-                                                ,nad_primary_ad         primary_ad
-                                                ,nad_display_order      display_order
-                                                ,nad_single_row         single_row
-                                                ,nad_mandatory          mandatory 
-                                            FROM nm_nw_ad_types ';
+  lv_driving_sql  nm3type.max_varchar2 :='SELECT nad.nad_id                 nad_id
+                                                ,nad.nad_nt_type            network_type
+                                                ,nt.nt_descr                network_type_descr 
+                                                ,nad.nad_gty_type           group_type
+                                                ,ngt.ngt_descr              group_type_descr
+                                                ,nad.nad_inv_type           inv_type
+                                                ,nit.nit_descr              inv_type_descr
+                                                ,nad.nad_descr              description
+                                                ,nad.nad_start_date         start_date
+                                                ,nad.nad_end_date           end_date
+                                                ,nad.nad_primary_ad         primary_ad
+                                                ,nad.nad_display_order      display_order
+                                                ,nad.nad_single_row         single_row
+                                                ,nad.nad_mandatory          mandatory 
+                                            FROM nm_nw_ad_types nad
+                                                ,nm_types nt
+                                                ,nm_group_types_all ngt
+                                                ,nm_inv_types_all nit
+                                           WHERE nad.nad_nt_type  = nt.nt_type  
+                                             AND nad.nad_gty_type = ngt.ngt_group_type(+)    
+                                             AND nad.nad_inv_type = nit.nit_inv_type ';
   --
   lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  nad_id'
                                               ||',network_type'
+                                              ||',network_type_descr'
                                               ||',group_type'
+                                              ||',group_type_descr'
                                               ||',inv_type'
+                                              ||',inv_type_descr'
                                               ||',description'
                                               ||',start_date'
                                               ||',end_date'
@@ -6326,14 +6406,32 @@ AS
                                 ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
       --
+      awlrs_util.add_column_data(pi_cursor_col => 'network_type_descr'
+                                ,pi_query_col  => 'nt_descr'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
       awlrs_util.add_column_data(pi_cursor_col => 'group_type'
                                 ,pi_query_col  => 'nad_gty_type'
                                 ,pi_datatype   => awlrs_util.c_varchar2_col
                                 ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
       --
+      awlrs_util.add_column_data(pi_cursor_col => 'group_type_descr'
+                                ,pi_query_col  => 'ngt_descr'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
       awlrs_util.add_column_data(pi_cursor_col => 'inv_type'
                                 ,pi_query_col  => 'nad_inv_type'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'inv_type_descr'
+                                ,pi_query_col  => 'nit_descr'
                                 ,pi_datatype   => awlrs_util.c_varchar2_col
                                 ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
@@ -6410,7 +6508,7 @@ AS
                                    ,pi_operators    => pi_filter_operators
                                    ,pi_values_1     => pi_filter_values_1
                                    ,pi_values_2     => pi_filter_values_2
-                                   ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
                                    ,po_where_clause => lv_filter);
           --
       END IF;
@@ -6953,7 +7051,30 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END delete_network_ad_type;                                
+  END delete_network_ad_type;   
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+PROCEDURE validate_nw_types(po_val_message_Tab   OUT   nm3type.tab_varchar2000
+                           ,po_message_severity  OUT   hig_codes.hco_code%TYPE
+                           ,po_message_cursor    OUT   sys_refcursor    
+                            )
+  IS
+  lt_msg_tab nm3type.tab_varchar2000;
+  --
+  BEGIN
+  --
+    lt_msg_tab := nm3nwval.validate_network_metadata;
+    --
+    IF lt_msg_tab.COUNT = 0
+      THEN
+        po_val_message_tab(1) := 'Network types are valid.';        
+    ELSE
+        po_val_message_tab := lt_msg_tab;      
+    END IF;     
+    --
+  END validate_nw_types;                                                           
   --                                  
 
 END awlrs_metanet_api;
