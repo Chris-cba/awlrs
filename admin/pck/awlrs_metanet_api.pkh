@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkh-arc   1.3   Aug 02 2019 16:21:36   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Aug 02 2019 16:21:36  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkh-arc   1.4   Sep 05 2019 12:02:32   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Sep 05 2019 12:02:32  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkh  $
-  --       Date fetched Out : $Modtime:   Aug 02 2019 14:45:48  $
-  --       Version          : $Revision:   1.3  $
+  --       Date fetched Out : $Modtime:   Aug 22 2019 16:20:50  $
+  --       Version          : $Revision:   1.4  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
 
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.3  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -958,7 +958,15 @@ AS
   --
   PROCEDURE delete_network_ad_type(pi_nad_id            IN     nm_nw_ad_types.nad_id%TYPE
                                   ,po_message_severity     OUT hig_codes.hco_code%TYPE
-                                  ,po_message_cursor       OUT sys_refcursor);                                        
+                                  ,po_message_cursor       OUT sys_refcursor);  
+                                  
+  --
+  -----------------------------------------------------------------------------
+  --                                                                     
+  PROCEDURE validate_nw_types(po_val_message_Tab   OUT   nm3type.tab_varchar2000
+                             ,po_message_severity  OUT   hig_codes.hco_code%TYPE
+                             ,po_message_cursor    OUT   sys_refcursor  
+                             );                                                                       
   --
   
 END awlrs_metanet_api;
