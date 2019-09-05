@@ -1,0 +1,973 @@
+CREATE OR REPLACE PACKAGE awlrs_metanet_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkh-arc   1.4   Sep 05 2019 12:02:32   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Sep 05 2019 12:02:32  $
+  --       Module Name      : $Workfile:   awlrs_metanet_api.pkh  $
+  --       Date fetched Out : $Modtime:   Aug 22 2019 16:20:50  $
+  --       Version          : $Revision:   1.4  $
+  --
+  -----------------------------------------------------------------------------------
+  -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
+  -----------------------------------------------------------------------------------
+  --
+
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
+
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_node_types(po_message_severity OUT  hig_codes.hco_code%TYPE
+                          ,po_message_cursor   OUT  sys_refcursor
+                          ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_node_type(pi_node_type           IN      nm_node_types.nnt_type%TYPE
+                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor          OUT sys_refcursor
+                         ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_node_types(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                ,pi_skip_n_rows          IN     PLS_INTEGER
+                                ,pi_pagesize             IN     PLS_INTEGER
+                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_node_type(pi_node_type         IN     nm_node_types.nnt_type%TYPE
+                            ,pi_name              IN     nm_node_types.nnt_name%TYPE
+                            ,pi_description       IN     nm_node_types.nnt_descr%TYPE
+                            ,pi_node_name_format  IN     nm_node_types.nnt_no_name_format%TYPE
+                            ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor       OUT sys_refcursor);
+                            
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_node_type(pi_old_node_type         IN     nm_node_types.nnt_type%TYPE
+                            ,pi_old_name              IN     nm_node_types.nnt_name%TYPE
+                            ,pi_old_description       IN     nm_node_types.nnt_descr%TYPE
+                            ,pi_old_node_name_format  IN     nm_node_types.nnt_no_name_format%TYPE
+                            ,pi_new_node_type         IN     nm_node_types.nnt_type%TYPE 
+                            ,pi_new_name              IN     nm_node_types.nnt_name%TYPE
+                            ,pi_new_description       IN     nm_node_types.nnt_descr%TYPE
+                            ,pi_new_node_name_format  IN     nm_node_types.nnt_no_name_format%TYPE
+                            ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_node_type(pi_node_type         IN      nm_node_types.nnt_type%TYPE
+                            ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                            ,po_message_cursor       OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_network_types_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT  sys_refcursor
+                                 ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_network_type_lov(pi_nt_type           IN     nm_types.nt_type%TYPE
+                                ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor       OUT sys_refcursor
+                                ,po_cursor               OUT sys_refcursor);  
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_network_types_lov(pi_nt_datum         IN      nm_types.nt_datum%TYPE 
+                                 ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor      OUT  sys_refcursor
+                                 ,po_cursor              OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_network_type_lov(pi_nt_type           IN     nm_types.nt_type%TYPE
+                                ,pi_nt_datum          IN     nm_types.nt_datum%TYPE 
+                                ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor       OUT sys_refcursor
+                                ,po_cursor               OUT sys_refcursor);  
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_network_group_types(pi_nt_type           IN      nm_types.nt_type%TYPE
+                                   ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                   ,po_message_cursor       OUT  sys_refcursor
+                                   ,po_cursor               OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_network_group_type(pi_nt_type           IN     nm_types.nt_type%TYPE
+                                  ,pi_ngt_group_type    IN     nm_group_types_all.ngt_group_type%TYPE
+                                  ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor       OUT sys_refcursor
+                                  ,po_cursor               OUT sys_refcursor); 
+                                  
+  --
+  -----------------------------------------------------------------------------
+  --
+  
+  FUNCTION get_nt_admin_type(pi_nt_type  IN   nm_types.nt_type%TYPE) RETURN nm_types.nt_admin_type%TYPE;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_nt_unit_name(pi_nt_type  IN   nm_types.nt_type%TYPE) RETURN nm_units.un_unit_name%TYPE;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_group_types(po_message_severity OUT  hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT  sys_refcursor
+                           ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_group_type(pi_group_type           IN     nm_group_types_all.ngt_group_type%TYPE
+                          ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor          OUT sys_refcursor
+                          ,po_cursor                  OUT sys_refcursor);
+
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_group_types(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                 ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                 ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                 ,pi_skip_n_rows          IN     PLS_INTEGER
+                                 ,pi_pagesize             IN     PLS_INTEGER
+                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT sys_refcursor
+                                 ,po_cursor                  OUT sys_refcursor);
+                                 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_groupings(pi_group_type       IN      nm_nt_groupings_all.nng_group_type%TYPE
+                            ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                            ,po_message_cursor      OUT  sys_refcursor
+                            ,po_cursor              OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_grouping(pi_group_type           IN     nm_nt_groupings_all.nng_group_type%TYPE
+                           ,pi_nt_type              IN     nm_nt_groupings_all.nng_nt_type%TYPE
+                           ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor          OUT sys_refcursor
+                           ,po_cursor                  OUT sys_refcursor);
+                           
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_nt_groupings(pi_group_type           IN     nm_nt_groupings_all.nng_group_type%TYPE
+                                  ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                  ,pi_skip_n_rows          IN     PLS_INTEGER
+                                  ,pi_pagesize             IN     PLS_INTEGER
+                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor          OUT sys_refcursor
+                                  ,po_cursor                  OUT sys_refcursor);                           
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_group_relations(pi_parent_group_type   IN      nm_group_relations_all.ngr_parent_group_type%TYPE
+                               ,po_message_severity       OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor         OUT  sys_refcursor
+                               ,po_cursor                 OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_group_relations_tree(pi_parent_group_type   IN      nm_group_relations_all.ngr_parent_group_type%TYPE
+                                    ,po_message_severity       OUT  hig_codes.hco_code%TYPE
+                                    ,po_message_cursor         OUT  sys_refcursor
+                                    ,po_cursor                 OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_group_relation(pi_parent_group_type   IN     nm_group_relations_all.ngr_parent_group_type%TYPE
+                              ,pi_child_group_type    IN     nm_group_relations_all.ngr_child_group_type%TYPE
+                              ,po_message_severity       OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor         OUT sys_refcursor
+                              ,po_cursor                 OUT sys_refcursor);
+                           
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_group_relations(pi_parent_group_type    IN     nm_group_relations_all.ngr_parent_group_type%TYPE
+                                     ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                     ,pi_skip_n_rows          IN     PLS_INTEGER
+                                     ,pi_pagesize             IN     PLS_INTEGER
+                                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor          OUT sys_refcursor
+                                     ,po_cursor                  OUT sys_refcursor);    
+                                     
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_child_group_types_lov(pi_parent_group_type  IN      nm_group_types_all.ngt_group_type%TYPE
+                                     ,pi_parent_admin_type  IN      nm_types.nt_admin_type%TYPE
+                                     ,po_message_severity      OUT  hig_codes.hco_code%TYPE
+                                     ,po_message_cursor        OUT  sys_refcursor
+                                     ,po_cursor                OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- BOD need to check this out for the UI team
+  PROCEDURE get_child_group_type_lov(pi_child_group_type   IN     nm_group_types_all.ngt_group_type%TYPE
+                                    ,pi_parent_admin_type  IN     nm_types.nt_admin_type%TYPE
+                                    ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor        OUT sys_refcursor
+                                    ,po_cursor                OUT sys_refcursor);                                                            
+  
+  --
+  -------------------------------------------------------------------------
+  -- BOD need to check this out for the UI team
+--  PROCEDURE get_child_group_type(pi_parent_group_type  IN     nm_group_types_all.ngt_group_type%TYPE
+--                                ,pi_child_group_type   IN     nm_group_types_all.ngt_group_type%TYPE
+--                                ,po_message_severity      OUT hig_codes.hco_code%TYPE
+--                                ,po_message_cursor        OUT sys_refcursor
+--                                ,po_cursor                OUT sys_refcursor);
+                                
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_group_type_view(pi_nt_type            IN      nm_types.nt_type%TYPE
+                                  ,pi_group_type         IN      nm_group_types_all.ngt_group_type%TYPE   
+                                  ,po_message_severity      OUT  hig_codes.hco_code%TYPE
+                                  ,po_message_cursor        OUT  sys_refcursor);         
+                                  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_nt_type_view(pi_nt_type            IN      nm_types.nt_type%TYPE
+                               ,po_message_severity      OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor        OUT  sys_refcursor);                                                                        
+                                   
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_group_asset_data(pi_nt_type                  IN      nm_types.nt_type%TYPE
+                                   ,pi_group_type               IN      nm_group_types_all.ngt_group_type%TYPE   
+                                   ,pi_delete_existing_inv_type IN      varchar2
+                                   ,po_message_severity            OUT  hig_codes.hco_code%TYPE
+                                   ,po_message_cursor              OUT  sys_refcursor);    
+                                   
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_ft_inv_for_nt(pi_nt_type                   IN      nm_types.nt_type%TYPE
+                                ,pi_inv_type                  IN      nm_types.nt_type%TYPE
+                                ,pi_delete_existing_inv_type  IN      varchar2
+                                ,po_message_severity             OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor               OUT  sys_refcursor);                                        
+                                  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_group_type(pi_group_type        IN     nm_group_types_all.ngt_group_type%TYPE   
+                             ,pi_description       IN     nm_group_types_all.ngt_descr%TYPE  
+                             ,pi_exclusive_flag    IN     nm_group_types_all.ngt_exclusive_flag%TYPE
+                             ,pi_seq_no            IN     nm_group_types_all.ngt_search_group_no%TYPE
+                             ,pi_linear_flag       IN     nm_group_types_all.ngt_linear_flag%TYPE
+                             ,pi_network_type      IN     nm_group_types_all.ngt_nt_type%TYPE
+                             ,pi_partial           IN     nm_group_types_all.ngt_partial%TYPE
+                             ,pi_start_date        IN     nm_group_types_all.ngt_start_date%TYPE 
+                             ,pi_end_date          IN     nm_group_types_all.ngt_end_date%TYPE
+                             ,pi_sub_group_allowed IN     nm_group_types_all.ngt_sub_group_allowed%TYPE
+                             ,pi_mandatory         IN     nm_group_types_all.ngt_mandatory%TYPE
+                             ,pi_reverse_allowed   IN     nm_group_types_all.ngt_reverse_allowed%TYPE
+                             ,pi_icon_name         IN     nm_group_types_all.ngt_icon_name%TYPE                            
+                             ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor       OUT sys_refcursor);   
+                             
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_group_type(pi_old_group_type        IN     nm_group_types_all.ngt_group_type%TYPE   
+                             ,pi_old_description       IN     nm_group_types_all.ngt_descr%TYPE  
+                             ,pi_old_exclusive_flag    IN     nm_group_types_all.ngt_exclusive_flag%TYPE
+                             ,pi_old_seq_no            IN     nm_group_types_all.ngt_search_group_no%TYPE
+                             ,pi_old_linear_flag       IN     nm_group_types_all.ngt_linear_flag%TYPE
+                             ,pi_old_network_type      IN     nm_group_types_all.ngt_nt_type%TYPE
+                             ,pi_old_partial           IN     nm_group_types_all.ngt_partial%TYPE
+                             ,pi_old_start_date        IN     nm_group_types_all.ngt_start_date%TYPE
+                             ,pi_old_end_date          IN     nm_group_types_all.ngt_end_date%TYPE
+                             ,pi_old_sub_group_allowed IN     nm_group_types_all.ngt_sub_group_allowed%TYPE
+                             ,pi_old_mandatory         IN     nm_group_types_all.ngt_mandatory%TYPE
+                             ,pi_old_reverse_allowed   IN     nm_group_types_all.ngt_reverse_allowed%TYPE
+                             ,pi_old_icon_name         IN     nm_group_types_all.ngt_icon_name%TYPE
+                             ,pi_new_group_type        IN     nm_group_types_all.ngt_group_type%TYPE   
+                             ,pi_new_description       IN     nm_group_types_all.ngt_descr%TYPE  
+                             ,pi_new_exclusive_flag    IN     nm_group_types_all.ngt_exclusive_flag%TYPE
+                             ,pi_new_seq_no            IN     nm_group_types_all.ngt_search_group_no%TYPE
+                             ,pi_new_linear_flag       IN     nm_group_types_all.ngt_linear_flag%TYPE
+                             ,pi_new_network_type      IN     nm_group_types_all.ngt_nt_type%TYPE
+                             ,pi_new_partial           IN     nm_group_types_all.ngt_partial%TYPE
+                             ,pi_new_start_date        IN     nm_group_types_all.ngt_start_date%TYPE
+                             ,pi_new_end_date          IN     nm_group_types_all.ngt_end_date%TYPE
+                             ,pi_new_sub_group_allowed IN     nm_group_types_all.ngt_sub_group_allowed%TYPE
+                             ,pi_new_mandatory         IN     nm_group_types_all.ngt_mandatory%TYPE
+                             ,pi_new_reverse_allowed   IN     nm_group_types_all.ngt_reverse_allowed%TYPE
+                             ,pi_new_icon_name         IN     nm_group_types_all.ngt_icon_name%TYPE  
+                             ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor           OUT sys_refcursor);   
+                             
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_group_type(pi_group_type        IN      nm_group_types_all.ngt_group_type%TYPE   
+                             ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor       OUT  sys_refcursor);
+                             
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_nt_grouping(pi_group_type        IN     nm_nt_groupings_all.nng_group_type%TYPE   
+                              ,pi_nt_type           IN     nm_nt_groupings_all.nng_nt_type%TYPE
+                              ,pi_start_date        IN     nm_nt_groupings_all.nng_start_date%TYPE 
+                              ,pi_end_date          IN     nm_nt_groupings_all.nng_end_date%TYPE
+                              ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor       OUT sys_refcursor); 
+                              
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_nt_grouping(pi_old_group_type   IN     nm_nt_groupings_all.nng_group_type%TYPE  
+                              ,pi_old_nt_type      IN     nm_nt_groupings_all.nng_nt_type%TYPE
+                              ,pi_old_start_date   IN     nm_nt_groupings_all.nng_start_date%TYPE 
+                              ,pi_old_end_date     IN     nm_nt_groupings_all.nng_end_date%TYPE
+                              ,pi_new_group_type   IN     nm_nt_groupings_all.nng_group_type%TYPE  
+                              ,pi_new_nt_type      IN     nm_nt_groupings_all.nng_nt_type%TYPE
+                              ,pi_new_start_date   IN     nm_nt_groupings_all.nng_start_date%TYPE 
+                              ,pi_new_end_date     IN     nm_nt_groupings_all.nng_end_date%TYPE
+                              ,po_message_severity    OUT hig_codes.hco_code%TYPE  
+                              ,po_message_cursor      OUT sys_refcursor);  
+  --
+  -----------------------------------------------------------------------------
+  --                            
+  PROCEDURE delete_nt_grouping(pi_group_type        IN      nm_nt_groupings_all.nng_group_type%TYPE  
+                              ,pi_nt_type           IN      nm_nt_groupings_all.nng_nt_type%TYPE
+                              ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor       OUT  sys_refcursor);
+                             
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_group_relation(pi_parent_group_type IN     nm_group_relations_all.ngr_parent_group_type%TYPE   
+                                 ,pi_child_group_type  IN     nm_group_relations_all.ngr_child_group_type%TYPE
+                                 ,pi_start_date        IN     nm_group_relations_all.ngr_start_date%TYPE 
+                                 ,pi_end_date          IN     nm_group_relations_all.ngr_end_date%TYPE
+                                 ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor       OUT sys_refcursor); 
+                              
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_group_relation(pi_old_parent_group_type IN     nm_group_relations_all.ngr_parent_group_type%TYPE
+                                 ,pi_old_child_group_type  IN     nm_group_relations_all.ngr_child_group_type%TYPE
+                                 ,pi_old_start_date        IN     nm_group_relations_all.ngr_start_date%TYPE 
+                                 ,pi_old_end_date          IN     nm_group_relations_all.ngr_end_date%TYPE
+                                 ,pi_new_parent_group_type IN     nm_group_relations_all.ngr_parent_group_type%TYPE 
+                                 ,pi_new_child_group_type  IN     nm_group_relations_all.ngr_child_group_type%TYPE
+                                 ,pi_new_start_date        IN     nm_group_relations_all.ngr_start_date%TYPE 
+                                 ,pi_new_end_date          IN     nm_group_relations_all.ngr_end_date%TYPE
+                                 ,po_message_severity         OUT hig_codes.hco_code%TYPE  
+                                 ,po_message_cursor           OUT sys_refcursor);  
+  --
+  -----------------------------------------------------------------------------
+  --                            
+  PROCEDURE delete_group_relation(pi_parent_group_type IN     nm_group_relations_all.ngr_parent_group_type%TYPE   
+                                 ,pi_child_group_type  IN     nm_group_relations_all.ngr_child_group_type%TYPE
+                                 ,pi_start_date        IN     nm_group_relations_all.ngr_start_date%TYPE 
+                                 ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor       OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_network_types(po_message_severity OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT  sys_refcursor
+                             ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_network_type(pi_nt_type             IN      nm_types.nt_type%TYPE
+                            ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor          OUT sys_refcursor
+                            ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_network_types(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                   ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                   ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                   ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                   ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                   ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                   ,pi_skip_n_rows          IN     PLS_INTEGER
+                                   ,pi_pagesize             IN     PLS_INTEGER
+                                   ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor          OUT sys_refcursor
+                                   ,po_cursor                  OUT sys_refcursor);     
+                                       
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_unit_names_lov(pi_unit_domain        IN     nm_units.un_domain_id%TYPE  DEFAULT 1
+                              ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor        OUT sys_refcursor
+                              ,po_cursor                OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_unit_name_lov(pi_nt_unit            IN     nm_units.un_unit_id%TYPE
+                             ,pi_unit_domain        IN     nm_units.un_domain_id%TYPE  DEFAULT 1
+                             ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor        OUT sys_refcursor
+                             ,po_cursor                OUT sys_refcursor);                         
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_node_types_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT  sys_refcursor
+                              ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_node_type_lov(pi_node_type           IN      nm_node_types.nnt_type%TYPE
+                             ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor          OUT sys_refcursor
+                             ,po_cursor                  OUT sys_refcursor);
+                                                                                                                       
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_admin_types_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT  sys_refcursor
+                               ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_admin_type_lov(pi_admin_type          IN      nm_au_types.nat_admin_type%TYPE
+                              ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor          OUT sys_refcursor
+                              ,po_cursor                  OUT sys_refcursor); 
+                              
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_network_type(pi_network_type      IN     nm_types.nt_type%TYPE
+                               ,pi_unique_name       IN     nm_types.nt_unique%TYPE
+                               ,pi_description       IN     nm_types.nt_descr%TYPE
+                               ,pi_node_type         IN     nm_types.nt_node_type%TYPE
+                               ,pi_is_datum          IN     nm_types.nt_datum%TYPE
+                               ,pi_is_linear         IN     nm_types.nt_linear%TYPE
+                               ,pi_is_unique         IN     nm_types.nt_pop_unique%TYPE
+                               ,pi_units             IN     nm_types.nt_length_unit%TYPE
+                               ,pi_admin_type        IN     nm_types.nt_admin_type%TYPE
+                               ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor       OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --   
+  PROCEDURE update_network_type(pi_old_network_type      IN     nm_types.nt_type%TYPE
+                               ,pi_old_unique_name       IN     nm_types.nt_unique%TYPE
+                               ,pi_old_description       IN     nm_types.nt_descr%TYPE
+                               ,pi_old_node_type         IN     nm_types.nt_node_type%TYPE
+                               ,pi_old_is_datum          IN     nm_types.nt_datum%TYPE
+                               ,pi_old_is_linear         IN     nm_types.nt_linear%TYPE
+                               ,pi_old_is_unique         IN     nm_types.nt_pop_unique%TYPE
+                               ,pi_old_units             IN     nm_types.nt_length_unit%TYPE
+                               ,pi_old_admin_type        IN     nm_types.nt_admin_type%TYPE
+                               ,pi_new_network_type      IN     nm_types.nt_type%TYPE
+                               ,pi_new_unique_name       IN     nm_types.nt_unique%TYPE
+                               ,pi_new_description       IN     nm_types.nt_descr%TYPE
+                               ,pi_new_node_type         IN     nm_types.nt_node_type%TYPE
+                               ,pi_new_is_datum          IN     nm_types.nt_datum%TYPE
+                               ,pi_new_is_linear         IN     nm_types.nt_linear%TYPE
+                               ,pi_new_is_unique         IN     nm_types.nt_pop_unique%TYPE
+                               ,pi_new_units             IN     nm_types.nt_length_unit%TYPE
+                               ,pi_new_admin_type        IN     nm_types.nt_admin_type%TYPE
+                               ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor           OUT sys_refcursor); 
+
+  --
+  -----------------------------------------------------------------------------
+  --                                                                              
+  PROCEDURE delete_network_type(pi_network_type      IN     nm_types.nt_type%TYPE
+                               ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor       OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_type_columns(pi_nt_type             IN      nm_type_columns.ntc_nt_type%TYPE
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor);
+                               
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_type_column(pi_nt_type             IN      nm_type_columns.ntc_nt_type%TYPE
+                              ,pi_nt_column_name      IN      nm_type_columns.ntc_column_name%TYPE
+                              ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor          OUT sys_refcursor
+                              ,po_cursor                  OUT sys_refcursor);                               
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_nt_type_columns(pi_nt_type              IN     nm_type_columns.ntc_nt_type%TYPE
+                                     ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                     ,pi_skip_n_rows          IN     PLS_INTEGER
+                                     ,pi_pagesize             IN     PLS_INTEGER
+                                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor          OUT sys_refcursor
+                                     ,po_cursor                  OUT sys_refcursor);  
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_nt_type_column(pi_nt_type          IN     nm_type_columns.ntc_nt_type%TYPE
+                                 ,pi_column_name      IN     nm_type_columns.ntc_column_name%TYPE
+                                 ,pi_seq_no           IN     nm_type_columns.ntc_seq_no%TYPE
+                                 ,pi_prompt           IN     nm_type_columns.ntc_prompt%TYPE
+                                 ,pi_column_type      IN     nm_type_columns.ntc_column_type%TYPE
+                                 ,pi_length           IN     nm_type_columns.ntc_str_length%TYPE
+                                 ,pi_displayed        IN     nm_type_columns.ntc_displayed%TYPE
+                                 ,pi_mandatory        IN     nm_type_columns.ntc_mandatory%TYPE
+                                 ,pi_domain           IN     nm_type_columns.ntc_domain%TYPE
+                                 ,pi_seq_name         IN     nm_type_columns.ntc_seq_name%TYPE
+                                 ,pi_unique_seq       IN     nm_type_columns.ntc_unique_seq%TYPE
+                                 ,pi_separator        IN     nm_type_columns.ntc_separator%TYPE
+                                 ,pi_format           IN     nm_type_columns.ntc_format%TYPE
+                                 ,pi_unique_format    IN     nm_type_columns.ntc_unique_format%TYPE
+                                 ,pi_default_value    IN     nm_type_columns.ntc_default%TYPE
+                                 ,pi_string_start     IN     nm_type_columns.ntc_string_start%TYPE
+                                 ,pi_string_end       IN     nm_type_columns.ntc_string_end%TYPE
+                                 ,pi_inherit          IN     nm_type_columns.ntc_inherit%TYPE
+                                 ,pi_query            IN     nm_type_columns.ntc_query%TYPE
+                                 ,pi_updatable        IN     nm_type_columns.ntc_updatable%TYPE  DEFAULT 'Y'                                                          
+                                 ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor      OUT sys_refcursor);                                      
+  
+  --
+  -----------------------------------------------------------------------------
+  --   
+  PROCEDURE update_nt_type_column(pi_old_nt_type          IN     nm_type_columns.ntc_nt_type%TYPE
+                                 ,pi_old_column_name      IN     nm_type_columns.ntc_column_name%TYPE
+                                 ,pi_old_seq_no           IN     nm_type_columns.ntc_seq_no%TYPE
+                                 ,pi_old_prompt           IN     nm_type_columns.ntc_prompt%TYPE
+                                 ,pi_old_column_type      IN     nm_type_columns.ntc_column_type%TYPE
+                                 ,pi_old_length           IN     nm_type_columns.ntc_str_length%TYPE
+                                 ,pi_old_displayed        IN     nm_type_columns.ntc_displayed%TYPE
+                                 ,pi_old_mandatory        IN     nm_type_columns.ntc_mandatory%TYPE
+                                 ,pi_old_domain           IN     nm_type_columns.ntc_domain%TYPE
+                                 ,pi_old_seq_name         IN     nm_type_columns.ntc_seq_name%TYPE
+                                 ,pi_old_unique_seq       IN     nm_type_columns.ntc_unique_seq%TYPE
+                                 ,pi_old_separator        IN     nm_type_columns.ntc_separator%TYPE
+                                 ,pi_old_format           IN     nm_type_columns.ntc_format%TYPE
+                                 ,pi_old_unique_format    IN     nm_type_columns.ntc_unique_format%TYPE
+                                 ,pi_old_default_value    IN     nm_type_columns.ntc_default%TYPE
+                                 ,pi_old_string_start     IN     nm_type_columns.ntc_string_start%TYPE
+                                 ,pi_old_string_end       IN     nm_type_columns.ntc_string_end%TYPE
+                                 ,pi_old_inherit          IN     nm_type_columns.ntc_inherit%TYPE
+                                 ,pi_old_query            IN     nm_type_columns.ntc_query%TYPE
+                                 ,pi_new_nt_type          IN     nm_type_columns.ntc_nt_type%TYPE
+                                 ,pi_new_column_name      IN     nm_type_columns.ntc_column_name%TYPE
+                                 ,pi_new_seq_no           IN     nm_type_columns.ntc_seq_no%TYPE
+                                 ,pi_new_prompt           IN     nm_type_columns.ntc_prompt%TYPE
+                                 ,pi_new_column_type      IN     nm_type_columns.ntc_column_type%TYPE
+                                 ,pi_new_length           IN     nm_type_columns.ntc_str_length%TYPE
+                                 ,pi_new_displayed        IN     nm_type_columns.ntc_displayed%TYPE
+                                 ,pi_new_mandatory        IN     nm_type_columns.ntc_mandatory%TYPE
+                                 ,pi_new_domain           IN     nm_type_columns.ntc_domain%TYPE
+                                 ,pi_new_seq_name         IN     nm_type_columns.ntc_seq_name%TYPE
+                                 ,pi_new_unique_seq       IN     nm_type_columns.ntc_unique_seq%TYPE
+                                 ,pi_new_separator        IN     nm_type_columns.ntc_separator%TYPE
+                                 ,pi_new_format           IN     nm_type_columns.ntc_format%TYPE
+                                 ,pi_new_unique_format    IN     nm_type_columns.ntc_unique_format%TYPE
+                                 ,pi_new_default_value    IN     nm_type_columns.ntc_default%TYPE
+                                 ,pi_new_string_start     IN     nm_type_columns.ntc_string_start%TYPE
+                                 ,pi_new_string_end       IN     nm_type_columns.ntc_string_end%TYPE
+                                 ,pi_new_inherit          IN     nm_type_columns.ntc_inherit%TYPE
+                                 ,pi_new_query            IN     nm_type_columns.ntc_query%TYPE
+                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT sys_refcursor); 
+                                     
+  --
+  -----------------------------------------------------------------------------
+  --                                                                              
+  PROCEDURE delete_nt_type_column(pi_nt_type          IN     nm_type_columns.ntc_nt_type%TYPE
+                                 ,pi_column_name      IN     nm_type_columns.ntc_column_name%TYPE
+                                 ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor      OUT sys_refcursor);                                   
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_type_subclasses(pi_nt_type             IN     nm_type_subclass.nsc_nw_type%TYPE
+                                  ,po_message_severity       OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor         OUT sys_refcursor
+                                  ,po_cursor                 OUT sys_refcursor);
+                               
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_type_subclass(pi_nt_type            IN     nm_type_subclass.nsc_nw_type%TYPE
+                                ,pi_sub_class          IN     nm_type_subclass.nsc_sub_class%TYPE
+                                ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor        OUT sys_refcursor
+                                ,po_cursor                OUT sys_refcursor);                               
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_nt_type_subclasses(pi_nt_type              IN     nm_type_subclass.nsc_nw_type%TYPE
+                                        ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                        ,pi_skip_n_rows          IN     PLS_INTEGER
+                                        ,pi_pagesize             IN     PLS_INTEGER
+                                        ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor          OUT sys_refcursor
+                                        ,po_cursor                  OUT sys_refcursor);
+                                        
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_nt_sub_class(pi_nt_type          IN     nm_type_subclass.nsc_nw_type%TYPE
+                               ,pi_sub_class        IN     nm_type_subclass.nsc_sub_class%TYPE
+                               ,pi_description      IN     nm_type_subclass.nsc_descr%TYPE
+                               ,pi_seq_no           IN     nm_type_subclass.nsc_seq_no%TYPE
+                               ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT sys_refcursor);   
+                               
+  --
+  -----------------------------------------------------------------------------
+  --   
+  PROCEDURE update_nt_sub_class(pi_old_nt_type      IN     nm_type_subclass.nsc_nw_type%TYPE
+                               ,pi_old_sub_class    IN     nm_type_subclass.nsc_sub_class%TYPE
+                               ,pi_old_description  IN     nm_type_subclass.nsc_descr%TYPE
+                               ,pi_old_seq_no       IN     nm_type_subclass.nsc_seq_no%TYPE
+                               ,pi_new_nt_type      IN     nm_type_subclass.nsc_nw_type%TYPE
+                               ,pi_new_sub_class    IN     nm_type_subclass.nsc_sub_class%TYPE
+                               ,pi_new_description  IN     nm_type_subclass.nsc_descr%TYPE
+                               ,pi_new_seq_no       IN     nm_type_subclass.nsc_seq_no%TYPE
+                               ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT sys_refcursor); 
+                                     
+  --
+  -----------------------------------------------------------------------------
+  --                                                                              
+  PROCEDURE delete_nt_sub_class(pi_nt_type          IN     nm_type_subclass.nsc_nw_type%TYPE
+                               ,pi_sub_class        IN     nm_type_subclass.nsc_sub_class%TYPE
+                               ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_type_inclusions(pi_nt_child_type      IN     nm_type_inclusion.nti_nw_child_type%TYPE
+                                  ,po_message_severity       OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor         OUT sys_refcursor
+                                  ,po_cursor                 OUT sys_refcursor);
+                               
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_type_inclusion(pi_nt_child_type      IN     nm_type_inclusion.nti_nw_child_type%TYPE
+                                 ,pi_nt_parent_type     IN     nm_type_inclusion.nti_nw_parent_type%TYPE
+                                 ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor        OUT sys_refcursor
+                                 ,po_cursor                OUT sys_refcursor);                               
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_nt_type_inclusions(pi_nt_child_type        IN     nm_type_inclusion.nti_nw_child_type%TYPE
+                                        ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                        ,pi_skip_n_rows          IN     PLS_INTEGER
+                                        ,pi_pagesize             IN     PLS_INTEGER
+                                        ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor          OUT sys_refcursor
+                                        ,po_cursor                  OUT sys_refcursor);                                      
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_type_columns_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT  sys_refcursor
+                                   ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --Not sure if needed, doesn't bring anything to the party--
+  PROCEDURE get_nt_type_column_lov(pi_column_name          IN     nm_type_inclusion.nti_parent_column%TYPE
+                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor          OUT sys_refcursor
+                                  ,po_cursor                  OUT sys_refcursor);
+                                  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_nt_type_column_seqs_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                       ,po_message_cursor   OUT  sys_refcursor
+                                       ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --Not sure if needed, doesn't bring anything to the party--
+  PROCEDURE get_nt_type_column_seq_lov(pi_seq_name         IN     nm_type_columns.ntc_seq_name%TYPE
+                                      ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor      OUT sys_refcursor
+                                      ,po_cursor              OUT sys_refcursor);                                  
+                                                                                                                       
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_nt_inclusion(pi_nti_parent_type       IN     nm_type_inclusion.nti_nw_parent_type%TYPE
+                               ,pi_nti_child_type        IN     nm_type_inclusion.nti_nw_child_type%TYPE
+                               ,pi_nti_parent_column     IN     nm_type_inclusion.nti_parent_column%TYPE
+                               ,pi_nti_child_column      IN     nm_type_inclusion.nti_child_column%TYPE
+                               ,pi_nti_auto_include      IN     nm_type_inclusion.nti_auto_include%TYPE
+                               ,pi_nti_auto_create       IN     nm_type_inclusion.nti_auto_create%TYPE
+                               ,pi_nti_reverse_allowed   IN     nm_type_inclusion.nti_reverse_allowed%TYPE
+                               ,pi_nti_code_control_col  IN     nm_type_inclusion.nti_code_control_column%TYPE
+                               ,pi_nti_group_name        IN     nm_type_inclusion.nti_group_name%TYPE
+                               ,pi_nti_search            IN     nm_type_inclusion.nti_search%TYPE
+                               ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor           OUT sys_refcursor);   
+                               
+  --
+  -----------------------------------------------------------------------------
+  --   
+  PROCEDURE update_nt_inclusion(pi_old_nti_parent_type       IN     nm_type_inclusion.nti_nw_parent_type%TYPE
+                               ,pi_old_nti_child_type        IN     nm_type_inclusion.nti_nw_child_type%TYPE
+                               ,pi_old_nti_parent_column     IN     nm_type_inclusion.nti_parent_column%TYPE
+                               ,pi_old_nti_child_column      IN     nm_type_inclusion.nti_child_column%TYPE
+                               ,pi_old_nti_auto_include      IN     nm_type_inclusion.nti_auto_include%TYPE
+                               ,pi_old_nti_auto_create       IN     nm_type_inclusion.nti_auto_create%TYPE
+                               ,pi_old_nti_reverse_allowed   IN     nm_type_inclusion.nti_reverse_allowed%TYPE
+                               ,pi_old_nti_code_control_col  IN     nm_type_inclusion.nti_code_control_column%TYPE
+                               ,pi_old_nti_group_name        IN     nm_type_inclusion.nti_group_name%TYPE
+                               ,pi_old_nti_search            IN     nm_type_inclusion.nti_search%TYPE
+                               ,pi_new_nti_parent_type       IN     nm_type_inclusion.nti_nw_parent_type%TYPE
+                               ,pi_new_nti_child_type        IN     nm_type_inclusion.nti_nw_child_type%TYPE
+                               ,pi_new_nti_parent_column     IN     nm_type_inclusion.nti_parent_column%TYPE
+                               ,pi_new_nti_child_column      IN     nm_type_inclusion.nti_child_column%TYPE
+                               ,pi_new_nti_auto_include      IN     nm_type_inclusion.nti_auto_include%TYPE
+                               ,pi_new_nti_auto_create       IN     nm_type_inclusion.nti_auto_create%TYPE
+                               ,pi_new_nti_reverse_allowed   IN     nm_type_inclusion.nti_reverse_allowed%TYPE
+                               ,pi_new_nti_code_control_col  IN     nm_type_inclusion.nti_code_control_column%TYPE
+                               ,pi_new_nti_group_name        IN     nm_type_inclusion.nti_group_name%TYPE
+                               ,pi_new_nti_search            IN     nm_type_inclusion.nti_search%TYPE
+                               ,po_message_severity             OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor               OUT sys_refcursor); 
+                                     
+  --
+  -----------------------------------------------------------------------------
+  --                                                                              
+  PROCEDURE delete_nt_inclusion(pi_nti_parent_type       IN     nm_type_inclusion.nti_nw_parent_type%TYPE
+                               ,pi_nti_child_type        IN     nm_type_inclusion.nti_nw_child_type%TYPE
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor);
+ 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_network_ad_types(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT  sys_refcursor
+                                ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_network_ad_type(pi_nt_type             IN      nm_nw_ad_types.nad_nt_type%TYPE
+                               ,pi_group_type          IN      nm_nw_ad_types.nad_gty_type%TYPE
+                               ,pi_inv_type            IN      nm_nw_ad_types.nad_nt_type%TYPE
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor);
+                               
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_group_types_lov(pi_nt_type          IN      nm_nw_ad_types.nad_nt_type%TYPE
+                               ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT  sys_refcursor
+                               ,po_cursor              OUT  sys_refcursor);
+                               
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_group_type_lov(pi_group_type       IN     nm_nw_ad_types.nad_gty_type%TYPE
+                              ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor      OUT sys_refcursor
+                              ,po_cursor              OUT sys_refcursor);                                
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_inv_types_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT  sys_refcursor
+                             ,po_cursor           OUT  sys_refcursor);
+                               
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_inv_type_lov(pi_inv_type         IN     nm_nw_ad_types.nad_inv_type%TYPE
+                            ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor      OUT sys_refcursor
+                            ,po_cursor              OUT sys_refcursor);                                
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_network_ad_types(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                      ,pi_skip_n_rows          IN     PLS_INTEGER
+                                      ,pi_pagesize             IN     PLS_INTEGER
+                                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor          OUT sys_refcursor
+                                      ,po_cursor                  OUT sys_refcursor);
+                                      
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_network_ad_type(pi_network_type      IN     nm_nw_ad_types.nad_nt_type%TYPE
+                                  ,pi_group_type        IN     nm_nw_ad_types.nad_gty_type%TYPE
+                                  ,pi_inv_type          IN     nm_nw_ad_types.nad_inv_type%TYPE
+                                  ,pi_description       IN     nm_nw_ad_types.nad_descr%TYPE
+                                  ,pi_start_date        IN     nm_nw_ad_types.nad_start_date%TYPE
+                                  ,pi_end_date          IN     nm_nw_ad_types.nad_end_date%TYPE
+                                  ,pi_primary_ad        IN     nm_nw_ad_types.nad_primary_ad%TYPE
+                                  ,pi_display_order     IN     nm_nw_ad_types.nad_display_order%TYPE
+                                  ,pi_single_row        IN     nm_nw_ad_types.nad_single_row%TYPE
+                                  ,pi_mandatory         IN     nm_nw_ad_types.nad_mandatory%TYPE
+                                  ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor       OUT sys_refcursor);     
+                                  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_network_ad_type(pi_old_nad_id            IN     nm_nw_ad_types.nad_id%TYPE                                  
+                                  ,pi_old_network_type      IN     nm_nw_ad_types.nad_nt_type%TYPE
+                                  ,pi_old_group_type        IN     nm_nw_ad_types.nad_gty_type%TYPE
+                                  ,pi_old_inv_type          IN     nm_nw_ad_types.nad_inv_type%TYPE
+                                  ,pi_old_description       IN     nm_nw_ad_types.nad_descr%TYPE
+                                  ,pi_old_start_date        IN     nm_nw_ad_types.nad_start_date%TYPE
+                                  ,pi_old_end_date          IN     nm_nw_ad_types.nad_end_date%TYPE
+                                  ,pi_old_primary_ad        IN     nm_nw_ad_types.nad_primary_ad%TYPE
+                                  ,pi_old_display_order     IN     nm_nw_ad_types.nad_display_order%TYPE
+                                  ,pi_old_single_row        IN     nm_nw_ad_types.nad_single_row%TYPE
+                                  ,pi_old_mandatory         IN     nm_nw_ad_types.nad_mandatory%TYPE
+                                  ,pi_new_nad_id            IN     nm_nw_ad_types.nad_id%TYPE                                  
+                                  ,pi_new_network_type      IN     nm_nw_ad_types.nad_nt_type%TYPE
+                                  ,pi_new_group_type        IN     nm_nw_ad_types.nad_gty_type%TYPE
+                                  ,pi_new_inv_type          IN     nm_nw_ad_types.nad_inv_type%TYPE
+                                  ,pi_new_description       IN     nm_nw_ad_types.nad_descr%TYPE
+                                  ,pi_new_start_date        IN     nm_nw_ad_types.nad_start_date%TYPE
+                                  ,pi_new_end_date          IN     nm_nw_ad_types.nad_end_date%TYPE
+                                  ,pi_new_primary_ad        IN     nm_nw_ad_types.nad_primary_ad%TYPE
+                                  ,pi_new_display_order     IN     nm_nw_ad_types.nad_display_order%TYPE
+                                  ,pi_new_single_row        IN     nm_nw_ad_types.nad_single_row%TYPE
+                                  ,pi_new_mandatory         IN     nm_nw_ad_types.nad_mandatory%TYPE
+                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor          OUT sys_refcursor);                                                                         
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_network_ad_type(pi_nad_id            IN     nm_nw_ad_types.nad_id%TYPE
+                                  ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor       OUT sys_refcursor);  
+                                  
+  --
+  -----------------------------------------------------------------------------
+  --                                                                     
+  PROCEDURE validate_nw_types(po_val_message_Tab   OUT   nm3type.tab_varchar2000
+                             ,po_message_severity  OUT   hig_codes.hco_code%TYPE
+                             ,po_message_cursor    OUT   sys_refcursor  
+                             );                                                                       
+  --
+  
+END awlrs_metanet_api;
+/
