@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkh-arc   1.7   Jul 30 2019 11:40:38   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkh-arc   1.8   Sep 05 2019 11:58:10   Barbara.Odriscoll  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkh  $
-  --       Date into PVCS   : $Date:   Jul 30 2019 11:40:38  $
-  --       Date fetched Out : $Modtime:   Jul 22 2019 08:36:38  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   Sep 05 2019 11:58:10  $
+  --       Date fetched Out : $Modtime:   Aug 13 2019 15:04:26  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -376,6 +376,14 @@ AS
                            ,po_message_cursor          OUT sys_refcursor
                            ,po_cursor                  OUT sys_refcursor);
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_role_module(pi_role                IN      hig_module_roles.hmr_role%TYPE
+                           ,pi_module              IN      hig_module_roles.hmr_module%TYPE
+                           ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor          OUT sys_refcursor
+                           ,po_cursor                  OUT sys_refcursor);
   --
   -----------------------------------------------------------------------------
   --

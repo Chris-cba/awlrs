@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.12   Aug 09 2019 15:26:34   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.13   Sep 05 2019 11:58:10   Barbara.Odriscoll  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 09 2019 15:26:34  $
-  --       Date fetched Out : $Modtime:   Aug 09 2019 15:24:38  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   Sep 05 2019 11:58:10  $
+  --       Date fetched Out : $Modtime:   Aug 14 2019 10:58:00  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -3259,6 +3259,39 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_role_module(pi_role                IN      hig_module_roles.hmr_role%TYPE
+                           ,pi_module              IN      hig_module_roles.hmr_module%TYPE
+                           ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor          OUT sys_refcursor
+                           ,po_cursor                  OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT hmr_module module_
+            ,hmo_title  title 
+            ,hmr_mode   mode_
+        FROM hig_module_roles
+            ,hig_modules
+       WHERE hmr_module = pi_module
+         AND hmr_role   = pi_role
+         AND hmr_module = hmo_module
+    ORDER BY hmr_role; 
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_role_module;
+                           
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_paged_module_roles(pi_module               IN     hig_module_roles.hmr_module%TYPE
                                   ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                   ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
@@ -4156,10 +4189,12 @@ AS
     --
     OPEN po_cursor FOR
       SELECT hmr_module module_
-            ,hmr_role   role_
+            ,hmo_title  title 
             ,hmr_mode   mode_
        FROM hig_module_roles
+           ,hig_modules
       WHERE hig_module_roles.hmr_role = pi_role
+        AND hmr_module = hmo_module
       ORDER BY hmr_module;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -4227,13 +4262,15 @@ AS
       lv_filter           nm3type.max_varchar2;
       --
       lv_driving_sql  nm3type.max_varchar2 :='SELECT hmr_module module_
-                                                    ,hmr_role   role_
+                                                    ,hmo_title  title 
                                                     ,hmr_mode   mode_
                                                FROM hig_module_roles
-                                              WHERE hmr_role   = :pi_role';
+                                                   ,hig_modules
+                                              WHERE hmr_role   = :pi_role
+                                                AND hmr_module = hmo_module';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  module_'
-                                                  ||',role_'
+                                                  ||',title'
                                                   ||',mode_'
                                                   ||',row_count'
                                             ||' FROM (SELECT rownum ind'
@@ -4254,8 +4291,8 @@ AS
                                 ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
       --
-      awlrs_util.add_column_data(pi_cursor_col => 'role_'
-                                ,pi_query_col  => 'hmr_role'
+      awlrs_util.add_column_data(pi_cursor_col => 'title'
+                                ,pi_query_col  => 'hmo_title'
                                 ,pi_datatype   => awlrs_util.c_varchar2_col
                                 ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
@@ -5305,3 +5342,4 @@ AS
   END get_launchpad_detail;    
   --
 END awlrs_metasec_api;
+/
