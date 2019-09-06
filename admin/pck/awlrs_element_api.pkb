@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.37   May 07 2019 11:20:34   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.38   Sep 06 2019 13:38:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   May 07 2019 11:20:34  $
-  --       Date fetched Out : $Modtime:   May 07 2019 10:58:28  $
-  --       Version          : $Revision:   1.37  $
+  --       Date into PVCS   : $Date:   Sep 06 2019 13:38:14  $
+  --       Date fetched Out : $Modtime:   Sep 06 2019 13:33:44  $
+  --       Version          : $Revision:   1.38  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.37  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.38  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -88,7 +88,7 @@ AS
     RETURN lv_retval;
     --
   END get_primary_ad_inv_type;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -127,7 +127,7 @@ AS
     RETURN lv_retval;
     --
   END is_nt_inclusion_parent;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -301,7 +301,7 @@ AS
               ||CHR(10)||'      ,NVL(lov_value,lov_code)||'' - ''||lov_meaning meaning'
               ||CHR(10)||'      ,lov_seq seq'
               ||CHR(10)||'  FROM (SELECT NULL lov_code, NULL lov_meaning, NULL lov_value, 1 lov_seq FROM DUAL WHERE 1=2'
-            ;     
+            ;
         END IF;
         --
         lv_lov_sql := get_domain_sql_with_bind(pi_nt_type     => pi_nt_type
@@ -1409,13 +1409,13 @@ AS
           ,ne_no_start       start_node_id
           ,nos.no_node_name  start_node_name
           ,nos.no_descr      start_node_descr
-          ,nps.np_grid_east  start_node_x
-          ,nps.np_grid_north start_node_y
+          ,awlrs_util.apply_max_digits(nps.np_grid_east)  start_node_x
+          ,awlrs_util.apply_max_digits(nps.np_grid_north) start_node_y
           ,ne_no_end         end_node_id
           ,noe.no_node_name  end_node_name
           ,noe.no_descr      end_node_descr
-          ,npe.np_grid_east  end_node_x
-          ,npe.np_grid_north end_node_y
+          ,awlrs_util.apply_max_digits(npe.np_grid_east)  end_node_x
+          ,awlrs_util.apply_max_digits(npe.np_grid_north) end_node_y
           ,CASE nm3sdo.element_has_shape(p_ne_id => ne_id)
              WHEN 'TRUE'
               THEN
@@ -1564,7 +1564,7 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_element_member_of;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -1798,7 +1798,7 @@ AS
 --  	nm_Debug.debug('check_slk');
 --    IF nm3net.is_nt_inclusion_child(pi_nt => :ne.ne_nt_type)
 --    THEN
---  
+--
 --  	  set_application_property(cursor_style, 'Busy');
 --  	  --
 --  	  FOR cs_rec IN (SELECT *
@@ -1806,14 +1806,14 @@ AS
 --  	                 WHERE  nti_nw_child_type = :ne.ne_nt_type
 --  	                )
 --  	   LOOP
---  	    
+--
 --        DECLARE
 --        	 l_allow_fail_on_ele_lookup BOOLEAN;
 --         	 x_parent_element_not_found EXCEPTION;
 --      	   PRAGMA EXCEPTION_INIT(x_parent_element_not_found,-20001);
 --        BEGIN
 --           l_allow_fail_on_ele_lookup := nm3net.column_is_autocreate_child_col (:ne.NE_NT_TYPE,cs_rec.NTI_CHILD_COLUMN);
---           
+--
 --        	  nm3nwval.check_slk (p_parent_ne_id => nm3net.get_single_ne_id (cs_rec.nti_nw_parent_type
 --        	                                                                ,cs_rec.NTI_PARENT_COLUMN
 --        	                                                                ,name_in ('ne.'||cs_rec.NTI_CHILD_COLUMN)
@@ -1835,7 +1835,7 @@ AS
 --  	  END LOOP;
 --  	  set_application_property(cursor_style, 'Default');
 --    END IF;
---    
+--
 --    RETURN TRUE;
 --  EXCEPTION
 --    WHEN e_start_slk
@@ -1877,7 +1877,7 @@ AS
     lv_prim_ad_type    nm_inv_types_all.nit_inv_type%TYPE;
     lv_severity        hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
     lv_message_cursor  sys_refcursor;
-    lv_esu_id          nm_elements_all.ne_name_1%TYPE;    
+    lv_esu_id          nm_elements_all.ne_name_1%TYPE;
     --
     lr_ne  nm_elements_all%ROWTYPE;
     lr_nt  nm_types%ROWTYPE;
@@ -2180,7 +2180,7 @@ AS
        WHEN no_data_found
         THEN
            NULL;
-      END;           
+      END;
     END get_db_rec;
     --
     PROCEDURE compare_old_with_db
@@ -2466,7 +2466,7 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_element;
-  
+
   --
   -----------------------------------------------------------------------------
   --
