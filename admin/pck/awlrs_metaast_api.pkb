@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.2   Aug 08 2019 15:43:04   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.3   Sep 06 2019 13:40:44   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaast_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 08 2019 15:43:04  $
-  --       Date fetched Out : $Modtime:   Aug 08 2019 08:28:22  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   Sep 06 2019 13:40:44  $
+  --       Date fetched Out : $Modtime:   Sep 05 2019 11:12:30  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -3041,7 +3041,9 @@ AS
             ,nin_nit_inv_code  asset_type
             ,nin_loc_mandatory location_mandatory_yn
             ,nm3inv.get_nt_unique(nin_nw_type)  nw_unique
-            ,nm3net.get_nt_descr(nin_nw_type)   nw_descr         
+            ,nm3net.get_nt_descr(nin_nw_type)   nw_descr   
+            ,nin_start_date    start_date            
+            ,nin_end_date      end_date
         FROM nm_inv_nw_all
        WHERE nin_nit_inv_code = pi_asset_type
          AND nin_nw_type = pi_nw_type
@@ -3073,7 +3075,9 @@ AS
             ,nin_nit_inv_code  asset_type
             ,nin_loc_mandatory location_mandatory_yn
             ,nm3inv.get_nt_unique(nin_nw_type)  nw_unique
-            ,nm3net.get_nt_descr(nin_nw_type)   nw_descr                    
+            ,nm3net.get_nt_descr(nin_nw_type)   nw_descr   
+            ,nin_start_date    start_date            
+            ,nin_end_date      end_date            
         FROM nm_inv_nw_all
        WHERE nin_nit_inv_code = pi_asset_type;
     --
@@ -3114,7 +3118,9 @@ AS
                                                     ,nin_nit_inv_code  asset_type
                                                     ,nin_loc_mandatory location_mandatory_yn
                                                     ,nm3inv.get_nt_unique(nin_nw_type)  nw_unique
-                                                    ,nm3net.get_nt_descr(nin_nw_type)   nw_descr                                                            
+                                                    ,nm3net.get_nt_descr(nin_nw_type)   nw_descr   
+                                                    ,nin_start_date    start_date            
+                                                    ,nin_end_date      end_date                                                    
                                                 FROM nm_inv_nw_all
                                                WHERE nin_nit_inv_code = :pi_asset_type';
       --
@@ -3122,7 +3128,9 @@ AS
                                                   ||',asset_type'
                                                   ||',location_mandatory_yn'    
                                                   ||',nw_unique'  
-                                                  ||',nw_descr'                                                    
+                                                  ||',nw_descr'         
+                                                  ||',start_date'      
+                                                  ||',end_date'                                                      
                                                   ||',row_count'
                                             ||' FROM (SELECT rownum ind'
                                                         ||' ,a.*'
@@ -3164,7 +3172,19 @@ AS
                                 ,pi_query_col  => 'nm3net.get_nt_descr(nin_nw_type)'
                                 ,pi_datatype   => awlrs_util.c_varchar2_col
                                 ,pi_mask       => NULL
-                                ,pio_column_data => po_column_data);                                
+                                ,pio_column_data => po_column_data);            
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'start_date'
+                                ,pi_query_col  => 'nin_start_date'
+                                ,pi_datatype   => awlrs_util.c_date_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);    
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'end_date'
+                                ,pi_query_col  => 'nin_end_date'
+                                ,pi_datatype   => awlrs_util.c_date_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);                                    
       --                                   
     END set_column_data;
     --    
@@ -3695,6 +3715,231 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_ft_names_lov;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_ft_names_lov(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                  ,pi_skip_n_rows          IN     PLS_INTEGER
+                                  ,pi_pagesize             IN     PLS_INTEGER
+                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor          OUT sys_refcursor
+                                  ,po_cursor                  OUT sys_refcursor)
+    IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 :='SELECT object_name, object_type
+                                                FROM all_objects
+                                               WHERE owner = SYS_CONTEXT(''NM3CORE'',''APPLICATION_OWNER'')
+                                                 AND object_type IN (''TABLE'',''VIEW'')
+                                                 AND object_name NOT LIKE ''MDRT%$''
+                                                 AND object_name NOT LIKE ''BIN$%''';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  object_name'
+                                                  ||',object_type'
+                                                  ||',row_count'
+                                            ||' FROM (SELECT rownum ind'
+                                                        ||' ,a.*'
+                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                    ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'object_name'
+                                ,pi_query_col  => 'object_name'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'object_type'
+                                ,pi_query_col  => 'object_type'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);                              
+      --      
+    END set_column_data;
+    --    
+  BEGIN
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||CHR(10)||lv_filter
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'object_name')||') a)'
+                     ||CHR(10)||lv_row_restriction
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_ft_names_lov;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_ft_attribute_lov(pi_asset_type           IN     nm_inv_type_groupings_all.itg_inv_type%TYPE
+                                ,pi_ft_table             IN     nm_inv_types.nit_table_name%TYPE 
+                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT column_name
+            ,data_type || '(' || to_char(nvl(data_precision, data_length)) || decode(data_scale, '0' , null, null, null, ',' || to_char(data_scale)) || ')' data_type
+						,data_type datatype2
+						,NVL(data_precision-data_scale, data_length) data_length_num 
+						,decode(data_scale, 0, null, data_scale) decimal_num  
+	     FROM all_tab_columns
+	    WHERE owner = SYS_CONTEXT('NM3CORE','APPLICATION_OWNER')
+	      AND table_name = pi_ft_table
+	      AND column_name NOT IN (SELECT ita_attrib_name 
+ 	   	                            FROM nm_inv_type_attribs 
+	                               WHERE ita_inv_type = pi_asset_type 
+	                                 AND column_name = ita_attrib_name)
+     ORDER BY column_name;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_ft_attribute_lov;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_ft_pk_lov(pi_asset_type           IN     nm_inv_type_groupings_all.itg_inv_type%TYPE
+                         ,pi_ft_table             IN     nm_inv_types.nit_table_name%TYPE
+                         ,pi_nit_category         IN     nm_inv_types.nit_category%TYPE
+                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor          OUT sys_refcursor
+                         ,po_cursor                  OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+		  SELECT column_name
+            ,data_type || '(' || to_char(nvl(data_precision, data_length)) || decode(data_scale, '0' , null, null, null, ',' || to_char(data_scale)) || ')' data_type
+		    	  ,data_type datatype2
+		    	  ,NVL(data_precision-data_scale, data_length) data_length_num 
+		    	  ,decode(data_scale, 0, null, data_scale) decimal_num 	 
+	      FROM all_tab_columns
+	     WHERE owner = SYS_CONTEXT('NM3CORE','APPLICATION_OWNER')
+	       AND table_name = pi_ft_table
+	       AND (data_type = 'NUMBER' OR pi_nit_category = 'A') 
+	       AND  nullable   = 'N'
+	     ORDER BY column_name;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_ft_pk_lov;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_ft_lr_lov(pi_asset_type           IN     nm_inv_type_groupings_all.itg_inv_type%TYPE
+                         ,pi_ft_table             IN     nm_inv_types.nit_table_name%TYPE
+                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor          OUT sys_refcursor
+                         ,po_cursor                  OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+      SELECT column_name
+            ,data_type || '(' || to_char(nvl(data_precision, data_length)) || decode(data_scale, '0' , null, null, null, ',' || to_char(data_scale)) || ')' data_type
+						,data_type datatype2
+						,NVL(data_precision-data_scale, data_length) data_length_num 
+						,decode(data_scale, 0, null, data_scale) decimal_num 
+	     FROM all_tab_columns
+	    WHERE owner = SYS_CONTEXT('NM3CORE','APPLICATION_OWNER')
+	      AND table_name = pi_ft_table
+	      AND data_type = 'NUMBER'	 
+	    ORDER BY column_name;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_ft_lr_lov;
+
 
   --
   -----------------------------------------------------------------------------
