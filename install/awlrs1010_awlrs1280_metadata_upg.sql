@@ -7,11 +7,11 @@
 --
 --  PVCS Identifiers :-
 --
---      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1280_metadata_upg.sql-arc   1.0   Sep 06 2019 14:38:20   Peter.Bibby  $
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1280_metadata_upg.sql-arc   1.1   Sep 09 2019 15:45:02   Peter.Bibby  $
 --      Module Name      : $Workfile:   awlrs1010_awlrs1280_metadata_upg.sql  $
---      Date into PVCS   : $Date:   Sep 06 2019 14:38:20  $
---      Date fetched Out : $Modtime:   Sep 06 2019 14:29:38  $
---      Version          : $Revision:   1.0  $
+--      Date into PVCS   : $Date:   Sep 09 2019 15:45:02  $
+--      Date fetched Out : $Modtime:   Sep 09 2019 15:41:56  $
+--      Version          : $Revision:   1.1  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2019 Bentley Systems Incorporated. All rights reserved.
@@ -1155,6 +1155,25 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 81)
+/
+
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,82
+      ,null
+      ,'End-Dated assets cannot be merged'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 82)
 /
 
 ------------------------------------------------------------------
