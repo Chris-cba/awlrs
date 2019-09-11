@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.3   Aug 22 2019 15:42:00   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.4   Sep 11 2019 16:43:06   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_maint_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 22 2019 15:42:00  $
-  --       Date fetched Out : $Modtime:   Aug 22 2019 10:31:20  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   Sep 11 2019 16:43:06  $
+  --       Date fetched Out : $Modtime:   Sep 11 2019 16:20:16  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_maint_api';
   --
   TYPE attr_name_tab IS TABLE OF nm_inv_type_attribs_all.ita_attrib_name%TYPE INDEX BY BINARY_INTEGER;
@@ -148,22 +148,23 @@ AS
                                 ||CHR(10)||'      ,max_offset'
                                 ||CHR(10)||'      ,row_count'
                                 ||CHR(10)||'  FROM (SELECT rownum ind'
-                                ||CHR(10)||'              ,ne_id id'
-                                ||CHR(10)||'              ,ne_unique||'' - ''||ne_descr name'
-                                ||CHR(10)||'              ,0 min_offset'
-                                ||CHR(10)||'              ,ne_length max_offset'
-                                ||CHR(10)||'              ,CASE'
-                                ||CHR(10)||'                 WHEN f.filter_value IS NULL THEN 0'
-                                ||CHR(10)||'                 WHEN UPPER(ne_unique) = f.filter_value THEN 1'
-                                ||CHR(10)||'                 WHEN UPPER(ne_descr) = f.filter_value THEN 2'
-                                ||CHR(10)||'                 WHEN UPPER(ne_unique) LIKE f.filter_value||''%'' THEN 3'
-                                ||CHR(10)||'                 WHEN UPPER(ne_descr) LIKE f.filter_value||''%'' THEN 4'
-                                ||CHR(10)||'                 ELSE 5'
-                                ||CHR(10)||'               END match_quality'
+                                ||CHR(10)||'              ,results.*'
                                 ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                                ||CHR(10)||'          FROM nm_elements'
-                                ||CHR(10)||'              ,filter_tab f'
-                                ||CHR(10)||'         WHERE ne_type = ''S'''
+                                ||CHR(10)||'          FROM (SELECT ne_id id'
+                                ||CHR(10)||'                      ,ne_unique||'' - ''||ne_descr name'
+                                ||CHR(10)||'                      ,0 min_offset'
+                                ||CHR(10)||'                      ,ne_length max_offset'
+                                ||CHR(10)||'                      ,CASE'
+                                ||CHR(10)||'                         WHEN f.filter_value IS NULL THEN 0'
+                                ||CHR(10)||'                         WHEN UPPER(ne_unique) = f.filter_value THEN 1'
+                                ||CHR(10)||'                         WHEN UPPER(ne_descr) = f.filter_value THEN 2'
+                                ||CHR(10)||'                         WHEN UPPER(ne_unique) LIKE f.filter_value||''%'' THEN 3'
+                                ||CHR(10)||'                         WHEN UPPER(ne_descr) LIKE f.filter_value||''%'' THEN 4'
+                                ||CHR(10)||'                         ELSE 5'
+                                ||CHR(10)||'                       END match_quality'
+                                ||CHR(10)||'                  FROM nm_elements'
+                                ||CHR(10)||'                      ,filter_tab f'
+                                ||CHR(10)||'                 WHERE ne_type = ''S'''
     ;
     --
     lv_group_sql  nm3type.max_varchar2 := 'WITH filter_tab AS (SELECT UPPER(:filter) filter_value FROM dual)'
@@ -173,22 +174,23 @@ AS
                                ||CHR(10)||'      ,max_offset'
                                ||CHR(10)||'      ,row_count'
                                ||CHR(10)||'  FROM (SELECT rownum ind'
-                               ||CHR(10)||'              ,ne_id id'
-                               ||CHR(10)||'              ,ne_unique||'' - ''||ne_descr name'
-                               ||CHR(10)||'              ,(SELECT MIN(nm_slk) FROM nm_members WHERE nm_ne_id_in = ne_id) min_offset'
-                               ||CHR(10)||'              ,(SELECT MAX(nm_end_slk) FROM nm_members WHERE nm_ne_id_in = ne_id) max_offset'
-                               ||CHR(10)||'              ,CASE'
-                               ||CHR(10)||'                 WHEN f.filter_value IS NULL THEN 0'
-                               ||CHR(10)||'                 WHEN UPPER(ne_unique) = f.filter_value THEN 1'
-                               ||CHR(10)||'                 WHEN UPPER(ne_descr) = f.filter_value THEN 2'
-                               ||CHR(10)||'                 WHEN UPPER(ne_unique) LIKE f.filter_value||''%'' THEN 3'
-                               ||CHR(10)||'                 WHEN UPPER(ne_descr) LIKE f.filter_value||''%'' THEN 4'
-                               ||CHR(10)||'                 ELSE 5'
-                               ||CHR(10)||'               END match_quality'
+                               ||CHR(10)||'              ,results.*'
                                ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                               ||CHR(10)||'          FROM nm_elements'
-                               ||CHR(10)||'              ,filter_tab f'
-                               ||CHR(10)||'         WHERE ne_gty_group_type = :grp_type'
+                               ||CHR(10)||'          FROM (SELECT ne_id id'
+                               ||CHR(10)||'                      ,ne_unique||'' - ''||ne_descr name'
+                               ||CHR(10)||'                      ,(SELECT MIN(nm_slk) FROM nm_members WHERE nm_ne_id_in = ne_id) min_offset'
+                               ||CHR(10)||'                      ,(SELECT MAX(nm_end_slk) FROM nm_members WHERE nm_ne_id_in = ne_id) max_offset'
+                               ||CHR(10)||'                      ,CASE'
+                               ||CHR(10)||'                         WHEN f.filter_value IS NULL THEN 0'
+                               ||CHR(10)||'                         WHEN UPPER(ne_unique) = f.filter_value THEN 1'
+                               ||CHR(10)||'                         WHEN UPPER(ne_descr) = f.filter_value THEN 2'
+                               ||CHR(10)||'                         WHEN UPPER(ne_unique) LIKE f.filter_value||''%'' THEN 3'
+                               ||CHR(10)||'                         WHEN UPPER(ne_descr) LIKE f.filter_value||''%'' THEN 4'
+                               ||CHR(10)||'                         ELSE 5'
+                               ||CHR(10)||'                       END match_quality'
+                               ||CHR(10)||'                  FROM nm_elements'
+                               ||CHR(10)||'                      ,filter_tab f'
+                               ||CHR(10)||'                 WHERE ne_gty_group_type = :grp_type'
     ;
     --
   BEGIN
@@ -210,7 +212,7 @@ AS
     IF pi_filter IS NOT NULL
      THEN
         --
-        lv_filter := CHR(10)||'           AND UPPER(ne_unique||'' - ''||ne_descr) LIKE ''%''||f.filter_value||''%''';
+        lv_filter := CHR(10)||'                   AND UPPER(ne_unique||'' - ''||ne_descr) LIKE ''%''||f.filter_value||''%''';
         --
     END IF;
     /*
@@ -225,7 +227,7 @@ AS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||lv_filter
-                     ||CHR(10)||'         ORDER BY match_quality,ne_unique)'
+                     ||CHR(10)||'                 ORDER BY match_quality,ne_unique) results)'
                      ||CHR(10)||lv_row_restriction;
     --
     IF pi_pagesize IS NOT NULL
