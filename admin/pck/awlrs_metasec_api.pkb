@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.13   Sep 05 2019 11:58:10   Barbara.Odriscoll  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.14   Sep 11 2019 15:11:10   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 05 2019 11:58:10  $
-  --       Date fetched Out : $Modtime:   Aug 14 2019 10:58:00  $
-  --       Version          : $Revision:   1.13  $
+  --       Date into PVCS   : $Date:   Sep 11 2019 15:11:10  $
+  --       Date fetched Out : $Modtime:   Sep 11 2019 14:45:46  $
+  --       Version          : $Revision:   1.14  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.14  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -5327,8 +5327,16 @@ AS
           ,level
       FROM hig_standard_favourites
      START WITH hstf_parent = 'AWLRS_LAUNCHPAD'
-     CONNECT BY prior hstf_child = hstf_parent
-       AND ((hstf_type = 'M' AND nm3user.user_can_run_module_vc(hstf_child) = 'Y') OR (hstf_type = 'F'))
+     CONNECT BY PRIOR hstf_child = hstf_parent
+       AND ((hstf_type = 'M' AND nm3user.user_can_run_module_vc(hstf_child) = 'Y' 
+       AND (SELECT 'Y'
+               FROM hig_module_roles hmr, hig_user_roles sr, hig_modules hm
+              WHERE hur_username = SYS_CONTEXT('nm3_security_ctx','username')
+                AND hmr.hmr_role = sr.hur_role 
+                AND hm.hmo_module = hmr.hmr_module
+                AND hm.hmo_module = hstf_child
+                AND hmr.hmr_mode = 'NORMAL' 
+                AND rownum = 1) ='Y') OR (hstf_type = 'F'))
      ORDER BY  level,hstf_parent,hstf_order; 
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
