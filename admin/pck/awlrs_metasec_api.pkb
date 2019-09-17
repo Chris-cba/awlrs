@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.14   Sep 11 2019 15:11:10   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.15   Sep 17 2019 11:37:02   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 11 2019 15:11:10  $
-  --       Date fetched Out : $Modtime:   Sep 11 2019 14:45:46  $
-  --       Version          : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   Sep 17 2019 11:37:02  $
+  --       Date fetched Out : $Modtime:   Sep 17 2019 11:06:14  $
+  --       Version          : $Revision:   1.15  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.14  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.15  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -2013,21 +2013,21 @@ AS
      OR (lr_db_nau_rec.nau_address2 IS NULL AND pi_old_address2 IS NOT NULL)
      OR (lr_db_nau_rec.nau_address2 IS NOT NULL AND pi_old_address2 IS NULL)
      --
-     OR (lr_db_nau_rec.nau_address2 != pi_old_address3)
-     OR (lr_db_nau_rec.nau_address2 IS NULL AND pi_old_address3 IS NOT NULL)
-     OR (lr_db_nau_rec.nau_address2 IS NOT NULL AND pi_old_address3 IS NULL)
+     OR (lr_db_nau_rec.nau_address3 != pi_old_address3)
+     OR (lr_db_nau_rec.nau_address3 IS NULL AND pi_old_address3 IS NOT NULL)
+     OR (lr_db_nau_rec.nau_address3 IS NOT NULL AND pi_old_address3 IS NULL)
      --
-     OR (lr_db_nau_rec.nau_address3 != pi_old_address4)
-     OR (lr_db_nau_rec.nau_address3 IS NULL AND pi_old_address4 IS NOT NULL)
-     OR (lr_db_nau_rec.nau_address3 IS NOT NULL AND pi_old_address4 IS NULL)
+     OR (lr_db_nau_rec.nau_address4 != pi_old_address4)
+     OR (lr_db_nau_rec.nau_address4 IS NULL AND pi_old_address4 IS NOT NULL)
+     OR (lr_db_nau_rec.nau_address4 IS NOT NULL AND pi_old_address4 IS NULL)
      --
-     OR (lr_db_nau_rec.nau_address4 != pi_old_address5)
-     OR (lr_db_nau_rec.nau_address4 IS NULL AND pi_old_address5 IS NOT NULL)
-     OR (lr_db_nau_rec.nau_address4 IS NOT NULL AND pi_old_address5 IS NULL)
+     OR (lr_db_nau_rec.nau_address5 != pi_old_address5)
+     OR (lr_db_nau_rec.nau_address5 IS NULL AND pi_old_address5 IS NOT NULL)
+     OR (lr_db_nau_rec.nau_address5 IS NOT NULL AND pi_old_address5 IS NULL)
      --
-     OR (lr_db_nau_rec.nau_address5 != pi_old_phone)
-     OR (lr_db_nau_rec.nau_address5 IS NULL AND pi_old_phone IS NOT NULL)
-     OR (lr_db_nau_rec.nau_address5 IS NOT NULL AND pi_old_phone IS NULL)
+     OR (lr_db_nau_rec.nau_phone != pi_old_phone)
+     OR (lr_db_nau_rec.nau_phone IS NULL AND pi_old_phone IS NOT NULL)
+     OR (lr_db_nau_rec.nau_phone IS NOT NULL AND pi_old_phone IS NULL)
      --
      OR (lr_db_nau_rec.nau_fax != pi_old_fax)
      OR (lr_db_nau_rec.nau_fax IS NULL AND pi_old_fax IS NOT NULL)
