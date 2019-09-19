@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.41   Mar 01 2019 10:58:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.42   Sep 19 2019 15:37:12   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 01 2019 10:58:32  $
-  --       Date fetched Out : $Modtime:   Feb 27 2019 17:25:18  $
-  --       Version          : $Revision:   1.41  $
+  --       Date into PVCS   : $Date:   Sep 19 2019 15:37:12  $
+  --       Date fetched Out : $Modtime:   Sep 19 2019 15:36:18  $
+  --       Version          : $Revision:   1.42  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.41  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.42  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -140,7 +140,7 @@ AS
             /*
             ||Multiline should overwrite Line.
             */
-            lv_line_gtype := lv_geometry_type;         
+            lv_line_gtype := lv_geometry_type;
         WHEN '02'
          THEN
             /*
@@ -155,7 +155,7 @@ AS
             /*
             ||Multipoint should overwrite Point.
             */
-            lv_point_gtype := lv_geometry_type;         
+            lv_point_gtype := lv_geometry_type;
         WHEN '01'
          THEN
             /*
@@ -164,7 +164,7 @@ AS
             IF lv_point_gtype IS NULL
              THEN
                 lv_point_gtype := lv_geometry_type;
-            END IF;            
+            END IF;
         ELSE
             /*
             ||Ignore any bad values.
@@ -199,7 +199,7 @@ AS
     RETURN lt_retval;
     --
   END get_custom_tag_gtypes;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2811,7 +2811,7 @@ AS
         IF lv_doc_man_url_template IS NOT NULL
          THEN
             lv_tmp := CHR(10)||'      "alim_doc_man_url"            "'||lv_doc_man_url_template||'"';
-            lv_layer_text := lv_layer_text||lv_tmp;         
+            lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
         lv_tmp := CHR(10)||'      "is_editable"                 "'||NVL(lr_theme_types.editable,'N')||'"'
@@ -2903,19 +2903,20 @@ AS
             lv_where_and := ' AND ';
         END IF;
         lv_layer_text := lv_layer_text||lv_tmp;
-        --
+        /*
+        ||Note: For some reason the regular expresions below do not work in Mapserver without the ^ and $
+        ||symbols at the begining and end although they are valid expresions without them.
+        ||Infact using a site like https://regexr.com/ to validate the expresions can fail if these characters
+        ||are included.
+        */
         lv_tmp := ') USING UNIQUE '||lt_themes(i).nth_feature_pk_column
                                                          ||lv_using_srid
                                                          ||lv_using_index_hint||'"'
               ||CHR(10)||'    VALIDATION'
-              ||CHR(10)||'      "user"                     "^.*"'
-              ||CHR(10)||'      "pwd"                      "^.*"'
-              ||CHR(10)||'      "featurekey"               "^.*"'
-              ||CHR(10)||'      "featurekeyvalues"         "^.*"'
-              ||CHR(10)||'      "spatialfilter"            "^.*"'
+              ||CHR(10)||'      "featurekey"               "^[0-9a-zA-Z_]*$"'
+              ||CHR(10)||'      "featurekeyvalues"         "^(((-?([0-9]+)(\.?[0-9]+)?)|(\''(-?[\.0-9a-zA-Z])*\''))(,((-?([0-9]+)(\.?[0-9]+)?)|(\''(-?[\.0-9a-zA-Z])*\''))+)*)$"'
               ||CHR(10)||'      "default_featurekey"       "1"'
               ||CHR(10)||'      "default_featurekeyvalues" "1"'
-              ||CHR(10)||'      "default_spatialfilter"    ""'
         ;
         lv_layer_text := lv_layer_text||lv_tmp;
         --
@@ -2924,9 +2925,9 @@ AS
             lv_tmp := CHR(10)||'      "default_offsetval"        "0"'
               ||CHR(10)||'      "default_offsetbyxsp"      "N"'
               ||CHR(10)||'      "default_bbox"             "'||REPLACE(lv_theme_extent,' ',',')||'"'
-              ||CHR(10)||'      "offsetval"                "-?[0-9]{0,10}"'
-              ||CHR(10)||'      "offsetbyxsp"              "[YN]"'
-              ||CHR(10)||'      "bbox"                     "-?[0-9]+(,[0-9]+)*"'
+              ||CHR(10)||'      "offsetval"                "^-?[0-9]{0,10}$"'
+              ||CHR(10)||'      "offsetbyxsp"              "^[YN]$"'
+              ||CHR(10)||'      "bbox"                     "^-?[\.0-9]+((,-?[\.0-9]+){3})$"'
             ;
             lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
