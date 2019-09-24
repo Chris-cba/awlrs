@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkh-arc   1.4   Sep 05 2019 12:02:32   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Sep 05 2019 12:02:32  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkh-arc   1.5   Sep 24 2019 09:55:50   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Sep 24 2019 09:55:50  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkh  $
-  --       Date fetched Out : $Modtime:   Aug 22 2019 16:20:50  $
-  --       Version          : $Revision:   1.4  $
+  --       Date fetched Out : $Modtime:   Sep 17 2019 14:12:36  $
+  --       Version          : $Revision:   1.5  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
 
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -795,7 +795,21 @@ AS
                                       ,po_message_severity    OUT hig_codes.hco_code%TYPE
                                       ,po_message_cursor      OUT sys_refcursor
                                       ,po_cursor              OUT sys_refcursor);                                  
-                                                                                                                       
+   
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_nt_column_seq_lov(pi_filter_columns   IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_filter_operators IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_filter_values_1  IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                       ,pi_filter_values_2  IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                       ,pi_order_columns    IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_order_asc_desc   IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                       ,pi_skip_n_rows      IN     PLS_INTEGER
+                                       ,pi_pagesize         IN     PLS_INTEGER
+                                       ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor      OUT sys_refcursor
+                                       ,po_cursor              OUT sys_refcursor);                                                                                                                    
   --
   -----------------------------------------------------------------------------
   --
@@ -803,12 +817,8 @@ AS
                                ,pi_nti_child_type        IN     nm_type_inclusion.nti_nw_child_type%TYPE
                                ,pi_nti_parent_column     IN     nm_type_inclusion.nti_parent_column%TYPE
                                ,pi_nti_child_column      IN     nm_type_inclusion.nti_child_column%TYPE
-                               ,pi_nti_auto_include      IN     nm_type_inclusion.nti_auto_include%TYPE
                                ,pi_nti_auto_create       IN     nm_type_inclusion.nti_auto_create%TYPE
-                               ,pi_nti_reverse_allowed   IN     nm_type_inclusion.nti_reverse_allowed%TYPE
                                ,pi_nti_code_control_col  IN     nm_type_inclusion.nti_code_control_column%TYPE
-                               ,pi_nti_group_name        IN     nm_type_inclusion.nti_group_name%TYPE
-                               ,pi_nti_search            IN     nm_type_inclusion.nti_search%TYPE
                                ,po_message_severity         OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor           OUT sys_refcursor);   
                                
@@ -819,22 +829,14 @@ AS
                                ,pi_old_nti_child_type        IN     nm_type_inclusion.nti_nw_child_type%TYPE
                                ,pi_old_nti_parent_column     IN     nm_type_inclusion.nti_parent_column%TYPE
                                ,pi_old_nti_child_column      IN     nm_type_inclusion.nti_child_column%TYPE
-                               ,pi_old_nti_auto_include      IN     nm_type_inclusion.nti_auto_include%TYPE
                                ,pi_old_nti_auto_create       IN     nm_type_inclusion.nti_auto_create%TYPE
-                               ,pi_old_nti_reverse_allowed   IN     nm_type_inclusion.nti_reverse_allowed%TYPE
                                ,pi_old_nti_code_control_col  IN     nm_type_inclusion.nti_code_control_column%TYPE
-                               ,pi_old_nti_group_name        IN     nm_type_inclusion.nti_group_name%TYPE
-                               ,pi_old_nti_search            IN     nm_type_inclusion.nti_search%TYPE
                                ,pi_new_nti_parent_type       IN     nm_type_inclusion.nti_nw_parent_type%TYPE
                                ,pi_new_nti_child_type        IN     nm_type_inclusion.nti_nw_child_type%TYPE
                                ,pi_new_nti_parent_column     IN     nm_type_inclusion.nti_parent_column%TYPE
                                ,pi_new_nti_child_column      IN     nm_type_inclusion.nti_child_column%TYPE
-                               ,pi_new_nti_auto_include      IN     nm_type_inclusion.nti_auto_include%TYPE
                                ,pi_new_nti_auto_create       IN     nm_type_inclusion.nti_auto_create%TYPE
-                               ,pi_new_nti_reverse_allowed   IN     nm_type_inclusion.nti_reverse_allowed%TYPE
                                ,pi_new_nti_code_control_col  IN     nm_type_inclusion.nti_code_control_column%TYPE
-                               ,pi_new_nti_group_name        IN     nm_type_inclusion.nti_group_name%TYPE
-                               ,pi_new_nti_search            IN     nm_type_inclusion.nti_search%TYPE
                                ,po_message_severity             OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor               OUT sys_refcursor); 
                                      
