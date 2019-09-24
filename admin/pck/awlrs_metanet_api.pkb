@@ -4,11 +4,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.4   Sep 05 2019 12:02:30   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Sep 05 2019 12:02:30  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.5   Sep 24 2019 09:55:48   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Sep 24 2019 09:55:48  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkb  $
-  --       Date fetched Out : $Modtime:   Sep 03 2019 10:40:40  $
-  --       Version          : $Revision:   1.4  $
+  --       Date fetched Out : $Modtime:   Sep 23 2019 15:39:06  $
+  --       Version          : $Revision:   1.5  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -16,7 +16,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metanet_api';
   --
@@ -2838,11 +2838,11 @@ AS
     END IF;
     --
     --lov validation--
-    IF network_type_exists(pi_network_type => pi_child_group_type) <> 'Y'
+    IF group_type_exists(pi_group_type => pi_child_group_type) <> 'Y'
      THEN
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 29
-                     ,pi_supplementary_info  => 'Child Network Type:  '||pi_child_group_type);
+                     ,pi_supplementary_info  => 'Group Type:  '||pi_child_group_type);
     END IF;
     --                 
     /*
@@ -5321,12 +5321,8 @@ AS
           ,nti_nw_child_type       nt_child_type   
           ,nti_parent_column       parent_column
           ,nti_child_column        child_column
-          ,nti_auto_include        auto_include
           ,nti_auto_create         auto_create
-          ,nti_reverse_allowed     reverse_allowed
           ,nti_code_control_column code_control_column
-          ,nti_group_name          group_name
-          ,nti_search              search
       FROM nm_type_inclusion
      WHERE nti_nw_child_type = pi_nt_child_type
      ORDER BY nti_nw_parent_type;
@@ -5359,12 +5355,8 @@ AS
           ,nti_nw_child_type       nt_child_type   
           ,nti_parent_column       parent_column
           ,nti_child_column        child_column
-          ,nti_auto_include        auto_include
           ,nti_auto_create         auto_create
-          ,nti_reverse_allowed     reverse_allowed
           ,nti_code_control_column code_control_column
-          ,nti_group_name          group_name
-          ,nti_search              search
       FROM nm_type_inclusion
      WHERE nti_nw_child_type  = pi_nt_child_type
        AND nti_nw_parent_type = pi_nt_parent_type;
@@ -5406,12 +5398,8 @@ AS
                                                 ,nti_nw_child_type       nt_child_type   
                                                 ,nti_parent_column       parent_column
                                                 ,nti_child_column        child_column
-                                                ,nti_auto_include        auto_include
                                                 ,nti_auto_create         auto_create
-                                                ,nti_reverse_allowed     reverse_allowed
                                                 ,nti_code_control_column code_control_column
-                                                ,nti_group_name          group_name
-                                                ,nti_search              search
                                             FROM nm_type_inclusion
                                            WHERE nti_nw_child_type = :pi_nt_child_type ';
   --
@@ -5419,12 +5407,8 @@ AS
                                               ||',nt_child_type'
                                               ||',parent_column'
                                               ||',child_column'
-                                              ||',auto_include'
                                               ||',auto_create'
-                                              ||',reverse_allowed'
                                               ||',code_control_column'
-                                              ||',group_name'
-                                              ||',search'
                                               ||',row_count'
                                         ||' FROM (SELECT rownum ind'
                                                     ||' ,a.*'
@@ -5646,6 +5630,113 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_paged_nt_column_seq_lov(pi_filter_columns   IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_filter_operators IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_filter_values_1  IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                       ,pi_filter_values_2  IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                       ,pi_order_columns    IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_order_asc_desc   IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                       ,pi_skip_n_rows      IN     PLS_INTEGER
+                                       ,pi_pagesize         IN     PLS_INTEGER
+                                       ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor      OUT sys_refcursor
+                                       ,po_cursor              OUT sys_refcursor)
+  IS
+  --
+  lv_lower_index      PLS_INTEGER;
+  lv_upper_index      PLS_INTEGER;
+  lv_row_restriction  nm3type.max_varchar2;
+  lv_order_by         nm3type.max_varchar2;
+  lv_filter           nm3type.max_varchar2;
+  --
+  lv_driving_sql  nm3type.max_varchar2 :='SELECT sequence_name 
+                                            FROM all_sequences 
+                                           WHERE sequence_owner = sys_context(''NM3CORE'',''APPLICATION_OWNER'')' ;
+  --
+  lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  sequence_name'
+                                              ||',row_count'
+                                              ||' FROM (SELECT rownum ind'
+                                                    ||' ,a.*'
+                                                    ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                ||' FROM ('||lv_driving_sql
+  ;
+  --
+  lt_column_data  awlrs_util.column_data_tab;
+  --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'sequence_name'
+                                ,pi_query_col  => 'sequence_name'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+    END set_column_data;
+    --
+    BEGIN
+      /*
+      ||Get the page parameters.
+      */
+      awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                    ,pi_skip_n_rows  => pi_skip_n_rows
+                                    ,pi_pagesize     => pi_pagesize
+                                    ,po_lower_index  => lv_lower_index
+                                    ,po_upper_index  => lv_upper_index
+                                    ,po_statement    => lv_row_restriction);
+      /*
+      ||Get the Order By clause.
+      */
+      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                            ,pi_order_asc_desc => pi_order_asc_desc);
+      /*
+      ||Process the filter.
+      */
+      IF pi_filter_columns.COUNT > 0
+       THEN
+          --
+          set_column_data(po_column_data => lt_column_data);
+          --
+          awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                   ,pi_column_data  => lt_column_data
+                                   ,pi_operators    => pi_filter_operators
+                                   ,pi_values_1     => pi_filter_values_1
+                                   ,pi_values_2     => pi_filter_values_2
+                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,po_where_clause => lv_filter);
+          --
+      END IF;
+      --
+      lv_cursor_sql := lv_cursor_sql
+                       ||CHR(10)||lv_filter
+                       ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'sequence_name')||') a)'
+                       ||CHR(10)||lv_row_restriction
+      ;
+      --
+      IF pi_pagesize IS NOT NULL
+       THEN
+          OPEN po_cursor FOR lv_cursor_sql
+          USING lv_lower_index
+               ,lv_upper_index;
+      ELSE
+          OPEN po_cursor FOR lv_cursor_sql
+          USING lv_lower_index;
+      END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+    EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_nt_column_seq_lov;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
   
   FUNCTION nt_inclusion_exists(pi_nti_parent_type       IN     nm_type_inclusion.nti_nw_parent_type%TYPE
                               ,pi_nti_child_type        IN     nm_type_inclusion.nti_nw_child_type%TYPE)
@@ -5699,12 +5790,8 @@ AS
                                ,pi_nti_child_type        IN     nm_type_inclusion.nti_nw_child_type%TYPE
                                ,pi_nti_parent_column     IN     nm_type_inclusion.nti_parent_column%TYPE
                                ,pi_nti_child_column      IN     nm_type_inclusion.nti_child_column%TYPE
-                               ,pi_nti_auto_include      IN     nm_type_inclusion.nti_auto_include%TYPE
                                ,pi_nti_auto_create       IN     nm_type_inclusion.nti_auto_create%TYPE
-                               ,pi_nti_reverse_allowed   IN     nm_type_inclusion.nti_reverse_allowed%TYPE
                                ,pi_nti_code_control_col  IN     nm_type_inclusion.nti_code_control_column%TYPE
-                               ,pi_nti_group_name        IN     nm_type_inclusion.nti_group_name%TYPE
-                               ,pi_nti_search            IN     nm_type_inclusion.nti_search%TYPE
                                ,po_message_severity         OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor           OUT sys_refcursor)
   IS
@@ -5719,14 +5806,8 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Child Type'
                                ,pi_parameter_value => pi_nti_child_type);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Auto Include'
-                               ,pi_parameter_value => pi_nti_auto_include);
-    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Auto Create'
                                ,pi_parameter_value => pi_nti_auto_create);
-    --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Reverse Allowed'
-                               ,pi_parameter_value => pi_nti_reverse_allowed);
     --
     IF nt_inclusion_exists(pi_nti_parent_type =>  pi_nti_parent_type
                           ,pi_nti_child_type  =>  pi_nti_child_type) = 'Y'
@@ -5782,23 +5863,15 @@ AS
            ,nti_nw_child_type
            ,nti_parent_column
            ,nti_child_column
-           ,nti_auto_include
            ,nti_auto_create
-           ,nti_reverse_allowed
            ,nti_code_control_column
-           ,nti_group_name
-           ,nti_search
            )  
     VALUES (UPPER(pi_nti_parent_type)
            ,UPPER(pi_nti_child_type)
            ,UPPER(pi_nti_parent_column)
            ,UPPER(pi_nti_child_column)
-           ,pi_nti_auto_include
            ,pi_nti_auto_create
-           ,pi_nti_reverse_allowed 
            ,pi_nti_code_control_col
-           ,pi_nti_group_name
-           ,pi_nti_search
            );
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -5818,22 +5891,14 @@ AS
                                ,pi_old_nti_child_type        IN     nm_type_inclusion.nti_nw_child_type%TYPE
                                ,pi_old_nti_parent_column     IN     nm_type_inclusion.nti_parent_column%TYPE
                                ,pi_old_nti_child_column      IN     nm_type_inclusion.nti_child_column%TYPE
-                               ,pi_old_nti_auto_include      IN     nm_type_inclusion.nti_auto_include%TYPE
                                ,pi_old_nti_auto_create       IN     nm_type_inclusion.nti_auto_create%TYPE
-                               ,pi_old_nti_reverse_allowed   IN     nm_type_inclusion.nti_reverse_allowed%TYPE
                                ,pi_old_nti_code_control_col  IN     nm_type_inclusion.nti_code_control_column%TYPE
-                               ,pi_old_nti_group_name        IN     nm_type_inclusion.nti_group_name%TYPE
-                               ,pi_old_nti_search            IN     nm_type_inclusion.nti_search%TYPE
                                ,pi_new_nti_parent_type       IN     nm_type_inclusion.nti_nw_parent_type%TYPE
                                ,pi_new_nti_child_type        IN     nm_type_inclusion.nti_nw_child_type%TYPE
                                ,pi_new_nti_parent_column     IN     nm_type_inclusion.nti_parent_column%TYPE
                                ,pi_new_nti_child_column      IN     nm_type_inclusion.nti_child_column%TYPE
-                               ,pi_new_nti_auto_include      IN     nm_type_inclusion.nti_auto_include%TYPE
                                ,pi_new_nti_auto_create       IN     nm_type_inclusion.nti_auto_create%TYPE
-                               ,pi_new_nti_reverse_allowed   IN     nm_type_inclusion.nti_reverse_allowed%TYPE
                                ,pi_new_nti_code_control_col  IN     nm_type_inclusion.nti_code_control_column%TYPE
-                               ,pi_new_nti_group_name        IN     nm_type_inclusion.nti_group_name%TYPE
-                               ,pi_new_nti_search            IN     nm_type_inclusion.nti_search%TYPE
                                ,po_message_severity             OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor               OUT sys_refcursor)
   IS
@@ -5872,14 +5937,8 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Child Type'
                                ,pi_parameter_value => pi_new_nti_child_type);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Auto Include'
-                               ,pi_parameter_value => pi_new_nti_auto_include);
-    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Auto Create'
                                ,pi_parameter_value => pi_new_nti_auto_create);
-    --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Reverse Allowed'
-                               ,pi_parameter_value => pi_new_nti_reverse_allowed);
     --
     IF nt_inclusion_exists(pi_nti_parent_type =>  pi_new_nti_parent_type
                           ,pi_nti_child_type  =>  pi_new_nti_child_type) <> 'Y'
@@ -5939,29 +5998,13 @@ AS
      OR (lr_db_rec.nti_child_column IS NULL AND pi_old_nti_child_column IS NOT NULL)
      OR (lr_db_rec.nti_child_column IS NOT NULL AND pi_old_nti_child_column IS NULL)
      --
-     OR (lr_db_rec.nti_auto_include != pi_old_nti_auto_include)
-     OR (lr_db_rec.nti_auto_include IS NULL AND pi_old_nti_auto_include IS NOT NULL)
-     OR (lr_db_rec.nti_auto_include IS NOT NULL AND pi_old_nti_auto_include IS NULL)
-     --
      OR (lr_db_rec.nti_auto_create != pi_old_nti_auto_create)
      OR (lr_db_rec.nti_auto_create IS NULL AND pi_old_nti_auto_create IS NOT NULL)
      OR (lr_db_rec.nti_auto_create IS NOT NULL AND pi_old_nti_auto_create IS NULL)
      --
-     OR (lr_db_rec.nti_reverse_allowed != pi_old_nti_reverse_allowed)
-     OR (lr_db_rec.nti_reverse_allowed IS NULL AND pi_old_nti_reverse_allowed IS NOT NULL)
-     OR (lr_db_rec.nti_reverse_allowed IS NOT NULL AND pi_old_nti_reverse_allowed IS NULL)
-     --
      OR (lr_db_rec.nti_code_control_column != pi_old_nti_code_control_col)
      OR (lr_db_rec.nti_code_control_column IS NULL AND pi_old_nti_code_control_col IS NOT NULL)
      OR (lr_db_rec.nti_code_control_column IS NOT NULL AND pi_old_nti_code_control_col IS NULL)
-     --
-     OR (lr_db_rec.nti_group_name != pi_old_nti_group_name)
-     OR (lr_db_rec.nti_group_name IS NULL AND pi_old_nti_group_name IS NOT NULL)
-     OR (lr_db_rec.nti_group_name IS NOT NULL AND pi_old_nti_group_name IS NULL)
-     --
-     OR (lr_db_rec.nti_search != pi_old_nti_search)
-     OR (lr_db_rec.nti_search IS NULL AND pi_old_nti_search IS NOT NULL)
-     OR (lr_db_rec.nti_search IS NOT NULL AND pi_old_nti_search IS NULL)
      --
      THEN
         --Updated by another user
@@ -5999,13 +6042,6 @@ AS
          lv_upd := 'Y';
       END IF;
       --
-      IF pi_old_nti_auto_include != pi_new_nti_auto_include
-       OR (pi_old_nti_auto_include IS NULL AND pi_new_nti_auto_include IS NOT NULL)
-       OR (pi_old_nti_auto_include IS NOT NULL AND pi_new_nti_auto_include IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;
-      --
       IF pi_old_nti_auto_create != pi_new_nti_auto_create
        OR (pi_old_nti_auto_create IS NULL AND pi_new_nti_auto_create IS NOT NULL)
        OR (pi_old_nti_auto_create IS NOT NULL AND pi_new_nti_auto_create IS NULL)
@@ -6013,30 +6049,9 @@ AS
          lv_upd := 'Y';
       END IF;
       --
-      IF pi_old_nti_reverse_allowed != pi_new_nti_reverse_allowed
-       OR (pi_old_nti_reverse_allowed IS NULL AND pi_new_nti_reverse_allowed IS NOT NULL)
-       OR (pi_old_nti_reverse_allowed IS NOT NULL AND pi_new_nti_reverse_allowed IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;
-      --
       IF pi_old_nti_code_control_col != pi_new_nti_code_control_col
        OR (pi_old_nti_code_control_col IS NULL AND pi_new_nti_code_control_col IS NOT NULL)
        OR (pi_old_nti_code_control_col IS NOT NULL AND pi_new_nti_code_control_col IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;
-      --
-      IF pi_old_nti_group_name != pi_new_nti_group_name
-       OR (pi_old_nti_group_name IS NULL AND pi_new_nti_group_name IS NOT NULL)
-       OR (pi_old_nti_group_name IS NOT NULL AND pi_new_nti_group_name IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;
-      --
-      IF pi_old_nti_search != pi_new_nti_search
-       OR (pi_old_nti_search IS NULL AND pi_new_nti_search IS NOT NULL)
-       OR (pi_old_nti_search IS NOT NULL AND pi_new_nti_search IS NULL)
        THEN
          lv_upd := 'Y';
       END IF;
@@ -6051,12 +6066,8 @@ AS
         UPDATE nm_type_inclusion
            SET nti_parent_column       = UPPER(pi_new_nti_parent_column)
               ,nti_child_column        = UPPER(pi_new_nti_child_column)
-              ,nti_auto_include        = pi_new_nti_auto_include
               ,nti_auto_create         = pi_new_nti_auto_create 
-              ,nti_reverse_allowed     = pi_new_nti_reverse_allowed
               ,nti_code_control_column = pi_new_nti_code_control_col
-              ,nti_group_name          = pi_new_nti_group_name  
-              ,nti_search              = pi_new_nti_search    
          WHERE nti_nw_parent_type      = pi_old_nti_parent_type
          AND nti_nw_child_type         = pi_old_nti_child_type;
         --   
@@ -7074,6 +7085,15 @@ PROCEDURE validate_nw_types(po_val_message_Tab   OUT   nm3type.tab_varchar2000
         po_val_message_tab := lt_msg_tab;      
     END IF;     
     --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+    
   END validate_nw_types;                                                           
   --                                  
 
