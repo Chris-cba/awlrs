@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.23   Jul 30 2019 09:57:02   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.24   Sep 26 2019 21:58:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   Jul 30 2019 09:57:02  $
-  --       Date fetched Out : $Modtime:   Jul 24 2019 13:17:52  $
-  --       Version          : $Revision:   1.23  $
+  --       Date into PVCS   : $Date:   Sep 26 2019 21:58:36  $
+  --       Date fetched Out : $Modtime:   Sep 26 2019 21:36:58  $
+  --       Version          : $Revision:   1.24  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.23  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.24  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -40,10 +40,11 @@ AS
   /*
   ||Constants for datatype.
   */
-  c_varchar2_col CONSTANT VARCHAR2(10) := 'VARCHAR2';
-  c_date_col     CONSTANT VARCHAR2(10) := 'DATE';
-  c_datetime_col CONSTANT VARCHAR2(10) := 'DATETIME';
-  c_number_col   CONSTANT VARCHAR2(10) := 'NUMBER';
+  c_varchar2_col          CONSTANT VARCHAR2(10) := 'VARCHAR2';
+  c_date_col              CONSTANT VARCHAR2(10) := 'DATE';
+  c_date_in_varchar2_col  CONSTANT VARCHAR2(10) := 'CHAR_DATE';
+  c_datetime_col          CONSTANT VARCHAR2(10) := 'DATETIME';
+  c_number_col            CONSTANT VARCHAR2(10) := 'NUMBER';
   /*
   ||Constants for datatype mask.
   */
