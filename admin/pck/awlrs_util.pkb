@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.31   Aug 01 2019 17:44:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.32   Sep 26 2019 21:58:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Aug 01 2019 17:44:30  $
-  --       Date fetched Out : $Modtime:   Aug 01 2019 17:42:26  $
-  --       Version          : $Revision:   1.31  $
+  --       Date into PVCS   : $Date:   Sep 26 2019 21:58:38  $
+  --       Date fetched Out : $Modtime:   Sep 26 2019 21:54:12  $
+  --       Version          : $Revision:   1.32  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.31  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.32  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -149,6 +149,20 @@ AS
                       ,po_datatype    OUT nm_type_columns.ntc_column_type%TYPE
                       ,po_format      OUT nm_type_columns.ntc_format%TYPE)
     IS
+    --
+    lr_nit  nm_inv_types_all%ROWTYPE;
+    --
+    lv_col_type  user_tab_cols.data_type%TYPE;
+    --
+    CURSOR get_col_type(cp_table_name   user_tab_cols.table_name%TYPE
+                       ,cp_column_name  user_tab_cols.column_name%TYPE)
+        IS
+    SELECT data_type
+      FROM user_tab_cols
+     WHERE table_name = cp_table_name
+       AND column_name = cp_column_name
+         ;
+    --
   BEGIN
     --
     IF pi_inv_or_ne = 'INV'
@@ -162,6 +176,25 @@ AS
          WHERE ita_inv_type = pi_obj_type
            AND ita_attrib_name = pi_column_name
              ;
+        IF po_datatype = c_date_col
+         THEN
+            /*
+            ||Check whether the date is being stored in a VARCHAR2 column.
+            */
+            lr_nit := nm3get.get_nit(pi_nit_inv_type => pi_obj_type);
+            --
+            OPEN  get_col_type(NVL(lr_nit.nit_table_name,'NM_INV_ITEMS_ALL')
+                              ,pi_column_name);
+            FETCH get_col_type
+             INTO lv_col_type;
+            CLOSE get_col_type;
+            --
+            IF lv_col_type = c_varchar2_col
+             THEN
+                po_datatype := c_date_in_varchar2_col;
+            END IF;
+            --
+        END IF;
         --
     ELSIF pi_inv_or_ne = 'NE'
      THEN
@@ -222,70 +255,76 @@ AS
         */
         lv_value := awlrs_util.escape_single_quotes(pi_string => pi_value);
         --
-        IF pi_datatype = c_number_col
-         THEN
-            /*
-            ||Try to convert to number directly.
-            */
-            BEGIN
-              --
-              lv_test_number := TO_NUMBER(lv_value);
-              --
-              lv_retval := 'TO_NUMBER('||nm3flx.string(lv_value)||')';
-              --
-            EXCEPTION
-              WHEN value_error
-               THEN
-                  lv_retval := NULL;
-            END;
-            --
-            IF lv_retval IS NULL
-             THEN
-                /*
-                ||Try to convert to number with the format mask.
-                */
-                IF pi_format_mask IS NOT NULL
+        CASE pi_datatype
+          WHEN c_number_col
+           THEN
+              /*
+              ||Try to convert to number directly.
+              */
+              BEGIN
+                --
+                lv_test_number := TO_NUMBER(lv_value);
+                --
+                lv_retval := 'TO_NUMBER('||nm3flx.string(lv_value)||')';
+                --
+              EXCEPTION
+                WHEN value_error
                  THEN
-                    BEGIN
-                      --
-                      lv_test_number := TO_NUMBER(lv_value,pi_format_mask);
-                      --
-                      lv_retval := 'TO_NUMBER('||nm3flx.string(lv_value)||','||nm3flx.string(pi_format_mask)||')';
-                      --
-                    EXCEPTION
-                     WHEN value_error
-                      THEN
-                         --Invalid numeric attribute value supplied
-                         hig.raise_ner(pi_appl               => 'AWLRS'
-                                      ,pi_id                 => 21
-                                      ,pi_supplementary_info => 'Value ['||lv_value||'] Format Mask ['||pi_format_mask||']');
-                    END;
-                END IF;
-            END IF;
-            --
-            IF lv_retval IS NULL
-             THEN
-                --Invalid numeric attribute value supplied
-                hig.raise_ner(pi_appl               => 'AWLRS'
-                             ,pi_id                 => 21
-                             ,pi_supplementary_info => 'Value ['||lv_value||']');
-            END IF;
-            --
-        ELSIF pi_datatype = c_date_col
-         THEN
-            --
-            lv_retval := 'TO_DATE('||nm3flx.string(lv_value)||','||nm3flx.string(NVL(pi_format_mask,c_date_mask))||')';
-            --
-        ELSIF pi_datatype = c_datetime_col
-         THEN
-            --
-            lv_retval := 'TO_DATE('||nm3flx.string(lv_value)||','||nm3flx.string(NVL(pi_format_mask,c_datetime_mask))||')';
-            --
-        ELSE
-            --
-            lv_retval := nm3flx.string(lv_value);
-            --
-        END IF;
+                    lv_retval := NULL;
+              END;
+              --
+              IF lv_retval IS NULL
+               THEN
+                  /*
+                  ||Try to convert to number with the format mask.
+                  */
+                  IF pi_format_mask IS NOT NULL
+                   THEN
+                      BEGIN
+                        --
+                        lv_test_number := TO_NUMBER(lv_value,pi_format_mask);
+                        --
+                        lv_retval := 'TO_NUMBER('||nm3flx.string(lv_value)||','||nm3flx.string(pi_format_mask)||')';
+                        --
+                      EXCEPTION
+                       WHEN value_error
+                        THEN
+                           --Invalid numeric attribute value supplied
+                           hig.raise_ner(pi_appl               => 'AWLRS'
+                                        ,pi_id                 => 21
+                                        ,pi_supplementary_info => 'Value ['||lv_value||'] Format Mask ['||pi_format_mask||']');
+                      END;
+                  END IF;
+              END IF;
+              --
+              IF lv_retval IS NULL
+               THEN
+                  --Invalid numeric attribute value supplied
+                  hig.raise_ner(pi_appl               => 'AWLRS'
+                               ,pi_id                 => 21
+                               ,pi_supplementary_info => 'Value ['||lv_value||']');
+              END IF;
+              --
+          WHEN c_date_col
+           THEN
+              --
+              lv_retval := 'TO_DATE('||nm3flx.string(lv_value)||','||nm3flx.string(NVL(pi_format_mask,c_date_mask))||')';
+              --
+          WHEN c_datetime_col
+           THEN
+              --
+              lv_retval := 'TO_DATE('||nm3flx.string(lv_value)||','||nm3flx.string(NVL(pi_format_mask,c_datetime_mask))||')';
+              --
+          WHEN c_date_in_varchar2_col
+           THEN
+              --
+              lv_retval := 'TO_CHAR(TO_DATE('||nm3flx.string(lv_value)||','||nm3flx.string(NVL(pi_format_mask,c_date_mask))||'),'||nm3flx.string(NVL(pi_format_mask,c_date_mask))||')';
+              --
+          ELSE
+              --
+              lv_retval := nm3flx.string(lv_value);
+              --
+        END CASE;
     END IF;
     --
     RETURN lv_retval;
