@@ -4,11 +4,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.5   Sep 24 2019 09:55:48   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Sep 24 2019 09:55:48  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.6   Sep 26 2019 14:47:24   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Sep 26 2019 14:47:24  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkb  $
-  --       Date fetched Out : $Modtime:   Sep 23 2019 15:39:06  $
-  --       Version          : $Revision:   1.5  $
+  --       Date fetched Out : $Modtime:   Sep 25 2019 16:12:56  $
+  --       Version          : $Revision:   1.6  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -16,7 +16,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.6  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metanet_api';
   --
@@ -1660,6 +1660,7 @@ AS
           ,ngt_descr                                   group_descr
           ,REPLACE(UPPER(ngt_icon_name), '.ICO', '')   icon
           ,ngt_group_type                              group_type
+          ,null                                        parent_group_type
     FROM  nm_group_types_all
     WHERE ngt_group_type = pi_parent_group_type
     UNION ALL 
@@ -1668,6 +1669,7 @@ AS
           ,nm3net.get_gty_descr(ngr_child_group_type)  group_descr
           ,REPLACE(UPPER(nm3net.get_gty_icon(ngr_child_group_type)), '.ICO', '') icon
           ,ngr_child_group_type                        group_type
+          ,ngr_parent_group_type                       parent_group_type  
     FROM nm_group_relations_all 
     CONNECT BY PRIOR ngr_child_group_type  = ngr_parent_group_type
     START WITH       ngr_parent_group_type = pi_parent_group_type;
