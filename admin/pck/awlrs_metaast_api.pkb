@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.3   Sep 06 2019 13:40:44   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.4   Oct 01 2019 15:28:24   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaast_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 06 2019 13:40:44  $
-  --       Date fetched Out : $Modtime:   Sep 05 2019 11:12:30  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   Oct 01 2019 15:28:24  $
+  --       Date fetched Out : $Modtime:   Oct 01 2019 15:17:18  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -423,6 +423,90 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION ft_pk_col_exists(pi_ft_table           IN      all_tab_columns.table_name%TYPE
+                           ,pi_column_name        IN      all_tab_columns.column_name%TYPE
+                           ,pi_nit_category       IN      nm_inv_types_all.nit_category%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM all_tab_columns
+     WHERE owner = SYS_CONTEXT('NM3CORE','APPLICATION_OWNER')
+       AND table_name = pi_ft_table
+       AND column_name = pi_column_name
+       AND (data_type = 'NUMBER' OR pi_nit_category = 'A') 
+       AND  nullable   = 'N';
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found 
+     THEN
+        RETURN lv_exists;
+  END ft_pk_col_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION ft_lr_col_exists(pi_ft_table           IN      all_tab_columns.table_name%TYPE
+                           ,pi_column_name        IN      all_tab_columns.column_name%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+	    FROM all_tab_columns
+	   WHERE owner = SYS_CONTEXT('NM3CORE','APPLICATION_OWNER')
+	     AND table_name = pi_ft_table
+       AND column_name = pi_column_name
+	     AND data_type = 'NUMBER';
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found 
+     THEN
+        RETURN lv_exists;
+  END ft_lr_col_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION ft_attribute_exists(pi_ft_table           IN      all_tab_columns.table_name%TYPE
+                              ,pi_column_name        IN      all_tab_columns.column_name%TYPE
+                              ,pi_asset_type         IN      nm_inv_type_groupings_all.itg_inv_type%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+	    FROM all_tab_columns
+	   WHERE owner = SYS_CONTEXT('NM3CORE','APPLICATION_OWNER')
+	     AND table_name = pi_ft_table
+       AND column_name = pi_column_name
+	     AND column_name NOT IN (SELECT ita_attrib_name 
+ 	   	                            FROM nm_inv_type_attribs 
+	                               WHERE ita_inv_type = pi_asset_type 
+	                                 AND column_name = ita_attrib_name);
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found 
+     THEN
+        RETURN lv_exists;
+  END ft_attribute_exists;
+    
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE check_format(pi_table_name  user_tables.table_name%TYPE
                         ,pi_col_name    VARCHAR2
                         ,pi_length      NUMBER    DEFAULT 0
@@ -517,7 +601,7 @@ AS
       INTO lv_exists
       FROM all_tab_columns
      WHERE owner = Sys_Context('NM3CORE','APPLICATION_OWNER')
-       AND table_name = 'NM_INV_ITEMS'
+       AND table_name = 'NM_INV_ITEMS_ALL'
        AND nm3inv.is_column_allowable_for_flex(column_id) = nm3type.get_true
        AND column_name = pi_col_name
        AND column_name NOT IN (SELECT ita_attrib_name
@@ -3873,8 +3957,157 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_ft_pk_lov(pi_asset_type           IN     nm_inv_type_groupings_all.itg_inv_type%TYPE
-                         ,pi_ft_table             IN     nm_inv_types.nit_table_name%TYPE
+  PROCEDURE get_paged_ft_attribute_lov(pi_asset_type           IN     nm_inv_type_groupings_all.itg_inv_type%TYPE
+                                      ,pi_ft_table             IN     nm_inv_types.nit_table_name%TYPE 
+                                      ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                      ,pi_skip_n_rows          IN     PLS_INTEGER
+                                      ,pi_pagesize             IN     PLS_INTEGER
+                                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor          OUT sys_refcursor
+                                      ,po_cursor                  OUT sys_refcursor)
+    IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 :='SELECT column_name
+                                                    ,data_type || ''('' || to_char(nvl(data_precision, data_length)) || decode(data_scale, ''0'' , null, null, null, '','' || to_char(data_scale)) || '')'' data_type
+						                                        ,data_type datatype2
+						                                        ,NVL(data_precision-data_scale, data_length) data_length_num 
+						                                        ,decode(data_scale, 0, null, data_scale) decimal_num  
+                                         	     FROM all_tab_columns
+                                         	    WHERE owner = SYS_CONTEXT(''NM3CORE'',''APPLICATION_OWNER'')
+                                         	      AND table_name = :pi_ft_table
+                                         	      AND column_name NOT IN (SELECT ita_attrib_name 
+ 	   	                                                                    FROM nm_inv_type_attribs 
+	                                                                       WHERE ita_inv_type = :pi_asset_type 
+	                                                                         AND column_name = ita_attrib_name)';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  column_name'
+                                                  ||',data_type'
+                                                  ||',datatype2'
+                                                  ||',data_length_num'
+                                                  ||',decimal_num'
+                                                  ||',row_count'
+                                            ||' FROM (SELECT rownum ind'
+                                                        ||' ,a.*'
+                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                    ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'column_name'
+                                ,pi_query_col  => 'column_name'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'data_type'
+                                ,pi_query_col  => 'data_type || ''('' || to_char(nvl(data_precision, data_length)) || decode(data_scale, ''0'' , null, null, null, '','' || to_char(data_scale)) || '')'''
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);        
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'datatype2'
+                                ,pi_query_col  => 'data_type'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'data_length_num'
+                                ,pi_query_col  => 'NVL(data_precision-data_scale, data_length)'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);  
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'decimal_num'
+                                ,pi_query_col  => 'decode(data_scale, 0, null, data_scale)'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);                             
+      --      
+    END set_column_data;
+    --    
+  BEGIN
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||CHR(10)||lv_filter
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'column_name')||') a)'
+                     ||CHR(10)||lv_row_restriction
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_ft_table
+             ,pi_asset_type
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_ft_table
+             ,pi_asset_type
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_ft_attribute_lov;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_ft_pk_lov(pi_ft_table             IN     nm_inv_types.nit_table_name%TYPE
                          ,pi_nit_category         IN     nm_inv_types.nit_category%TYPE
                          ,po_message_severity        OUT hig_codes.hco_code%TYPE
                          ,po_message_cursor          OUT sys_refcursor
@@ -3909,8 +4142,155 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_ft_lr_lov(pi_asset_type           IN     nm_inv_type_groupings_all.itg_inv_type%TYPE
-                         ,pi_ft_table             IN     nm_inv_types.nit_table_name%TYPE
+  PROCEDURE get_paged_ft_pk_lov(pi_ft_table             IN     nm_inv_types.nit_table_name%TYPE
+                               ,pi_nit_category         IN     nm_inv_types.nit_category%TYPE
+                               ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                               ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                               ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                               ,pi_skip_n_rows          IN     PLS_INTEGER
+                               ,pi_pagesize             IN     PLS_INTEGER
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor)
+    IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 :='SELECT column_name
+                                                    ,data_type || ''('' || to_char(nvl(data_precision, data_length)) || decode(data_scale, ''0'' , null, null, null, '','' || to_char(data_scale)) || '')'' data_type
+		    	                                          ,data_type datatype2
+		    	                                          ,NVL(data_precision-data_scale, data_length) data_length_num 
+		    	                                          ,decode(data_scale, 0, null, data_scale) decimal_num 	 
+	                                              FROM all_tab_columns
+	                                             WHERE owner = SYS_CONTEXT(''NM3CORE'',''APPLICATION_OWNER'')
+	                                               AND table_name = :pi_ft_table
+	                                               AND (data_type = ''NUMBER'' OR :pi_nit_category = ''A'') 
+	                                               AND nullable   = ''N''';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  column_name'
+                                                  ||',data_type'
+                                                  ||',datatype2'
+                                                  ||',data_length_num'
+                                                  ||',decimal_num'
+                                                  ||',row_count'
+                                            ||' FROM (SELECT rownum ind'
+                                                        ||' ,a.*'
+                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                    ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'column_name'
+                                ,pi_query_col  => 'column_name'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'data_type'
+                                ,pi_query_col  => 'data_type || ''('' || to_char(nvl(data_precision, data_length)) || decode(data_scale, ''0'' , null, null, null, '','' || to_char(data_scale)) || '')'''
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);        
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'datatype2'
+                                ,pi_query_col  => 'data_type'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'data_length_num'
+                                ,pi_query_col  => 'NVL(data_precision-data_scale, data_length)'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);  
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'decimal_num'
+                                ,pi_query_col  => 'decode(data_scale, 0, null, data_scale)'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);                              
+      --      
+    END set_column_data;
+    --    
+  BEGIN
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||CHR(10)||lv_filter
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'column_name')||') a)'
+                     ||CHR(10)||lv_row_restriction
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_ft_table
+             ,pi_nit_category
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_ft_table
+             ,pi_nit_category
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_ft_pk_lov;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_ft_lr_lov(pi_ft_table             IN     nm_inv_types.nit_table_name%TYPE
                          ,po_message_severity        OUT hig_codes.hco_code%TYPE
                          ,po_message_cursor          OUT sys_refcursor
                          ,po_cursor                  OUT sys_refcursor)
@@ -3940,7 +4320,149 @@ AS
                                    ,po_cursor           => po_message_cursor);
   END get_ft_lr_lov;
 
-
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_ft_lr_lov(pi_ft_table             IN     nm_inv_types.nit_table_name%TYPE
+                               ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                               ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                               ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                               ,pi_skip_n_rows          IN     PLS_INTEGER
+                               ,pi_pagesize             IN     PLS_INTEGER
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor)
+    IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 :='      SELECT column_name
+                                                          ,data_type || ''('' || to_char(nvl(data_precision, data_length)) || decode(data_scale, ''0'' , null, null, null, '','' || to_char(data_scale)) || '')'' data_type
+			                                              			,data_type datatype2
+			                                              			,NVL(data_precision-data_scale, data_length) data_length_num 
+			                                              			,decode(data_scale, 0, null, data_scale) decimal_num 
+	                                                   FROM all_tab_columns
+	                                                  WHERE owner = SYS_CONTEXT(''NM3CORE'',''APPLICATION_OWNER'')
+	                                                    AND table_name = :pi_ft_table
+	                                                    AND data_type = ''NUMBER''';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  column_name'
+                                                  ||',data_type'
+                                                  ||',datatype2'
+                                                  ||',data_length_num'
+                                                  ||',decimal_num'
+                                                  ||',row_count'
+                                            ||' FROM (SELECT rownum ind'
+                                                        ||' ,a.*'
+                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                    ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'column_name'
+                                ,pi_query_col  => 'column_name'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'data_type'
+                                ,pi_query_col  => 'data_type || ''('' || to_char(nvl(data_precision, data_length)) || decode(data_scale, ''0'' , null, null, null, '','' || to_char(data_scale)) || '')'''
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);        
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'datatype2'
+                                ,pi_query_col  => 'data_type'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'data_length_num'
+                                ,pi_query_col  => 'NVL(data_precision-data_scale, data_length)'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);  
+      --
+      awlrs_util.add_column_data(pi_cursor_col => 'decimal_num'
+                                ,pi_query_col  => 'decode(data_scale, 0, null, data_scale)'
+                                ,pi_datatype   => awlrs_util.c_varchar2_col
+                                ,pi_mask       => NULL
+                                ,pio_column_data => po_column_data);                               
+      --      
+    END set_column_data;
+    --    
+  BEGIN
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||CHR(10)||lv_filter
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'column_name')||') a)'
+                     ||CHR(10)||lv_row_restriction
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_ft_table
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_ft_table
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_ft_lr_lov;
   --
   -----------------------------------------------------------------------------
   --
@@ -4130,6 +4652,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT create_asset_domain_sp;
+    --
     awlrs_util.check_historic_mode; 
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Asset Domain'
@@ -4175,6 +4699,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK to create_asset_domain_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_asset_domain;
@@ -4218,6 +4743,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_asset_domain_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -4322,6 +4849,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK to update_asset_domain_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_asset_domain;  
@@ -4335,6 +4863,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT del_asset_domain_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -4356,6 +4886,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK to del_asset_domain_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_asset_domain;
@@ -4376,6 +4907,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT cre_asset_domain_v_sp;
     --
     awlrs_util.check_historic_mode;   
     --
@@ -4430,6 +4963,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO cre_asset_domain_v_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_asset_domain_value;
@@ -4482,6 +5016,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT upd_asset_domain_v_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -4629,6 +5165,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO upd_asset_domain_v_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_asset_domain_value;  
@@ -4644,6 +5181,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT del_asset_domain_v_sp;
     --
     awlrs_util.check_historic_mode;    
     --
@@ -4668,6 +5207,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO del_asset_domain_v_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_asset_domain_value;
@@ -4684,6 +5224,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT create_xsp_restraint_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -4732,6 +5274,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO create_xsp_restraint_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_xsp_restraint;
@@ -4776,6 +5319,8 @@ AS
     END get_db_rec;
     --
   BEGIN      
+    --
+    SAVEPOINT update_xsp_restraint_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -4829,6 +5374,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_xsp_restraint_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_xsp_restraint;  
@@ -4845,6 +5391,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT del_xsp_restraint_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -4872,6 +5420,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO del_xsp_restraint_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_xsp_restraint;
@@ -4890,6 +5439,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT create_nw_xsp_sp;
     --
     awlrs_util.check_historic_mode;   
     --
@@ -4937,6 +5488,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO create_nw_xsp_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_nw_xsp;
@@ -4986,6 +5538,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_nw_xsp_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -5129,6 +5683,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_nw_xsp_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_nw_xsp;  
@@ -5174,6 +5729,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT del_nw_xsp_sp;
+    --
     awlrs_util.check_historic_mode;  
     --
     IF  nw_xsp_exists(pi_nw_type   => pi_nw_type
@@ -5214,6 +5771,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO del_nw_xsp_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_nw_xsp;
@@ -5231,6 +5789,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT create_xsp_reversal_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -5286,6 +5846,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO create_xsp_reversal_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_xsp_reversal;
@@ -5330,6 +5891,8 @@ AS
     END get_db_rec;
     --
   BEGIN    
+    --
+    SAVEPOINT update_xsp_reversal_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -5421,6 +5984,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_xsp_reversal_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_xsp_reversal;  
@@ -5436,6 +6000,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT del_xsp_reversal_sp;
     --
     awlrs_util.check_historic_mode;   
     --
@@ -5609,8 +6175,8 @@ AS
     END IF; 
     --    
     IF pi_lr_ne_column_name IS NOT NULL 
-     AND col_name_exists(pi_asset_type   => pi_asset_type
-                        ,pi_col_name       => pi_lr_ne_column_name) <> 'Y'
+     AND ft_lr_col_exists(pi_ft_table    => pi_table_name
+                         ,pi_column_name => pi_lr_ne_column_name) <> 'Y'
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 30
@@ -5618,8 +6184,9 @@ AS
     END IF;
     --
     IF pi_ft_pk_column IS NOT NULL
-     AND col_name_exists(pi_asset_type   => pi_asset_type
-                        ,pi_col_name     => pi_ft_pk_column) <> 'Y'
+     AND ft_pk_col_exists(pi_ft_table     => pi_table_name
+                         ,pi_column_name  => pi_ft_pk_column
+                         ,pi_nit_category => pi_category) <> 'Y'
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 30
@@ -5627,8 +6194,8 @@ AS
     END IF;
     --
     IF pi_lr_st_chain IS NOT NULL
-     AND col_name_exists(pi_asset_type   => pi_asset_type
-                        ,pi_col_name     => pi_lr_st_chain) <> 'Y'
+     AND ft_lr_col_exists(pi_ft_table    => pi_table_name
+                         ,pi_column_name => pi_lr_st_chain) <> 'Y'
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 30
@@ -5636,8 +6203,8 @@ AS
     END IF;
     --
     IF pi_lr_end_chain IS NOT NULL
-     AND col_name_exists(pi_asset_type   => pi_asset_type
-                        ,pi_col_name       => pi_lr_end_chain) <> 'Y'
+     AND ft_lr_col_exists(pi_ft_table    => pi_table_name
+                         ,pi_column_name => pi_lr_end_chain) <> 'Y'
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 30
@@ -5723,6 +6290,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO del_xsp_reversal_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_asset_type;
@@ -5805,6 +6373,8 @@ AS
     END get_db_rec;
     --
   BEGIN       
+    --
+    SAVEPOINT update_asset_type_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -5915,8 +6485,8 @@ AS
      OR (pi_old_lr_ne_column_name IS NULL AND pi_new_lr_ne_column_name IS NOT NULL)
      OR (pi_old_lr_ne_column_name IS NOT NULL AND pi_new_lr_ne_column_name IS NULL)
      THEN
-       IF col_name_exists(pi_asset_type           => pi_asset_type
-                         ,pi_col_name             => pi_new_lr_ne_column_name) <> 'Y'
+       IF ft_lr_col_exists(pi_ft_table           => pi_new_table_name
+                          ,pi_column_name        => pi_new_lr_ne_column_name) <> 'Y'
         THEN
           hig.raise_ner(pi_appl => 'HIG'
                        ,pi_id   => 30
@@ -5928,8 +6498,9 @@ AS
      OR (pi_old_ft_pk_column IS NULL AND pi_new_ft_pk_column IS NOT NULL)
      OR (pi_old_ft_pk_column IS NOT NULL AND pi_new_ft_pk_column IS NULL)
      THEN
-       IF col_name_exists(pi_asset_type           => pi_asset_type
-                         ,pi_col_name             => pi_new_ft_pk_column) <> 'Y'
+       IF ft_pk_col_exists(pi_ft_table           => pi_new_table_name
+                          ,pi_column_name        => pi_new_ft_pk_column
+                          ,pi_nit_category       => pi_new_category) <> 'Y'
         THEN
           hig.raise_ner(pi_appl => 'HIG'
                        ,pi_id   => 30
@@ -5941,8 +6512,8 @@ AS
      OR (pi_old_lr_st_chain IS NULL AND pi_new_lr_st_chain IS NOT NULL)
      OR (pi_old_lr_st_chain IS NOT NULL AND pi_new_lr_st_chain IS NULL)
      THEN
-       IF col_name_exists(pi_asset_type           => pi_asset_type
-                         ,pi_col_name             => pi_new_lr_st_chain) <> 'Y'
+       IF ft_lr_col_exists(pi_ft_table           => pi_new_table_name
+                          ,pi_column_name        => pi_new_lr_st_chain) <> 'Y'
         THEN
           hig.raise_ner(pi_appl => 'HIG'
                        ,pi_id   => 30
@@ -5954,8 +6525,8 @@ AS
      OR (pi_old_lr_end_chain IS NULL AND pi_new_lr_end_chain IS NOT NULL)
      OR (pi_old_lr_end_chain IS NOT NULL AND pi_new_lr_end_chain IS NULL)
      THEN
-       IF col_name_exists(pi_asset_type           => pi_asset_type
-                         ,pi_col_name             => pi_new_lr_end_chain) <> 'Y'
+       IF ft_lr_col_exists(pi_ft_table           => pi_new_table_name
+                          ,pi_column_name        => pi_new_lr_end_chain) <> 'Y'
         THEN
           hig.raise_ner(pi_appl => 'HIG'
                        ,pi_id   => 30
@@ -6280,6 +6851,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_asset_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_asset_type;  
@@ -6293,6 +6865,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT del_asset_type_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -6314,6 +6888,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO del_asset_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_asset_type;
@@ -6356,6 +6931,8 @@ AS
     lv_validate_yn VARCHAR2(1);
     --
   BEGIN
+    --
+    SAVEPOINT cre_asset_attribute_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -6412,6 +6989,8 @@ AS
                      ,pi_supplementary_info => 'Asset Type does not exist');    
     END IF;
     --
+    lr_nit := nm3get.get_nit_all(pi_nit_inv_type => pi_asset_type);  
+    --
     /*
     ||Validate domain codes
     */
@@ -6428,12 +7007,15 @@ AS
                         ,pi_hco_code   => pi_format_mask);    
     END IF;   
     --
-    IF col_name_exists(pi_asset_type           => pi_asset_type
-                      ,pi_col_name             => pi_attrib_name) <> 'Y'
+    IF ((lr_nit.nit_table_name IS NULL AND col_name_exists(pi_asset_type   => pi_asset_type
+                                                          ,pi_col_name     => pi_attrib_name) <> 'Y') --standard asset
+     OR (lr_nit.nit_table_name IS NOT NULL AND ft_attribute_exists(pi_ft_table         => lr_nit.nit_table_name
+                                                                  ,pi_column_name      => pi_attrib_name
+                                                                  ,pi_asset_type       => pi_asset_type) <> 'Y'))-- ft asset
      THEN
-       hig.raise_ner(pi_appl => 'HIG'
-                    ,pi_id   => 30
-                    ,pi_supplementary_info => 'Column Name');    
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 30
+                     ,pi_supplementary_info => 'Column Name');
     END IF;
     --
 	  IF nm3inv.attrib_in_use(pi_inv_type    => pi_asset_type
@@ -6499,8 +7081,6 @@ AS
         hig.raise_ner(pi_appl => 'NET'
         						 ,pi_id   => 455);
     END IF;
-    --
-    lr_nit := nm3get.get_nit_all(pi_nit_inv_type => pi_asset_type);  
     --     
 	  check_format(pi_table_name => lr_nit.nit_table_name
                 ,pi_col_name   => pi_attrib_name
@@ -6574,6 +7154,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO cre_asset_attribute_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_asset_attribute;
@@ -6662,6 +7243,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT upd_asset_attribute_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -7133,6 +7716,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO upd_asset_attribute_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_asset_attribute; 
@@ -7147,6 +7731,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT del_asset_attribute_sp;
     --
     awlrs_util.check_historic_mode;   
     --
@@ -7175,6 +7761,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO del_asset_attribute_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_asset_attribute;
@@ -7195,6 +7782,8 @@ AS
     lv_validate_yn VARCHAR2(1);
     --
   BEGIN
+    --
+    SAVEPOINT create_asset_network_sp;
     --
     awlrs_util.check_historic_mode;    
     --
@@ -7248,6 +7837,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO create_asset_network_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_asset_network;
@@ -7291,6 +7881,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_asset_network_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -7394,6 +7986,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_asset_network_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_asset_network; 
@@ -7408,6 +8001,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT del_asset_network_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -7431,6 +8026,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO del_asset_network_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_asset_network;
@@ -7449,6 +8045,8 @@ AS
     lv_validate_yn VARCHAR2(1);
     --
   BEGIN
+    --
+    SAVEPOINT create_asset_role_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -7498,6 +8096,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO create_asset_role_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_asset_role;
@@ -7539,6 +8138,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_asset_role_sp;
     --
     awlrs_util.check_historic_mode;   
     --
@@ -7628,6 +8229,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_asset_role_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_asset_role; 
@@ -7642,6 +8244,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT delete_asset_role_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -7664,6 +8268,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_asset_role_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_asset_role;
@@ -7685,6 +8290,8 @@ AS
     lv_validate_yn VARCHAR2(1);
     --
   BEGIN
+    --
+    SAVEPOINT cre_asset_grouping_sp;
     --
     awlrs_util.check_historic_mode;   
     --
@@ -7750,6 +8357,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO cre_asset_grouping_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_asset_grouping;
@@ -7796,6 +8404,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT upd_asset_grouping_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -7892,6 +8502,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO upd_asset_grouping_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_asset_grouping; 
@@ -7907,6 +8518,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT del_asset_grouping_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -7932,6 +8545,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO del_asset_grouping_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_asset_grouping;
