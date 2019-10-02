@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.4   Oct 01 2019 15:28:24   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.5   Oct 02 2019 12:03:22   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaast_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 01 2019 15:28:24  $
-  --       Date fetched Out : $Modtime:   Oct 01 2019 15:17:18  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   Oct 02 2019 12:03:22  $
+  --       Date fetched Out : $Modtime:   Oct 02 2019 12:01:30  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -6026,6 +6026,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO del_xsp_reversal_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_xsp_reversal;
@@ -6066,6 +6067,8 @@ AS
     lv_flex_item_flag nm_inv_types.nit_flex_item_flag%TYPE;
     --
   BEGIN
+    --
+    SAVEPOINT create_asset_type_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -6290,7 +6293,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
-        ROLLBACK TO del_xsp_reversal_sp;
+        ROLLBACK TO create_asset_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_asset_type;
