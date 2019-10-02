@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.15   Sep 17 2019 11:37:02   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.16   Oct 02 2019 11:30:38   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 17 2019 11:37:02  $
-  --       Date fetched Out : $Modtime:   Sep 17 2019 11:06:14  $
-  --       Version          : $Revision:   1.15  $
+  --       Date into PVCS   : $Date:   Oct 02 2019 11:30:38  $
+  --       Date fetched Out : $Modtime:   Oct 02 2019 11:28:00  $
+  --       Version          : $Revision:   1.16  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.15  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.16  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -926,6 +926,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT create_admin_type_sp;
+    --
     awlrs_util.check_historic_mode;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
@@ -959,6 +961,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO create_admin_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_admin_type;
@@ -1007,6 +1010,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_admin_type_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -1104,6 +1109,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_admin_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_admin_type;
@@ -1124,6 +1130,8 @@ AS
     lv_cnt  NUMBER;
     --
   BEGIN
+    --
+    SAVEPOINT del_admin_type_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -1154,6 +1162,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO del_admin_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_admin_type;
@@ -1600,6 +1609,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT cre_parent_admin_unit_sp;
+    --
     awlrs_util.check_historic_mode; 
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Admin Type'
@@ -1666,6 +1677,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO cre_parent_admin_unit_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_parent_admin_unit;
@@ -1734,6 +1746,8 @@ AS
           --      
     END get_db_rec;    
   BEGIN
+    --
+    SAVEPOINT cre_child_admin_unit;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -1856,6 +1870,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO cre_child_admin_unit;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_child_admin_unit;
@@ -1947,6 +1962,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_admin_unit_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -2291,6 +2308,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_admin_unit_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_admin_unit;
@@ -2347,6 +2365,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT delete_admin_unit_sp;
+    --
     awlrs_util.check_historic_mode;
     --
     IF admin_unit_exists(pi_admin_unit => pi_admin_unit) <> 'Y' 
@@ -2373,6 +2393,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_admin_unit_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_admin_unit;
@@ -3453,6 +3474,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT create_module_sp;
+    --
     awlrs_util.check_historic_mode;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Module'
@@ -3528,6 +3551,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO create_module_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_module;
@@ -3581,6 +3605,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_module_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -3759,6 +3785,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_module_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_module;
@@ -3774,6 +3801,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT create_module_role_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -3821,6 +3850,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO create_module_role_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_module_role;
@@ -3863,6 +3893,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_module_role_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -3959,6 +3991,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_module_role_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_module_role;
@@ -3973,6 +4006,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT delete_module_role_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -3994,6 +4029,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_module_role_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_module_role;
@@ -4863,6 +4899,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT create_role_sp;
+    --
     awlrs_util.check_historic_mode;   
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Product'
@@ -4954,6 +4992,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO create_role_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_role;
@@ -4994,6 +5033,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_role_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -5068,6 +5109,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_role_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_role;  
@@ -5081,6 +5123,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT delete_role_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -5116,6 +5160,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_role_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_role;
