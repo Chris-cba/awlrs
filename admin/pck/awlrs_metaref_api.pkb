@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.9   Aug 01 2019 11:05:30   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.10   Oct 02 2019 11:55:18   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaref_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 01 2019 11:05:30  $
-  --       Date fetched Out : $Modtime:   Jul 31 2019 14:28:20  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   Oct 02 2019 11:55:18  $
+  --       Date fetched Out : $Modtime:   Oct 02 2019 11:55:04  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -2554,6 +2554,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT create_code_sp;
+    --
     awlrs_util.check_historic_mode;
     --
     IF domain_exists(pi_domain => pi_domain) <> 'Y' THEN
@@ -2603,6 +2605,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO create_code_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_code;
@@ -2620,6 +2623,8 @@ AS
     lv_exists hig_user_options.huo_hus_user_id%TYPE;
     --
   BEGIN
+    --
+    SAVEPOINT create_user_option_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -2660,6 +2665,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO create_user_option_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_user_option;
@@ -2676,6 +2682,8 @@ AS
     lv_unit_domain_id nm_unit_domains.ud_domain_id%TYPE := nm3unit.get_next_ud_domain_id;
     --
   BEGIN
+    --
+    SAVEPOINT create_unit_domain_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -2701,6 +2709,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO create_unit_domain_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_unit_domain;
@@ -2718,6 +2727,8 @@ AS
     lv_unit_id nm_unit_domains.ud_domain_id%TYPE := nm3unit.get_next_unit_id;
     --
   BEGIN
+    --
+    SAVEPOINT create_unit_sp;
     --
     awlrs_util.check_historic_mode;   
     --
@@ -2758,6 +2769,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO create_unit_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_unit;
@@ -2775,6 +2787,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT create_unit_conv_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -2842,6 +2856,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO create_unit_conv_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_unit_conversion;
@@ -2891,6 +2906,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_code_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -3028,6 +3045,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_code_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_code;
@@ -3065,6 +3083,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_product_option_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -3124,6 +3144,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_product_option_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_product_option;  
@@ -3165,6 +3186,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT update_user_option_sp;
+    --
     awlrs_util.check_historic_mode;
     --    
     get_db_rec(pi_user_id   => pi_user_id
@@ -3202,13 +3225,7 @@ AS
         ||check value length does not exceed prod option length and meets prod option criteria
         */
         validate_option_value(pi_option_id => pi_option_id
-                             ,pi_value     => pi_new_value); 
-                             
-        /*UPDATE hig_user_options
-           SET huo_value  = pi_new_value
-         WHERE huo_hus_user_id = pi_user_id
-           AND huo_id   = pi_option_id;
-        */
+                             ,pi_value     => pi_new_value);                             
         --
 
         hig.set_useopt (pi_huo_hus_user_id => pi_user_id
@@ -3227,6 +3244,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_user_option_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_user_option;
@@ -3268,6 +3286,8 @@ AS
       --      
     END get_db_rec;
   BEGIN
+    --
+    SAVEPOINT update_error_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -3328,6 +3348,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_error_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_error;  
@@ -3367,6 +3388,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_unit_domain_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -3434,6 +3457,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_unit_domain_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_unit_domain;
@@ -3473,6 +3497,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_unit_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -3540,6 +3566,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO update_unit_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_unit;
@@ -3584,6 +3611,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_unit_conversion_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -3702,7 +3731,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
-        --           
+        ROLLBACK TO update_unit_conversion_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_unit_conversion;
@@ -3723,6 +3752,8 @@ AS
     lv_cnt  NUMBER;
     --
   BEGIN
+    --
+    SAVEPOINT delete_domain_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -3755,6 +3786,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_domain_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_domain;
@@ -3775,6 +3807,8 @@ AS
     lv_cnt  NUMBER;
     --
   BEGIN
+    --
+    SAVEPOINT delete_unit_domain_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -3807,6 +3841,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_unit_domain_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_unit_domain;
@@ -3828,6 +3863,8 @@ AS
     lv_cnt  NUMBER;
     --
   BEGIN
+    --
+    SAVEPOINT delete_unit_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -3860,6 +3897,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_unit_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_unit;
@@ -3874,6 +3912,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT delete_user_option_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -3895,6 +3935,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_user_option_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_user_option;
@@ -3909,6 +3950,8 @@ AS
     IS
     --
   BEGIN
+    --
+    SAVEPOINT delete_unit_conversion_sp;
     --
     awlrs_util.check_historic_mode;
     --
@@ -3931,6 +3974,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_unit_conversion_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_unit_conversion;
