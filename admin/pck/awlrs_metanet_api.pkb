@@ -4,11 +4,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.6   Sep 26 2019 14:47:24   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Sep 26 2019 14:47:24  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.7   Oct 03 2019 13:55:06   Peter.Bibby  $
+  --       Date into PVCS   : $Date:   Oct 03 2019 13:55:06  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkb  $
-  --       Date fetched Out : $Modtime:   Sep 25 2019 16:12:56  $
-  --       Version          : $Revision:   1.6  $
+  --       Date fetched Out : $Modtime:   Oct 03 2019 13:42:00  $
+  --       Version          : $Revision:   1.7  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -16,7 +16,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.6  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.7  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metanet_api';
   --
@@ -605,6 +605,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT create_node_type_sp;
+    --
     awlrs_util.check_historic_mode;   
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Node Type'
@@ -648,6 +650,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO create_node_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_node_type;
@@ -691,6 +694,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_node_type_sp;
     --
     awlrs_util.check_historic_mode;   
     --
@@ -788,6 +793,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO update_node_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_node_type;
@@ -858,6 +864,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT delete_node_type_sp;
+    --
     awlrs_util.check_historic_mode; 
     --
     IF node_type_exists(pi_node_type => pi_node_type) <> 'Y'
@@ -891,6 +899,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO delete_node_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_node_type;
@@ -2032,7 +2041,7 @@ AS
     --
   EXCEPTION
     WHEN OTHERS
-     THEN
+     THEN   
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_ft_inv_for_nt;                                
@@ -2131,6 +2140,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT create_group_type_sp;
+    --
     awlrs_util.check_historic_mode; 
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Group Type'
@@ -2220,6 +2231,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO create_group_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_group_type;  
@@ -2282,6 +2294,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_group_type_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -2514,6 +2528,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO update_group_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_group_type;
@@ -2535,6 +2550,8 @@ AS
     lv_cnt  NUMBER;
     --    
   BEGIN
+    --
+    SAVEPOINT delete_group_type_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -2568,6 +2585,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO delete_group_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_group_type;    
@@ -2585,6 +2603,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT create_nt_grouping_sp;
+    --    
     awlrs_util.check_historic_mode;  
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Group Type'
@@ -2631,6 +2651,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO create_nt_grouping_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_nt_grouping;    
@@ -2675,6 +2696,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_nt_grouping_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -2769,6 +2792,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO update_nt_grouping_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_nt_grouping;    
@@ -2783,6 +2807,8 @@ AS
   IS
     --
   BEGIN
+    --
+    SAVEPOINT delete_nt_grouping_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -2805,6 +2831,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_nt_grouping_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_nt_grouping;    
@@ -2821,6 +2848,8 @@ AS
    IS
     --
   BEGIN
+    --
+    SAVEPOINT create_group_relation_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -2877,6 +2906,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK to create_group_relation_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_group_relation;                                 
@@ -2923,6 +2953,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_group_relation_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -3027,6 +3059,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK to update_group_relation_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_group_relation;                                   
@@ -3041,6 +3074,8 @@ AS
   IS
     --
   BEGIN
+    --
+    SAVEPOINT delete_group_relation_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -3065,6 +3100,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_group_relation_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_group_relation;       
@@ -3505,6 +3541,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT create_network_type_sp;
+    --
     awlrs_util.check_historic_mode; 
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Network Type'
@@ -3596,6 +3634,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO create_network_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_network_type;     
@@ -3650,6 +3689,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_network_type_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -3846,6 +3887,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO update_network_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_network_type;
@@ -3859,6 +3901,8 @@ AS
   IS
     --
   BEGIN
+    --
+    SAVEPOINT delete_network_type_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -3879,6 +3923,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO delete_network_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_network_type;    
@@ -4281,6 +4326,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT create_nt_type_column_sp;
+    --
     awlrs_util.check_historic_mode; 
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Network Type'
@@ -4404,6 +4451,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO create_nt_type_column_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_nt_type_column;                                                                       
@@ -4479,6 +4527,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_nt_type_column_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -4801,6 +4851,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO update_nt_type_column_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_nt_type_column;                                 
@@ -4815,6 +4866,8 @@ AS
   IS
     --
   BEGIN
+    --
+    SAVEPOINT delete_nt_type_column_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -4837,6 +4890,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO delete_nt_type_column_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_nt_type_column;                                  
@@ -5045,6 +5099,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT create_nt_sub_class_sp;
+    --
     awlrs_util.check_historic_mode; 
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Network Type'
@@ -5087,6 +5143,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO create_nt_sub_class_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_nt_sub_class;    
@@ -5132,6 +5189,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_nt_sub_class_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -5227,6 +5286,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO update_nt_sub_class_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_nt_sub_class;                                
@@ -5273,6 +5333,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT delete_nt_sub_class_sp;
+    --
     awlrs_util.check_historic_mode;  
     --
     IF sub_class_exists(pi_nt_type   => pi_nt_type
@@ -5302,6 +5364,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO delete_nt_sub_class_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_nt_sub_class;                                                                                                  
@@ -5800,6 +5863,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT create_nt_inclusion_sp;
+    --
     awlrs_util.check_historic_mode; 
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Parent Type'
@@ -5882,6 +5947,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO create_nt_inclusion_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_nt_inclusion;                    
@@ -5930,6 +5996,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_nt_inclusion_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -6085,6 +6153,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO update_nt_inclusion_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_nt_inclusion;     
@@ -6099,6 +6168,8 @@ AS
   IS
     --
   BEGIN
+    --
+    SAVEPOINT delete_nt_inclusion_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -6121,6 +6192,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO delete_nt_inclusion_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_nt_inclusion;       
@@ -6658,6 +6730,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT create_network_ad_type_sp;
+    --
     awlrs_util.check_historic_mode; 
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Network Type'
@@ -6752,6 +6826,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO create_network_ad_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_network_ad_type;
@@ -6809,6 +6884,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_network_ad_type_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -7029,6 +7106,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO update_network_ad_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_network_ad_type;                                                                                                           
@@ -7042,6 +7120,8 @@ AS
   IS
     --
   BEGIN
+    --
+    SAVEPOINT delete_network_ad_type_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -7062,6 +7142,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_network_ad_type_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_network_ad_type;   
