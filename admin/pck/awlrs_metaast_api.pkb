@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.5   Oct 02 2019 12:03:22   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.6   Oct 04 2019 09:33:46   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaast_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 02 2019 12:03:22  $
-  --       Date fetched Out : $Modtime:   Oct 02 2019 12:01:30  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   Oct 04 2019 09:33:46  $
+  --       Date fetched Out : $Modtime:   Oct 03 2019 11:10:06  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -3380,7 +3380,8 @@ AS
             ,itr_hro_role    asset_role
             ,itr_mode        asset_role_mode
         FROM nm_inv_type_roles
-       WHERE itr_inv_type = pi_asset_type;
+       WHERE itr_inv_type = pi_asset_type
+       ORDER BY itr_hro_role;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -4578,20 +4579,35 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_nw_types_lov(po_message_severity        OUT hig_codes.hco_code%TYPE
+  PROCEDURE get_nw_types_lov(pi_asset_type           IN     nm_inv_types_all.nit_inv_type%TYPE
+                            ,po_message_severity        OUT hig_codes.hco_code%TYPE
                             ,po_message_cursor          OUT sys_refcursor
                             ,po_cursor                  OUT sys_refcursor)
     IS
     --
+    lr_nit nm_inv_types_all%ROWTYPE;
+    --
   BEGIN
     --
-    OPEN po_cursor FOR
-      SELECT nt_type
-            ,nt_unique
-            ,nt_descr
-       FROM nm_types 
-      WHERE nt_datum = 'Y' 
-      ORDER BY nt_type;
+    lr_nit := nm3get.get_nit_all(pi_nit_inv_type => pi_asset_type);
+    --
+    IF lr_nit.nit_table_name IS NULL 
+     THEN
+        OPEN po_cursor FOR
+          SELECT nt_type
+                ,nt_unique
+                ,nt_descr
+           FROM nm_types 
+          WHERE nt_datum = 'Y' 
+          ORDER BY nt_type;
+    ELSE
+        OPEN po_cursor FOR    
+          SELECT nt_type
+                ,nt_unique
+                ,nt_descr
+           FROM nm_types 
+          ORDER BY nt_type;    
+    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -7392,11 +7408,19 @@ AS
     END IF;
     --
     lr_db_nit_rec := nm3get.get_nit_all(pi_nit_inv_type => pi_asset_type);  
-    --     
-	  check_format(pi_table_name => lr_db_nit_rec.nit_table_name
-                ,pi_col_name   => pi_attrib_name
-	              ,pi_length     => pi_new_fld_length
-                ,pi_dec_places => pi_new_dec_places);
+    --
+    IF pi_old_dec_places != pi_new_dec_places
+      OR (pi_old_dec_places IS NULL AND pi_new_dec_places IS NOT NULL)
+      OR (pi_old_dec_places IS NOT NULL AND pi_new_dec_places IS NULL)
+      OR (pi_old_fld_length != pi_new_fld_length)
+      OR (pi_old_fld_length IS NULL AND pi_new_fld_length IS NOT NULL)
+      OR (pi_old_fld_length IS NOT NULL AND pi_new_fld_length IS NULL)       
+     THEN
+        check_format(pi_table_name => lr_db_nit_rec.nit_table_name
+                    ,pi_col_name   => pi_attrib_name
+                    ,pi_length     => pi_new_fld_length
+                    ,pi_dec_places => pi_new_dec_places);
+    END IF;
     --
     get_db_rec;
     --
