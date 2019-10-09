@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.4   Sep 11 2019 16:43:06   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.5   Oct 09 2019 17:20:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_maint_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 11 2019 16:43:06  $
-  --       Date fetched Out : $Modtime:   Sep 11 2019 16:20:16  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   Oct 09 2019 17:20:28  $
+  --       Date fetched Out : $Modtime:   Oct 09 2019 16:38:32  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_maint_api';
   --
   TYPE attr_name_tab IS TABLE OF nm_inv_type_attribs_all.ita_attrib_name%TYPE INDEX BY BINARY_INTEGER;
@@ -84,6 +84,7 @@ AS
                   ,nit_descr asset_type_description
               FROM nm_inv_types
              WHERE nit_category = 'I' /*TODO - Should be able to support FT Asset Types */
+               AND nit_table_name IS NULL
                AND nit_use_xy = 'N'
                AND EXISTS (SELECT 1
                              FROM hig_users hus
@@ -749,6 +750,7 @@ AS
                   ,nit_inv_type
               FROM nm_inv_types
              WHERE nit_category = 'I' /*TODO - Should be able to support FT Asset Types */
+               AND nit_table_name IS NULL
                AND EXISTS (SELECT 1
                              FROM hig_users hus
                                  ,hig_user_roles ur
@@ -1201,7 +1203,7 @@ AS
                          ,po_message_cursor    => po_message_cursor);
     END IF;
     --
-  END;
+  END execute_query;
 
   --
   -----------------------------------------------------------------------------
@@ -1265,8 +1267,15 @@ AS
                                                      ELSE
                                                          NULL
                                                    END
-                                                 ||NVL(lt_nit(i).nit_foreign_pk_column,'iit_ne_id')||' pk,'''
-                                                 ||lt_nit(i).nit_inv_type||''' inv_type,'
+                                                 ||NVL(lt_nit(i).nit_foreign_pk_column,'iit_ne_id')||' pk,'
+                                                 ||CASE
+                                                     WHEN lt_nit(i).nit_table_name IS NULL
+                                                      THEN
+                                                         'iit_descr descr,'
+                                                     ELSE
+                                                         'CAST(NULL AS VARCHAR2(40)) descr,'
+                                                   END
+                                                 ||''''||lt_nit(i).nit_inv_type||''' inv_type,'
                                                  ||CASE
                                                      WHEN lt_nit(i).nit_table_name IS NULL
                                                       THEN
@@ -1314,7 +1323,7 @@ AS
     ELSE
         --
         lv_select_list := NULL;
-        lv_asset_tab := '(SELECT iit_ne_id pk, iit_inv_type inv_type, iit_primary_key primary_key, iit_x_sect xsp FROM nm_inv_items) assets';
+        lv_asset_tab := '(SELECT iit_ne_id pk, iit_descr descr, iit_inv_type inv_type, iit_primary_key primary_key, iit_x_sect xsp FROM nm_inv_items) assets';
         --
     END IF;
     --
@@ -1322,10 +1331,11 @@ AS
                           ||',aamr_iit_ne_id asset_id'
                           ||',aamr_inv_type asset_type'
                           ||',assets.primary_key'
+                          --||',assets.descr description'
                           ||',aamr_ne_id location_id'
                           ||',ne_unique location'
-                          ||',aamr_from_offset from_offset'
-                          ||',aamr_to_offset to_offset'
+                          ||',TO_NUMBER(nm3unit.get_formatted_value(aamr_from_offset,un_unit_id)) from_offset'
+                          ||',TO_NUMBER(nm3unit.get_formatted_value(aamr_to_offset,un_unit_id)) to_offset'
                           /*
                           ||The partial location flag is needed to warn the user when they use the
                           ||delete asset function. Since this will not be available for FT asset
@@ -1366,6 +1376,9 @@ AS
                           ||',nm_inv_types'
                           ||','||lv_asset_tab
                           ||',nm_elements'
+                          ||',nm_types'
+                          ||',nm_units'
+                          ||',nm_unit_domains'
     ;
     --
     IF pi_result_ids.COUNT > 0
@@ -1379,6 +1392,10 @@ AS
                           ||' AND aamr_iit_ne_id = assets.pk'
                           ||' AND aamr_inv_type = assets.inv_type'
                           ||' AND aamr_ne_id = ne_id(+)'
+                          ||' AND ne_nt_type = nt_type(+)'
+                          ||' AND nt_length_unit = un_unit_id(+)'
+                          ||' AND un_domain_id = ud_domain_id(+)'
+                          ||' AND ud_domain_name(+) = ''LENGTH'''
     ;
     --
     RETURN lv_retval;
