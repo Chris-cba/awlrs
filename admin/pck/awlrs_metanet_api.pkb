@@ -4,11 +4,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.7   Oct 03 2019 13:55:06   Peter.Bibby  $
-  --       Date into PVCS   : $Date:   Oct 03 2019 13:55:06  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.8   Oct 10 2019 16:05:24   Peter.Bibby  $
+  --       Date into PVCS   : $Date:   Oct 10 2019 16:05:24  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkb  $
-  --       Date fetched Out : $Modtime:   Oct 03 2019 13:42:00  $
-  --       Version          : $Revision:   1.7  $
+  --       Date fetched Out : $Modtime:   Oct 10 2019 13:58:14  $
+  --       Version          : $Revision:   1.8  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -16,7 +16,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.7  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.8  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metanet_api';
   --
@@ -5591,13 +5591,16 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT  column_name
-           ,SUBSTR(data_type,1,10) data_type 
-           ,data_length
-      FROM  all_tab_columns
-     WHERE  owner = Sys_Context('NM3CORE','APPLICATION_OWNER')
-       AND  table_name = 'NM_ELEMENTS'
-    ORDER BY column_name;
+    SELECT hco_code
+          ,SUBSTR(data_type,1,10) data_type
+          ,data_length
+      FROM hig_codes
+          ,all_tab_columns
+     WHERE HCO_DOMAIN = 'NM_ELEMENTS_COLUMNS'
+       AND table_name = 'NM_ELEMENTS'
+       AND column_name = HCO_CODE
+       AND owner = Sys_Context('NM3CORE','APPLICATION_OWNER')
+    ORDER BY hco_seq;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
