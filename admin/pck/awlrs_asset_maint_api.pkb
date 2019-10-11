@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.5   Oct 09 2019 17:20:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.6   Oct 11 2019 11:13:08   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_maint_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 09 2019 17:20:28  $
-  --       Date fetched Out : $Modtime:   Oct 09 2019 16:38:32  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   Oct 11 2019 11:13:08  $
+  --       Date fetched Out : $Modtime:   Oct 10 2019 20:58:46  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_maint_api';
   --
   TYPE attr_name_tab IS TABLE OF nm_inv_type_attribs_all.ita_attrib_name%TYPE INDEX BY BINARY_INTEGER;
@@ -1613,7 +1613,7 @@ AS
                                   ,pi_new_primary_key => lt_iit(i).iit_primary_key
                                   ,pi_new_admin_unit  => lt_iit(i).iit_admin_unit
                                   ,pi_new_xsp         => lt_iit(i).iit_x_sect
-                                  ,pi_new_description => lt_iit(i).iit_description
+                                  ,pi_new_description => lt_iit(i).iit_descr
                                   ,pi_new_start_date  => lt_iit(i).iit_start_date
                                   ,pi_new_end_date    => lt_iit(i).iit_end_date
                                   ,pi_new_notes       => lt_iit(i).iit_note
