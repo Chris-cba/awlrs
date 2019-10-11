@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.30   Sep 11 2019 16:39:52   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.31   Oct 11 2019 11:37:46   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 11 2019 16:39:52  $
-  --       Date fetched Out : $Modtime:   Sep 11 2019 16:20:16  $
-  --       Version          : $Revision:   1.30  $
+  --       Date into PVCS   : $Date:   Oct 11 2019 11:37:46  $
+  --       Date fetched Out : $Modtime:   Oct 10 2019 20:39:06  $
+  --       Version          : $Revision:   1.31  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.30  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.31  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -2517,6 +2517,11 @@ AS
        THEN
           --
           lv_scrn_text := LOWER(REPLACE(REPLACE(REPLACE(lt_ita(i).ita_scrn_text,'.',''),'"',''),' ','_'));
+          IF lv_scrn_text IN('result_id','primary_key','description','xsp','admin_unit'
+                            ,'start_date','end_date','ind','row_count')
+           THEN
+              lv_scrn_text := '__'||lv_scrn_text;
+          END IF;
           --
           IF lt_ita(i).ita_id_domain IS NOT NULL
            THEN
@@ -2575,6 +2580,11 @@ AS
     FOR i IN 1..lt_ntc.COUNT LOOP
       --
       lv_prompt := LOWER(REPLACE(REPLACE(REPLACE(lt_ntc(i).ntc_prompt,'.',''),'"',''),' ','_'));
+      IF lv_prompt IN('result_id','network_type','group_type','unique_','USRN','ESU ID','Street Name'
+                     ,'description','admin_unit','start_date','end_date','length','ind','row_count')
+       THEN
+          lv_prompt := '__'||lv_prompt;
+      END IF;
       --
       lv_flx_sql := awlrs_element_api.get_domain_sql_with_bind(pi_nt_type     => pi_nt_type
                                                               ,pi_column_name => lt_ntc(i).ntc_column_name);
@@ -2901,6 +2911,11 @@ AS
     FOR i IN 1..lt_attr.COUNT LOOP
       --
       lv_prompt := LOWER(REPLACE(REPLACE(REPLACE(lt_attr(i).ntc_prompt,'.',''),'"',''),' ','_'));
+      IF lv_prompt IN('result_id','network_type','group_type','unique_','USRN','ESU ID','Street Name'
+                     ,'description','admin_unit','start_date','end_date','length','ind','row_count')
+       THEN
+          lv_prompt := '__'||lv_prompt;
+      END IF;
       --
       lv_flx_sql := awlrs_element_api.get_domain_sql_with_bind(pi_nt_type     => pi_nt_type
                                                               ,pi_column_name => lt_attr(i).ntc_column_name);
@@ -3369,6 +3384,11 @@ AS
     FOR i IN 1..lt_attr.COUNT LOOP
       --
       lv_prompt := LOWER(REPLACE(REPLACE(REPLACE(lt_attr(i).ita_scrn_text,'.',''),'"',''),' ','_'));
+      IF lv_prompt IN('result_id','primary_key','description','xsp','admin_unit'
+                     ,'start_date','end_date','ind','row_count')
+       THEN
+          lv_prompt := '__'||lv_prompt;
+      END IF;
       --
       IF lt_attr(i).ita_id_domain IS NOT NULL
        THEN
