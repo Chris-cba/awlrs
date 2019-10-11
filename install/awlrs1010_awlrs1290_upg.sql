@@ -3,11 +3,11 @@
 --
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1290_upg.sql-arc   1.0   Oct 11 2019 14:21:10   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs1290_upg.sql-arc   1.1   Oct 11 2019 16:09:00   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrs1010_awlrs1290_upg.sql  $
---       Date into PVCS   : $Date:   Oct 11 2019 14:21:10  $
---       Date fetched Out : $Modtime:   Oct 11 2019 14:13:40  $
---       Version          : $Revision:   1.0  $
+--       Date into PVCS   : $Date:   Oct 11 2019 16:09:00  $
+--       Date fetched Out : $Modtime:   Oct 11 2019 15:31:14  $
+--       Version          : $Revision:   1.1  $
 --
 --   Product upgrade script
 --
@@ -44,7 +44,7 @@ begin
                           ,p_new_version           => '1.2.9.1'
                           ,p_allowed_old_version_1 => '1.0.1.0'
                           ,p_allowed_old_version_2 => '1.1.8.4'
-                          ,p_allowed_old_version_3 => '1.2.7.1'
+                          ,p_allowed_old_version_3 => '1.2.8.1'
                           );
 END;
 /
