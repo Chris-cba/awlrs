@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.22   Aug 21 2019 12:23:32   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.23   Oct 11 2019 14:20:28   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Aug 21 2019 12:23:32  $
---       Date fetched Out : $Modtime:   Aug 21 2019 12:10:36  $
---       Version          : $Revision:   1.22  $
+--       Date into PVCS   : $Date:   Oct 11 2019 14:20:28  $
+--       Date fetched Out : $Modtime:   Oct 11 2019 14:01:52  $
+--       Version          : $Revision:   1.23  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 21-AUG-2019 12:10
+--       Generation Date  : 11-OCT-2019 14:01
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -1590,6 +1590,24 @@ INSERT
       ,HSTF_DESCR
       ,HSTF_TYPE
       ,HSTF_ORDER)
+SELECT 'AWLRS_ASSET'
+      ,'NM0410'
+      ,'Asset Types'
+      ,'M'
+      ,10
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_ASSET'
+                     AND HSTF_CHILD = 'NM0410');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
 SELECT 'AWLRS_LAUNCHPAD'
       ,'AWLRS_ASSET'
       ,'Asset Metadata'
@@ -1708,6 +1726,42 @@ SELECT 'AWLRS_NETWORK'
                     FROM HIG_STANDARD_FAVOURITES
                    WHERE HSTF_PARENT = 'AWLRS_NETWORK'
                      AND HSTF_CHILD = 'NM0001');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_NETWORK'
+      ,'NM0002'
+      ,'Network Types'
+      ,'M'
+      ,20
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_NETWORK'
+                     AND HSTF_CHILD = 'NM0002');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_NETWORK'
+      ,'NM0004'
+      ,'Group Types'
+      ,'M'
+      ,30
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_NETWORK'
+                     AND HSTF_CHILD = 'NM0004');
 --
 INSERT
   INTO HIG_STANDARD_FAVOURITES
