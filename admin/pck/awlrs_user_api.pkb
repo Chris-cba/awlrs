@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.0   Sep 27 2019 15:06:14   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Sep 27 2019 15:06:14  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.1   Oct 11 2019 14:20:28   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Oct 11 2019 14:20:28  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Sep 27 2019 14:28:18  $
-  --       Version          : $Revision:   1.0  $
+  --       Date fetched Out : $Modtime:   Oct 11 2019 14:17:40  $
+  --       Version          : $Revision:   1.1  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.0  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -1189,6 +1189,8 @@ AS
   --
   BEGIN
     --
+    SAVEPOINT create_user_sp;
+    --
     awlrs_util.check_historic_mode;  
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Initials'
@@ -1324,6 +1326,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO create_user_sp; 
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_user; 
@@ -2419,6 +2422,8 @@ AS
   --
   BEGIN
     --
+    SAVEPOINT update_user_sp;
+    --
     awlrs_util.check_historic_mode; 
     --
     validate_user_for_update(pi_old_user_id           =>  pi_old_user_id
@@ -2624,6 +2629,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO update_user_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);       
   END update_user;
@@ -2689,6 +2695,8 @@ AS
     --
   BEGIN
     --
+    SAVEPOINT delete_user_sp;
+    --
     awlrs_util.check_historic_mode; 
     --
     awlrs_util.validate_yn(pi_parameter_desc  => 'Disable User Jobs?'
@@ -2736,6 +2744,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_user_sp; 
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_user;                        
@@ -3087,6 +3096,8 @@ AS
   --                       
   BEGIN
     --
+    SAVEPOINT create_user_role_sp;
+    --
     awlrs_util.check_historic_mode;  
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Username'
@@ -3160,6 +3171,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO create_user_role_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_user_role; 
@@ -3240,6 +3252,8 @@ AS
     
   BEGIN
     --
+    SAVEPOINT delete_user_role_sp;
+    --
     awlrs_util.check_historic_mode;  
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Username'
@@ -3292,6 +3306,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO delete_user_role_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_user_role;                            
@@ -3639,6 +3654,8 @@ AS
   --
   BEGIN
     --
+    SAVEPOINT create_user_admin_unit_sp;
+    --
     awlrs_util.check_historic_mode;  
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'User Id'
@@ -3695,6 +3712,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO create_user_admin_unit_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_user_admin_unit;                                   
@@ -3742,6 +3760,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_user_admin_unit_sp;
     --
     awlrs_util.check_historic_mode;   
     --
@@ -3856,6 +3876,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO update_user_admin_unit_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_user_admin_unit;
@@ -3871,6 +3892,8 @@ AS
   IS
     --
   BEGIN
+    --
+    SAVEPOINT delete_user_admin_unit_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -3895,6 +3918,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_user_admin_unit_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_user_admin_unit;                                  
@@ -4303,6 +4327,8 @@ AS
   --
   BEGIN
     --
+    SAVEPOINT create_user_option_sp;
+    --
     awlrs_util.check_historic_mode;  
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'User Id'
@@ -4342,6 +4368,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO create_user_option_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_user_option;                            
@@ -4384,6 +4411,8 @@ AS
     END get_db_rec;
     --
   BEGIN
+    --
+    SAVEPOINT update_user_option_sp;
     --
     awlrs_util.check_historic_mode;   
     --
@@ -4468,6 +4497,7 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
+        ROLLBACK TO update_user_option_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_user_option;                                                          
@@ -4483,6 +4513,8 @@ AS
   IS
     --
   BEGIN
+    --
+    SAVEPOINT delete_user_option_sp;
     --
     awlrs_util.check_historic_mode; 
     --
@@ -4504,6 +4536,7 @@ AS
   EXCEPTION
     WHEN others
      THEN
+        ROLLBACK TO delete_user_option_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_user_option;                                                                                                                                                
