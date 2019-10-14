@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.6   Oct 04 2019 09:33:46   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.7   Oct 14 2019 10:07:50   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaast_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 04 2019 09:33:46  $
-  --       Date fetched Out : $Modtime:   Oct 03 2019 11:10:06  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   Oct 14 2019 10:07:50  $
+  --       Date fetched Out : $Modtime:   Oct 14 2019 08:23:08  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -7020,7 +7020,7 @@ AS
     hig.valid_fk_hco(pi_hco_domain => 'ATTRIBUTE_CASE'
                     ,pi_hco_code   => pi_case);  
     --
-    IF pi_format_mask IS NOT NULL
+    IF pi_format = 'DATE' and pi_format_mask IS NOT NULL
      THEN
         hig.valid_fk_hco(pi_hco_domain => 'DATE_FORMAT_MASK'
                         ,pi_hco_code   => pi_format_mask);    
@@ -7335,8 +7335,11 @@ AS
      OR (pi_old_format_mask IS NULL AND pi_new_format_mask IS NOT NULL)
      OR (pi_old_format_mask IS NOT NULL AND pi_new_format_mask IS NULL)
      THEN
-        hig.valid_fk_hco(pi_hco_domain => 'DATE_FORMAT_MASK'
-                        ,pi_hco_code   => pi_new_format_mask);  
+        IF pi_new_format_mask IS NOT NULL AND pi_new_format = 'DATE'
+         THEN
+            hig.valid_fk_hco(pi_hco_domain => 'DATE_FORMAT_MASK'
+                            ,pi_hco_code   => pi_new_format_mask);  
+        END IF;
     END IF; 
     /*
     ||validate units 
