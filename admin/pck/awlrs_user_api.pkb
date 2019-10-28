@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.1   Oct 11 2019 14:20:28   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Oct 11 2019 14:20:28  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.2   Oct 28 2019 14:37:46   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Oct 28 2019 14:37:46  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Oct 11 2019 14:17:40  $
-  --       Version          : $Revision:   1.1  $
+  --       Date fetched Out : $Modtime:   Oct 25 2019 13:47:10  $
+  --       Version          : $Revision:   1.2  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -3326,11 +3326,12 @@ AS
     SELECT nua.nua_user_id     user_id
           ,nua.nua_admin_unit  admin_unit
           ,nau.nau_unit_code   admin_unit_code
+          ,nau.nau_name        description
           ,nau.nau_admin_type  admin_type
           ,nua.nua_mode        mode_
           ,nua.nua_start_date  start_date
           ,nua.nua_end_date    end_date
-      FROM nm_user_aus nua
+      FROM nm_user_aus_all nua
           ,nm_admin_units nau               
      WHERE nua_user_id        = pi_user_id
        AND nau.nau_admin_unit = nua.nua_admin_unit
@@ -3362,11 +3363,12 @@ AS
     SELECT nua.nua_user_id     user_id
           ,nua.nua_admin_unit  admin_unit
           ,nau.nau_unit_code   admin_unit_code
+          ,nau.nau_name        description
           ,nau.nau_admin_type  admin_type
           ,nua.nua_mode        mode_
           ,nua.nua_start_date  start_date
           ,nua.nua_end_date    end_date
-      FROM nm_user_aus nua
+      FROM nm_user_aus_all nua
           ,nm_admin_units nau               
      WHERE nua_user_id        = pi_user_id 
        AND nau.nau_admin_unit = nua.nua_admin_unit
@@ -3408,11 +3410,12 @@ AS
       lv_driving_sql  nm3type.max_varchar2 :='SELECT nua.nua_user_id     user_id
                                                     ,nua.nua_admin_unit  admin_unit
                                                     ,nau.nau_unit_code   admin_unit_code
+                                                    ,nau.nau_name        description
                                                     ,nau.nau_admin_type  admin_type
                                                     ,nua.nua_mode        mode_
                                                     ,nua.nua_start_date  start_date
                                                     ,nua.nua_end_date    end_date
-                                                FROM nm_user_aus nua
+                                                FROM nm_user_aus_all nua
                                                     ,nm_admin_units nau               
                                                WHERE nua_user_id        = :pi_user_id
                                                  AND nau.nau_admin_unit = nua.nua_admin_unit ';
@@ -3420,6 +3423,7 @@ AS
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  user_id'
                                                   ||',admin_unit'
                                                   ||',admin_unit_code'
+                                                  ||',description'
                                                   ||',admin_type'
                                                   ||',mode_'
                                                   ||',start_date'
@@ -3439,6 +3443,12 @@ AS
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'admin_unit_code'
                                 ,pi_query_col    => 'nau_unit_code'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'description'
+                                ,pi_query_col    => 'nau_name'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
@@ -3592,9 +3602,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION user_admin_unit_exists(pi_user_id     IN  nm_user_aus_all.nua_user_id%TYPE
-                                 ,pi_admin_unit  IN  nm_user_aus_all.nua_admin_unit%TYPE
-                                 ,pi_start_date  IN  nm_user_aus_all.nua_start_date%TYPE)
+  FUNCTION user_admin_unit_exists_dt(pi_user_id     IN  nm_user_aus_all.nua_user_id%TYPE
+                                    ,pi_admin_unit  IN  nm_user_aus_all.nua_admin_unit%TYPE
+                                    ,pi_start_date  IN  nm_user_aus_all.nua_start_date%TYPE)
     RETURN VARCHAR2
   IS
     lv_exists VARCHAR2(1):= 'N';
@@ -3614,8 +3624,34 @@ AS
     WHEN NO_DATA_FOUND
      THEN
         RETURN lv_exists;
-  END user_admin_unit_exists;
+  END user_admin_unit_exists_dt;
   
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION user_admin_unit_exists(pi_user_id     IN  nm_user_aus_all.nua_user_id%TYPE
+                                 ,pi_admin_unit  IN  nm_user_aus_all.nua_admin_unit%TYPE
+                                 ,pi_start_date  IN  nm_user_aus_all.nua_start_date%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM nm_user_aus_all
+     WHERE nua_user_id     =  pi_user_id
+       AND nua_admin_unit  =  pi_admin_unit
+       AND nua_start_date  =  pi_start_date;
+       --AND nua_end_date   IS NULL;
+    --
+    RETURN lv_exists;
+    --       
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+  END user_admin_unit_exists;
   --
   -----------------------------------------------------------------------------
   --
@@ -3679,9 +3715,9 @@ AS
                      ,pi_supplementary_info  => 'Admin Unit already assigned to this User');
     END IF;                 
     --
-    IF user_admin_unit_exists(pi_user_id    => pi_user_id
-                             ,pi_admin_unit => pi_admin_unit
-                             ,pi_start_date => pi_start_date) = 'Y'
+    IF user_admin_unit_exists_dt(pi_user_id    => pi_user_id
+                                ,pi_admin_unit => pi_admin_unit
+                                ,pi_start_date => pi_start_date) = 'Y'
      THEN
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 29
@@ -3831,7 +3867,7 @@ AS
          lv_upd := 'Y';
       END IF;
       --
-      /*
+      
       IF pi_old_start_date != pi_new_start_date
        OR (pi_old_start_date IS NULL AND pi_new_start_date IS NOT NULL)
        OR (pi_old_start_date IS NOT NULL AND pi_new_start_date IS NULL)
@@ -3845,7 +3881,6 @@ AS
        THEN
          lv_upd := 'Y';
       END IF;
-      */
       --
       IF lv_upd = 'N'
        THEN
@@ -3858,8 +3893,8 @@ AS
            SET nua_user_id    =  pi_new_user_id
               ,nua_admin_unit =  pi_new_admin_unit
               ,nua_mode       =  pi_new_mode
-              --,nua_start_date =  pi_new_start_date
-              --,nua_end_date   =  pi_new_end_date
+              ,nua_start_date =  pi_new_start_date
+              ,nua_end_date   =  pi_new_end_date
          WHERE nua_user_id    =  pi_old_user_id
            AND nua_admin_unit =  pi_old_admin_unit
            AND nua_start_date =  pi_old_start_date;
@@ -3887,6 +3922,7 @@ AS
   PROCEDURE delete_user_admin_unit(pi_user_id          IN     nm_user_aus_all.nua_user_id%TYPE
                                   ,pi_admin_unit       IN     nm_user_aus_all.nua_admin_unit%TYPE
                                   ,pi_start_date       IN     nm_user_aus_all.nua_start_date%TYPE
+                                  ,pi_end_date         IN     nm_user_aus_all.nua_end_date%TYPE
                                   ,po_message_severity    OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor      OUT sys_refcursor)
   IS
@@ -3907,7 +3943,7 @@ AS
     END IF;
     --    
     UPDATE nm_user_aus_all
-       SET nua_end_date   =  TRUNC(SYSDATE)
+       SET nua_end_date   =  NVL(pi_end_date, TRUNC(SYSDATE))
      WHERE nua_user_id    =  pi_user_id
        AND nua_admin_unit =  pi_admin_unit
        AND nua_start_date =  pi_start_date;
