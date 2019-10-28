@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkh-arc   1.0   Sep 27 2019 15:05:36   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Sep 27 2019 15:05:36  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkh-arc   1.1   Oct 28 2019 14:37:48   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Oct 28 2019 14:37:48  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkh  $
-  --       Date fetched Out : $Modtime:   Sep 27 2019 14:11:26  $
-  --       Version          : $Revision:   1.0  $
+  --       Date fetched Out : $Modtime:   Oct 18 2019 09:23:34  $
+  --       Version          : $Revision:   1.1  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
 
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.0  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -445,6 +445,7 @@ AS
   PROCEDURE delete_user_admin_unit(pi_user_id          IN     nm_user_aus_all.nua_user_id%TYPE
                                   ,pi_admin_unit       IN     nm_user_aus_all.nua_admin_unit%TYPE
                                   ,pi_start_date       IN     nm_user_aus_all.nua_start_date%TYPE
+                                  ,pi_end_date         IN     nm_user_aus_all.nua_end_date%TYPE
                                   ,po_message_severity    OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor      OUT sys_refcursor);
                             
