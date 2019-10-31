@@ -4,11 +4,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.8   Oct 10 2019 16:05:24   Peter.Bibby  $
-  --       Date into PVCS   : $Date:   Oct 10 2019 16:05:24  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.9   Oct 31 2019 14:32:24   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Oct 31 2019 14:32:24  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkb  $
-  --       Date fetched Out : $Modtime:   Oct 10 2019 13:58:14  $
-  --       Version          : $Revision:   1.8  $
+  --       Date fetched Out : $Modtime:   Oct 31 2019 12:46:50  $
+  --       Version          : $Revision:   1.9  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -16,7 +16,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.8  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.9  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metanet_api';
   --
@@ -1680,7 +1680,7 @@ AS
           ,ngr_child_group_type                        group_type
           ,ngr_parent_group_type                       parent_group_type  
     FROM nm_group_relations_all 
-    CONNECT BY PRIOR ngr_child_group_type  = ngr_parent_group_type
+    CONNECT BY NOCYCLE PRIOR ngr_child_group_type  = ngr_parent_group_type
     START WITH       ngr_parent_group_type = pi_parent_group_type;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
