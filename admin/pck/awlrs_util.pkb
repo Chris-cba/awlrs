@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.32   Sep 26 2019 21:58:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.33   Nov 06 2019 14:37:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Sep 26 2019 21:58:38  $
-  --       Date fetched Out : $Modtime:   Sep 26 2019 21:54:12  $
-  --       Version          : $Revision:   1.32  $
+  --       Date into PVCS   : $Date:   Nov 06 2019 14:37:14  $
+  --       Date fetched Out : $Modtime:   Nov 06 2019 13:54:54  $
+  --       Version          : $Revision:   1.33  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.32  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.33  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -540,12 +540,13 @@ AS
     END LOOP;
     --
     OPEN po_cursor FOR
-    SELECT hov_id
-          ,hov_value
-      FROM hig_option_values
-     WHERE hov_id IN(SELECT * FROM TABLE(CAST(lt_names AS nm_code_tbl)))
+    SELECT hol_id option_id
+          ,hig.get_user_or_sys_opt(hol_id) option_value
+          ,hol_user_option can_be_user_option
+      FROM hig_option_list
+     WHERE hol_id IN(SELECT * FROM TABLE(CAST(lt_names AS nm_code_tbl)))
      ORDER
-        BY hov_id
+        BY hol_id
          ;
     --
     get_default_success_cursor(po_message_severity => po_message_severity
@@ -557,6 +558,98 @@ AS
         handle_exception(po_message_severity => po_message_severity
                         ,po_cursor           => po_message_cursor);
   END get_hig_option_values;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE set_user_option(pi_option_name      IN  hig_user_options.huo_id%TYPE
+                           ,pi_value            IN  hig_user_options.huo_value%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    lr_option  hig_user_option_list_all%ROWTYPE;
+    --
+    CURSOR get_option(cp_option_id IN hig_user_option_list.huol_id%TYPE)
+        IS
+    SELECT *
+      FROM hig_user_option_list_all
+     WHERE huol_id = cp_option_id
+         ;
+    --
+  BEGIN
+    --
+    OPEN  get_option(pi_option_name);
+    FETCH get_option
+     INTO lr_option;
+    IF get_option%NOTFOUND
+     THEN
+        --
+        CLOSE get_option;
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 83
+                     ,pi_supplementary_info => pi_option_name);
+        --
+    END IF;
+    CLOSE get_option;
+    --
+    IF lr_option.huol_domain IS NOT NULL
+     THEN
+        DECLARE
+          l_invalid EXCEPTION;
+          PRAGMA EXCEPTION_INIT (l_invalid,-20001);
+        BEGIN
+          hig.valid_fk_hco(pi_hco_domain => lr_option.huol_domain
+                          ,pi_hco_code   => pi_value);
+        EXCEPTION
+          WHEN l_invalid
+           THEN
+              hig.raise_ner(pi_appl               => nm3type.c_hig
+                           ,pi_id                 => 109
+                           ,pi_supplementary_info => '"'||lr_option.huol_domain||'" -> "'||pi_value||'"');
+        END;
+    END IF;
+    --
+    IF lr_option.huol_datatype = nm3type.c_varchar
+     THEN
+        IF lr_option.huol_mixed_case = 'N'
+         AND pi_value != UPPER(pi_value)
+         THEN
+            hig.raise_ner(pi_appl               => nm3type.c_hig
+                         ,pi_id                 => 159
+                         ,pi_supplementary_info => pi_value);
+        END IF;
+    ELSIF lr_option.huol_datatype = nm3type.c_number
+     THEN
+        IF NOT nm3flx.is_numeric (pi_value)
+         THEN
+            hig.raise_ner(pi_appl               => nm3type.c_hig
+                         ,pi_id                 => 111
+                         ,pi_supplementary_info => pi_value);
+        END IF;
+    ELSIF lr_option.huol_datatype = nm3type.c_date
+     THEN
+        IF hig.date_convert (pi_value) IS NULL
+         THEN
+            hig.raise_ner(pi_appl               => nm3type.c_hig
+                         ,pi_id                 => 148
+                         ,pi_supplementary_info => pi_value);
+        END IF;
+    END IF;
+    --
+    hig.set_useopt(pi_huo_hus_user_id => sys_context('NM3CORE', 'USER_ID')
+                  ,pi_huo_id          => pi_option_name
+                  ,pi_huo_value       => pi_value);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END set_user_option;
 
   --
   -----------------------------------------------------------------------------
