@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.42   Sep 19 2019 15:37:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.43   Nov 12 2019 15:07:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 19 2019 15:37:12  $
-  --       Date fetched Out : $Modtime:   Sep 19 2019 15:36:18  $
-  --       Version          : $Revision:   1.42  $
+  --       Date into PVCS   : $Date:   Nov 12 2019 15:07:36  $
+  --       Date fetched Out : $Modtime:   Nov 12 2019 14:36:22  $
+  --       Version          : $Revision:   1.43  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.42  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.43  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -2650,10 +2650,13 @@ AS
         --
         lv_tmp := CHR(10)||'    METADATA'
               ||CHR(10)||'      "wms_title"                   "'||lv_title||'"'
-              ||CHR(10)||'      "wms_enable_request"          "*"'
+              ||CHR(10)||'      "wms_srs"                     "EPSG:'||lv_epsg||'"'
               ||CHR(10)||'      "wms_extent"                  "'||lv_theme_extent||'"'
+              ||CHR(10)||'      "wms_enable_request"          "*"'
               ||CHR(10)||'      "wfs_title"                   "'||lv_title||'"'
               ||CHR(10)||'      "wfs_featureid"               "'||lv_wfs_featureid||'"'
+              ||CHR(10)||'      "wfs_srs"                     "EPSG:'||lv_epsg||'"'
+              ||CHR(10)||'      "wfs_extent"                  "'||lv_theme_extent||'"'
               ||CHR(10)||'      "wfs_enable_request"          "*"'
               ||CHR(10)||'      "wfs_getfeature_formatlist"   "SHAPEZIP,CSV,JSON"'
               ||CHR(10)||'      "gml_featureid"               "'||lt_themes(i).nth_feature_pk_column||'"'
@@ -3325,10 +3328,10 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION generate_map_file(pi_map_name           IN VARCHAR2
-                            ,pi_proj_lib           IN VARCHAR2
-                            ,pi_all_ft_cols        IN VARCHAR2 DEFAULT 'N'
-                            ,pi_effective_date     IN DATE DEFAULT NULL)
+  FUNCTION generate_map_file(pi_map_name       IN VARCHAR2
+                            ,pi_proj_lib       IN VARCHAR2
+                            ,pi_all_ft_cols    IN VARCHAR2 DEFAULT 'N'
+                            ,pi_effective_date IN DATE DEFAULT NULL)
     RETURN CLOB IS
     --
     lv_retval  CLOB;
@@ -3400,17 +3403,20 @@ AS
       ||CHR(10)||'  WEB'
       ||CHR(10)||'    METADATA'
       ||CHR(10)||'      "ows_enable_request"          "*"'
-      ||CHR(10)||'      "wms_onlineresource"          "http://localhost/cgi-bin/mapserv"'
-      ||CHR(10)||'      "wfs_onlineresource"          "http://localhost/cgi-bin/mapserv"'
       ||CHR(10)||'      "wms_title"                   "WMS '||NVL(lr_usm.description,lr_usm.name)||'"'
-      ||CHR(10)||'      "wfs_title"                   "WFS '||NVL(lr_usm.description,lr_usm.name)||'"'
+      ||CHR(10)||'      "wms_onlineresource"          "%mapurl%"'
       ||CHR(10)||'      "wms_srs"                     "'||lv_wms_srs||'"'
-      ||CHR(10)||'      "wfs_srs"                     "'||lv_wms_srs||'"'
-      ||CHR(10)||'      "wfs_abstract"                "Bentley AWLRS Service."'
-      ||CHR(10)||'      "wfs_request_method"          "GET"'
-      ||CHR(10)||'      "wfs_enable_request"          "*"'
+      ||CHR(10)||'      "wms_extent"                  "'||g_min_x||' '||g_min_y||' '||g_max_x||' '||g_max_y||'"'
+      ||CHR(10)||'      "wms_abstract"                "Bentley AWLRS Service."'
       ||CHR(10)||'      "wms_enable_request"          "*"'
       ||CHR(10)||'      "wms_feature_info_mime_type"  "text/html"'
+      ||CHR(10)||'      "wfs_title"                   "WFS '||NVL(lr_usm.description,lr_usm.name)||'"'
+      ||CHR(10)||'      "wfs_onlineresource"          "%mapurl%"'
+      ||CHR(10)||'      "wfs_srs"                     "'||lv_wms_srs||'"'
+      ||CHR(10)||'      "wfs_extent"                  "'||g_min_x||' '||g_min_y||' '||g_max_x||' '||g_max_y||'"'
+      ||CHR(10)||'      "wfs_abstract"                "Bentley AWLRS Service."'
+      --||CHR(10)||'      "wfs_request_method"          "GET"'
+      ||CHR(10)||'      "wfs_enable_request"          "*"'
       ||CHR(10)||'      "tile_map_edge_buffer"        "64"' --rendering buffer in pixels
       ||CHR(10)||'    END'
       ||CHR(10)||'  END'
@@ -3501,13 +3507,13 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_map_file(pi_map_name           IN  VARCHAR2
-                        ,pi_proj_lib           IN  VARCHAR2
-                        ,pi_all_ft_cols        IN  VARCHAR2 DEFAULT 'N'
-                        ,pi_effective_date     IN  DATE DEFAULT NULL
-                        ,po_message_severity   OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor     OUT sys_refcursor
-                        ,po_cursor             OUT sys_refcursor)
+  PROCEDURE get_map_file(pi_map_name         IN  VARCHAR2
+                        ,pi_proj_lib         IN  VARCHAR2
+                        ,pi_all_ft_cols      IN  VARCHAR2 DEFAULT 'N'
+                        ,pi_effective_date   IN  DATE DEFAULT NULL
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor
+                        ,po_cursor           OUT sys_refcursor)
     IS
     --
     lv_map_file  CLOB;
