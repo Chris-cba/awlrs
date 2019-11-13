@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.16   Oct 02 2019 11:30:38   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.17   Nov 13 2019 16:19:24   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 02 2019 11:30:38  $
-  --       Date fetched Out : $Modtime:   Oct 02 2019 11:28:00  $
-  --       Version          : $Revision:   1.16  $
+  --       Date into PVCS   : $Date:   Nov 13 2019 16:19:24  $
+  --       Date fetched Out : $Modtime:   Nov 13 2019 16:17:02  $
+  --       Version          : $Revision:   1.17  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.16  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.17  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -637,7 +637,7 @@ AS
       awlrs_util.add_column_data(pi_cursor_col => 'date_upgraded'
                                 ,pi_query_col  => 'date_upgraded'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => 'DD-MM-YYYY' 
+                                ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'from_version'
@@ -1448,13 +1448,13 @@ AS
       awlrs_util.add_column_data(pi_cursor_col => 'start_date'
                                 ,pi_query_col  => 'nau_start_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => 'DD-MM-YYYY' 
+                                ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'end_date'
                                 ,pi_query_col  => 'nau_end_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => 'DD-MM-YYYY' 
+                                ,pi_mask       => NULL 
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'admin_type'
