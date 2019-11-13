@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.6   Oct 11 2019 11:13:08   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.7   Nov 13 2019 17:56:44   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_maint_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 11 2019 11:13:08  $
-  --       Date fetched Out : $Modtime:   Oct 10 2019 20:58:46  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   Nov 13 2019 17:56:44  $
+  --       Date fetched Out : $Modtime:   Nov 13 2019 17:43:40  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_maint_api';
   --
   TYPE attr_name_tab IS TABLE OF nm_inv_type_attribs_all.ita_attrib_name%TYPE INDEX BY BINARY_INTEGER;
@@ -1331,7 +1331,7 @@ AS
                           ||',aamr_iit_ne_id asset_id'
                           ||',aamr_inv_type asset_type'
                           ||',assets.primary_key'
-                          --||',assets.descr description'
+                          ||',assets.descr description'
                           ||',aamr_ne_id location_id'
                           ||',ne_unique location'
                           ||',TO_NUMBER(nm3unit.get_formatted_value(aamr_from_offset,un_unit_id)) from_offset'
