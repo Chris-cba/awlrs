@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.10   Oct 02 2019 11:55:18   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaref_api.pkb-arc   1.11   Nov 13 2019 16:15:46   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metaref_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 02 2019 11:55:18  $
-  --       Date fetched Out : $Modtime:   Oct 02 2019 11:55:04  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   Nov 13 2019 16:15:46  $
+  --       Date fetched Out : $Modtime:   Nov 13 2019 16:15:22  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -541,13 +541,13 @@ AS
       awlrs_util.add_column_data(pi_cursor_col   => 'start_date'
                                 ,pi_query_col    => 'hco_start_date'
                                 ,pi_datatype     => awlrs_util.c_date_col
-                                ,pi_mask         => 'DD-MM-YYYY' 
+                                ,pi_mask         => null 
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'end_date'
                                 ,pi_query_col    => 'hco_end_date'
                                 ,pi_datatype     => awlrs_util.c_date_col
-                                ,pi_mask         => 'DD-MM-YYYY' 
+                                ,pi_mask         => null
                                 ,pio_column_data => po_column_data);
       --        
       --
