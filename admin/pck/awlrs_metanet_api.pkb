@@ -4,11 +4,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.9   Oct 31 2019 14:32:24   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Oct 31 2019 14:32:24  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.10   Nov 14 2019 10:20:20   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Nov 14 2019 10:20:20  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkb  $
-  --       Date fetched Out : $Modtime:   Oct 31 2019 12:46:50  $
-  --       Version          : $Revision:   1.9  $
+  --       Date fetched Out : $Modtime:   Nov 14 2019 10:16:02  $
+  --       Version          : $Revision:   1.10  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -16,7 +16,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.9  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.10  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metanet_api';
   --
@@ -1278,13 +1278,13 @@ AS
       awlrs_util.add_column_data(pi_cursor_col => 'start_date'
                                 ,pi_query_col  => 'ngt_start_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => 'DD-MM-YYYY'
+                                ,pi_mask       => 'DD-MON-YYYY'
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'end_date'
                                 ,pi_query_col  => 'ngt_end_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => 'DD-MM-YYYY'
+                                ,pi_mask       => 'DD-MON-YYYY'
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'network_type'
@@ -1547,13 +1547,13 @@ AS
       awlrs_util.add_column_data(pi_cursor_col => 'start_date'
                                 ,pi_query_col  => 'nng_start_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => 'DD-MM-YYYY'
+                                ,pi_mask       => 'DD-MON-YYYY'
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'end_date'
                                 ,pi_query_col  => 'nng_end_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => 'DD-MM-YYYY'
+                                ,pi_mask       => 'DD-MON-YYYY'
                                 ,pio_column_data => po_column_data);
       --
     END set_column_data;
@@ -1799,13 +1799,13 @@ AS
       awlrs_util.add_column_data(pi_cursor_col => 'start_date'
                                 ,pi_query_col  => 'ngr_start_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => 'DD-MM-YYYY'
+                                ,pi_mask       => 'DD-MON-YYYY'
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'end_date'
                                 ,pi_query_col  => 'ngr_end_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => 'DD-MM-YYYY'
+                                ,pi_mask       => 'DD-MON-YYYY'
                                 ,pio_column_data => po_column_data);
       --
     END set_column_data;
@@ -6533,13 +6533,13 @@ AS
       awlrs_util.add_column_data(pi_cursor_col => 'start_date'
                                 ,pi_query_col  => 'nad_start_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => 'DD-MM-YYYY'
+                                ,pi_mask       => 'DD-MON-YYYY'
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'end_date'
                                 ,pi_query_col  => 'nad_end_date'
                                 ,pi_datatype   => awlrs_util.c_date_col
-                                ,pi_mask       => 'DD-MM-YYYY'
+                                ,pi_mask       => 'DD-MON-YYYY'
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col => 'primary_ad'
