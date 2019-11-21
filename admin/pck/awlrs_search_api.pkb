@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.31   Oct 11 2019 11:37:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.32   Nov 21 2019 15:50:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 11 2019 11:37:46  $
-  --       Date fetched Out : $Modtime:   Oct 10 2019 20:39:06  $
-  --       Version          : $Revision:   1.31  $
+  --       Date into PVCS   : $Date:   Nov 21 2019 15:50:20  $
+  --       Date fetched Out : $Modtime:   Nov 20 2019 15:32:36  $
+  --       Version          : $Revision:   1.32  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.31  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.32  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -1932,21 +1932,27 @@ AS
           --
       WHEN lv_expression.filter_function = 'EqualTo'
        THEN
-          IF pi_datatype = 'VARCHAR2'
-           THEN
-              --
-              po_sql := po_sql||' '||pi_operation||' UPPER('||lv_expression.field_name||')';
-              --
-          ELSIF pi_datatype = 'DATE'
-           THEN
-              --
-              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
-              --
-          ELSE
-              --
-              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
-              --
-          END IF;
+          CASE pi_datatype
+            WHEN awlrs_util.c_varchar2_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' UPPER('||lv_expression.field_name||')';
+                --
+            WHEN awlrs_util.c_date_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                --
+            WHEN awlrs_util.c_date_in_varchar2_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TO_CHAR(hig.date_convert('||lv_expression.field_name||'),'''||pi_format_mask||''')';
+                --
+            ELSE
+                --
+                po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
+                --
+          END CASE;
           --
           po_sql := po_sql||' = '||get_assignment(pi_value       => lv_expression.value1
                                                  ,pi_datatype    => pi_datatype
@@ -1954,21 +1960,27 @@ AS
           --
       WHEN lv_expression.filter_function = 'NotEqualTo'
        THEN
-          IF pi_datatype = 'VARCHAR2'
-           THEN
-              --
-              po_sql := po_sql||' '||pi_operation||' UPPER('||lv_expression.field_name||')';
-              --
-          ELSIF pi_datatype = 'DATE'
-           THEN
-              --
-              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
-              --
-          ELSE
-              --
-              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
-              --
-          END IF;
+          CASE pi_datatype
+            WHEN awlrs_util.c_varchar2_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' UPPER('||lv_expression.field_name||')';
+                --
+            WHEN awlrs_util.c_date_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                --
+            WHEN awlrs_util.c_date_in_varchar2_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TO_CHAR(hig.date_convert('||lv_expression.field_name||'),'''||pi_format_mask||''')';
+                --
+            ELSE
+                --
+                po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
+                --
+          END CASE;
           --
           po_sql := po_sql||' != '||get_assignment(pi_value       => lv_expression.value1
                                                   ,pi_datatype    => pi_datatype
@@ -1977,23 +1989,30 @@ AS
       WHEN lv_expression.filter_function = 'GreaterThan'
        THEN
           --
-          IF pi_datatype = 'VARCHAR2'
-           THEN
-              --Invalid filter function
-              hig.raise_ner(pi_appl               => 'AWLRS'
-                           ,pi_id                 => 43
-                           ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
-              --
-          ELSIF pi_datatype = 'DATE'
-           THEN
-              --
-              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
-              --
-          ELSE
-              --
-              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
-              --
-          END IF;
+          CASE pi_datatype
+            WHEN awlrs_util.c_varchar2_col
+             THEN
+                --
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
+                --
+            WHEN awlrs_util.c_date_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                --
+            WHEN awlrs_util.c_date_in_varchar2_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TO_CHAR(hig.date_convert('||lv_expression.field_name||'),'''||pi_format_mask||''')';
+                --
+            ELSE
+                --
+                po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
+                --
+          END CASE;
           --
           po_sql := po_sql||' > '||get_assignment(pi_value       => lv_expression.value1
                                                  ,pi_datatype    => pi_datatype
@@ -2002,23 +2021,29 @@ AS
       WHEN lv_expression.filter_function = 'LessThan'
        THEN
           --
-          IF pi_datatype = 'VARCHAR2'
-           THEN
-              --Invalid filter function
-              hig.raise_ner(pi_appl               => 'AWLRS'
-                           ,pi_id                 => 43
-                           ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
-              --
-          ELSIF pi_datatype = 'DATE'
-           THEN
-              --
-              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
-              --
-          ELSE
-              --
-              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
-              --
-          END IF;
+          CASE pi_datatype
+            WHEN awlrs_util.c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
+                --
+            WHEN awlrs_util.c_date_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                --
+            WHEN awlrs_util.c_date_in_varchar2_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TO_CHAR(hig.date_convert('||lv_expression.field_name||'),'''||pi_format_mask||''')';
+                --
+            ELSE
+                --
+                po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
+                --
+          END CASE;
           --
           po_sql := po_sql||' < '||get_assignment(pi_value       => lv_expression.value1
                                                  ,pi_datatype    => pi_datatype
@@ -2027,23 +2052,29 @@ AS
       WHEN lv_expression.filter_function = 'GreaterThanOrEqualTo'
        THEN
           --
-          IF pi_datatype = 'VARCHAR2'
-           THEN
-              --Invalid filter function
-              hig.raise_ner(pi_appl               => 'AWLRS'
-                           ,pi_id                 => 43
-                           ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
-              --
-          ELSIF pi_datatype = 'DATE'
-           THEN
-              --
-              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
-              --
-          ELSE
-              --
-              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
-              --
-          END IF;
+          CASE pi_datatype
+            WHEN awlrs_util.c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
+                --
+            WHEN awlrs_util.c_date_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                --
+            WHEN awlrs_util.c_date_in_varchar2_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TO_CHAR(hig.date_convert('||lv_expression.field_name||'),'''||pi_format_mask||''')';
+                --
+            ELSE
+                --
+                po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
+                --
+          END CASE;
           --
           po_sql := po_sql||' >= '||get_assignment(pi_value       => lv_expression.value1
                                                   ,pi_datatype    => pi_datatype
@@ -2052,23 +2083,29 @@ AS
       WHEN lv_expression.filter_function = 'LessThanOrEqualTo'
        THEN
           --
-          IF pi_datatype = 'VARCHAR2'
-           THEN
-              --Invalid filter function
-              hig.raise_ner(pi_appl               => 'AWLRS'
-                           ,pi_id                 => 43
-                           ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
-              --
-          ELSIF pi_datatype = 'DATE'
-           THEN
-              --
-              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
-              --
-          ELSE
-              --
-              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
-              --
-          END IF;
+          CASE pi_datatype
+            WHEN awlrs_util.c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
+                --
+            WHEN awlrs_util.c_date_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                --
+            WHEN awlrs_util.c_date_in_varchar2_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TO_CHAR(hig.date_convert('||lv_expression.field_name||'),'''||pi_format_mask||''')';
+                --
+            ELSE
+                --
+                po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
+                --
+          END CASE;
           --
           po_sql := po_sql||' <= '||get_assignment(pi_value       => lv_expression.value1
                                                   ,pi_datatype    => pi_datatype
@@ -2085,23 +2122,29 @@ AS
                            ,pi_supplementary_info => lv_expression.filter_function);
           END IF;
           --
-          IF pi_datatype = 'VARCHAR2'
-           THEN
-              --Invalid filter function
-              hig.raise_ner(pi_appl               => 'AWLRS'
-                           ,pi_id                 => 43
-                           ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
-              --
-          ELSIF pi_datatype = 'DATE'
-           THEN
-              --
-              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
-              --
-          ELSE
-              --
-              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
-              --
-          END IF;
+          CASE pi_datatype
+            WHEN awlrs_util.c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
+                --
+            WHEN awlrs_util.c_date_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                --
+            WHEN awlrs_util.c_date_in_varchar2_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TO_CHAR(hig.date_convert('||lv_expression.field_name||'),'''||pi_format_mask||''')';
+                --
+            ELSE
+                --
+                po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
+                --
+          END CASE;
           --
           po_sql := po_sql||' BETWEEN '||get_assignment(pi_value       => lv_expression.value1
                                                        ,pi_datatype    => pi_datatype
@@ -2121,23 +2164,29 @@ AS
                            ,pi_supplementary_info => lv_expression.filter_function);
           END IF;
           --
-          IF pi_datatype = 'VARCHAR2'
-           THEN
-              --Invalid filter function
-              hig.raise_ner(pi_appl               => 'AWLRS'
-                           ,pi_id                 => 43
-                           ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
-              --
-          ELSIF pi_datatype = 'DATE'
-           THEN
-              --
-              po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
-              --
-          ELSE
-              --
-              po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
-              --
-          END IF;
+          CASE pi_datatype
+            WHEN awlrs_util.c_varchar2_col
+             THEN
+                --Invalid filter function
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 43
+                             ,pi_supplementary_info => lv_expression.filter_function||' Datatype: '||pi_datatype);
+                --
+            WHEN awlrs_util.c_date_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                --
+            WHEN awlrs_util.c_date_in_varchar2_col
+             THEN
+                --
+                po_sql := po_sql||' '||pi_operation||' TO_CHAR(hig.date_convert('||lv_expression.field_name||'),'''||pi_format_mask||''')';
+                --
+            ELSE
+                --
+                po_sql := po_sql||' '||pi_operation||' '||lv_expression.field_name;
+                --
+          END CASE;
           --
           po_sql := po_sql||' NOT BETWEEN '||get_assignment(pi_value       => lv_expression.value1
                                                            ,pi_datatype    => pi_datatype
@@ -2277,6 +2326,19 @@ AS
                      ,g_default_date_format
                      ,pi_theme_types.asset_type
                      ,pi_attrib_name;
+              --
+          END IF;
+          --
+          IF po_format = awlrs_util.c_date_col
+           THEN
+              /*
+              ||Check whether the date is being stored in a VARCHAR2 column.
+              */
+              IF awlrs_util.is_date_in_varchar(pi_inv_type    => pi_theme_types.asset_type
+                                              ,pi_attrib_name => pi_attrib_name)
+               THEN
+                  po_format := awlrs_util.c_date_in_varchar2_col;
+              END IF;
               --
           END IF;
           --
@@ -2535,6 +2597,39 @@ AS
               --
           ELSE
               po_select_list := po_select_list||CHR(10)||'                     ,iit.'||LOWER(lt_ita(i).ita_attrib_name)||' "'||lv_scrn_text||'"';
+              /*
+              ||TODO - The code below will format numeric and date attributes for display in the results
+              ||grid but cannot be implemented until the UI is calling a new API to get the datatype and format
+              ||for the columns returned.
+              */
+              --po_select_list := po_select_list||CHR(10)||'                     ,'
+              --  ||CASE
+              --      WHEN lt_ita(i).ita_format = awlrs_util.c_date_col
+              --       AND INSTR(lt_ita(i).ita_attrib_name,lt_ita(i).ita_format,1,1) != 0
+              --       THEN
+              --          --
+              --          'TO_CHAR(iit.'||LOWER(lt_ita(i).ita_attrib_name)
+              --               ||','||nm3flx.string(NVL(lt_ita(i).ita_format_mask,Sys_Context('NM3CORE','USER_DATE_MASK')))
+              --               ||')'
+              --          --
+              --      WHEN lt_ita(i).ita_format = awlrs_util.c_number_col
+              --       AND lt_ita(i).ita_format_mask IS NOT NULL
+              --       THEN
+              --          --
+              --          'TO_CHAR(iit.'||LOWER(lt_ita(i).ita_attrib_name)||','||nm3flx.string(lt_ita(i).ita_format_mask)||')'
+              --          --
+              --      WHEN lt_ita(i).ita_format IN(awlrs_util.c_date_col,awlrs_util.c_number_col)
+              --       THEN
+              --          --
+              --          'TO_CHAR(iit.'||LOWER(lt_ita(i).ita_attrib_name)||')'
+              --          --
+              --      ELSE
+              --          --
+              --          'iit.'||LOWER(lt_ita(i).ita_attrib_name)
+              --          --
+              --    END
+              --  ||' "'||lv_scrn_text||'"'
+              --;
           END IF;
           --
           po_alias_list := po_alias_list||CHR(10)||'      ,"'||lv_scrn_text||'"';
@@ -6054,16 +6149,16 @@ AS
     --
     lv_where := lv_where||' '||lv_filter;
     --
-    lv_sql := 'SELECT *'
-   ||CHR(10)||'  FROM ('||get_asset_search_sql(pi_nit_rec          => lr_nit
-                                              ,pi_alias_list       => lv_alias_list
-                                              ,pi_select_list      => lv_select_list
-                                              ,pi_where_clause     => lv_where
-                                              ,pi_net_filter       => lv_net_filter
-                                              ,pi_include_enddated => pi_include_enddated
-                                              ,pi_order_column     => lv_order_by
-                                              ,pi_paged            => TRUE)||')'
-            ||lv_row_restriction
+    lv_sql :=  'SELECT *'
+    ||CHR(10)||'  FROM ('||get_asset_search_sql(pi_nit_rec          => lr_nit
+                                               ,pi_alias_list       => lv_alias_list
+                                               ,pi_select_list      => lv_select_list
+                                               ,pi_where_clause     => lv_where
+                                               ,pi_net_filter       => lv_net_filter
+                                               ,pi_include_enddated => pi_include_enddated
+                                               ,pi_order_column     => lv_order_by
+                                               ,pi_paged            => TRUE)||')'
+             ||lv_row_restriction
     ;
     --
     IF lr_nit.nit_table_name IS NOT NULL
@@ -7849,6 +7944,7 @@ AS
     --
     IF lt_theme_types.COUNT > 0
      THEN
+        --
         CASE
           WHEN lt_theme_types(1).network_type IS NOT NULL
            THEN
