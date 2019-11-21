@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.33   Nov 06 2019 14:37:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.34   Nov 21 2019 15:54:24   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Nov 06 2019 14:37:14  $
-  --       Date fetched Out : $Modtime:   Nov 06 2019 13:54:54  $
-  --       Version          : $Revision:   1.33  $
+  --       Date into PVCS   : $Date:   Nov 21 2019 15:54:24  $
+  --       Date fetched Out : $Modtime:   Nov 15 2019 13:32:08  $
+  --       Version          : $Revision:   1.34  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.33  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.34  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -143,25 +143,52 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION is_date_in_varchar(pi_inv_type    IN nm_inv_types_all.nit_inv_type%TYPE
+                             ,pi_attrib_name IN nm_inv_type_attribs.ita_attrib_name%TYPE)
+    RETURN BOOLEAN IS
+    --
+    lv_retval BOOLEAN;
+    lv_dummy  NUMBER;
+    --
+    CURSOR chk_col(cp_inv_type     nm_inv_types_all.nit_inv_type%TYPE
+                  ,cp_attrib_name  nm_inv_type_attribs.ita_attrib_name%TYPE
+                  ,cp_table_name   all_tab_cols.table_name%TYPE)
+        IS
+    SELECT 1
+      FROM all_tab_cols
+          ,nm_inv_type_attribs
+     WHERE ita_inv_type = cp_inv_type
+       AND ita_attrib_name = cp_attrib_name
+       AND ita_format = 'DATE'
+       AND ita_attrib_name = column_name
+       AND table_name = 'NM_INV_ITEMS_ALL'
+       AND owner = Sys_Context('NM3CORE','APPLICATION_OWNER')
+       AND data_type = 'VARCHAR2'
+         ;
+    --
+  BEGIN
+    --
+    OPEN  chk_col(pi_inv_type
+                 ,pi_attrib_name
+                 ,NVL(nm3get.get_nit(pi_nit_inv_type => pi_inv_type).nit_table_name,'NM_INV_ITEMS_ALL'));
+    FETCH chk_col
+     INTO lv_dummy;
+    lv_retval := chk_col%FOUND;
+    CLOSE chk_col;
+    --
+    RETURN lv_retval;
+    --
+  END is_date_in_varchar;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_format(pi_obj_type    IN  VARCHAR2
                       ,pi_inv_or_ne   IN  VARCHAR2
                       ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
                       ,po_datatype    OUT nm_type_columns.ntc_column_type%TYPE
                       ,po_format      OUT nm_type_columns.ntc_format%TYPE)
     IS
-    --
-    lr_nit  nm_inv_types_all%ROWTYPE;
-    --
-    lv_col_type  user_tab_cols.data_type%TYPE;
-    --
-    CURSOR get_col_type(cp_table_name   user_tab_cols.table_name%TYPE
-                       ,cp_column_name  user_tab_cols.column_name%TYPE)
-        IS
-    SELECT data_type
-      FROM user_tab_cols
-     WHERE table_name = cp_table_name
-       AND column_name = cp_column_name
-         ;
     --
   BEGIN
     --
@@ -181,15 +208,8 @@ AS
             /*
             ||Check whether the date is being stored in a VARCHAR2 column.
             */
-            lr_nit := nm3get.get_nit(pi_nit_inv_type => pi_obj_type);
-            --
-            OPEN  get_col_type(NVL(lr_nit.nit_table_name,'NM_INV_ITEMS_ALL')
-                              ,pi_column_name);
-            FETCH get_col_type
-             INTO lv_col_type;
-            CLOSE get_col_type;
-            --
-            IF lv_col_type = c_varchar2_col
+            IF is_date_in_varchar(pi_inv_type    => pi_obj_type
+                                 ,pi_attrib_name => pi_column_name)
              THEN
                 po_datatype := c_date_in_varchar2_col;
             END IF;
@@ -318,7 +338,7 @@ AS
           WHEN c_date_in_varchar2_col
            THEN
               --
-              lv_retval := 'TO_CHAR(TO_DATE('||nm3flx.string(lv_value)||','||nm3flx.string(NVL(pi_format_mask,c_date_mask))||'),'||nm3flx.string(NVL(pi_format_mask,c_date_mask))||')';
+              lv_retval := 'TO_CHAR(hig.date_convert('||nm3flx.string(lv_value)||'),'||nm3flx.string(NVL(pi_format_mask,c_date_mask))||')';
               --
           ELSE
               --

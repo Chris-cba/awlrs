@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.25   Nov 06 2019 14:37:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.26   Nov 21 2019 15:54:24   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   Nov 06 2019 14:37:12  $
-  --       Date fetched Out : $Modtime:   Nov 06 2019 13:54:54  $
-  --       Version          : $Revision:   1.25  $
+  --       Date into PVCS   : $Date:   Nov 21 2019 15:54:24  $
+  --       Date fetched Out : $Modtime:   Nov 15 2019 13:32:48  $
+  --       Version          : $Revision:   1.26  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.25  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.26  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -159,6 +159,13 @@ AS
                           ,pi_token       IN VARCHAR2 DEFAULT ','
                           ,pi_trim_values IN BOOLEAN DEFAULT TRUE)
     RETURN nm3type.tab_varchar32767;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_date_in_varchar(pi_inv_type    IN nm_inv_types_all.nit_inv_type%TYPE
+                             ,pi_attrib_name IN nm_inv_type_attribs.ita_attrib_name%TYPE)
+    RETURN BOOLEAN;
 
   --
   -----------------------------------------------------------------------------
