@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.40   Aug 06 2019 11:08:58   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.41   Nov 21 2019 15:31:46   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 06 2019 11:08:58  $
-  --       Date fetched Out : $Modtime:   Aug 06 2019 11:05:50  $
-  --       Version          : $Revision:   1.40  $
+  --       Date into PVCS   : $Date:   Nov 21 2019 15:31:46  $
+  --       Date fetched Out : $Modtime:   Nov 21 2019 11:08:54  $
+  --       Version          : $Revision:   1.41  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.40  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.41  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -1355,7 +1355,6 @@ AS
       /*
       ||Check the fixed attributes, Description,primary key, admin unit, xsp,start date, end date
       */
-      --
       IF g_db_iit_rec.iit_descr != pi_old_description
        OR (g_db_iit_rec.iit_descr IS NULL AND pi_old_description IS NOT NULL)
        OR (g_db_iit_rec.iit_descr IS NOT NULL AND pi_old_description IS NULL)
@@ -1391,15 +1390,30 @@ AS
         --
         lv_sql := NULL;
         --
-        lv_sql := 'BEGIN'
-        ||CHR(10)||'  IF awlrs_asset_api.g_db_iit_rec.'||pi_old_attributes(i).attrib_name||' != awlrs_asset_api.g_old_iit_rec.'||pi_old_attributes(i).attrib_name
-        ||CHR(10)||'   OR (awlrs_asset_api.g_db_iit_rec.'||pi_old_attributes(i).attrib_name||' IS NULL AND awlrs_asset_api.g_old_iit_rec.'||pi_old_attributes(i).attrib_name||' IS NOT NULL)'
-        ||CHR(10)||'   OR (awlrs_asset_api.g_db_iit_rec.'||pi_old_attributes(i).attrib_name||' IS NOT NULL AND awlrs_asset_api.g_old_iit_rec.'||pi_old_attributes(i).attrib_name||' IS NULL)'
-        ||CHR(10)||'   THEN '
-        ||CHR(10)||'      hig.raise_ner(pi_appl => ''AWLRS'''
-        ||CHR(10)||'                   ,pi_id   => 24);'
-        ||CHR(10)||'  END IF;'
-        ||CHR(10)||'END;'
+        lv_sql := 'BEGIN';
+        --
+        IF awlrs_util.is_date_in_varchar(pi_inv_type    => g_db_iit_rec.iit_inv_type
+                                        ,pi_attrib_name => pi_old_attributes(i).attrib_name)
+         THEN
+            lv_sql := lv_sql
+              ||CHR(10)||'  awlrs_util.set_attribute(pi_obj_type    => awlrs_asset_api.g_db_iit_rec.iit_inv_type'
+              ||CHR(10)||'                          ,pi_inv_or_ne   => ''INV'''
+              ||CHR(10)||'                          ,pi_global      => ''awlrs_asset_api.g_db_iit_rec'''
+              ||CHR(10)||'                          ,pi_column_name => '''||pi_old_attributes(i).attrib_name||''''
+              ||CHR(10)||'                          ,pi_prompt      => '''||pi_old_attributes(i).scrn_text||''''
+              ||CHR(10)||'                          ,pi_value       => awlrs_asset_api.g_db_iit_rec.'||pi_old_attributes(i).attrib_name||');'
+            ;
+        END IF;
+        --
+        lv_sql := lv_sql
+          ||CHR(10)||'  IF awlrs_asset_api.g_db_iit_rec.'||pi_old_attributes(i).attrib_name||' != awlrs_asset_api.g_old_iit_rec.'||pi_old_attributes(i).attrib_name
+          ||CHR(10)||'   OR (awlrs_asset_api.g_db_iit_rec.'||pi_old_attributes(i).attrib_name||' IS NULL AND awlrs_asset_api.g_old_iit_rec.'||pi_old_attributes(i).attrib_name||' IS NOT NULL)'
+          ||CHR(10)||'   OR (awlrs_asset_api.g_db_iit_rec.'||pi_old_attributes(i).attrib_name||' IS NOT NULL AND awlrs_asset_api.g_old_iit_rec.'||pi_old_attributes(i).attrib_name||' IS NULL)'
+          ||CHR(10)||'   THEN '
+          ||CHR(10)||'      hig.raise_ner(pi_appl => ''AWLRS'''
+          ||CHR(10)||'                   ,pi_id   => 24);'
+          ||CHR(10)||'  END IF;'
+          ||CHR(10)||'END;'
         ;
         --
         IF lv_sql IS NOT NULL
