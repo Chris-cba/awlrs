@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.2   Oct 28 2019 14:37:46   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Oct 28 2019 14:37:46  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.3   Nov 25 2019 10:48:46   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Nov 25 2019 10:48:46  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Oct 25 2019 13:47:10  $
-  --       Version          : $Revision:   1.2  $
+  --       Date fetched Out : $Modtime:   Nov 25 2019 10:47:30  $
+  --       Version          : $Revision:   1.3  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.3  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -119,6 +119,53 @@ AS
   --
   -----------------------------------------------------------------------------
   -- 
+  FUNCTION sso_user_yn(pi_email  IN  nm_mail_users.nmu_email_address%TYPE)                     
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM hig_relationship
+     WHERE hir_attribute1   =  pi_email;      
+    --
+    RETURN lv_exists;
+    -- 
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+    WHEN OTHERS   -- table may not exist on schema
+     THEN
+        RETURN lv_exists;    
+  END sso_user_yn;
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  FUNCTION override_pwd(pi_email  IN  nm_mail_users.nmu_email_address%TYPE)                     
+    RETURN varchar2
+  IS
+    lv_yn VARCHAR2(1):= 'Y';
+  BEGIN
+    --
+    SELECT hir_attribute3
+      INTO lv_yn
+      FROM hig_relationship
+     WHERE hir_attribute1   =  pi_email;      
+    --
+    RETURN lv_yn;
+    -- 
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_yn;
+     
+  END override_pwd;
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_users(po_message_severity    OUT  hig_codes.hco_code%TYPE
                      ,po_message_cursor      OUT  sys_refcursor
                      ,po_cursor              OUT  sys_refcursor)
@@ -173,6 +220,8 @@ AS
           ,huc.huc_telephone_4          tel_no_4
           ,huc_primary_tel_4            primary_tel_4
           ,nmu.nmu_email_address        email
+          ,awlrs_user_api.sso_user_yn(pi_email => nmu.nmu_email_address) sso_user
+          ,awlrs_user_api.override_pwd(pi_email => nmu.nmu_email_address) override_pwd
       FROM v_nm_hig_users  hus
           ,hig_admin_units hau               
           ,hig_user_contacts_all huc
@@ -250,6 +299,8 @@ AS
           ,huc.huc_telephone_4          tel_no_4
           ,huc_primary_tel_4            primary_tel_4  
           ,nmu.nmu_email_address        email
+          ,awlrs_user_api.sso_user_yn(pi_email => nmu.nmu_email_address) sso_user
+          ,awlrs_user_api.override_pwd(pi_email => nmu.nmu_email_address) override_pwd
       FROM v_nm_hig_users  hus
           ,hig_admin_units hau               
           ,hig_user_contacts_all huc
@@ -328,6 +379,8 @@ AS
                                                     ,huc.huc_telephone_4          tel_no_4
                                                     ,huc_primary_tel_4            primary_tel_4  
                                                     ,nmu.nmu_email_address        email
+                                                    ,awlrs_user_api.sso_user_yn(pi_email => nmu.nmu_email_address) sso_user
+                                                    ,awlrs_user_api.override_pwd(pi_email => nmu.nmu_email_address) override_pwd
                                                 FROM v_nm_hig_users  hus     
                                                     ,hig_admin_units hau          
                                                     ,hig_user_contacts_all huc
@@ -373,6 +426,8 @@ AS
                                                   ||',tel_no_4' 
                                                   ||',primary_tel_4'
                                                   ||',email'
+                                                  ||',sso_user'
+                                                  ||',override_pwd'
                                                   ||',row_count'
                                             ||' FROM (SELECT rownum ind'
                                                         ||' ,a.*'
@@ -619,9 +674,6 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  --
-  -----------------------------------------------------------------------------
-  -- 
   PROCEDURE get_dflt_tablespaces_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
                                     ,po_message_cursor   OUT  sys_refcursor
                                     ,po_cursor           OUT  sys_refcursor)
@@ -1054,23 +1106,23 @@ AS
   --
   BEGIN
     --
-    IF user_exists(pi_username => pi_username) = 'Y'
-      THEN
-        --
-        OPEN po_cursor FOR
-        SELECT hur_username 
-          FROM hig_user_roles
-         WHERE hur_role = 'PROXY_OWNER'
-           AND NOT EXISTS(SELECT 1 FROM PROXY_USERS
-                           WHERE PROXY  = hur_username
-                             AND CLIENT = pi_username)
-        ORDER BY hur_username;
-        --
-    ELSE
-      hig.raise_ner(pi_appl               => 'HIG'
-                   ,pi_id                 => 30
-                   ,pi_supplementary_info => 'Username '||pi_username||' does not exist');
-    END IF;    
+    OPEN po_cursor FOR
+    SELECT hur_username proxy_user   
+          ,'N'          proxy_user_assigned 
+      FROM hig_user_roles
+     WHERE hur_role = 'PROXY_OWNER'
+     AND NOT EXISTS(SELECT 1 FROM PROXY_USERS
+                     WHERE PROXY  = hur_username
+                       AND CLIENT = pi_username)
+    UNION ALL
+    SELECT hur_username proxy_user
+          ,'Y'          proxy_user_assigned 
+      FROM hig_user_roles
+     WHERE hur_role = 'PROXY_OWNER'
+       AND EXISTS(SELECT 1 FROM PROXY_USERS
+                   WHERE PROXY  = hur_username
+                     AND CLIENT = pi_username)                               
+    ORDER BY proxy_user;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1082,6 +1134,32 @@ AS
                                    ,po_cursor           => po_message_cursor);
   END get_proxy_lov;       
                  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_proxy_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                         ,po_message_cursor      OUT  sys_refcursor
+                         ,po_cursor              OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT hur_username proxy_user
+      FROM hig_user_roles
+     WHERE hur_role = 'PROXY_OWNER'
+     ORDER BY hur_username;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_proxy_lov;
+  
   --
   -----------------------------------------------------------------------------
   --
@@ -1109,24 +1187,37 @@ AS
   --
   PROCEDURE create_sso_user(pi_username           IN  hig_users.hus_username%TYPE
                            ,pi_email              IN  nm_mail_users.nmu_email_address%TYPE
-                           ,pi_override_password  IN      varchar2)
+                           ,pi_proxy_users        IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_override_password  IN  varchar2)
   IS
   --
   lr_hig_relationship  hig_relationship%ROWTYPE;
   --
   lv_key   RAW(32);
   --  
+  lv_proc_input varchar2(200) := '';
+  --
   BEGIN
    -- 
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Email'
                                ,pi_parameter_value => pi_email);
     -- 
+    /*
    	IF proxy_user_exists(pi_username => pi_username) <> 'Y'
      THEN
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 30
                      ,pi_supplementary_info  => 'A Proxy User must be assigned for Single sign-On Users.');
     END IF;
+    */
+    --
+    --Firstly assign the proxy users--
+    FOR i IN 1..pi_proxy_users.COUNT LOOP
+    --
+       lv_proc_input := 'ALTER USER '||pi_username||' GRANT CONNECT THROUGH '||pi_proxy_users(i);
+       hig.execute_ddl(lv_proc_input);
+    --
+    END LOOP;
     --
     lv_key := DBMS_CRYPTO.RANDOMBYTES(32);
     lr_hig_relationship.hir_attribute1 := pi_email;
@@ -1176,6 +1267,7 @@ AS
                        ,pi_email                  IN      nm_mail_users.nmu_email_address%TYPE
                        ,pi_sso_user               IN      varchar2
                        ,pi_override_password      IN      varchar2
+                       ,pi_proxy_users            IN      nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                        ,po_message_severity          OUT  hig_codes.hco_code%TYPE
                        ,po_message_cursor            OUT  sys_refcursor)
   IS
@@ -1317,6 +1409,7 @@ AS
      THEN
        create_sso_user(pi_username           => pi_username
                       ,pi_email              => pi_email
+                      ,pi_proxy_users        => pi_proxy_users
                       ,pi_override_password  => pi_override_password);
     END IF;
     --
@@ -1637,8 +1730,8 @@ AS
                                     ,po_user_upd_rec_flag          IN OUT  boolean)
   IS
     --
-    lr_db_rec        hig_users%ROWTYPE;
-    lv_upd           VARCHAR2(1) := 'N';
+    lr_db_rec         hig_users%ROWTYPE;
+    lv_upd            VARCHAR2(1) := 'N';
     --
     PROCEDURE get_db_rec
       IS
@@ -1657,7 +1750,7 @@ AS
           hig.raise_ner(pi_appl               => 'HIG'
                        ,pi_id                 => 85
                        ,pi_supplementary_info => 'User does not exist');
-          --
+    --
     END get_db_rec;
     --
   BEGIN
@@ -1820,6 +1913,27 @@ AS
       IF pi_old_admin_unit != pi_new_admin_unit
        OR (pi_old_admin_unit IS NULL AND pi_new_admin_unit IS NOT NULL)
        OR (pi_old_admin_unit IS NOT NULL AND pi_new_admin_unit IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_dflt_tablespace != pi_new_dflt_tablespace
+       OR (pi_old_dflt_tablespace IS NULL AND pi_new_dflt_tablespace IS NOT NULL)
+       OR (pi_old_dflt_tablespace IS NOT NULL AND pi_new_dflt_tablespace IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_temp_tablespace != pi_new_temp_tablespace
+       OR (pi_old_temp_tablespace IS NULL AND pi_new_temp_tablespace IS NOT NULL)
+       OR (pi_old_temp_tablespace IS NOT NULL AND pi_new_temp_tablespace IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_profile != pi_new_profile
+       OR (pi_old_profile IS NULL AND pi_new_profile IS NOT NULL)
+       OR (pi_old_profile IS NOT NULL AND pi_new_profile IS NULL)
        THEN
          lv_upd := 'Y';
       END IF;
@@ -2229,6 +2343,87 @@ AS
   --
   -----------------------------------------------------------------------------
   --                    
+  PROCEDURE validate_sso_data(pi_old_email              IN      nm_mail_users.nmu_email_address%TYPE
+                             ,pi_old_proxy_users        IN      nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_old_override_password  IN      varchar2
+                             ,pi_new_email              IN      nm_mail_users.nmu_email_address%TYPE
+                             ,pi_new_proxy_users        IN      nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_new_override_password  IN      varchar2
+                             ,po_sso_latest_rec_flag    IN OUT  boolean
+                             ,po_sso_upd_rec_flag       IN OUT  boolean)                                     
+  IS
+    --
+    lr_db_rec        hig_relationship%ROWTYPE;
+    lv_upd           VARCHAR2(1) := 'N';
+    --
+    PROCEDURE get_db_rec
+      IS
+    BEGIN
+      --
+      SELECT *
+        INTO lr_db_rec
+        FROM hig_relationship
+       WHERE hir_attribute1 = pi_old_email
+         FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN NO_DATA_FOUND
+       THEN
+          --
+          hig.raise_ner(pi_appl               => 'HIG'
+                       ,pi_id                 => 85
+                       ,pi_supplementary_info => 'SSO Email does not exist');
+          --
+    END get_db_rec;
+    --
+  BEGIN
+    --   
+    get_db_rec;
+    --
+    /*
+    ||Compare Old with DB
+    */
+    IF lr_db_rec.hir_attribute1 != pi_old_email
+     OR (lr_db_rec.hir_attribute1 IS NULL AND pi_old_email IS NOT NULL)
+     OR (lr_db_rec.hir_attribute1 IS NOT NULL AND pi_old_email IS NULL)
+     --
+     OR (lr_db_rec.hir_attribute3 != pi_old_override_password)
+     OR (lr_db_rec.hir_attribute3 IS NULL AND pi_old_override_password IS NOT NULL)
+     OR (lr_db_rec.hir_attribute3 IS NOT NULL AND pi_old_override_password IS NULL)
+     --
+     THEN
+        --Updated by another user
+        po_sso_latest_rec_flag := FALSE;
+    ELSE
+     /*
+      ||Compare Old with New
+      */
+      IF pi_old_email != pi_new_email
+       OR (pi_old_email IS NULL AND pi_new_email IS NOT NULL)
+       OR (pi_old_email IS NOT NULL AND pi_new_email IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_override_password != pi_new_override_password
+       OR (pi_old_override_password IS NULL AND pi_new_override_password IS NOT NULL)
+       OR (pi_old_override_password IS NOT NULL AND pi_new_override_password IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          po_sso_upd_rec_flag := FALSE;
+      END IF;     
+    END IF;
+    --  
+  END validate_sso_data;
+  
+  --
+  -----------------------------------------------------------------------------
+  --                    
   PROCEDURE process_account_status(pi_username     IN  hig_users.hus_username%TYPE
                                   ,pi_old_end_date IN  hig_users.hus_end_date%TYPE
                                   ,pi_new_end_date IN  hig_users.hus_end_date%TYPE)
@@ -2326,16 +2521,64 @@ AS
   --
   BEGIN
     -- 
+    NM_DEBUG.DEBUG('process_profile STARTING');
+    
     IF (    pi_old_profile <> pi_new_profile
         OR  pi_old_profile IS NULL AND pi_new_profile IS NOT NULL
         OR  pi_old_profile IS NOT NULL AND pi_new_profile IS NULL)
      THEN 
+        NM_DEBUG.DEBUG('b4 call to set_user_profile'); 
         nm3user_admin.set_user_profile(p_user    =>	pi_username
 				                      ,p_profile =>	pi_new_profile);                  
     END IF; 
+    
+    NM_DEBUG.DEBUG('process_profile ending');
     --  
   END process_profile;
  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_sso_user(pi_username               IN  hig_users.hus_username%TYPE
+                           ,pi_old_email              IN  nm_mail_users.nmu_email_address%TYPE
+                           ,pi_new_email              IN  nm_mail_users.nmu_email_address%TYPE
+                           ,pi_old_proxy_users        IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_new_proxy_users        IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_old_override_password  IN  varchar2
+                           ,pi_new_override_password  IN  varchar2)
+  IS
+  --
+  lv_proc_input varchar2(200) := '';
+  --
+  BEGIN
+   -- 
+    IF (  pi_old_email <> pi_new_email
+       OR pi_old_override_password <> pi_new_override_password)
+      THEN
+        hig_relationship_api.update_relationship(pi_key        =>  pi_old_email
+                                                ,pi_attribute1 =>  pi_new_email
+                                                ,pi_attribute3 =>  pi_new_override_password);
+    END IF;
+    --
+    --Should we be checking for changes?
+    --Firstly revoke current proxy users
+    FOR i IN 1..pi_old_proxy_users.COUNT LOOP
+		--
+		lv_proc_input :='ALTER USER '||pi_username||' REVOKE CONNECT THROUGH '||pi_old_proxy_users(i);
+		hig.execute_ddl(lv_proc_input);
+        --
+	END LOOP;
+	--
+	--Now assign the new proxy users--
+    FOR i IN 1..pi_new_proxy_users.COUNT LOOP
+       --
+       lv_proc_input := 'ALTER USER '||pi_username||' GRANT CONNECT THROUGH '||pi_new_proxy_users(i);
+       hig.execute_ddl(lv_proc_input);
+       --
+    END LOOP;
+    --
+  END update_sso_user; 
+  
   --
   -----------------------------------------------------------------------------
   --   
@@ -2374,6 +2617,7 @@ AS
                        ,pi_old_email                  IN      nm_mail_users.nmu_email_address%TYPE
                        ,pi_old_sso_user               IN      varchar2
                        ,pi_old_override_password      IN      varchar2
+                       ,pi_old_proxy_users            IN      nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                        ,pi_new_user_id                IN      hig_users.hus_user_id%TYPE
                        ,pi_new_name                   IN      hig_users.hus_name%TYPE
                        ,pi_new_initials               IN      hig_users.hus_initials%TYPE
@@ -2409,6 +2653,7 @@ AS
                        ,pi_new_email                  IN      nm_mail_users.nmu_email_address%TYPE
                        ,pi_new_sso_user               IN      varchar2
                        ,pi_new_override_password      IN      varchar2
+                       ,pi_new_proxy_users            IN      nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                        ,po_message_severity              OUT  hig_codes.hco_code%TYPE
                        ,po_message_cursor                OUT  sys_refcursor)
   IS
@@ -2516,7 +2761,7 @@ AS
                                    ,po_email_latest_rec_flag   =>  lv_email_latest_rec_flag
                                    ,po_email_upd_rec_flag      =>  lv_email_upd_rec_flag);
     END IF;                               
-    --        
+    --      
     --if any of the recs old parameters do not match the db record, then need to requery--    
     IF (  NOT lv_user_latest_rec_flag
        OR NOT lv_contacts_latest_rec_flag
@@ -2527,16 +2772,6 @@ AS
                          ,pi_id   => 24);
     END IF;
     --
-    --now to deal with the 3 individual tables to update--
-    IF (   NOT lv_user_upd_rec_flag
-       AND NOT lv_contacts_upd_rec_flag
-       AND NOT lv_email_upd_rec_flag)
-     THEN     
-        --There are no changes to be applied
-            hig.raise_ner(pi_appl => 'AWLRS'
-                         ,pi_id   => 25);    
-    END IF;    
-    --                 
     IF (    lv_user_latest_rec_flag
         AND lv_user_upd_rec_flag) 
      THEN
@@ -2566,7 +2801,7 @@ AS
         --
         process_profile(pi_username    => pi_new_username
 				       ,pi_old_profile => pi_old_profile
-					   ,pi_new_profile => pi_new_profile);
+					   ,pi_new_profile => pi_new_profile);	   
         --
     END IF;                     
     --
@@ -2604,21 +2839,27 @@ AS
          WHERE nmu_hus_user_id   =	 pi_old_user_id;
     END IF; 
     --
-    --sso user   
+    --sso user 
     IF (   NVL(hig.get_sysopt('DEFSSO'),'N') = 'Y' 
         OR 
            (    pi_old_sso_user = 'Y' 
-            AND pi_old_sso_user = pi_new_sso_user))  --just an update to SSO relationship
+            AND pi_old_sso_user = pi_new_sso_user) 
+        )      
       THEN 
-         hig_relationship_api.update_relationship(pi_key        =>  pi_old_email
-                                                 ,pi_attribute1 =>  pi_new_email
-                                                 ,pi_attribute3 =>  pi_new_override_password);
+        update_sso_user(pi_username               => pi_old_username
+                       ,pi_old_email              => pi_old_email
+                       ,pi_new_email              => pi_new_email
+                       ,pi_old_proxy_users        => pi_old_proxy_users
+                       ,pi_new_proxy_users        => pi_new_proxy_users
+                       ,pi_old_override_password  => pi_old_override_password
+                       ,pi_new_override_password  => pi_new_override_password);
     ELSE
         IF (    pi_old_sso_user = 'N'
            AND  pi_new_sso_user = 'Y')
           THEN -- need to update this non-sso user to be a sso-user
             create_sso_user(pi_username           => pi_new_username
                            ,pi_email              => pi_new_email
+                           ,pi_proxy_users        => pi_new_proxy_users
                            ,pi_override_password  => pi_new_override_password);        
         END IF;                                                               
     END IF;                                             

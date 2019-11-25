@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkh-arc   1.1   Oct 28 2019 14:37:48   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Oct 28 2019 14:37:48  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkh-arc   1.2   Nov 25 2019 10:48:46   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Nov 25 2019 10:48:46  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkh  $
-  --       Date fetched Out : $Modtime:   Oct 18 2019 09:23:34  $
-  --       Version          : $Revision:   1.1  $
+  --       Date fetched Out : $Modtime:   Nov 13 2019 11:00:22  $
+  --       Version          : $Revision:   1.2  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
 
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -31,6 +31,16 @@ AS
   -----------------------------------------------------------------------------
   --
   FUNCTION active_user_yn(pi_end_date  IN  hig_users.hus_end_date%TYPE) RETURN varchar2;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION sso_user_yn(pi_email  IN  nm_mail_users.nmu_email_address%TYPE) RETURN varchar2;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION override_pwd(pi_email  IN  nm_mail_users.nmu_email_address%TYPE) RETURN varchar2;
   
   --
   -----------------------------------------------------------------------------
@@ -129,7 +139,13 @@ AS
                          ,po_message_severity    OUT  hig_codes.hco_code%TYPE
                          ,po_message_cursor      OUT  sys_refcursor
                          ,po_cursor              OUT  sys_refcursor);                                
-                                                                                                                                       
+                                                                           
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_proxy_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                         ,po_message_cursor      OUT  sys_refcursor
+                         ,po_cursor              OUT  sys_refcursor);                                                                                           
   --
   -----------------------------------------------------------------------------
   -- 
@@ -168,6 +184,7 @@ AS
                        ,pi_email                  IN      nm_mail_users.nmu_email_address%TYPE
                        ,pi_sso_user               IN      varchar2
                        ,pi_override_password      IN      varchar2
+                       ,pi_proxy_users            IN      nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                        ,po_message_severity          OUT  hig_codes.hco_code%TYPE
                        ,po_message_cursor            OUT  sys_refcursor);
 
@@ -226,6 +243,7 @@ AS
                        ,pi_old_email                  IN      nm_mail_users.nmu_email_address%TYPE
                        ,pi_old_sso_user               IN      varchar2
                        ,pi_old_override_password      IN      varchar2
+                       ,pi_old_proxy_users            IN      nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                        ,pi_new_user_id                IN      hig_users.hus_user_id%TYPE
                        ,pi_new_name                   IN      hig_users.hus_name%TYPE
                        ,pi_new_initials               IN      hig_users.hus_initials%TYPE
@@ -261,6 +279,7 @@ AS
                        ,pi_new_email                  IN      nm_mail_users.nmu_email_address%TYPE
                        ,pi_new_sso_user               IN      varchar2
                        ,pi_new_override_password      IN      varchar2
+                       ,pi_new_proxy_users            IN      nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                        ,po_message_severity              OUT  hig_codes.hco_code%TYPE
                        ,po_message_cursor                OUT  sys_refcursor);                             
   
