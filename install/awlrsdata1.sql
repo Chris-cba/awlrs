@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.16   Jun 06 2019 18:29:06   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.17   Nov 26 2019 08:47:38   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   Jun 06 2019 18:29:06  $
---       Date fetched Out : $Modtime:   Jun 06 2019 18:25:56  $
---       Version          : $Revision:   1.16  $
+--       Date into PVCS   : $Date:   Nov 26 2019 08:47:38  $
+--       Date fetched Out : $Modtime:   Nov 26 2019 08:44:24  $
+--       Version          : $Revision:   1.17  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 06-JUN-2019 18:25
+--       Generation Date  : 26-NOV-2019 08:44
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -19,6 +19,8 @@
 --   TABLES PROCESSED
 --   ================
 --   HIG_PRODUCTS
+--   HIG_DOMAINS
+--   HIG_CODES
 --   HIG_OPTION_LIST
 --   HIG_OPTION_VALUES
 --   HIG_SEQUENCE_ASSOCIATIONS
@@ -62,6 +64,88 @@ SELECT 'AWLRS'
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_PRODUCTS
                    WHERE HPR_PRODUCT = 'AWLRS');
+--
+----------------------------------------------------------------------------------------
+-- HIG_DOMAINS
+--
+-- select * from awlrs_metadata.hig_domains
+-- order by hdo_domain
+--
+----------------------------------------------------------------------------------------
+SET TERM ON
+PROMPT hig_domains
+SET TERM OFF
+--
+INSERT
+  INTO HIG_DOMAINS
+      (HDO_DOMAIN
+      ,HDO_PRODUCT
+      ,HDO_TITLE
+      ,HDO_CODE_LENGTH)
+SELECT 'AWLMESUNIT'
+      ,'AWLRS'
+      ,'AWLRS Map Measure Units'
+      ,10
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_DOMAINS
+                   WHERE HDO_DOMAIN = 'AWLMESUNIT');
+--
+----------------------------------------------------------------------------------------
+-- HIG_CODES
+--
+-- select * from awlrs_metadata.hig_codes
+-- order by hco_domain
+--         ,hco_code
+--
+----------------------------------------------------------------------------------------
+SET TERM ON
+PROMPT hig_codes
+SET TERM OFF
+--
+INSERT
+  INTO HIG_CODES
+      (HCO_DOMAIN
+      ,HCO_CODE
+      ,HCO_MEANING
+      ,HCO_SYSTEM
+      ,HCO_SEQ
+      ,HCO_START_DATE
+      ,HCO_END_DATE)
+SELECT 'AWLMESUNIT'
+      ,'IMPERIAL'
+      ,'Imperial'
+      ,'Y'
+      ,2
+      ,null
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_CODES
+                   WHERE HCO_DOMAIN = 'AWLMESUNIT'
+                     AND HCO_CODE = 'IMPERIAL');
+--
+INSERT
+  INTO HIG_CODES
+      (HCO_DOMAIN
+      ,HCO_CODE
+      ,HCO_MEANING
+      ,HCO_SYSTEM
+      ,HCO_SEQ
+      ,HCO_START_DATE
+      ,HCO_END_DATE)
+SELECT 'AWLMESUNIT'
+      ,'METRIC'
+      ,'Metric'
+      ,'Y'
+      ,1
+      ,null
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_CODES
+                   WHERE HCO_DOMAIN = 'AWLMESUNIT'
+                     AND HCO_CODE = 'METRIC');
 --
 ----------------------------------------------------------------------------------------
 -- HIG_OPTION_LIST
@@ -173,6 +257,31 @@ SELECT 'AWLMAPSRID'
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_OPTION_LIST
                    WHERE HOL_ID = 'AWLMAPSRID');
+--
+INSERT
+  INTO HIG_OPTION_LIST
+      (HOL_ID
+      ,HOL_PRODUCT
+      ,HOL_NAME
+      ,HOL_REMARKS
+      ,HOL_DOMAIN
+      ,HOL_DATATYPE
+      ,HOL_MIXED_CASE
+      ,HOL_USER_OPTION
+      ,HOL_MAX_LENGTH)
+SELECT 'AWLMESUNIT'
+      ,'AWLRS'
+      ,'Map Measure Units'
+      ,'The default units to be used in the AWLRS Map measure tools, valid values are Metric or Imperial.'
+      ,'AWLMESUNIT'
+      ,'VARCHAR2'
+      ,'N'
+      ,'Y'
+      ,50
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_LIST
+                   WHERE HOL_ID = 'AWLMESUNIT');
 --
 INSERT
   INTO HIG_OPTION_LIST
@@ -403,6 +512,17 @@ SELECT 'AWLMAPSRID'
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_OPTION_VALUES
                    WHERE HOV_ID = 'AWLMAPSRID');
+--
+INSERT
+  INTO HIG_OPTION_VALUES
+      (HOV_ID
+      ,HOV_VALUE)
+SELECT 'AWLMESUNIT'
+      ,'METRIC'
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_VALUES
+                   WHERE HOV_ID = 'AWLMESUNIT');
 --
 INSERT
   INTO HIG_OPTION_VALUES
