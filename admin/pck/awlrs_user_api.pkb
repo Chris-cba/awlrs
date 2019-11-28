@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.3   Nov 25 2019 10:48:46   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Nov 25 2019 10:48:46  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.4   Nov 28 2019 11:29:36   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Nov 28 2019 11:29:36  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Nov 25 2019 10:47:30  $
-  --       Version          : $Revision:   1.3  $
+  --       Date fetched Out : $Modtime:   Nov 28 2019 11:23:48  $
+  --       Version          : $Revision:   1.4  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.3  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -147,7 +147,7 @@ AS
   FUNCTION override_pwd(pi_email  IN  nm_mail_users.nmu_email_address%TYPE)                     
     RETURN varchar2
   IS
-    lv_yn VARCHAR2(1):= 'Y';
+    lv_yn VARCHAR2(1):= 'N';
   BEGIN
     --
     SELECT hir_attribute3
@@ -2808,35 +2808,93 @@ AS
     IF (    lv_contacts_latest_rec_flag
         AND lv_contacts_upd_rec_flag) 
          THEN
-            UPDATE hig_user_contacts_all
-               SET huc_address1      =   pi_new_address1
-                  ,huc_address2      =   pi_new_address2
-                  ,huc_address3      =   pi_new_address3
-                  ,huc_address4      =   pi_new_address4
-                  ,huc_address5      =   pi_new_address5
-                  ,huc_postcode      =   pi_new_postcode
-                  ,huc_tel_type_1    =   pi_new_tel_type_1
-                  ,huc_telephone_1   =   pi_new_tel_no_1
-                  ,huc_primary_tel_1 =   pi_new_primary_tel_1
-                  ,huc_tel_type_2    =   pi_new_tel_type_2
-                  ,huc_telephone_2   =   pi_new_tel_no_2
-                  ,huc_primary_tel_2 =   pi_new_primary_tel_2
-                  ,huc_tel_type_3    =   pi_new_tel_type_3
-                  ,huc_telephone_3   =   pi_new_tel_no_3
-                  ,huc_primary_tel_3 =   pi_new_primary_tel_3
-                  ,huc_tel_type_4    =   pi_new_tel_type_4
-                  ,huc_telephone_4   =   pi_new_tel_no_4
-                  ,huc_primary_tel_4 =   pi_new_primary_tel_4
-          WHERE huc_hus_user_id 	 =	pi_old_user_id;
+         MERGE INTO hig_user_contacts_all
+            USING (SELECT 1 FROM dual)
+            ON    (huc_hus_user_id 	 =	pi_old_user_id)
+            WHEN MATCHED THEN UPDATE 
+                 SET huc_address1      =   pi_new_address1
+                    ,huc_address2      =   pi_new_address2  
+                    ,huc_address3      =   pi_new_address3
+                    ,huc_address4      =   pi_new_address4
+                    ,huc_address5      =   pi_new_address5
+                    ,huc_postcode      =   pi_new_postcode
+                    ,huc_tel_type_1    =   pi_new_tel_type_1
+                    ,huc_telephone_1   =   pi_new_tel_no_1
+                    ,huc_primary_tel_1 =   pi_new_primary_tel_1
+                    ,huc_tel_type_2    =   pi_new_tel_type_2
+                    ,huc_telephone_2   =   pi_new_tel_no_2
+                    ,huc_primary_tel_2 =   pi_new_primary_tel_2
+                    ,huc_tel_type_3    =   pi_new_tel_type_3
+                    ,huc_telephone_3   =   pi_new_tel_no_3
+                    ,huc_primary_tel_3 =   pi_new_primary_tel_3
+                    ,huc_tel_type_4    =   pi_new_tel_type_4
+                    ,huc_telephone_4   =   pi_new_tel_no_4
+                    ,huc_primary_tel_4 =   pi_new_primary_tel_4   
+            WHERE    huc_hus_user_id   =   pi_old_user_id             
+            WHEN NOT MATCHED THEN INSERT
+                    (huc_id
+                    ,huc_hus_user_id
+                    ,huc_address1
+                    ,huc_address2
+                    ,huc_address3
+                    ,huc_address4
+                    ,huc_address5
+                    ,huc_postcode
+                    ,huc_tel_type_1
+                    ,huc_telephone_1
+                    ,huc_primary_tel_1 
+                    ,huc_tel_type_2 
+                    ,huc_telephone_2
+                    ,huc_primary_tel_2 
+                    ,huc_tel_type_3
+                    ,huc_telephone_3
+                    ,huc_primary_tel_3 
+                    ,huc_tel_type_4 
+                    ,huc_telephone_4
+                    ,huc_primary_tel_4)
+             VALUES (hig_hus_id_seq.NEXTVAL
+                    ,pi_new_user_id
+                    ,pi_new_address1 
+                    ,pi_new_address2 
+                    ,pi_new_address3 
+                    ,pi_new_address4 
+                    ,pi_new_address5 
+                    ,pi_new_postcode
+                    ,pi_new_tel_type_1
+                    ,pi_new_tel_no_1
+                    ,pi_new_primary_tel_1
+                    ,pi_new_tel_type_2 
+                    ,pi_new_tel_no_2
+                    ,pi_new_primary_tel_2
+                    ,pi_new_tel_type_3
+                    ,pi_new_tel_no_3
+                    ,pi_new_primary_tel_3  
+                    ,pi_new_tel_type_4
+                    ,pi_new_tel_no_4
+                    ,pi_new_primary_tel_4);
     END IF;
     --    
     IF (    lv_email_latest_rec_flag
-        AND lv_email_upd_rec_flag) 
+        AND lv_email_upd_rec_flag
+        AND pi_new_email IS NOT NULL  -- caters for updates where an email didn't previously exist. --
+       ) 
      THEN
-        UPDATE nm_mail_users
-           SET nmu_name          =   pi_new_name
-              ,nmu_email_address =   pi_new_email
-         WHERE nmu_hus_user_id   =	 pi_old_user_id;
+        MERGE INTO nm_mail_users
+            USING (SELECT 1 FROM dual)
+            ON    (nmu_hus_user_id   =	 pi_old_user_id)
+            WHEN MATCHED THEN UPDATE 
+                 SET nmu_name          =  pi_new_name
+                    ,nmu_email_address =  pi_new_email
+               WHERE nmu_hus_user_id   =  pi_old_user_id
+            WHEN NOT MATCHED THEN INSERT
+                    (nmu_id
+                    ,nmu_hus_user_id
+                    ,nmu_name
+                    ,nmu_email_address)
+             VALUES (Nm3seq.Next_Nmu_Id_Seq
+                    ,pi_new_user_id
+                    ,pi_new_name 
+                    ,pi_new_email);     
     END IF; 
     --
     --sso user 
