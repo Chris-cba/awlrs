@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.4   Nov 28 2019 11:29:36   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Nov 28 2019 11:29:36  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.5   Dec 03 2019 10:31:44   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Dec 03 2019 10:31:44  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Nov 28 2019 11:23:48  $
-  --       Version          : $Revision:   1.4  $
+  --       Date fetched Out : $Modtime:   Dec 03 2019 10:18:08  $
+  --       Version          : $Revision:   1.5  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -2911,15 +2911,18 @@ AS
                        ,pi_new_proxy_users        => pi_new_proxy_users
                        ,pi_old_override_password  => pi_old_override_password
                        ,pi_new_override_password  => pi_new_override_password);
-    ELSE
-        IF (    pi_old_sso_user = 'N'
+    ELSIF
+           (    pi_old_sso_user = 'N'
            AND  pi_new_sso_user = 'Y')
           THEN -- need to update this non-sso user to be a sso-user
             create_sso_user(pi_username           => pi_new_username
                            ,pi_email              => pi_new_email
                            ,pi_proxy_users        => pi_new_proxy_users
                            ,pi_override_password  => pi_new_override_password);        
-        END IF;                                                               
+    ELSIF  (    pi_old_sso_user = 'Y'
+           AND  pi_new_sso_user = 'N')
+          THEN -- need to update this sso user to be a non-sso user
+            hig_relationship_api.delete_relationship(pi_old_email);                                                                                                   
     END IF;                                             
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -4009,9 +4012,8 @@ AS
     IF valid_start_date(pi_user_id    => pi_user_id
                        ,pi_start_date => pi_start_date) <> 'Y'
      THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 29
-                     ,pi_supplementary_info  => 'Admin Unit already assigned to this User');
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 84);
     END IF;                 
     --
     IF user_admin_unit_exists_dt(pi_user_id    => pi_user_id
