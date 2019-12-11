@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.34   Nov 21 2019 15:54:24   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.35   Dec 11 2019 13:45:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Nov 21 2019 15:54:24  $
-  --       Date fetched Out : $Modtime:   Nov 15 2019 13:32:08  $
-  --       Version          : $Revision:   1.34  $
+  --       Date into PVCS   : $Date:   Dec 11 2019 13:45:30  $
+  --       Date fetched Out : $Modtime:   Dec 09 2019 18:16:28  $
+  --       Version          : $Revision:   1.35  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.34  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.35  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -143,6 +143,44 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION is_date_in_varchar(pi_nt_type     IN nm_types.nt_type%TYPE
+                             ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE)
+    RETURN BOOLEAN IS
+    --
+    lv_retval BOOLEAN;
+    lv_dummy  NUMBER;
+    --
+    CURSOR chk_col(cp_nt_type      nm_types.nt_type%TYPE
+                  ,cp_column_name  nm_type_columns.ntc_column_name%TYPE)
+        IS
+    SELECT 1
+      FROM all_tab_cols
+          ,nm_type_columns
+     WHERE ntc_nt_type = cp_nt_type
+       AND ntc_column_name = cp_column_name
+       AND ntc_column_type = 'DATE'
+       AND ntc_column_name = column_name
+       AND table_name = 'NM_ELEMENTS_ALL'
+       AND owner = Sys_Context('NM3CORE','APPLICATION_OWNER')
+       AND data_type = 'VARCHAR2'
+         ;
+    --
+  BEGIN
+    --
+    OPEN  chk_col(pi_nt_type
+                 ,pi_column_name);
+    FETCH chk_col
+     INTO lv_dummy;
+    lv_retval := chk_col%FOUND;
+    CLOSE chk_col;
+    --
+    RETURN lv_retval;
+    --
+  END is_date_in_varchar;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   FUNCTION is_date_in_varchar(pi_inv_type    IN nm_inv_types_all.nit_inv_type%TYPE
                              ,pi_attrib_name IN nm_inv_type_attribs.ita_attrib_name%TYPE)
     RETURN BOOLEAN IS
@@ -161,7 +199,7 @@ AS
        AND ita_attrib_name = cp_attrib_name
        AND ita_format = 'DATE'
        AND ita_attrib_name = column_name
-       AND table_name = 'NM_INV_ITEMS_ALL'
+       AND table_name = cp_table_name
        AND owner = Sys_Context('NM3CORE','APPLICATION_OWNER')
        AND data_type = 'VARCHAR2'
          ;
@@ -797,11 +835,13 @@ AS
   --
   ------------------------------------------------------------------------------
   --
-  PROCEDURE add_column_data(pi_cursor_col   IN     VARCHAR2
-                           ,pi_query_col    IN     VARCHAR2
-                           ,pi_datatype     IN     VARCHAR2
-                           ,pi_mask         IN     VARCHAR2
-                           ,pio_column_data IN OUT column_data_tab)
+  PROCEDURE add_column_data(pi_cursor_col     IN     VARCHAR2
+                           ,pi_query_col      IN     VARCHAR2
+                           ,pi_datatype       IN     VARCHAR2
+                           ,pi_mask           IN     VARCHAR2
+                           ,pi_field_length   IN     NUMBER DEFAULT NULL
+                           ,pi_decimal_places IN     NUMBER DEFAULT NULL
+                           ,pio_column_data   IN OUT column_data_tab)
     IS
   BEGIN
     --
@@ -809,6 +849,8 @@ AS
     pio_column_data(pio_column_data.COUNT).query_col := pi_query_col;
     pio_column_data(pio_column_data.COUNT).datatype := pi_datatype;
     pio_column_data(pio_column_data.COUNT).mask := pi_mask;
+    pio_column_data(pio_column_data.COUNT).field_length := pi_field_length;
+    pio_column_data(pio_column_data.COUNT).decimal_places := pi_decimal_places;
     --
   END add_column_data;
 
@@ -946,26 +988,32 @@ AS
             --
         WHEN pi_operators(i) = c_equals
          THEN
-            IF lv_datatype = c_varchar2_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' UPPER('||lv_query_col||')';
-                --
-            ELSIF lv_datatype = c_date_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
-                --
-            ELSIF lv_datatype = c_datetime_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
-                --
-            ELSE
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
-                --
-            END IF;
+            CASE lv_datatype
+              WHEN c_varchar2_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' UPPER('||lv_query_col||')';
+                  --
+              WHEN c_date_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  --
+              WHEN c_datetime_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  --
+              WHEN c_date_in_varchar2_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_CHAR(hig.date_convert('||lv_query_col||'),'''||NVL(lv_mask,c_date_mask)||''')';
+                  --
+              ELSE
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                  --
+            END CASE;
             --
             po_where_clause := po_where_clause||' = '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                      ,pi_datatype    => lv_datatype
@@ -973,26 +1021,32 @@ AS
             --
         WHEN pi_operators(i) = c_does_not_equal
          THEN
-            IF lv_datatype = c_varchar2_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' UPPER('||lv_query_col||')';
-                --
-            ELSIF lv_datatype = c_date_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
-                --
-            ELSIF lv_datatype = c_datetime_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
-                --
-            ELSE
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
-                --
-            END IF;
+            CASE lv_datatype
+              WHEN c_varchar2_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' UPPER('||lv_query_col||')';
+                  --
+              WHEN c_date_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  --
+              WHEN c_datetime_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  --
+              WHEN c_date_in_varchar2_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_CHAR(hig.date_convert('||lv_query_col||'),'''||NVL(lv_mask,c_date_mask)||''')';
+                  --
+              ELSE
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                  --
+            END CASE;
             --
             po_where_clause := po_where_clause||' != '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                       ,pi_datatype    => lv_datatype
@@ -1001,28 +1055,34 @@ AS
         WHEN pi_operators(i) = c_greater_than
          THEN
             --
-            IF lv_datatype = c_varchar2_col
-             THEN
-                --Invalid filter function
-                hig.raise_ner(pi_appl               => 'AWLRS'
-                             ,pi_id                 => 43
-                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
-                --
-            ELSIF lv_datatype = c_date_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
-                --
-            ELSIF lv_datatype = c_datetime_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
-                --
-            ELSE
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
-                --
-            END IF;
+            CASE lv_datatype
+              WHEN c_varchar2_col
+               THEN
+                  --Invalid filter function
+                  hig.raise_ner(pi_appl               => 'AWLRS'
+                               ,pi_id                 => 43
+                               ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+                  --
+              WHEN c_date_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  --
+              WHEN c_datetime_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  --
+              WHEN c_date_in_varchar2_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_CHAR(hig.date_convert('||lv_query_col||'),'''||NVL(lv_mask,c_date_mask)||''')';
+                  --
+              ELSE
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                  --
+            END CASE;
             --
             po_where_clause := po_where_clause||' > '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                      ,pi_datatype    => lv_datatype
@@ -1031,28 +1091,34 @@ AS
         WHEN pi_operators(i) = c_less_than
          THEN
             --
-            IF lv_datatype = c_varchar2_col
-             THEN
-                --Invalid filter function
-                hig.raise_ner(pi_appl               => 'AWLRS'
-                             ,pi_id                 => 43
-                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
-                --
-            ELSIF lv_datatype = c_date_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
-                --
-            ELSIF lv_datatype = c_datetime_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
-                --
-            ELSE
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
-                --
-            END IF;
+            CASE lv_datatype
+              WHEN c_varchar2_col
+               THEN
+                  --Invalid filter function
+                  hig.raise_ner(pi_appl               => 'AWLRS'
+                               ,pi_id                 => 43
+                               ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+                  --
+              WHEN c_date_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  --
+              WHEN c_datetime_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  --
+              WHEN c_date_in_varchar2_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_CHAR(hig.date_convert('||lv_query_col||'),'''||NVL(lv_mask,c_date_mask)||''')';
+                  --
+              ELSE
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                  --
+            END CASE;
             --
             po_where_clause := po_where_clause||' < '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                      ,pi_datatype    => lv_datatype
@@ -1061,28 +1127,34 @@ AS
         WHEN pi_operators(i) = c_geater_than_or_equal_to
          THEN
             --
-            IF lv_datatype = c_varchar2_col
-             THEN
-                --Invalid filter function
-                hig.raise_ner(pi_appl               => 'AWLRS'
-                             ,pi_id                 => 43
-                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
-                --
-            ELSIF lv_datatype = c_date_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
-                --
-            ELSIF lv_datatype = c_datetime_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
-                --
-            ELSE
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
-                --
-            END IF;
+            CASE lv_datatype
+              WHEN c_varchar2_col
+               THEN
+                  --Invalid filter function
+                  hig.raise_ner(pi_appl               => 'AWLRS'
+                               ,pi_id                 => 43
+                               ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+                  --
+              WHEN c_date_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  --
+              WHEN c_datetime_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  --
+              WHEN c_date_in_varchar2_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_CHAR(hig.date_convert('||lv_query_col||'),'''||NVL(lv_mask,c_date_mask)||''')';
+                  --
+              ELSE
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                  --
+            END CASE;
             --
             po_where_clause := po_where_clause||' >= '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                       ,pi_datatype    => lv_datatype
@@ -1091,28 +1163,34 @@ AS
         WHEN pi_operators(i) = c_less_than_or_equal_to
          THEN
             --
-            IF lv_datatype = c_varchar2_col
-             THEN
-                --Invalid filter function
-                hig.raise_ner(pi_appl               => 'AWLRS'
-                             ,pi_id                 => 43
-                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
-                --
-            ELSIF lv_datatype = c_date_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
-                --
-            ELSIF lv_datatype = c_datetime_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
-                --
-            ELSE
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
-                --
-            END IF;
+            CASE lv_datatype
+              WHEN c_varchar2_col
+               THEN
+                  --Invalid filter function
+                  hig.raise_ner(pi_appl               => 'AWLRS'
+                               ,pi_id                 => 43
+                               ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+                  --
+              WHEN c_date_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  --
+              WHEN c_datetime_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  --
+              WHEN c_date_in_varchar2_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_CHAR(hig.date_convert('||lv_query_col||'),'''||NVL(lv_mask,c_date_mask)||''')';
+                  --
+              ELSE
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                  --
+            END CASE;
             --
             po_where_clause := po_where_clause||' <= '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                       ,pi_datatype    => lv_datatype
@@ -1129,28 +1207,34 @@ AS
                              ,pi_supplementary_info => pi_operators(i));
             END IF;
             --
-            IF lv_datatype = c_varchar2_col
-             THEN
-                --Invalid filter function
-                hig.raise_ner(pi_appl               => 'AWLRS'
-                             ,pi_id                 => 43
-                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
-                --
-            ELSIF lv_datatype = c_date_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
-                --
-            ELSIF lv_datatype = c_datetime_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
-                --
-            ELSE
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
-                --
-            END IF;
+            CASE lv_datatype
+              WHEN c_varchar2_col
+               THEN
+                  --Invalid filter function
+                  hig.raise_ner(pi_appl               => 'AWLRS'
+                               ,pi_id                 => 43
+                               ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+                  --
+              WHEN c_date_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  --
+              WHEN c_datetime_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  --
+              WHEN c_date_in_varchar2_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_CHAR(hig.date_convert('||lv_query_col||'),'''||NVL(lv_mask,c_date_mask)||''')';
+                  --
+              ELSE
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                  --
+            END CASE;
             --
             po_where_clause := po_where_clause||' BETWEEN '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                            ,pi_datatype    => lv_datatype
@@ -1170,28 +1254,34 @@ AS
                              ,pi_supplementary_info => pi_operators(i));
             END IF;
             --
-            IF lv_datatype = c_varchar2_col
-             THEN
-                --Invalid filter function
-                hig.raise_ner(pi_appl               => 'AWLRS'
-                             ,pi_id                 => 43
-                             ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
-                --
-            ELSIF lv_datatype = c_date_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
-                --
-            ELSIF lv_datatype = c_datetime_col
-             THEN
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
-                --
-            ELSE
-                --
-                po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
-                --
-            END IF;
+            CASE lv_datatype
+              WHEN c_varchar2_col
+               THEN
+                  --Invalid filter function
+                  hig.raise_ner(pi_appl               => 'AWLRS'
+                               ,pi_id                 => 43
+                               ,pi_supplementary_info => pi_operators(i)||' Datatype: '||lv_datatype);
+                  --
+              WHEN c_date_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  --
+              WHEN c_datetime_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  --
+              WHEN c_date_in_varchar2_col
+               THEN
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_CHAR(hig.date_convert('||lv_query_col||'),'''||NVL(lv_mask,c_date_mask)||''')';
+                  --
+              ELSE
+                  --
+                  po_where_clause := po_where_clause||' '||lv_operation||' '||lv_query_col;
+                  --
+            END CASE;
             --
             po_where_clause := po_where_clause||' NOT BETWEEN '||get_assignment(pi_value       => UPPER(pi_values_1(i))
                                                                                ,pi_datatype    => lv_datatype

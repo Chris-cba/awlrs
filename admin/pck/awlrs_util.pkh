@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.26   Nov 21 2019 15:54:24   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.27   Dec 11 2019 13:45:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   Nov 21 2019 15:54:24  $
-  --       Date fetched Out : $Modtime:   Nov 15 2019 13:32:48  $
-  --       Version          : $Revision:   1.26  $
+  --       Date into PVCS   : $Date:   Dec 11 2019 13:45:30  $
+  --       Date fetched Out : $Modtime:   Dec 09 2019 13:53:44  $
+  --       Version          : $Revision:   1.27  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.26  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.27  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -32,10 +32,12 @@ AS
                             ,message  VARCHAR2(4000));
   TYPE message_tab IS TABLE OF message_rec INDEX BY BINARY_INTEGER;
   --
-  TYPE column_data_rec IS RECORD(cursor_col VARCHAR2(30)
-                                ,query_col  nm3type.max_varchar2
-                                ,datatype   VARCHAR2(30)
-                                ,mask       VARCHAR2(100));
+  TYPE column_data_rec IS RECORD(cursor_col      VARCHAR2(30)
+                                ,query_col       nm3type.max_varchar2
+                                ,datatype        VARCHAR2(30)
+                                ,mask            VARCHAR2(100)
+                                ,field_length    NUMBER(4)
+                                ,decimal_places  NUMBER(1));
   TYPE column_data_tab IS TABLE OF column_data_rec INDEX BY BINARY_INTEGER;
   /*
   ||Constants for datatype.
@@ -163,6 +165,13 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION is_date_in_varchar(pi_nt_type     IN nm_types.nt_type%TYPE
+                             ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE)
+    RETURN BOOLEAN;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   FUNCTION is_date_in_varchar(pi_inv_type    IN nm_inv_types_all.nit_inv_type%TYPE
                              ,pi_attrib_name IN nm_inv_type_attribs.ita_attrib_name%TYPE)
     RETURN BOOLEAN;
@@ -244,11 +253,13 @@ AS
   --
   ------------------------------------------------------------------------------
   --
-  PROCEDURE add_column_data(pi_cursor_col   IN     VARCHAR2
-                           ,pi_query_col    IN     VARCHAR2
-                           ,pi_datatype     IN     VARCHAR2
-                           ,pi_mask         IN     VARCHAR2
-                           ,pio_column_data IN OUT column_data_tab);
+  PROCEDURE add_column_data(pi_cursor_col     IN     VARCHAR2
+                           ,pi_query_col      IN     VARCHAR2
+                           ,pi_datatype       IN     VARCHAR2
+                           ,pi_mask           IN     VARCHAR2
+                           ,pi_field_length   IN     NUMBER DEFAULT NULL
+                           ,pi_decimal_places IN     NUMBER DEFAULT NULL
+                           ,pio_column_data   IN OUT column_data_tab);
 
   --
   ------------------------------------------------------------------------------
