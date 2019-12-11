@@ -1,0 +1,20 @@
+CREATE OR REPLACE TYPE awlrs_column_data_tab
+-------------------------------------------------------------------------
+--   PVCS Identifiers :-
+--
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/typ/awlrs_column_data_tab.tyh-arc   1.0   Dec 11 2019 13:47:48   Mike.Huitson  $
+--       Module Name      : $Workfile:   awlrs_column_data_tab.tyh  $
+--       Date into PVCS   : $Date:   Dec 11 2019 13:47:48  $
+--       Date fetched Out : $Modtime:   Dec 09 2019 13:18:44  $
+--       Version          : $Revision:   1.0  $
+-------------------------------------------------------------------------
+--   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+-------------------------------------------------------------------------
+--
+IS TABLE OF awlrs_column_data_rec
+/
+
+
+
+
+
