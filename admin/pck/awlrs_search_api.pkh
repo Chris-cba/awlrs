@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.12   Aug 06 2019 11:16:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.13   Dec 11 2019 13:45:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkh  $
-  --       Date into PVCS   : $Date:   Aug 06 2019 11:16:04  $
-  --       Date fetched Out : $Modtime:   Jul 10 2019 10:09:52  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   Dec 11 2019 13:45:38  $
+  --       Date fetched Out : $Modtime:   Dec 11 2019 13:25:12  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
   --
   TYPE group_expression_rec IS RECORD(group_operation        VARCHAR2(100)
                                      ,group_expressions_xml  XMLTYPE
@@ -33,6 +33,10 @@ AS
   TYPE columns_tab IS TABLE OF awlrs_quick_search_columns.aqsc_column%TYPE INDEX BY BINARY_INTEGER;
   --
   TYPE id_tab IS TABLE OF NUMBER(38) INDEX BY BINARY_INTEGER;
+  --
+  TYPE ita_tab IS TABLE OF nm_inv_type_attribs_all%ROWTYPE;
+  --
+  TYPE ntc_tab IS TABLE OF nm_type_columns%ROWTYPE;
   --
   -----------------------------------------------------------------------------
   --
@@ -241,6 +245,15 @@ AS
                                ,po_message_severity OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor   OUT sys_refcursor
                                ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_results_column_data(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                   ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
