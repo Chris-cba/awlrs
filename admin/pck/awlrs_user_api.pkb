@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.5   Dec 03 2019 10:31:44   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Dec 03 2019 10:31:44  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.6   Dec 12 2019 15:23:54   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Dec 12 2019 15:23:54  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Dec 03 2019 10:18:08  $
-  --       Version          : $Revision:   1.5  $
+  --       Date fetched Out : $Modtime:   Dec 12 2019 15:19:04  $
+  --       Version          : $Revision:   1.6  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.6  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -1444,7 +1444,7 @@ AS
        AND d.owner   = (SELECT sys_context('NM3_SECURITY_CTX','USERNAME') 
                           FROM user_objects o
                          WHERE o.object_name = 'HIG_OPTIONS'
-                           AND o.object_type = 'TABLE'
+                           AND o.object_type = 'VIEW'
                         UNION
                         SELECT o.table_owner from user_synonyms o
                          WHERE o.synonym_name = 'HIG_OPTIONS'); 
@@ -3377,25 +3377,6 @@ AS
   --
   lv_proc_input varchar2(200) := '';
   --
-  /*
-  CURSOR c1 IS
-    SELECT privilege
-      FROM dba_sys_privs
-     WHERE grantee = pi_role;
-  --
-  CURSOR c2 IS
-    SELECT d.privilege, d.owner, d.table_name
-      FROM dba_tab_privs d
-     WHERE d.grantee = pi_role
-       AND d.owner   = (SELECT sys_context('NM3_SECURITY_CTX','USERNAME') 
-                          FROM user_objects o
-                         WHERE o.object_name = 'HIG_OPTIONS'
-                           AND o.object_type = 'TABLE'
-                        UNION
-                        SELECT o.table_owner from user_synonyms o
-                         WHERE o.synonym_name = 'HIG_OPTIONS'); 
-  */                          
-  --                       
   BEGIN
     --
     SAVEPOINT create_user_role_sp;
@@ -3423,13 +3404,6 @@ AS
                      ,pi_supplementary_info  => 'Role '||pi_role||' already assigned for this User');
     END IF;
     --
-    /*IF pi_admin_option = 'YES' THEN
-       lv_proc_input := 'GRANT '||pi_role||' TO '||pi_username||' WITH ADMIN OPTION';
-    ELSE
-       lv_proc_input := 'GRANT '||pi_role||' TO '||pi_username;
-    END IF;  
-    hig.execute_ddl(lv_proc_input);*/
-    --
     /*
     ||insert into hig_user_roles.
     */
@@ -3447,25 +3421,6 @@ AS
     grant_role_privs(pi_username     =>  pi_username
     	            ,pi_role         =>  pi_role
     	            ,pi_admin_option =>  pi_admin_option);
-    /*
-    -- Granting role system privileges -- 
-    FOR c1_rec in c1
-    LOOP
-     lv_proc_input := ''; 
-     lv_proc_input := ('GRANT '||c1_rec.privilege||' TO '||pi_username);
-     hig.execute_ddl(lv_proc_input);
-    END LOOP; 
-    --  
-    -- Granting role object privileges -- 
-    FOR c2_rec IN c2
-    LOOP
-     lv_proc_input := ''; 
-     lv_proc_input := ( 'GRANT ' || c2_rec.privilege
-                      ||' ON '   || c2_rec.owner || '.' || c2_rec.table_name
-                      ||' TO '   || pi_username);
-     hig.execute_ddl(lv_proc_input);
-    END LOOP; 
-    */
     --                
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -3541,7 +3496,7 @@ AS
        AND p.owner      = u.owner
        AND p.owner      = (SELECT SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME') FROM user_objects o
                             WHERE o.object_name = 'HIG_OPTIONS'
-                              AND o.object_type = 'TABLE'
+                              AND o.object_type = 'VIEW'
                            UNION
                            SELECT o.table_owner FROM user_synonyms o
                             WHERE o.synonym_name = 'HIG_OPTIONS' )
