@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.21   Jan 21 2019 20:41:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.22   Dec 18 2019 14:27:16   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 21 2019 20:41:12  $
-  --       Date fetched Out : $Modtime:   Jan 21 2019 18:40:24  $
-  --       Version          : $Revision:   1.21  $
+  --       Date into PVCS   : $Date:   Dec 18 2019 14:27:16  $
+  --       Date fetched Out : $Modtime:   Dec 18 2019 14:26:42  $
+  --       Version          : $Revision:   1.22  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -672,6 +672,7 @@ AS
   PROCEDURE do_rescale(pi_ne_id            IN     nm_elements.ne_id%TYPE
                       ,pi_effective_date   IN     DATE
                       ,pi_offset_st        IN     NUMBER
+                      ,pi_start_ne_id      IN     nm_elements.ne_id%TYPE DEFAULT NULL
                       ,pi_use_history      IN     VARCHAR2
                       ,po_message_severity IN OUT hig_codes.hco_code%TYPE
                       ,po_message_tab      IN OUT NOCOPY awlrs_message_tab)
@@ -686,6 +687,7 @@ AS
     awlrs_group_api.rescale_route(pi_ne_id            => pi_ne_id
                                  ,pi_effective_date   => pi_effective_date
                                  ,pi_offset_st        => pi_offset_st
+                                 ,pi_start_ne_id      => pi_start_ne_id
                                  ,pi_use_history      => pi_use_history
                                  ,po_message_severity => po_message_severity
                                  ,po_message_cursor   => lv_message_cursor);
@@ -708,21 +710,23 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE do_split(pi_ne_id                IN     nm_elements_all.ne_id%TYPE
-                    ,pi_split_offset         IN     NUMBER
-                    ,pi_split_at_node_id     IN     nm_nodes.no_node_id%TYPE
-                    ,pi_split_datum_id       IN     nm_elements_all.ne_id%TYPE DEFAULT NULL
-                    ,pi_split_datum_offset   IN     NUMBER DEFAULT NULL
-                    ,pi_new_node_x           IN     nm_points.np_grid_east%TYPE DEFAULT NULL
-                    ,pi_new_node_y           IN     nm_points.np_grid_north%TYPE DEFAULT NULL
-                    ,pi_reason               IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
-                    ,pi_new_element1_attribs IN     awlrs_element_api.flex_attr_tab
-                    ,pi_new_element2_attribs IN     awlrs_element_api.flex_attr_tab
-                    ,pi_do_rescale_parents   IN     VARCHAR2 DEFAULT 'N'
-                    ,pi_effective_date       IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                    ,po_new_ne_ids           IN OUT awlrs_util.ne_id_tab
-                    ,po_message_severity        OUT hig_codes.hco_code%TYPE
-                    ,po_message_cursor          OUT sys_refcursor)
+  PROCEDURE do_split(pi_ne_id                 IN     nm_elements_all.ne_id%TYPE
+                    ,pi_split_offset          IN     NUMBER
+                    ,pi_split_at_node_id      IN     nm_nodes.no_node_id%TYPE
+                    ,pi_split_datum_id        IN     nm_elements_all.ne_id%TYPE DEFAULT NULL
+                    ,pi_split_datum_offset    IN     NUMBER DEFAULT NULL
+                    ,pi_new_node_x            IN     nm_points.np_grid_east%TYPE DEFAULT NULL
+                    ,pi_new_node_y            IN     nm_points.np_grid_north%TYPE DEFAULT NULL
+                    ,pi_reason                IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
+                    ,pi_new_element1_attribs  IN     awlrs_element_api.flex_attr_tab
+                    ,pi_new_element2_attribs  IN     awlrs_element_api.flex_attr_tab
+                    ,pi_do_maintain_history   IN     VARCHAR2 DEFAULT 'N'
+                    ,pi_circular_group_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                    ,pi_circular_start_ne_ids IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)                           
+                    ,pi_effective_date        IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                    ,po_new_ne_ids            IN OUT awlrs_util.ne_id_tab
+                    ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor           OUT sys_refcursor)
     IS
     --
     lr_ne  nm_elements_all%ROWTYPE;
@@ -736,6 +740,7 @@ AS
     lv_datum_only    VARCHAR2(1) := 'Y';
     lv_distance      NUMBER;
     lv_severity      hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    lv_start_ne_id   nm_elements_all.ne_id%TYPE;
     --
     lv_new_elements_cursor  sys_refcursor;
     --
@@ -883,73 +888,22 @@ AS
                      ,pi_id                 => 5
                      ,pi_supplementary_info => 'awlrs_split_api.do_split');
     END IF;
-    --
-    awlrs_element_api.build_element_rec(pi_nt_type    => lr_ne.ne_nt_type
-                                       ,pi_global     => 'awlrs_split_api.g_new_element_1'
-                                       ,pi_attributes => pi_new_element1_attribs);
-    awlrs_element_api.build_element_rec(pi_nt_type    => lr_ne.ne_nt_type
-                                       ,pi_global     => 'awlrs_split_api.g_new_element_2'
-                                       ,pi_attributes => pi_new_element2_attribs);
-    --
-    IF pi_split_at_node_id IS NOT NULL
-     THEN
-        lv_create_node := FALSE;
-        lv_new_node_id := pi_split_at_node_id;
-    END IF;
-    --
-    nm3split.set_ne_globals(pi_ne_id => pi_ne_id);
-    --
-    po_new_ne_ids.DELETE;
-    po_new_ne_ids(1) := NULL;
-    po_new_ne_ids(2) := NULL;
-    --
-    nm3split.do_split_datum_or_group(pi_ne_id                  => lr_ne.ne_id
-                                    ,pi_ne_type                => lr_ne.ne_type
-                                    ,pi_ne_id_1                => po_new_ne_ids(1)
-                                    ,pi_ne_id_2                => po_new_ne_ids(2)
-                                    ,pi_effective_date         => pi_effective_date
-                                    ,pi_split_offset           => lv_split_offset
-                                    ,pi_non_ambig_ne_id        => pi_split_datum_id
-                                    ,pi_non_ambig_split_offset => pi_split_datum_offset
-                                    ,pi_split_at_node_id       => pi_split_at_node_id
-                                    ,pi_create_node            => lv_create_node
-                                    ,pi_node_id                => lv_new_node_id
-                                    ,pi_no_node_name           => NULL
-                                    ,pi_no_descr               => NULL
-                                    ,pi_no_purpose             => NULL
-                                    ,pi_np_grid_east           => pi_new_node_x
-                                    ,pi_np_grid_north          => pi_new_node_y
-                                    ,pi_no_np_id               => lv_new_np_id
-                                    ,pi_ne_unique_1            => g_new_element_1.ne_unique
-                                    ,pi_ne_owner_1             => g_new_element_1.ne_owner
-                                    ,pi_ne_name_1_1            => g_new_element_1.ne_name_1
-                                    ,pi_ne_name_2_1            => g_new_element_1.ne_name_2
-                                    ,pi_ne_prefix_1            => g_new_element_1.ne_prefix
-                                    ,pi_ne_number_1            => g_new_element_1.ne_number
-                                    ,pi_ne_sub_type_1          => g_new_element_1.ne_sub_type
-                                    ,pi_ne_group_1             => g_new_element_1.ne_group
-                                    ,pi_ne_sub_class_1         => g_new_element_1.ne_sub_class
-                                    ,pi_ne_nsg_ref_1           => g_new_element_1.ne_nsg_ref
-                                    ,pi_ne_version_no_1        => g_new_element_1.ne_version_no
-                                    ,pi_ne_unique_2            => g_new_element_2.ne_unique
-                                    ,pi_ne_owner_2             => g_new_element_2.ne_owner
-                                    ,pi_ne_name_1_2            => g_new_element_2.ne_name_1
-                                    ,pi_ne_name_2_2            => g_new_element_2.ne_name_2
-                                    ,pi_ne_prefix_2            => g_new_element_2.ne_prefix
-                                    ,pi_ne_number_2            => g_new_element_2.ne_number
-                                    ,pi_ne_sub_type_2          => g_new_element_2.ne_sub_type
-                                    ,pi_ne_group_2             => g_new_element_2.ne_group
-                                    ,pi_ne_sub_class_2         => g_new_element_2.ne_sub_class
-                                    ,pi_ne_nsg_ref_2           => g_new_element_2.ne_nsg_ref
-                                    ,pi_ne_version_no_2        => g_new_element_2.ne_version_no
-                                    ,pi_neh_descr              => pi_reason);
     /*
-    ||Rescale any linear groups the element belongs to.
+    ||If maintain history is set to yes then rescale all parent groups pre operation and post operation. 
+    ||If there are circular routes then an array should have been passed with the start element id.
     */
-    IF pi_do_rescale_parents = 'Y'
+    IF pi_do_maintain_history = 'Y'
      THEN
         --
-        OPEN  get_linear_groups(po_new_ne_ids(1));
+        IF pi_circular_group_ids.COUNT != pi_circular_start_ne_ids.COUNT
+         THEN
+            --If these arrays are passed check counts are the same.
+            hig.raise_ner(pi_appl               => 'AWLRS'
+                         ,pi_id                 => 5
+                         ,pi_supplementary_info => 'awlrs_reshape_api.reshape_element');
+        END IF;
+        --
+        OPEN  get_linear_groups(pi_ne_id);
         FETCH get_linear_groups
          BULK COLLECT
          INTO lt_groups;
@@ -957,12 +911,24 @@ AS
         --
         FOR i IN 1..lt_groups.COUNT LOOP
           --
+          lv_start_ne_id := null;
+          --
+          FOR j IN 1..pi_circular_group_ids.COUNT LOOP
+            IF pi_circular_group_ids(j) = lt_groups(i).group_id
+             THEN 
+                lv_start_ne_id := pi_circular_start_ne_ids(j);
+            ELSE 
+                lv_start_ne_id := null;
+            END IF;
+          END LOOP;
+          --
           lv_severity := awlrs_util.c_msg_cat_success;
           lt_messages.DELETE;
           --
           do_rescale(pi_ne_id            => lt_groups(i).group_id
                     ,pi_effective_date   => pi_effective_date
                     ,pi_offset_st        => lt_groups(i).min_slk
+                    ,pi_start_ne_id      => lv_start_ne_id
                     ,pi_use_history      => 'Y'
                     ,po_message_severity => lv_severity
                     ,po_message_tab      => lt_messages);
@@ -975,6 +941,147 @@ AS
               do_rescale(pi_ne_id            => lt_groups(i).group_id
                         ,pi_effective_date   => pi_effective_date
                         ,pi_offset_st        => lt_groups(i).min_slk
+                        ,pi_start_ne_id      => lv_start_ne_id
+                        ,pi_use_history      => 'N'
+                        ,po_message_severity => lv_severity
+                        ,po_message_tab      => lt_messages);
+              --
+          END IF;
+          --
+          IF lv_severity != awlrs_util.c_msg_cat_success
+           THEN
+              /*
+              ||If an error has occurred rescaling a group end the whole operation. 
+              ||This shouldnt happen as the array should be sent but this will capture any changes if done after selection
+              */
+              IF lv_severity = awlrs_util.c_msg_cat_circular_route
+               THEN
+                  lt_messages.DELETE;
+                  awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                   ,pi_ner_id             => 60
+                                                   ,pi_supplementary_info => NULL
+                                                   ,pi_category           => awlrs_util.c_msg_cat_error
+                                                   ,po_message_tab        => lt_messages);
+              END IF;
+              --
+              EXIT;
+              --
+          END IF;
+          --
+        END LOOP;
+    END IF;
+    --
+    IF (pi_do_maintain_history = 'N')
+     OR (pi_do_maintain_history = 'Y' AND lv_severity = awlrs_util.c_msg_cat_success)
+     THEN
+        --
+        awlrs_element_api.build_element_rec(pi_nt_type    => lr_ne.ne_nt_type
+                                           ,pi_global     => 'awlrs_split_api.g_new_element_1'
+                                           ,pi_attributes => pi_new_element1_attribs);
+        awlrs_element_api.build_element_rec(pi_nt_type    => lr_ne.ne_nt_type
+                                           ,pi_global     => 'awlrs_split_api.g_new_element_2'
+                                           ,pi_attributes => pi_new_element2_attribs);
+        --
+        IF pi_split_at_node_id IS NOT NULL
+         THEN
+            lv_create_node := FALSE;
+            lv_new_node_id := pi_split_at_node_id;
+        END IF;
+        --
+        nm3split.set_ne_globals(pi_ne_id => pi_ne_id);
+        --
+        po_new_ne_ids.DELETE;
+        po_new_ne_ids(1) := NULL;
+        po_new_ne_ids(2) := NULL;
+        --
+        nm3split.do_split_datum_or_group(pi_ne_id                  => lr_ne.ne_id
+                                        ,pi_ne_type                => lr_ne.ne_type
+                                        ,pi_ne_id_1                => po_new_ne_ids(1)
+                                        ,pi_ne_id_2                => po_new_ne_ids(2)
+                                        ,pi_effective_date         => pi_effective_date
+                                        ,pi_split_offset           => lv_split_offset
+                                        ,pi_non_ambig_ne_id        => pi_split_datum_id
+                                        ,pi_non_ambig_split_offset => pi_split_datum_offset
+                                        ,pi_split_at_node_id       => pi_split_at_node_id
+                                        ,pi_create_node            => lv_create_node
+                                        ,pi_node_id                => lv_new_node_id
+                                        ,pi_no_node_name           => NULL
+                                        ,pi_no_descr               => NULL
+                                        ,pi_no_purpose             => NULL
+                                        ,pi_np_grid_east           => pi_new_node_x
+                                        ,pi_np_grid_north          => pi_new_node_y
+                                        ,pi_no_np_id               => lv_new_np_id
+                                        ,pi_ne_unique_1            => g_new_element_1.ne_unique
+                                        ,pi_ne_owner_1             => g_new_element_1.ne_owner
+                                        ,pi_ne_name_1_1            => g_new_element_1.ne_name_1
+                                        ,pi_ne_name_2_1            => g_new_element_1.ne_name_2
+                                        ,pi_ne_prefix_1            => g_new_element_1.ne_prefix
+                                        ,pi_ne_number_1            => g_new_element_1.ne_number
+                                        ,pi_ne_sub_type_1          => g_new_element_1.ne_sub_type
+                                        ,pi_ne_group_1             => g_new_element_1.ne_group
+                                        ,pi_ne_sub_class_1         => g_new_element_1.ne_sub_class
+                                        ,pi_ne_nsg_ref_1           => g_new_element_1.ne_nsg_ref
+                                        ,pi_ne_version_no_1        => g_new_element_1.ne_version_no
+                                        ,pi_ne_unique_2            => g_new_element_2.ne_unique
+                                        ,pi_ne_owner_2             => g_new_element_2.ne_owner
+                                        ,pi_ne_name_1_2            => g_new_element_2.ne_name_1
+                                        ,pi_ne_name_2_2            => g_new_element_2.ne_name_2
+                                        ,pi_ne_prefix_2            => g_new_element_2.ne_prefix
+                                        ,pi_ne_number_2            => g_new_element_2.ne_number
+                                        ,pi_ne_sub_type_2          => g_new_element_2.ne_sub_type
+                                        ,pi_ne_group_2             => g_new_element_2.ne_group
+                                        ,pi_ne_sub_class_2         => g_new_element_2.ne_sub_class
+                                        ,pi_ne_nsg_ref_2           => g_new_element_2.ne_nsg_ref
+                                        ,pi_ne_version_no_2        => g_new_element_2.ne_version_no
+                                        ,pi_neh_descr              => pi_reason);
+    END IF;
+    /*
+    ||Rescale any linear groups the element belongs to.
+    */
+    IF pi_do_maintain_history = 'Y' AND lv_severity = awlrs_util.c_msg_cat_success
+     THEN
+        --
+        lt_groups.DELETE;
+        --
+        OPEN  get_linear_groups(po_new_ne_ids(1));
+        FETCH get_linear_groups
+         BULK COLLECT
+         INTO lt_groups;
+        CLOSE get_linear_groups;
+        --
+        FOR i IN 1..lt_groups.COUNT LOOP
+          --
+          lv_start_ne_id := null;
+          --
+          FOR j IN 1..pi_circular_group_ids.COUNT LOOP
+            IF pi_circular_group_ids(j) = lt_groups(i).group_id
+             THEN 
+                lv_start_ne_id := pi_circular_start_ne_ids(j);
+            ELSE 
+                lv_start_ne_id := null;
+            END IF;
+          END LOOP;
+          --          
+          lv_severity := awlrs_util.c_msg_cat_success;
+          lt_messages.DELETE;
+          --
+          do_rescale(pi_ne_id            => lt_groups(i).group_id
+                    ,pi_effective_date   => pi_effective_date
+                    ,pi_offset_st        => lt_groups(i).min_slk
+                    ,pi_start_ne_id      => lv_start_ne_id
+                    ,pi_use_history      => 'Y'
+                    ,po_message_severity => lv_severity
+                    ,po_message_tab      => lt_messages);
+          --
+          IF lv_severity = awlrs_util.c_msg_cat_ask_continue
+           THEN
+              --
+              lt_messages.DELETE;
+              --
+              do_rescale(pi_ne_id            => lt_groups(i).group_id
+                        ,pi_effective_date   => pi_effective_date
+                        ,pi_offset_st        => lt_groups(i).min_slk
+                        ,pi_start_ne_id      => lv_start_ne_id
                         ,pi_use_history      => 'N'
                         ,po_message_severity => lv_severity
                         ,po_message_tab      => lt_messages);
@@ -1053,7 +1160,9 @@ AS
                     ,pi_new_element2_column_names IN     awlrs_element_api.attrib_column_name_tab
                     ,pi_new_element2_prompts      IN     awlrs_element_api.attrib_prompt_tab
                     ,pi_new_element2_char_values  IN     awlrs_element_api.attrib_char_value_tab
-                    ,pi_do_rescale_parents        IN     VARCHAR2 DEFAULT 'N'
+                    ,pi_do_maintain_history       IN     VARCHAR2 DEFAULT 'N'
+                    ,pi_circular_group_ids        IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                    ,pi_circular_start_ne_ids     IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)                      
                     ,pi_effective_date            IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                     ,po_new_ne_ids                IN OUT awlrs_util.ne_id_tab
                     ,po_message_severity             OUT hig_codes.hco_code%TYPE
@@ -1080,7 +1189,18 @@ AS
         --The attribute tables passed in must have matching row counts
         hig.raise_ner(pi_appl               => 'AWLRS'
                      ,pi_id                 => 5
-                     ,pi_supplementary_info => 'awlrs_split_api.do_split');    END IF;
+                     ,pi_supplementary_info => 'awlrs_split_api.do_split');    
+    END IF;
+    /*
+    ||Check the circular route array counts are the same. PB TO DO check error number.
+    */
+    IF pi_circular_group_ids.COUNT != pi_circular_start_ne_ids.COUNT
+     THEN
+        --The attribute tables passed in must have matching row counts
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_split_api.do_split');    
+    END IF;
     --
     FOR i IN 1..pi_new_element1_column_names.COUNT LOOP
       --
@@ -1094,21 +1214,23 @@ AS
       --
     END LOOP;
     --
-    do_split(pi_ne_id                => pi_ne_id
-            ,pi_split_offset         => pi_split_offset
-            ,pi_split_at_node_id     => pi_split_at_node_id
-            ,pi_split_datum_id       => pi_split_datum_id
-            ,pi_split_datum_offset   => pi_split_datum_offset
-            ,pi_new_node_x           => pi_new_node_x
-            ,pi_new_node_y           => pi_new_node_y
-            ,pi_reason               => pi_reason
-            ,pi_new_element1_attribs => lt_new_element1_attribs
-            ,pi_new_element2_attribs => lt_new_element2_attribs
-            ,pi_do_rescale_parents   => pi_do_rescale_parents
-            ,pi_effective_date       => pi_effective_date
-            ,po_new_ne_ids           => po_new_ne_ids
-            ,po_message_severity     => lv_message_severity
-            ,po_message_cursor       => lv_message_cursor);
+    do_split(pi_ne_id                  => pi_ne_id
+            ,pi_split_offset           => pi_split_offset
+            ,pi_split_at_node_id       => pi_split_at_node_id
+            ,pi_split_datum_id         => pi_split_datum_id
+            ,pi_split_datum_offset     => pi_split_datum_offset
+            ,pi_new_node_x             => pi_new_node_x
+            ,pi_new_node_y             => pi_new_node_y
+            ,pi_reason                 => pi_reason
+            ,pi_new_element1_attribs   => lt_new_element1_attribs
+            ,pi_new_element2_attribs   => lt_new_element2_attribs
+            ,pi_do_maintain_history    => pi_do_maintain_history
+            ,pi_circular_group_ids     => pi_circular_group_ids
+            ,pi_circular_start_ne_ids  => pi_circular_start_ne_ids
+            ,pi_effective_date         => pi_effective_date
+            ,po_new_ne_ids             => po_new_ne_ids
+            ,po_message_severity       => lv_message_severity
+            ,po_message_cursor         => lv_message_cursor);
     --
     po_message_severity := lv_message_severity;
     po_message_cursor := lv_message_cursor;

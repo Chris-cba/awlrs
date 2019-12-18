@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkh-arc   1.10   Nov 05 2018 16:54:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkh-arc   1.11   Dec 18 2019 14:27:16   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkh  $
-  --       Date into PVCS   : $Date:   Nov 05 2018 16:54:32  $
-  --       Date fetched Out : $Modtime:   Nov 05 2018 10:38:04  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   Dec 18 2019 14:27:16  $
+  --       Date fetched Out : $Modtime:   Dec 18 2019 13:45:46  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
   --
   g_new_element_1  nm_elements_all%ROWTYPE;
   g_new_element_2  nm_elements_all%ROWTYPE;
@@ -96,21 +96,23 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE do_split(pi_ne_id                IN     nm_elements_all.ne_id%TYPE
-                    ,pi_split_offset         IN     NUMBER
-                    ,pi_split_at_node_id     IN     nm_nodes.no_node_id%TYPE
-                    ,pi_split_datum_id       IN     nm_elements_all.ne_id%TYPE DEFAULT NULL
-                    ,pi_split_datum_offset   IN     NUMBER DEFAULT NULL
-                    ,pi_new_node_x           IN     nm_points.np_grid_east%TYPE DEFAULT NULL
-                    ,pi_new_node_y           IN     nm_points.np_grid_north%TYPE DEFAULT NULL
-                    ,pi_reason               IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
-                    ,pi_new_element1_attribs IN     awlrs_element_api.flex_attr_tab
-                    ,pi_new_element2_attribs IN     awlrs_element_api.flex_attr_tab
-                    ,pi_do_rescale_parents   IN     VARCHAR2 DEFAULT 'N'
-                    ,pi_effective_date       IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                    ,po_new_ne_ids           IN OUT awlrs_util.ne_id_tab
-                    ,po_message_severity        OUT hig_codes.hco_code%TYPE
-                    ,po_message_cursor          OUT sys_refcursor);
+  PROCEDURE do_split(pi_ne_id                 IN     nm_elements_all.ne_id%TYPE
+                    ,pi_split_offset          IN     NUMBER
+                    ,pi_split_at_node_id      IN     nm_nodes.no_node_id%TYPE
+                    ,pi_split_datum_id        IN     nm_elements_all.ne_id%TYPE DEFAULT NULL
+                    ,pi_split_datum_offset    IN     NUMBER DEFAULT NULL
+                    ,pi_new_node_x            IN     nm_points.np_grid_east%TYPE DEFAULT NULL
+                    ,pi_new_node_y            IN     nm_points.np_grid_north%TYPE DEFAULT NULL
+                    ,pi_reason                IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
+                    ,pi_new_element1_attribs  IN     awlrs_element_api.flex_attr_tab
+                    ,pi_new_element2_attribs  IN     awlrs_element_api.flex_attr_tab
+                    ,pi_do_maintain_history   IN     VARCHAR2 DEFAULT 'N'
+                    ,pi_circular_group_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                    ,pi_circular_start_ne_ids IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                    ,pi_effective_date        IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                    ,po_new_ne_ids            IN OUT awlrs_util.ne_id_tab
+                    ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
@@ -129,7 +131,9 @@ AS
                     ,pi_new_element2_column_names IN     awlrs_element_api.attrib_column_name_tab
                     ,pi_new_element2_prompts      IN     awlrs_element_api.attrib_prompt_tab
                     ,pi_new_element2_char_values  IN     awlrs_element_api.attrib_char_value_tab
-                    ,pi_do_rescale_parents        IN     VARCHAR2 DEFAULT 'N'
+                    ,pi_do_maintain_history       IN     VARCHAR2 DEFAULT 'N'
+                    ,pi_circular_group_ids        IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                    ,pi_circular_start_ne_ids     IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)                    
                     ,pi_effective_date            IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                     ,po_new_ne_ids                IN OUT awlrs_util.ne_id_tab
                     ,po_message_severity             OUT hig_codes.hco_code%TYPE
