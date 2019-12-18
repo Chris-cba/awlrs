@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.29   May 28 2019 12:47:06   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.30   Dec 18 2019 15:36:38   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   May 28 2019 12:47:06  $
-  --       Date fetched Out : $Modtime:   May 28 2019 12:41:30  $
-  --       Version          : $Revision:   1.29  $
+  --       Date into PVCS   : $Date:   Dec 18 2019 15:36:38  $
+  --       Date fetched Out : $Modtime:   Dec 04 2019 13:33:54  $
+  --       Version          : $Revision:   1.30  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.29  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.30  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -390,7 +390,37 @@ AS
      THEN
         RAISE;
   END valid_sub_group_type;
-  
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION is_circular_route(pi_ne_id IN nm_elements_all.ne_id%TYPE)
+    RETURN VARCHAR2 IS
+    --
+    lv_tmp  PLS_INTEGER;
+    --
+  BEGIN
+    --
+    nm3ctx.set_context ('ORDERED_ROUTE',TO_CHAR(pi_ne_id));
+    --
+    SELECT 1
+      INTO lv_tmp
+      FROM dual
+     WHERE EXISTS(SELECT 1
+                    FROM v_nm_ordered_members) -- not empty
+       AND EXISTS(SELECT 1
+                    FROM v_nm_ordered_members
+                   WHERE NVL(has_prior,0) != 1) -- check for no terminations
+         ;
+    --
+    RETURN 'N';
+    --
+  EXCEPTION
+    WHEN no_data_found
+     THEN
+        RETURN 'Y';
+  END is_circular_route;
+
   --
   -----------------------------------------------------------------------------
   --
