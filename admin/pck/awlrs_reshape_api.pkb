@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.13   Jan 21 2019 20:41:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.14   Dec 18 2019 15:33:10   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 21 2019 20:41:12  $
-  --       Date fetched Out : $Modtime:   Jan 21 2019 20:36:44  $
-  --       Version          : $Revision:   1.13  $
+  --       Date into PVCS   : $Date:   Dec 18 2019 15:33:10  $
+  --       Date fetched Out : $Modtime:   Dec 13 2019 12:35:22  $
+  --       Version          : $Revision:   1.14  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.14  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reshape_api';
   --
@@ -223,6 +223,7 @@ AS
   PROCEDURE do_rescale(pi_ne_id            IN     nm_elements.ne_id%TYPE
                       ,pi_effective_date   IN     DATE
                       ,pi_offset_st        IN     NUMBER
+                      ,pi_start_ne_id      IN     nm_elements.ne_id%TYPE DEFAULT NULL
                       ,pi_use_history      IN     VARCHAR2
                       ,po_message_severity IN OUT hig_codes.hco_code%TYPE
                       ,po_message_tab      IN OUT NOCOPY awlrs_message_tab)
@@ -237,6 +238,7 @@ AS
     awlrs_group_api.rescale_route(pi_ne_id            => pi_ne_id
                                  ,pi_effective_date   => pi_effective_date
                                  ,pi_offset_st        => pi_offset_st
+                                 ,pi_start_ne_id      => pi_start_ne_id
                                  ,pi_use_history      => pi_use_history
                                  ,po_message_severity => po_message_severity
                                  ,po_message_cursor   => lv_message_cursor);
@@ -276,14 +278,17 @@ AS
                            ,pi_reason                   IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                            ,pi_effective_date           IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                            ,pi_run_checks               IN     VARCHAR2 DEFAULT 'Y'
+                           ,pi_circular_group_ids       IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                           ,pi_circular_start_ne_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
                            ,po_new_ne_id                IN OUT nm_elements_all.ne_id%TYPE
                            ,po_message_severity            OUT hig_codes.hco_code%TYPE
                            ,po_message_cursor              OUT sys_refcursor)
     IS
     --
-    lv_ne_id      nm_elements_all.ne_id%TYPE := pi_ne_id;
-    lv_new_ne_id  nm_elements_all.ne_id%TYPE;
-    lv_severity   hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    lv_ne_id       nm_elements_all.ne_id%TYPE := pi_ne_id;
+    lv_new_ne_id   nm_elements_all.ne_id%TYPE;
+    lv_severity    hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    lv_start_ne_id nm_elements_all.ne_id%TYPE;
     --
     lt_messages  awlrs_message_tab := awlrs_message_tab();
     --
@@ -307,82 +312,19 @@ AS
     */
     SAVEPOINT reshape_element1_sp;
     /*
-    ||Run Reclassify/Replace if required.
+    ||TFS 1068280
+    ||If replace and rescale are both set to Yes then do the rescale before and after the operation.
     */
-    IF pi_do_reclassify = 'Y'
+    IF (pi_do_rescale_parents = 'Y' AND pi_do_replace = 'Y')
      THEN
         --
-        do_reclassify(pi_ne_id                    => lv_ne_id
-                     ,pi_run_checks               => pi_run_checks
-                     ,pi_reason                   => pi_reason
-                     ,pi_new_element_column_names => pi_new_element_column_names
-                     ,pi_new_element_prompts      => pi_new_element_prompts
-                     ,pi_new_element_char_values  => pi_new_element_char_values
-                     ,pi_new_start_node           => pi_new_start_node
-                     ,pi_new_end_node             => pi_new_end_node
-                     ,pi_new_start_date           => TRUNC(pi_effective_date)
-                     ,po_new_ne_id                => lv_new_ne_id
-                     ,po_message_severity         => lv_severity
-                     ,po_message_tab              => lt_messages);
-        --
-        IF lv_severity NOT IN(awlrs_util.c_msg_cat_error,awlrs_util.c_msg_cat_ask_continue)
-         THEN 
-            lv_ne_id := lv_new_ne_id;
-        END IF;
-        --
-    ELSIF pi_do_replace = 'Y'
-     THEN
-        --
-        do_replace(pi_ne_id                    => lv_ne_id
-                  ,pi_reason                   => pi_reason
-                  ,pi_new_element_column_names => pi_new_element_column_names
-                  ,pi_new_element_prompts      => pi_new_element_prompts
-                  ,pi_new_element_char_values  => pi_new_element_char_values
-                  ,pi_effective_date           => TRUNC(pi_effective_date)
-                  ,po_new_ne_id                => lv_new_ne_id
-                  ,po_message_severity         => lv_severity
-                  ,po_message_tab              => lt_messages);
-        --
-        IF lv_severity != awlrs_util.c_msg_cat_error
-         THEN 
-            lv_ne_id := lv_new_ne_id;
-        END IF;
-        --
-    END IF;
-    /*
-    ||If all is well update the shape.
-    */
-    IF lv_severity NOT IN(awlrs_util.c_msg_cat_error,awlrs_util.c_msg_cat_ask_continue)
-     THEN
-        --
-        do_reshape(pi_theme_name       => pi_theme_name
-                  ,pi_ne_id            => lv_ne_id
-                  ,pi_shape_wkt        => pi_shape_wkt
-                  ,po_message_severity => lv_severity
-                  ,po_message_tab      => lt_messages);
-        /*
-        ||If all is well run Recalibrate if required.
-        */
-        IF lv_severity != awlrs_util.c_msg_cat_error
-         AND pi_do_recalibrate = 'Y'
+        IF pi_circular_group_ids.COUNT != pi_circular_start_ne_ids.COUNT
          THEN
-            --
-            do_recalibration(pi_ne_id                   => lv_ne_id
-                            ,pi_recal_start_point       => pi_recal_start_point
-                            ,pi_recal_new_length_to_end => pi_recal_new_length_to_end
-                            ,pi_reason                  => pi_reason
-                            ,po_message_severity        => lv_severity
-                            ,po_message_tab             => lt_messages);
-            --
+            --If these arrays are passed check counts are the same.
+            hig.raise_ner(pi_appl               => 'AWLRS'
+                         ,pi_id                 => 5
+                         ,pi_supplementary_info => 'awlrs_reshape_api.reshape_element');
         END IF;
-        --
-    END IF;
-    /*
-    ||Rescale any linear groups the element belongs to.
-    */
-    IF lv_severity = awlrs_util.c_msg_cat_success
-     AND pi_do_rescale_parents = 'Y'
-     THEN
         --
         OPEN  get_linear_groups(lv_ne_id);
         FETCH get_linear_groups
@@ -392,12 +334,24 @@ AS
         --
         FOR i IN 1..lt_groups.COUNT LOOP
           --
+          lv_start_ne_id := null;
+          --
+          FOR j IN 1..pi_circular_group_ids.COUNT LOOP
+            IF pi_circular_group_ids(j) = lt_groups(i).group_id
+             THEN 
+                lv_start_ne_id := pi_circular_start_ne_ids(j);
+            ELSE 
+                lv_start_ne_id := null;
+            END IF;
+          END LOOP;
+          --
           lv_severity := awlrs_util.c_msg_cat_success;
           lt_messages.DELETE;
           --
           do_rescale(pi_ne_id            => lt_groups(i).group_id
                     ,pi_effective_date   => pi_effective_date
                     ,pi_offset_st        => lt_groups(i).min_slk
+                    ,pi_start_ne_id      => lv_start_ne_id
                     ,pi_use_history      => 'Y'
                     ,po_message_severity => lv_severity
                     ,po_message_tab      => lt_messages);
@@ -410,6 +364,7 @@ AS
               do_rescale(pi_ne_id            => lt_groups(i).group_id
                         ,pi_effective_date   => pi_effective_date
                         ,pi_offset_st        => lt_groups(i).min_slk
+                        ,pi_start_ne_id      => lv_start_ne_id
                         ,pi_use_history      => 'N'
                         ,po_message_severity => lv_severity
                         ,po_message_tab      => lt_messages);
@@ -419,7 +374,8 @@ AS
           IF lv_severity != awlrs_util.c_msg_cat_success
            THEN
               /*
-              ||If an error has occurred rescaling a group end the whole operation.
+              ||If an error has occurred rescaling a group end the whole operation. 
+              ||This shouldnt happen as the array should be sent but this will capture any changes if done after selection
               */
               IF lv_severity = awlrs_util.c_msg_cat_circular_route
                THEN
@@ -436,6 +392,156 @@ AS
           END IF;
           --
         END LOOP;
+    END IF;
+    --
+    IF lv_severity = awlrs_util.c_msg_cat_success
+     THEN
+        /*
+        ||Run Reclassify/Replace if required.
+        */
+        IF pi_do_reclassify = 'Y'
+         THEN
+            --
+            do_reclassify(pi_ne_id                    => lv_ne_id
+                         ,pi_run_checks               => pi_run_checks
+                         ,pi_reason                   => pi_reason
+                         ,pi_new_element_column_names => pi_new_element_column_names
+                         ,pi_new_element_prompts      => pi_new_element_prompts
+                         ,pi_new_element_char_values  => pi_new_element_char_values
+                         ,pi_new_start_node           => pi_new_start_node
+                         ,pi_new_end_node             => pi_new_end_node
+                         ,pi_new_start_date           => TRUNC(pi_effective_date)
+                         ,po_new_ne_id                => lv_new_ne_id
+                         ,po_message_severity         => lv_severity
+                         ,po_message_tab              => lt_messages);
+            --
+            IF lv_severity NOT IN(awlrs_util.c_msg_cat_error,awlrs_util.c_msg_cat_ask_continue)
+             THEN 
+                lv_ne_id := lv_new_ne_id;
+            END IF;
+            --
+        ELSIF pi_do_replace = 'Y'
+         THEN
+            --
+            do_replace(pi_ne_id                    => lv_ne_id
+                      ,pi_reason                   => pi_reason
+                      ,pi_new_element_column_names => pi_new_element_column_names
+                      ,pi_new_element_prompts      => pi_new_element_prompts
+                      ,pi_new_element_char_values  => pi_new_element_char_values
+                      ,pi_effective_date           => TRUNC(pi_effective_date)
+                      ,po_new_ne_id                => lv_new_ne_id
+                      ,po_message_severity         => lv_severity
+                      ,po_message_tab              => lt_messages);
+            --
+            IF lv_severity != awlrs_util.c_msg_cat_error
+             THEN 
+                lv_ne_id := lv_new_ne_id;
+            END IF;
+            --
+        END IF;
+        /*
+        ||If all is well update the shape.
+        */
+        IF lv_severity NOT IN(awlrs_util.c_msg_cat_error,awlrs_util.c_msg_cat_ask_continue)
+         THEN
+            --
+            do_reshape(pi_theme_name       => pi_theme_name
+                      ,pi_ne_id            => lv_ne_id
+                      ,pi_shape_wkt        => pi_shape_wkt
+                      ,po_message_severity => lv_severity
+                      ,po_message_tab      => lt_messages);
+            /*
+            ||If all is well run Recalibrate if required.
+            */
+            IF lv_severity != awlrs_util.c_msg_cat_error
+             AND pi_do_recalibrate = 'Y'
+             THEN
+                --
+                do_recalibration(pi_ne_id                   => lv_ne_id
+                                ,pi_recal_start_point       => pi_recal_start_point
+                                ,pi_recal_new_length_to_end => pi_recal_new_length_to_end
+                                ,pi_reason                  => pi_reason
+                                ,po_message_severity        => lv_severity
+                                ,po_message_tab             => lt_messages);
+                --
+            END IF;
+            --
+        END IF;
+        /*
+        ||Rescale any linear groups the element belongs to.
+        */
+        IF lv_severity = awlrs_util.c_msg_cat_success
+         AND pi_do_rescale_parents = 'Y'
+         THEN
+            --
+            lt_groups.DELETE;
+            --
+            OPEN  get_linear_groups(lv_ne_id);
+            FETCH get_linear_groups
+             BULK COLLECT
+             INTO lt_groups;
+            CLOSE get_linear_groups;
+            --
+            FOR i IN 1..lt_groups.COUNT LOOP
+               --
+               lv_start_ne_id := null;
+               --
+               FOR j IN 1..pi_circular_group_ids.COUNT LOOP
+                 IF pi_circular_group_ids(j) = lt_groups(i).group_id
+                  THEN 
+                     lv_start_ne_id := pi_circular_start_ne_ids(j);
+                 ELSE 
+                     lv_start_ne_id := null;
+                 END IF;
+               END LOOP;
+               --
+               lv_severity := awlrs_util.c_msg_cat_success;
+               lt_messages.DELETE;
+               --
+               do_rescale(pi_ne_id            => lt_groups(i).group_id
+                         ,pi_effective_date   => pi_effective_date
+                         ,pi_offset_st        => lt_groups(i).min_slk
+                         ,pi_start_ne_id      => lv_start_ne_id
+                         ,pi_use_history      => 'Y'
+                         ,po_message_severity => lv_severity
+                         ,po_message_tab      => lt_messages);
+               --
+               IF lv_severity = awlrs_util.c_msg_cat_ask_continue
+                THEN
+                   --
+                   lt_messages.DELETE;
+                   --
+                   do_rescale(pi_ne_id            => lt_groups(i).group_id
+                             ,pi_effective_date   => pi_effective_date
+                             ,pi_offset_st        => lt_groups(i).min_slk
+                             ,pi_start_ne_id      => lv_start_ne_id
+                             ,pi_use_history      => 'N'
+                             ,po_message_severity => lv_severity
+                             ,po_message_tab      => lt_messages);
+                   --
+               END IF;
+               --
+               IF lv_severity != awlrs_util.c_msg_cat_success
+                THEN
+                   /*
+                   ||If an error has occurred rescaling a group end the whole operation.
+                   */
+                   IF lv_severity = awlrs_util.c_msg_cat_circular_route
+                    THEN
+                       lt_messages.DELETE;
+                       awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                        ,pi_ner_id             => 60
+                                                        ,pi_supplementary_info => NULL
+                                                        ,pi_category           => awlrs_util.c_msg_cat_error
+                                                        ,po_message_tab        => lt_messages);
+                   END IF;
+                   --
+                   EXIT;
+                   --
+               END IF;
+               --
+            END LOOP;
+        END IF;
     END IF;
     /*
     ||If errors occurred rollback.
