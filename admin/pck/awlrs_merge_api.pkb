@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.14   Jan 21 2019 20:41:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.15   Dec 19 2019 10:41:44   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_merge_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 21 2019 20:41:14  $
-  --       Date fetched Out : $Modtime:   Jan 21 2019 20:36:44  $
-  --       Version          : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   Dec 19 2019 10:41:44  $
+  --       Date fetched Out : $Modtime:   Dec 18 2019 14:34:04  $
+  --       Version          : $Revision:   1.15  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.14  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_merge_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -320,6 +320,7 @@ AS
   PROCEDURE do_rescale(pi_ne_id            IN     nm_elements.ne_id%TYPE
                       ,pi_effective_date   IN     DATE
                       ,pi_offset_st        IN     NUMBER
+                      ,pi_start_ne_id      IN     nm_elements.ne_id%TYPE DEFAULT NULL
                       ,pi_use_history      IN     VARCHAR2
                       ,po_message_severity IN OUT hig_codes.hco_code%TYPE
                       ,po_message_tab      IN OUT NOCOPY awlrs_message_tab)
@@ -334,6 +335,7 @@ AS
     awlrs_group_api.rescale_route(pi_ne_id            => pi_ne_id
                                  ,pi_effective_date   => pi_effective_date
                                  ,pi_offset_st        => pi_offset_st
+                                 ,pi_start_ne_id      => pi_start_ne_id
                                  ,pi_use_history      => pi_use_history
                                  ,po_message_severity => po_message_severity
                                  ,po_message_cursor   => lv_message_cursor);
@@ -356,16 +358,18 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE do_merge(pi_ne_id1              IN     nm_elements_all.ne_id%TYPE
-                    ,pi_ne_id2              IN     nm_elements_all.ne_id%TYPE
-                    ,pi_reason              IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
-                    ,pi_new_element_attribs IN     awlrs_element_api.flex_attr_tab
-                    ,pi_do_rescale_parents  IN     VARCHAR2 DEFAULT 'N'
-                    ,pi_effective_date      IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                    ,pi_run_checks          IN     VARCHAR2 DEFAULT 'Y'
-                    ,po_new_ne_id           IN OUT nm_elements_all.ne_id%TYPE
-                    ,po_message_severity       OUT hig_codes.hco_code%TYPE
-                    ,po_message_cursor         OUT sys_refcursor)
+  PROCEDURE do_merge(pi_ne_id1                 IN     nm_elements_all.ne_id%TYPE
+                    ,pi_ne_id2                 IN     nm_elements_all.ne_id%TYPE
+                    ,pi_reason                 IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
+                    ,pi_new_element_attribs    IN     awlrs_element_api.flex_attr_tab
+                    ,pi_do_maintain_history    IN     VARCHAR2 DEFAULT 'N'
+                    ,pi_circular_group_ids     IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                    ,pi_circular_start_ne_ids  IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)                      
+                    ,pi_effective_date         IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                    ,pi_run_checks             IN     VARCHAR2 DEFAULT 'Y'
+                    ,po_new_ne_id              IN OUT nm_elements_all.ne_id%TYPE
+                    ,po_message_severity          OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor            OUT sys_refcursor)
     IS
     --
     lr_ne  nm_elements_all%ROWTYPE;
@@ -373,6 +377,7 @@ AS
     lv_new_node_id  nm_elements.ne_no_start%TYPE;
     lv_new_np_id    nm_nodes.no_np_id%TYPE;
     lv_create_node  BOOLEAN := TRUE;
+    lv_start_ne_id   nm_elements_all.ne_id%TYPE;    
     --
     lv_severity        hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
     lv_message_cursor  sys_refcursor;
@@ -425,10 +430,19 @@ AS
     IF lv_severity = awlrs_util.c_msg_cat_success
      THEN
         /*
-        ||Get the Groups that need to be rescaled after the merge.
+        ||If maintain history is set to yes then rescale all parent groups pre operation and post operation. 
+        ||If there are circular routes then an array should have been passed with the start element id.
         */
-        IF pi_do_rescale_parents = 'Y'
+        IF pi_do_maintain_history = 'Y'
          THEN
+            --
+            IF pi_circular_group_ids.COUNT != pi_circular_start_ne_ids.COUNT
+             THEN
+                --check counts are the same.
+                hig.raise_ner(pi_appl               => 'AWLRS'
+                             ,pi_id                 => 5
+                             ,pi_supplementary_info => 'awlrs_merge_api.do_merge');
+            END IF;            
             --
             OPEN  get_linear_groups(pi_ne_id1
                                    ,pi_ne_id2);
@@ -437,6 +451,66 @@ AS
              INTO lt_groups;
             CLOSE get_linear_groups;
             --
+            FOR i IN 1..lt_groups.COUNT LOOP
+              --
+              lv_start_ne_id := null;
+              --
+              FOR j IN 1..pi_circular_group_ids.COUNT LOOP
+                IF pi_circular_group_ids(j) = lt_groups(i).group_id
+                 THEN 
+                    lv_start_ne_id := pi_circular_start_ne_ids(j);
+                ELSE 
+                    lv_start_ne_id := null;
+                END IF;
+              END LOOP;
+              --
+              lv_severity := awlrs_util.c_msg_cat_success;
+              lt_messages.DELETE;
+              --
+              do_rescale(pi_ne_id            => lt_groups(i).group_id
+                        ,pi_effective_date   => pi_effective_date
+                        ,pi_offset_st        => lt_groups(i).min_slk
+                        ,pi_start_ne_id      => lv_start_ne_id
+                        ,pi_use_history      => 'Y'
+                        ,po_message_severity => lv_severity
+                        ,po_message_tab      => lt_messages);
+              --
+              IF lv_severity = awlrs_util.c_msg_cat_ask_continue
+               THEN
+                  --
+                  lt_messages.DELETE;
+                  --
+                  do_rescale(pi_ne_id            => lt_groups(i).group_id
+                            ,pi_effective_date   => pi_effective_date
+                            ,pi_offset_st        => lt_groups(i).min_slk
+                            ,pi_start_ne_id      => lv_start_ne_id
+                            ,pi_use_history      => 'N'
+                            ,po_message_severity => lv_severity
+                            ,po_message_tab      => lt_messages);
+                  --
+              END IF;
+              --
+              IF lv_severity != awlrs_util.c_msg_cat_success
+               THEN
+                  /*
+                  ||If an error has occurred rescaling a group end the whole operation. 
+                  ||This shouldnt happen as the array should be sent but this will capture any changes if done after selection
+                  */
+                  IF lv_severity = awlrs_util.c_msg_cat_circular_route
+                   THEN
+                      lt_messages.DELETE;
+                      awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                       ,pi_ner_id             => 60
+                                                       ,pi_supplementary_info => NULL
+                                                       ,pi_category           => awlrs_util.c_msg_cat_error
+                                                       ,po_message_tab        => lt_messages);
+                  END IF;
+                  --
+                  EXIT;
+                  --
+              END IF;
+              --
+            END LOOP;              
         END IF;
         --
         init_element_globals;
@@ -491,7 +565,7 @@ AS
         /*
         ||Rescale any linear groups the element belongs to.
         */
-        IF pi_do_rescale_parents = 'Y'
+        IF pi_do_maintain_history = 'Y' AND lv_severity = awlrs_util.c_msg_cat_success
          THEN
             --
             FOR i IN 1..lt_groups.COUNT LOOP
@@ -590,7 +664,9 @@ AS
                     ,pi_new_element_column_names IN     awlrs_element_api.attrib_column_name_tab
                     ,pi_new_element_prompts      IN     awlrs_element_api.attrib_prompt_tab
                     ,pi_new_element_char_values  IN     awlrs_element_api.attrib_char_value_tab
-                    ,pi_do_rescale_parents       IN     VARCHAR2 DEFAULT 'N'
+                    ,pi_do_maintain_history      IN     VARCHAR2 DEFAULT 'N'
+                    ,pi_circular_group_ids       IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                    ,pi_circular_start_ne_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)                      
                     ,pi_effective_date           IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
                     ,pi_run_checks               IN     VARCHAR2 DEFAULT 'Y'
                     ,po_new_ne_id                IN OUT nm_elements_all.ne_id%TYPE
@@ -629,7 +705,7 @@ AS
             ,pi_ne_id2              => pi_ne_id2
             ,pi_reason              => pi_reason
             ,pi_new_element_attribs => lt_new_element_attribs
-            ,pi_do_rescale_parents => pi_do_rescale_parents
+            ,pi_do_maintain_history => pi_do_maintain_history
             ,pi_effective_date      => pi_effective_date
             ,pi_run_checks          => pi_run_checks
             ,po_new_ne_id           => po_new_ne_id
