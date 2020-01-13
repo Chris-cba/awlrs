@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.35   Dec 11 2019 13:45:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.36   Jan 13 2020 16:38:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Dec 11 2019 13:45:30  $
-  --       Date fetched Out : $Modtime:   Dec 09 2019 18:16:28  $
-  --       Version          : $Revision:   1.35  $
+  --       Date into PVCS   : $Date:   Jan 13 2020 16:38:20  $
+  --       Date fetched Out : $Modtime:   Jan 13 2020 16:27:40  $
+  --       Version          : $Revision:   1.36  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.35  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.36  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -599,7 +599,13 @@ AS
     --
     OPEN po_cursor FOR
     SELECT hol_id option_id
-          ,hig.get_user_or_sys_opt(hol_id) option_value
+          ,CASE
+             WHEN hol_id = 'PREFLRM'
+              THEN
+                 NVL(hig.get_user_or_sys_opt(hol_id),c_all_lrms_code)
+             ELSE
+                 hig.get_user_or_sys_opt(hol_id)
+           END option_value
           ,hol_user_option can_be_user_option
       FROM hig_option_list
      WHERE hol_id IN(SELECT * FROM TABLE(CAST(lt_names AS nm_code_tbl)))
