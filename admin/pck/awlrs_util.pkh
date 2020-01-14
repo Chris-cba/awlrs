@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.27   Dec 11 2019 13:45:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.28   Jan 14 2020 14:30:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   Dec 11 2019 13:45:30  $
-  --       Date fetched Out : $Modtime:   Dec 09 2019 13:53:44  $
-  --       Version          : $Revision:   1.27  $
+  --       Date into PVCS   : $Date:   Jan 14 2020 14:30:56  $
+  --       Date fetched Out : $Modtime:   Jan 14 2020 13:41:28  $
+  --       Version          : $Revision:   1.28  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.27  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.28  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -165,15 +165,16 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION is_date_in_varchar(pi_nt_type     IN nm_types.nt_type%TYPE
-                             ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE)
+  FUNCTION is_date_in_varchar(pi_inv_type    IN nm_inv_types_all.nit_inv_type%TYPE
+                             ,pi_attrib_name IN nm_inv_type_attribs.ita_attrib_name%TYPE)
     RETURN BOOLEAN;
 
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION is_date_in_varchar(pi_inv_type    IN nm_inv_types_all.nit_inv_type%TYPE
-                             ,pi_attrib_name IN nm_inv_type_attribs.ita_attrib_name%TYPE)
+  FUNCTION is_date_in_varchar(pi_nt_type     IN nm_types.nt_type%TYPE
+                             ,pi_group_type  IN nm_group_types_all.ngt_group_type%TYPE
+                             ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE)
     RETURN BOOLEAN;
 
   --
