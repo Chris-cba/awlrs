@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.36   Jan 13 2020 16:38:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.37   Jan 14 2020 14:32:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Jan 13 2020 16:38:20  $
-  --       Date fetched Out : $Modtime:   Jan 13 2020 16:27:40  $
-  --       Version          : $Revision:   1.36  $
+  --       Date into PVCS   : $Date:   Jan 14 2020 14:32:30  $
+  --       Date fetched Out : $Modtime:   Jan 14 2020 14:22:42  $
+  --       Version          : $Revision:   1.37  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.36  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.37  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -143,44 +143,6 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION is_date_in_varchar(pi_nt_type     IN nm_types.nt_type%TYPE
-                             ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE)
-    RETURN BOOLEAN IS
-    --
-    lv_retval BOOLEAN;
-    lv_dummy  NUMBER;
-    --
-    CURSOR chk_col(cp_nt_type      nm_types.nt_type%TYPE
-                  ,cp_column_name  nm_type_columns.ntc_column_name%TYPE)
-        IS
-    SELECT 1
-      FROM all_tab_cols
-          ,nm_type_columns
-     WHERE ntc_nt_type = cp_nt_type
-       AND ntc_column_name = cp_column_name
-       AND ntc_column_type = 'DATE'
-       AND ntc_column_name = column_name
-       AND table_name = 'NM_ELEMENTS_ALL'
-       AND owner = Sys_Context('NM3CORE','APPLICATION_OWNER')
-       AND data_type = 'VARCHAR2'
-         ;
-    --
-  BEGIN
-    --
-    OPEN  chk_col(pi_nt_type
-                 ,pi_column_name);
-    FETCH chk_col
-     INTO lv_dummy;
-    lv_retval := chk_col%FOUND;
-    CLOSE chk_col;
-    --
-    RETURN lv_retval;
-    --
-  END is_date_in_varchar;
-
-  --
-  -----------------------------------------------------------------------------
-  --
   FUNCTION is_date_in_varchar(pi_inv_type    IN nm_inv_types_all.nit_inv_type%TYPE
                              ,pi_attrib_name IN nm_inv_type_attribs.ita_attrib_name%TYPE)
     RETURN BOOLEAN IS
@@ -213,6 +175,63 @@ AS
      INTO lv_dummy;
     lv_retval := chk_col%FOUND;
     CLOSE chk_col;
+    --
+    RETURN lv_retval;
+    --
+  END is_date_in_varchar;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_date_in_varchar(pi_nt_type     IN nm_types.nt_type%TYPE
+                             ,pi_group_type  IN nm_group_types_all.ngt_group_type%TYPE
+                             ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE)
+    RETURN BOOLEAN IS
+    --
+    lv_retval   BOOLEAN;
+    lv_dummy    NUMBER;
+    lv_ad_type  nm_inv_types_all.nit_inv_type%TYPE;
+    --
+    CURSOR chk_col(cp_nt_type      nm_types.nt_type%TYPE
+                  ,cp_column_name  nm_type_columns.ntc_column_name%TYPE)
+        IS
+    SELECT 1
+      FROM all_tab_cols
+          ,nm_type_columns
+     WHERE ntc_nt_type = cp_nt_type
+       AND ntc_column_name = cp_column_name
+       AND ntc_column_type = 'DATE'
+       AND ntc_column_name = column_name
+       AND table_name = 'NM_ELEMENTS_ALL'
+       AND owner = Sys_Context('NM3CORE','APPLICATION_OWNER')
+       AND data_type = 'VARCHAR2'
+         ;
+    --
+  BEGIN
+    --
+    IF SUBSTR(pi_column_name,1,3) = 'IIT'
+     THEN
+        --
+        IF pi_group_type IS NOT NULL
+         THEN
+            lv_ad_type := nm3nwad.get_prim_nadt(pi_nt_type  => pi_nt_type
+                                               ,pi_gty_type => pi_group_type).nad_inv_type;
+        ELSE
+            lv_ad_type := nm3nwad.get_prim_nadt(pi_nt_type => pi_nt_type).nad_inv_type;
+        END IF;
+        --
+        lv_retval := is_date_in_varchar(pi_inv_type    => lv_ad_type
+                                       ,pi_attrib_name => pi_column_name);
+    ELSE
+        --
+        OPEN  chk_col(pi_nt_type
+                     ,pi_column_name);
+        FETCH chk_col
+         INTO lv_dummy;
+        lv_retval := chk_col%FOUND;
+        CLOSE chk_col;
+        --
+    END IF;
     --
     RETURN lv_retval;
     --
