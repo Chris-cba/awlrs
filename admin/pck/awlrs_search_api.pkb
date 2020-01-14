@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.33   Dec 11 2019 13:45:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.34   Jan 14 2020 14:34:44   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Dec 11 2019 13:45:38  $
-  --       Date fetched Out : $Modtime:   Dec 11 2019 13:29:54  $
-  --       Version          : $Revision:   1.33  $
+  --       Date into PVCS   : $Date:   Jan 14 2020 14:34:44  $
+  --       Date fetched Out : $Modtime:   Jan 14 2020 14:24:54  $
+  --       Version          : $Revision:   1.34  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.33  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.34  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -2306,71 +2306,85 @@ AS
       CASE
         WHEN pi_theme_types.network_type IS NOT NULL
          THEN
-          --
-          EXECUTE IMMEDIATE lv_sql
-             INTO po_format
-                 ,po_format_mask
-            USING g_default_date_format
-                 ,g_default_datetime_format
-                 ,pi_theme_types.unit_id
-                 ,g_default_date_format
-                 ,g_default_datetime_format
-                 ,pi_theme_types.unit_id
-                 ,pi_theme_types.network_type
-                 ,pi_theme_types.network_type
-                 ,pi_theme_types.network_type
-                 ,g_default_date_format
-                 ,g_default_date_format
-                 ,pi_theme_types.network_type
-                 ,g_default_date_format
-                 ,g_default_date_format
-                 ,pi_theme_types.network_type
-                 ,pi_theme_types.network_group_type
-                 ,pi_attrib_name;
-          --
+            --
+            EXECUTE IMMEDIATE lv_sql
+               INTO po_format
+                   ,po_format_mask
+              USING g_default_date_format
+                   ,g_default_datetime_format
+                   ,pi_theme_types.unit_id
+                   ,g_default_date_format
+                   ,g_default_datetime_format
+                   ,pi_theme_types.unit_id
+                   ,pi_theme_types.network_type
+                   ,pi_theme_types.network_type
+                   ,pi_theme_types.network_type
+                   ,g_default_date_format
+                   ,g_default_date_format
+                   ,pi_theme_types.network_type
+                   ,g_default_date_format
+                   ,g_default_date_format
+                   ,pi_theme_types.network_type
+                   ,pi_theme_types.network_group_type
+                   ,pi_attrib_name;
+            --
+            IF po_format = awlrs_util.c_date_col
+             THEN
+                /*
+                ||Check whether the date is being stored in a VARCHAR2 column.
+                */
+                IF awlrs_util.is_date_in_varchar(pi_nt_type     => pi_theme_types.network_type
+                                                ,pi_group_type  => pi_theme_types.network_group_type
+                                                ,pi_column_name => pi_attrib_name)
+                 THEN
+                    po_format := awlrs_util.c_date_in_varchar2_col;
+                END IF;
+                --
+            END IF;
+            --
         WHEN pi_theme_types.asset_type IS NOT NULL
          THEN
-          --
-          IF pi_theme_types.ft_asset_type = 'Y'
-           THEN
-              --
-              EXECUTE IMMEDIATE lv_sql
-                 INTO po_format
-                     ,po_format_mask
-                USING pi_theme_types.asset_type
-                     ,g_default_date_format
-                     ,g_default_date_format
-                     ,pi_attrib_name;
-              --
-          ELSE
-              --
-              EXECUTE IMMEDIATE lv_sql
-                 INTO po_format
-                     ,po_format_mask
-                USING g_default_date_format
-                     ,g_default_datetime_format
-                     ,g_default_date_format
-                     ,g_default_datetime_format
-                     ,g_default_date_format
-                     ,g_default_date_format
-                     ,pi_theme_types.asset_type
-                     ,pi_attrib_name;
-              --
-          END IF;
-          --
-          IF po_format = awlrs_util.c_date_col
-           THEN
-              /*
-              ||Check whether the date is being stored in a VARCHAR2 column.
-              */
-              IF awlrs_util.is_date_in_varchar(pi_inv_type    => pi_theme_types.asset_type
-                                              ,pi_attrib_name => pi_attrib_name)
-               THEN
-                  po_format := awlrs_util.c_date_in_varchar2_col;
-              END IF;
-              --
-          END IF;
-          --
+            --
+            IF pi_theme_types.ft_asset_type = 'Y'
+             THEN
+                --
+                EXECUTE IMMEDIATE lv_sql
+                   INTO po_format
+                       ,po_format_mask
+                  USING pi_theme_types.asset_type
+                       ,g_default_date_format
+                       ,g_default_date_format
+                       ,pi_attrib_name;
+                --
+            ELSE
+                --
+                EXECUTE IMMEDIATE lv_sql
+                   INTO po_format
+                       ,po_format_mask
+                  USING g_default_date_format
+                       ,g_default_datetime_format
+                       ,g_default_date_format
+                       ,g_default_datetime_format
+                       ,g_default_date_format
+                       ,g_default_date_format
+                       ,pi_theme_types.asset_type
+                       ,pi_attrib_name;
+                --
+            END IF;
+            --
+            IF po_format = awlrs_util.c_date_col
+             THEN
+                /*
+                ||Check whether the date is being stored in a VARCHAR2 column.
+                */
+                IF awlrs_util.is_date_in_varchar(pi_inv_type    => pi_theme_types.asset_type
+                                                ,pi_attrib_name => pi_attrib_name)
+                 THEN
+                    po_format := awlrs_util.c_date_in_varchar2_col;
+                END IF;
+                --
+            END IF;
+            --
         WHEN is_node_layer(pi_feature_table => pi_theme_types.feature_table)
          THEN
             --
@@ -2762,6 +2776,7 @@ AS
                     --
                     CASE
                       WHEN awlrs_util.is_date_in_varchar(pi_nt_type     => lt_ntc(i).ntc_nt_type
+                                                        ,pi_group_type  => NULL
                                                         ,pi_column_name => lt_ntc(i).ntc_column_name)
                        THEN
                           'TO_CHAR(hig.date_convert('||LOWER(lt_ntc(i).ntc_column_name)
@@ -5023,7 +5038,6 @@ AS
   FUNCTION get_network_search_sql(pi_nt_type          IN nm_types.nt_type%TYPE
                                  ,pi_where_clause     IN VARCHAR2
                                  ,pi_include_enddated IN VARCHAR2 DEFAULT 'N'
-                                 --,pi_ordered          IN BOOLEAN DEFAULT TRUE
                                  ,pi_order_column     IN VARCHAR2 DEFAULT NULL
                                  ,pi_paged            IN BOOLEAN DEFAULT FALSE)
     RETURN VARCHAR2 IS
@@ -5095,14 +5109,7 @@ AS
       ||CHR(10)||'                    AND ne_id = nad_ne_id(+)'
       ||CHR(10)||'                    AND nad_primary_ad(+) = ''Y'''
       ||CHR(10)||'                    AND nad_iit_ne_id = iit_ne_id(+)'
-    ;
---    IF pi_ordered
---     THEN
-        lv_retval := lv_retval
-          ||CHR(10)||'         ORDER BY '||NVL(LOWER(pi_order_column),'"unique_" asc ');
---    END IF;
-    --
-    lv_retval := lv_retval||')'
+      ||CHR(10)||'         ORDER BY '||NVL(LOWER(pi_order_column),'"unique_" asc ')||')'
       ||CHR(10)||'SELECT '||lv_pagecols
                        ||'elements.*'
       ||CHR(10)||'  FROM elements'
@@ -6430,7 +6437,6 @@ AS
              ||lv_row_restriction
     ;
     --
-dbms_output.put_line(lv_sql);
     IF lr_nit.nit_table_name IS NOT NULL
      THEN
         --
@@ -7920,7 +7926,6 @@ dbms_output.put_line(lv_sql);
             ||lv_row_restriction
     ;
     --
-dbms_output.put_line(lv_sql);
     IF pi_pagesize IS NOT NULL
      THEN
         OPEN po_cursor FOR lv_sql
