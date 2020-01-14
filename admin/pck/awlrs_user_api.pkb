@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.6   Dec 12 2019 15:23:54   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Dec 12 2019 15:23:54  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.7   Jan 14 2020 15:49:38   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jan 14 2020 15:49:38  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Dec 12 2019 15:19:04  $
-  --       Version          : $Revision:   1.6  $
+  --       Date fetched Out : $Modtime:   Jan 14 2020 15:11:36  $
+  --       Version          : $Revision:   1.7  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.6  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.7  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -26,6 +26,8 @@ AS
   cv_gb	  		  CONSTANT varchar2(1) := 'G';
   cv_tb           CONSTANT varchar2(1) := 'T';
   cv_pb      	  CONSTANT varchar2(1) := 'P';
+  --constant user role
+  cv_hig_user_role CONSTANT varchar2(8) := 'HIG_USER';
   --get_user constants
   cv_user_filter  CONSTANT varchar2(1) := 'A';
   --
@@ -1180,7 +1182,32 @@ AS
     WHEN NO_DATA_FOUND
      THEN
         RETURN lv_exists;
-  END proxy_user_exists; 
+  END proxy_user_exists;
+   
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE create_instantiate_user_trg(pi_username IN hig_users.hus_username%Type)
+  IS
+    --  
+	e_trigger_invalid Exception;
+	pragma	exception_init(e_trigger_invalid, -24344);
+    --
+  BEGIN
+	--
+	BEGIN		
+		nm3context.create_instantiate_user_trig(pi_new_trigger_owner => pi_username);   
+
+	EXCEPTION
+		WHEN e_trigger_invalid	
+		  THEN
+			nm3user.lock_account(pi_username => pi_username);
+			hig.raise_ner(pi_appl               => 'HIG'
+                         ,pi_id                 => 443
+                         ,pi_supplementary_info => 'There was a problem with the compilation of the instantiate_user trigger on the new user. The user has been locked. This could be an issue with your synonyms or roles/privileges.');
+		
+	END;
+   END create_instantiate_user_trg;
   
   --
   -----------------------------------------------------------------------------
@@ -1276,6 +1303,8 @@ AS
   lv_error_msg varchar2(2000);
   lv_quota     dba_ts_quotas.max_bytes%TYPE;
   lv_quota_size_type  varchar2(1);
+  lv_message_severity  hig_codes.hco_code%TYPE;
+  lv_message_cursor    sys_refcursor;
   --
   lr_rec_hus    hig_users%ROWTYPE;
   --
@@ -1334,6 +1363,13 @@ AS
     --validate_quota();
     --
     validate_profile(pi_profile => pi_profile);
+    --
+    --End Date cannot be earlier than the Start Date--
+    IF NVL(pi_end_date, pi_start_date) < pi_start_date
+      THEN
+         hig.raise_ner(pi_Appl  => 'HIG'
+		              ,pi_Id    => 5);
+    END IF;
     --
     /*BOD 27/09/19
     Time ran out but would like to streamline this to call create_sso_user or create_user.   
@@ -1403,7 +1439,9 @@ AS
                              ,pi_name     => pi_name  
                              ,pi_email    => pi_email);                             
     --
+    --
     --check sso
+    --
     IF (   NVL(hig.get_sysopt('DEFSSO'),'N') = 'Y' 
         OR pi_sso_user = 'Y')
      THEN
@@ -1411,6 +1449,31 @@ AS
                       ,pi_email              => pi_email
                       ,pi_proxy_users        => pi_proxy_users
                       ,pi_override_password  => pi_override_password);
+    END IF;
+    --
+    --
+    -- All users must have the HIG_USER role assigned. --
+    --
+    create_user_role(pi_username          =>  pi_username
+                    ,pi_role              =>  cv_hig_user_role
+                    ,pi_admin_option      =>  Null
+                    ,po_message_severity  =>  lv_message_severity
+                    ,po_message_cursor    =>  lv_message_cursor
+                    ); 
+    --
+    IF lv_message_severity = awlrs_util.c_msg_cat_success    
+      THEN
+        --
+        create_instantiate_user_trg(pi_username => pi_username);
+        --
+        nm3ddl.create_sub_sdo_views(pi_username);
+        --
+        -- run dummy update to action the triggers that copy the user_sdo_geom_metadata??
+        --
+        UPDATE hig_user_roles
+        SET    hur_role     = hur_role
+        WHERE  hur_username = pi_username;
+        -- 
     END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -1523,30 +1586,6 @@ AS
    -----------------------------------------------------------------------------
    -- 
 
-  PROCEDURE create_instantiate_user_trg(pi_username IN hig_users.hus_username%Type)
-  IS
-    --  
-	e_trigger_invalid Exception;
-	pragma	exception_init(e_trigger_invalid, -24344);
-    --
-  BEGIN
-	--
-	BEGIN		
-		nm3context.create_instantiate_user_trig(pi_new_trigger_owner => pi_username);   
-
-	EXCEPTION
-		WHEN e_trigger_invalid	
-		  THEN
-			nm3user.lock_account(pi_username => pi_username);
-			hig.raise_ner(pi_appl               => 'HIG'
-                         ,pi_id                 => 443
-                         ,pi_supplementary_info => 'There was a problem with the compilation of the instantiate_user trigger on the new user. The user has been locked. This could be an issue with your synonyms or roles/privileges.');
-		
-	END;
-   END create_instantiate_user_trg;
-  --
-  -----------------------------------------------------------------------------
-  -- 
   PROCEDURE copy_user(pi_copy_user_id      IN      hig_users.hus_user_id%TYPE
                      ,pi_copy_username     IN      hig_users.hus_username%TYPE
                      ,pi_new_name          IN      hig_users.hus_name%TYPE
@@ -1618,9 +1657,6 @@ AS
     --                        
     create_instantiate_user_trg(pi_username => pi_new_username);
     --
-    /*
-    quiet_commit;
-    */
     nm3ddl.create_sub_sdo_views(pi_new_username);
     --
     -- run dummy update to action the triggers that copy the user_sdo_geom_metadata??
@@ -1629,9 +1665,6 @@ AS
     SET    hur_role     = hur_role
     WHERE  hur_username = pi_new_username;
     --
-    /*
-    quiet_commit;
-    */
     IF NVL(hig.get_sysopt('DEFSSO'),'N') = 'Y'
      THEN
        hig.raise_ner(pi_appl               => 'HIG'
@@ -2697,12 +2730,19 @@ AS
                             ,pi_new_dflt_tablespace   =>  pi_new_dflt_tablespace
                             ,pi_new_temp_tablespace   =>  pi_new_temp_tablespace
                             ,pi_new_profile           =>  pi_new_profile
-                            ,pi_new_agent_code        =>  pi_old_agent_code
+                            ,pi_new_agent_code        =>  pi_new_agent_code
                             ,pi_new_admin_unit        =>  pi_new_admin_unit
                             ,pi_new_sso_user          =>  pi_new_sso_user
                             ,pi_new_override_password =>  pi_new_override_password
                             ,po_user_latest_rec_flag  =>  lv_user_latest_rec_flag
                             ,po_user_upd_rec_flag     =>  lv_user_upd_rec_flag);
+    --
+    --End Date cannot be earlier than the Start Date--
+    IF NVL(pi_new_end_date, pi_new_start_date) < pi_new_start_date
+      THEN
+         hig.raise_ner(pi_Appl  => 'HIG'
+		              ,pi_Id    => 5);
+    END IF;
     --
     -- check if contact dets exist as they are not mandatory
     IF user_contact_dets_exists(pi_user_id =>  pi_old_user_id) = 'Y'
@@ -2983,7 +3023,27 @@ AS
                                    ,po_cursor           => po_message_cursor);    
   
                                   
-  END active_jobs_exist;                                 
+  END active_jobs_exist; 
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION users_start_date(pi_user_id IN  Hig_users.hus_user_id%TYPE) RETURN DATE
+  IS
+  --
+  lv_start_date hig_users.hus_start_date%TYPE;
+  --
+  BEGIN
+	--
+	SELECT TRUNC(hus_start_date)
+	INTO   lv_start_date
+	FROM   hig_users
+	WHERE  hus_user_id = pi_user_id;
+	
+	RETURN lv_start_date;
+  	--    
+  END users_start_date;          
+  
   --
   -----------------------------------------------------------------------------
   --
@@ -3021,6 +3081,16 @@ AS
         --  
        END IF;
      --
+       --Before end dating the user, we need to check that todays date is >= User's start date
+       IF users_start_date(pi_user_id => pi_user_id) > TRUNC(SYSDATE)   
+         THEN
+         --
+           hig.raise_ner(pi_appl  => 'HIG'
+		                ,pi_id    =>  5);
+         --
+       END IF;
+     --
+    --
        UPDATE HIG_USERS
           SET hus_end_date = TRUNC(SYSDATE)
         WHERE hus_user_id  = pi_user_id;
@@ -3421,7 +3491,7 @@ AS
     grant_role_privs(pi_username     =>  pi_username
     	            ,pi_role         =>  pi_role
     	            ,pi_admin_option =>  pi_admin_option);
-    --                
+    --    
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
