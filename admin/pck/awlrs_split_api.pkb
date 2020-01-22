@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.22   Dec 18 2019 14:27:16   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_split_api.pkb-arc   1.23   Jan 22 2020 14:28:42   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_split_api.pkb  $
-  --       Date into PVCS   : $Date:   Dec 18 2019 14:27:16  $
-  --       Date fetched Out : $Modtime:   Dec 18 2019 14:26:42  $
-  --       Version          : $Revision:   1.22  $
+  --       Date into PVCS   : $Date:   Jan 22 2020 14:28:42  $
+  --       Date fetched Out : $Modtime:   Jan 22 2020 11:35:54  $
+  --       Version          : $Revision:   1.23  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.23  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_split_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -808,6 +808,7 @@ AS
         IS
     SELECT nm_ne_id_in group_id
           ,NVL(nm3net.get_min_slk(pi_ne_id => nm_ne_id_in),0) min_slk
+          ,nm_cardinality cardinality
       FROM nm_members
      WHERE nm_ne_id_of = cp_ne_id
        AND nm_obj_type IN(SELECT ngt_group_type
@@ -917,8 +918,7 @@ AS
             IF pi_circular_group_ids(j) = lt_groups(i).group_id
              THEN 
                 lv_start_ne_id := pi_circular_start_ne_ids(j);
-            ELSE 
-                lv_start_ne_id := null;
+                EXIT;
             END IF;
           END LOOP;
           --
@@ -971,8 +971,7 @@ AS
         END LOOP;
     END IF;
     --
-    IF (pi_do_maintain_history = 'N')
-     OR (pi_do_maintain_history = 'Y' AND lv_severity = awlrs_util.c_msg_cat_success)
+    IF lv_severity = awlrs_util.c_msg_cat_success
      THEN
         --
         awlrs_element_api.build_element_rec(pi_nt_type    => lr_ne.ne_nt_type
@@ -1057,8 +1056,29 @@ AS
             IF pi_circular_group_ids(j) = lt_groups(i).group_id
              THEN 
                 lv_start_ne_id := pi_circular_start_ne_ids(j);
-            ELSE 
-                lv_start_ne_id := null;
+                --
+                IF pi_circular_start_ne_ids(j) = pi_ne_id
+                 THEN
+                    /*
+                    || This means that the element we split is used as the start element ID in the circualr route.
+                    || IF cardinarlity = 1 then its going from start to finish so we need to get start node of splitting element and 
+                    || find the new element which shares this same node_id
+                    || If cardinality = -1 then get the end node of splitting element and the new element which shares this node.
+                    */
+                    BEGIN
+                      SELECT ne_id
+                        INTO lv_start_ne_id
+                        FROM nm_elements
+                       WHERE ne_id in (po_new_ne_ids(1),po_new_ne_ids(2))
+                         AND ((ne_no_start = lr_ne.ne_no_start AND lt_groups(i).cardinality = 1)
+                          OR (ne_no_end = lr_ne.ne_no_end AND lt_groups(i).cardinality = -1));
+                    EXCEPTION
+                      WHEN no_data_found 
+                       THEN 
+                         lv_start_ne_id := null;
+                    END;
+                END IF;
+                EXIT;
             END IF;
           END LOOP;
           --          
@@ -1069,24 +1089,9 @@ AS
                     ,pi_effective_date   => pi_effective_date
                     ,pi_offset_st        => lt_groups(i).min_slk
                     ,pi_start_ne_id      => lv_start_ne_id
-                    ,pi_use_history      => 'Y'
+                    ,pi_use_history      => 'N'
                     ,po_message_severity => lv_severity
                     ,po_message_tab      => lt_messages);
-          --
-          IF lv_severity = awlrs_util.c_msg_cat_ask_continue
-           THEN
-              --
-              lt_messages.DELETE;
-              --
-              do_rescale(pi_ne_id            => lt_groups(i).group_id
-                        ,pi_effective_date   => pi_effective_date
-                        ,pi_offset_st        => lt_groups(i).min_slk
-                        ,pi_start_ne_id      => lv_start_ne_id
-                        ,pi_use_history      => 'N'
-                        ,po_message_severity => lv_severity
-                        ,po_message_tab      => lt_messages);
-              --
-          END IF;
           --
           IF lv_severity != awlrs_util.c_msg_cat_success
            THEN
