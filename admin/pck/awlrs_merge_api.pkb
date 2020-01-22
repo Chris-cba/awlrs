@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.15   Dec 19 2019 10:41:44   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.16   Jan 22 2020 15:54:04   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_merge_api.pkb  $
-  --       Date into PVCS   : $Date:   Dec 19 2019 10:41:44  $
-  --       Date fetched Out : $Modtime:   Dec 18 2019 14:34:04  $
-  --       Version          : $Revision:   1.15  $
+  --       Date into PVCS   : $Date:   Jan 22 2020 15:54:04  $
+  --       Date fetched Out : $Modtime:   Jan 22 2020 15:53:12  $
+  --       Version          : $Revision:   1.16  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.15  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_merge_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -404,6 +404,16 @@ AS
                                    WHERE ngt_linear_flag = 'Y'))
          ;
     --
+    CURSOR get_linear_groups_post(cp_ne_id IN nm_elements_all.ne_id%TYPE)
+        IS
+    SELECT nm_ne_id_in group_id
+          ,NVL(nm3net.get_min_slk(pi_ne_id => nm_ne_id_in),0) min_slk
+      FROM nm_members
+     WHERE nm_ne_id_of = cp_ne_id
+       AND nm_obj_type IN(SELECT ngt_group_type
+                            FROM nm_group_types
+                           WHERE ngt_linear_flag = 'Y')
+         ;    
     TYPE groups_tab IS TABLE OF get_linear_groups%ROWTYPE;
     lt_groups  groups_tab;
     --
@@ -459,8 +469,7 @@ AS
                 IF pi_circular_group_ids(j) = lt_groups(i).group_id
                  THEN 
                     lv_start_ne_id := pi_circular_start_ne_ids(j);
-                ELSE 
-                    lv_start_ne_id := null;
+                    EXIT;
                 END IF;
               END LOOP;
               --
@@ -567,51 +576,63 @@ AS
         */
         IF pi_do_maintain_history = 'Y' AND lv_severity = awlrs_util.c_msg_cat_success
          THEN
+            lt_groups.DELETE;
+            --
+            OPEN  get_linear_groups_post(po_new_ne_id);
+            FETCH get_linear_groups_post
+             BULK COLLECT
+             INTO lt_groups;
+            CLOSE get_linear_groups_post;
             --
             FOR i IN 1..lt_groups.COUNT LOOP
-              --
-              lv_severity := awlrs_util.c_msg_cat_success;
-              lt_messages.DELETE;
-              --
-              do_rescale(pi_ne_id            => lt_groups(i).group_id
-                        ,pi_effective_date   => pi_effective_date
-                        ,pi_offset_st        => lt_groups(i).min_slk
-                        ,pi_use_history      => 'Y'
-                        ,po_message_severity => lv_severity
-                        ,po_message_tab      => lt_messages);
-              --
-              IF lv_severity = awlrs_util.c_msg_cat_ask_continue
-               THEN
-                  --
-                  lt_messages.DELETE;
-                  --
-                  do_rescale(pi_ne_id            => lt_groups(i).group_id
-                            ,pi_effective_date   => pi_effective_date
-                            ,pi_offset_st        => lt_groups(i).min_slk
-                            ,pi_use_history      => 'N'
-                            ,po_message_severity => lv_severity
-                            ,po_message_tab      => lt_messages);
-                  --
-              END IF;
-              --
-              IF lv_severity != awlrs_util.c_msg_cat_success
-               THEN
-                  /*
-                  ||If an error has occurred rescaling a group end the whole operation.
-                  */
-                  IF lv_severity = awlrs_util.c_msg_cat_circular_route
-                   THEN
-                      lt_messages.DELETE;
-                      awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
-                                                       ,pi_ner_id             => 60
-                                                       ,pi_supplementary_info => NULL
-                                                       ,pi_category           => awlrs_util.c_msg_cat_error
-                                                       ,po_message_tab        => lt_messages);
-                  END IF;
-                  --
-                  EXIT;
-                  --
-              END IF;
+               --
+               FOR j IN 1..pi_circular_group_ids.COUNT LOOP
+                 IF pi_circular_group_ids(j) = lt_groups(i).group_id
+                  THEN 
+                     IF pi_circular_start_ne_ids(j) = pi_ne_id1 
+                      OR pi_circular_start_ne_ids(j) = pi_ne_id2
+                      THEN
+                         /*
+                         || The start NE ID for the circular route was one of the merged elements so make the start element the newly created merged element.
+                         */
+                         lv_start_ne_id := po_new_ne_id;
+                     ELSE
+                         lv_start_ne_id := pi_circular_start_ne_ids(j);
+                     END IF;
+                     --
+                     EXIT;
+                 END IF;
+               END LOOP;
+               --
+               lv_severity := awlrs_util.c_msg_cat_success;
+               lt_messages.DELETE;
+               --
+               do_rescale(pi_ne_id            => lt_groups(i).group_id
+                         ,pi_effective_date   => pi_effective_date
+                         ,pi_offset_st        => lt_groups(i).min_slk
+                         ,pi_start_ne_id      => lv_start_ne_id
+                         ,pi_use_history      => 'N'
+                         ,po_message_severity => lv_severity
+                         ,po_message_tab      => lt_messages);
+               --
+               IF lv_severity != awlrs_util.c_msg_cat_success
+                THEN
+                   /*
+                   ||If an error has occurred rescaling a group end the whole operation.
+                   */
+                   IF lv_severity = awlrs_util.c_msg_cat_circular_route
+                    THEN
+                       lt_messages.DELETE;
+                       awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                        ,pi_ner_id             => 60
+                                                        ,pi_supplementary_info => NULL
+                                                        ,pi_category           => awlrs_util.c_msg_cat_error
+                                                        ,po_message_tab        => lt_messages);
+                   END IF;
+                   --
+                   EXIT;
+                   --
+               END IF;
               --
             END LOOP;
         END IF;
@@ -701,16 +722,18 @@ AS
       --
     END LOOP;
     --
-    do_merge(pi_ne_id1              => pi_ne_id1
-            ,pi_ne_id2              => pi_ne_id2
-            ,pi_reason              => pi_reason
-            ,pi_new_element_attribs => lt_new_element_attribs
-            ,pi_do_maintain_history => pi_do_maintain_history
-            ,pi_effective_date      => pi_effective_date
-            ,pi_run_checks          => pi_run_checks
-            ,po_new_ne_id           => po_new_ne_id
-            ,po_message_severity    => lv_message_severity
-            ,po_message_cursor      => lv_message_cursor);
+    do_merge(pi_ne_id1                => pi_ne_id1
+            ,pi_ne_id2                => pi_ne_id2
+            ,pi_reason                => pi_reason
+            ,pi_new_element_attribs   => lt_new_element_attribs
+            ,pi_do_maintain_history   => pi_do_maintain_history
+            ,pi_effective_date        => pi_effective_date
+            ,pi_run_checks            => pi_run_checks
+            ,pi_circular_group_ids    => pi_circular_group_ids
+            ,pi_circular_start_ne_ids => pi_circular_start_ne_ids
+            ,po_new_ne_id             => po_new_ne_id
+            ,po_message_severity      => lv_message_severity
+            ,po_message_cursor        => lv_message_cursor);
     --
     po_message_severity := lv_message_severity;
     po_message_cursor := lv_message_cursor;
