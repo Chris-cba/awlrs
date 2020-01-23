@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_recalibrate_api.pkb-arc   1.6   Jan 21 2019 20:41:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_recalibrate_api.pkb-arc   1.7   Jan 23 2020 14:08:20   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_recalibrate_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 21 2019 20:41:12  $
-  --       Date fetched Out : $Modtime:   Jan 21 2019 20:36:44  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   Jan 23 2020 14:08:20  $
+  --       Date fetched Out : $Modtime:   Jan 21 2020 08:40:28  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_recalibrate_api';
   --
@@ -41,6 +41,7 @@ AS
   --
   PROCEDURE do_rescale(pi_ne_id            IN     nm_elements.ne_id%TYPE
                       ,pi_offset_st        IN     NUMBER
+                      ,pi_start_ne_id      IN     nm_elements.ne_id%TYPE DEFAULT NULL
                       ,pi_use_history      IN     VARCHAR2
                       ,po_message_severity IN OUT hig_codes.hco_code%TYPE
                       ,po_message_tab      IN OUT NOCOPY awlrs_message_tab)
@@ -54,6 +55,7 @@ AS
     --
     awlrs_group_api.rescale_route(pi_ne_id            => pi_ne_id
                                  ,pi_offset_st        => pi_offset_st
+                                 ,pi_start_ne_id      => pi_start_ne_id
                                  ,pi_use_history      => pi_use_history
                                  ,po_message_severity => po_message_severity
                                  ,po_message_cursor   => lv_message_cursor);
@@ -72,7 +74,6 @@ AS
     END LOOP;
     --
   END do_rescale;
-
   --
   -----------------------------------------------------------------------------
   --
@@ -124,6 +125,8 @@ AS
                             ,pi_new_length_to_end        IN     NUMBER
                             ,pi_reason                   IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
                             ,pi_maintain_history         IN     VARCHAR2 DEFAULT 'N'
+                            ,pi_circular_group_ids       IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                            ,pi_circular_start_ne_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)      
                             ,pi_new_element_column_names IN     awlrs_element_api.attrib_column_name_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_column_name_tab)
                             ,pi_new_element_prompts      IN     awlrs_element_api.attrib_prompt_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_prompt_tab)
                             ,pi_new_element_char_values  IN     awlrs_element_api.attrib_char_value_tab DEFAULT CAST(NULL AS awlrs_element_api.attrib_char_value_tab)
@@ -132,12 +135,13 @@ AS
                             ,po_message_cursor              OUT sys_refcursor)
     IS
     --
-    lv_ne_id  nm_elements_all.ne_id%TYPE;
-    lr_ne     nm_elements_all%ROWTYPE;
+    lv_ne_id       nm_elements_all.ne_id%TYPE;
+    lv_start_ne_id nm_elements_all.ne_id%TYPE;   
+    lr_ne          nm_elements_all%ROWTYPE;
     --
-    lv_severity   hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    lv_severity    hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
     --
-    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    lt_messages    awlrs_message_tab := awlrs_message_tab();
     --
     e_record_locked exception;
     PRAGMA EXCEPTION_INIT(e_record_locked, -54);
@@ -183,6 +187,14 @@ AS
     --
     IF pi_maintain_history = 'Y'
      THEN
+        --
+        IF pi_circular_group_ids.COUNT != pi_circular_start_ne_ids.COUNT
+         THEN
+            --If these arrays are passed check counts are the same.
+            hig.raise_ner(pi_appl               => 'AWLRS'
+                         ,pi_id                 => 5
+                         ,pi_supplementary_info => 'awlrs_recalibrate_api.do_recalibration');
+        END IF;
         /*
         ||Rescale any linear groups the element belongs to.
         */
@@ -194,11 +206,22 @@ AS
         --
         FOR i IN 1..lt_groups.COUNT LOOP
           --
+          lv_start_ne_id := null;
+          --
+          FOR j IN 1..pi_circular_group_ids.COUNT LOOP
+            IF pi_circular_group_ids(j) = lt_groups(i).group_id
+             THEN 
+                lv_start_ne_id := pi_circular_start_ne_ids(j);
+                EXIT;
+            END IF;
+          END LOOP;
+          --
           lv_severity := awlrs_util.c_msg_cat_success;
           lt_messages.DELETE;
           --
           do_rescale(pi_ne_id            => lt_groups(i).group_id
                     ,pi_offset_st        => lt_groups(i).min_slk
+                    ,pi_start_ne_id      => lv_start_ne_id
                     ,pi_use_history      => 'Y'
                     ,po_message_severity => lv_severity
                     ,po_message_tab      => lt_messages);
@@ -210,6 +233,7 @@ AS
               --
               do_rescale(pi_ne_id            => lt_groups(i).group_id
                         ,pi_offset_st        => lt_groups(i).min_slk
+                        ,pi_start_ne_id      => lv_start_ne_id
                         ,pi_use_history      => 'N'
                         ,po_message_severity => lv_severity
                         ,po_message_tab      => lt_messages);
@@ -296,11 +320,29 @@ AS
         --
         FOR i IN 1..lt_groups.COUNT LOOP
           --
+          lv_start_ne_id := null;
+          --
+          FOR j IN 1..pi_circular_group_ids.COUNT LOOP
+            IF pi_circular_group_ids(j) = lt_groups(i).group_id
+             THEN 
+                lv_start_ne_id := pi_circular_start_ne_ids(j);
+                IF pi_circular_start_ne_ids(j) = pi_ne_id
+                 THEN
+                   /*
+                   ||The start element is the one that has been replaced so use the new element in the post rescale.
+                   */
+                   lv_start_ne_id := lv_ne_id;
+                END IF;                
+                EXIT;
+            END IF;
+          END LOOP;
+          --
           lv_severity := awlrs_util.c_msg_cat_success;
           lt_messages.DELETE;
           --
           do_rescale(pi_ne_id            => lt_groups(i).group_id
                     ,pi_offset_st        => lt_groups(i).min_slk
+                    ,pi_start_ne_id      => lv_start_ne_id
                     ,pi_use_history      => 'N'
                     ,po_message_severity => lv_severity
                     ,po_message_tab      => lt_messages);
