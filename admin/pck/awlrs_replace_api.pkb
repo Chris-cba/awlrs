@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_replace_api.pkb-arc   1.6   Dec 19 2019 10:37:24   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_replace_api.pkb-arc   1.7   Jan 23 2020 13:31:26   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_replace_api.pkb  $
-  --       Date into PVCS   : $Date:   Dec 19 2019 10:37:24  $
-  --       Date fetched Out : $Modtime:   Dec 19 2019 10:35:34  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   Jan 23 2020 13:31:26  $
+  --       Date fetched Out : $Modtime:   Jan 22 2020 11:36:50  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_replace_api';
   --
   g_disp_derived    BOOLEAN := TRUE;
@@ -172,7 +172,7 @@ AS
     --
     lv_severity        hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;    
     lr_ne              nm_elements_all%ROWTYPE;
-    lv_start_ne_id   nm_elements_all.ne_id%TYPE;    
+    lv_start_ne_id     nm_elements_all.ne_id%TYPE;    
     --
     lt_messages  awlrs_message_tab := awlrs_message_tab();
     --
@@ -221,8 +221,7 @@ AS
             IF pi_circular_group_ids(j) = lt_groups(i).group_id
              THEN 
                 lv_start_ne_id := pi_circular_start_ne_ids(j);
-            ELSE 
-                lv_start_ne_id := null;
+                EXIT;
             END IF;
           END LOOP;
           --
@@ -325,8 +324,14 @@ AS
             IF pi_circular_group_ids(j) = lt_groups(i).group_id
              THEN 
                 lv_start_ne_id := pi_circular_start_ne_ids(j);
-            ELSE 
-                lv_start_ne_id := null;
+                IF pi_circular_start_ne_ids(j) = pi_ne_id
+                 THEN
+                   /*
+                   ||The start element is the one that has been replaced so use the new element in the post rescale.
+                   */
+                   lv_start_ne_id := po_new_ne_id;
+                END IF;                
+                EXIT;
             END IF;
           END LOOP;
           --          
@@ -337,24 +342,9 @@ AS
                     ,pi_effective_date   => pi_effective_date
                     ,pi_offset_st        => lt_groups(i).min_slk
                     ,pi_start_ne_id      => lv_start_ne_id
-                    ,pi_use_history      => 'Y'
+                    ,pi_use_history      => 'N'
                     ,po_message_severity => lv_severity
                     ,po_message_tab      => lt_messages);
-          --
-          IF lv_severity = awlrs_util.c_msg_cat_ask_continue
-           THEN
-              --
-              lt_messages.DELETE;
-              --
-              do_rescale(pi_ne_id            => lt_groups(i).group_id
-                        ,pi_effective_date   => pi_effective_date
-                        ,pi_offset_st        => lt_groups(i).min_slk
-                        ,pi_start_ne_id      => lv_start_ne_id
-                        ,pi_use_history      => 'N'
-                        ,po_message_severity => lv_severity
-                        ,po_message_tab      => lt_messages);
-              --
-          END IF;
           --
           IF lv_severity != awlrs_util.c_msg_cat_success
            THEN
