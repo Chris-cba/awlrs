@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.19   Oct 30 2018 15:58:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.20   Jan 29 2020 10:20:32   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   Oct 30 2018 15:58:04  $
-  --       Date fetched Out : $Modtime:   Oct 30 2018 15:17:20  $
-  --       Version          : $Revision:   1.19  $
+  --       Date into PVCS   : $Date:   Jan 29 2020 10:20:32  $
+  --       Date fetched Out : $Modtime:   Jan 24 2020 08:03:18  $
+  --       Version          : $Revision:   1.20  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.20  $';
   --
   g_db_element   nm_elements_all%ROWTYPE;
   g_old_element  nm_elements_all%ROWTYPE;
@@ -59,22 +59,24 @@ AS
   --
   TYPE element_tab IS TABLE OF element_rec INDEX BY BINARY_INTEGER;
   --
-  TYPE flex_attr_rec IS RECORD(column_name        nm_type_columns.ntc_column_name%TYPE
-                              ,prompt             nm_type_columns.ntc_prompt%TYPE
-                              ,view_column_name   nm_type_columns.ntc_column_name%TYPE
-                              ,datatype           nm_type_columns.ntc_column_type%TYPE
-                              ,format_mask        nm_type_columns.ntc_format%TYPE
-                              ,field_length       nm_type_columns.ntc_str_length%TYPE
-                              ,decimal_places     NUMBER(1)
-                              ,min_value          NUMBER(11,3)
-                              ,max_value          NUMBER(11,3)
-                              ,field_case         VARCHAR2(5)
-                              ,domain_id          VARCHAR2(40)
-                              ,sql_based_domain   VARCHAR2(1)
-                              ,domain_bind_column nm_type_columns.ntc_column_name%TYPE
-                              ,char_value         VARCHAR2(500)
-                              ,required           nm_type_columns.ntc_mandatory%TYPE
-                              ,updateable         nm_type_columns.ntc_updatable%TYPE);
+  TYPE flex_attr_rec IS RECORD(column_name           nm_type_columns.ntc_column_name%TYPE
+                              ,prompt                nm_type_columns.ntc_prompt%TYPE
+                              ,view_column_name      nm_type_columns.ntc_column_name%TYPE
+                              ,datatype              nm_type_columns.ntc_column_type%TYPE
+                              ,format_mask           nm_type_columns.ntc_format%TYPE
+                              ,field_length          nm_type_columns.ntc_str_length%TYPE
+                              ,decimal_places        NUMBER(1)
+                              ,min_value             NUMBER(11,3)
+                              ,max_value             NUMBER(11,3)
+                              ,field_case            VARCHAR2(5)
+                              ,domain_id             VARCHAR2(40)
+                              ,sql_based_domain      VARCHAR2(1)
+                              ,domain_bind_column    nm_type_columns.ntc_column_name%TYPE
+                              ,char_value            VARCHAR2(500)
+                              ,required              nm_type_columns.ntc_mandatory%TYPE
+                              ,updateable            nm_type_columns.ntc_updatable%TYPE
+                              ,inclusion_parent_type VARCHAR2(4));
+  --
   TYPE flex_attr_tab IS TABLE OF flex_attr_rec INDEX BY BINARY_INTEGER;
   --
   TYPE attrib_column_name_tab IS TABLE OF nm_type_columns.ntc_column_name%TYPE INDEX BY BINARY_INTEGER;
@@ -314,46 +316,92 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE create_element(pi_theme_name      IN     nm_themes_all.nth_theme_name%TYPE
-                          ,pi_network_type    IN     nm_elements_all.ne_nt_type%TYPE
-                          ,pi_element_type    IN     nm_elements_all.ne_type%TYPE
-                          ,pi_description     IN     nm_elements_all.ne_descr%TYPE
-                          ,pi_length          IN     nm_elements_all.ne_length%TYPE
-                          ,pi_admin_unit_id   IN     nm_elements_all.ne_admin_unit%TYPE
-                          ,pi_start_date      IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                          ,pi_end_date        IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
-                          ,pi_group_type      IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
-                          ,pi_start_node_id   IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
-                          ,pi_end_node_id     IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
-                          ,pi_element_attribs IN     flex_attr_tab
-                          ,pi_shape_wkt       IN     CLOB
-                          ,pi_run_checks      IN     VARCHAR2 DEFAULT 'Y'
-                          ,po_ne_id           IN OUT nm_elements_all.ne_id%TYPE
-                          ,po_message_severity   OUT hig_codes.hco_code%TYPE
-                          ,po_message_cursor     OUT sys_refcursor);
+  PROCEDURE rescale_parents(pi_ne_id                 IN     nm_elements_all.ne_id%TYPE
+                           ,pi_effective_date        IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                           ,pi_circular_group_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab) 
+                           ,pi_circular_start_ne_ids IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                           ,po_message_severity      IN OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE create_element(pi_theme_name          IN     nm_themes_all.nth_theme_name%TYPE
-                          ,pi_network_type        IN     nm_elements_all.ne_nt_type%TYPE
-                          ,pi_element_type        IN     nm_elements_all.ne_type%TYPE
-                          ,pi_description         IN     nm_elements_all.ne_descr%TYPE
-                          ,pi_length              IN     nm_elements_all.ne_length%TYPE
-                          ,pi_admin_unit_id       IN     nm_elements_all.ne_admin_unit%TYPE
-                          ,pi_start_date          IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                          ,pi_end_date            IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
-                          ,pi_group_type          IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
-                          ,pi_start_node_id       IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
-                          ,pi_end_node_id         IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
-                          ,pi_attrib_column_names IN     attrib_column_name_tab
-                          ,pi_attrib_prompts      IN     attrib_prompt_tab
-                          ,pi_attrib_char_values  IN     attrib_char_value_tab
-                          ,pi_shape_wkt           IN     CLOB
-                          ,pi_run_checks          IN     VARCHAR2 DEFAULT 'Y'
-                          ,po_ne_id               IN OUT nm_elements_all.ne_id%TYPE
-                          ,po_message_severity       OUT hig_codes.hco_code%TYPE
-                          ,po_message_cursor         OUT sys_refcursor);
+  PROCEDURE rescale_parents(pi_ne_id                 IN     nm_elements_all.ne_id%TYPE
+                           ,pi_effective_date        IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                           ,pi_circular_group_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab) 
+                           ,pi_circular_start_ne_ids IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                           ,po_message_severity      IN OUT hig_codes.hco_code%TYPE
+                           ,po_message_tab           IN OUT NOCOPY awlrs_message_tab);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_parent_circular_routes(pi_ne_id              IN     nm_elements_all.ne_id%TYPE
+                                      ,po_message_severity   IN OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor        OUT sys_refcursor
+                                      ,po_cursor                OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_parent_circular_routes(pi_parent_ne_ids       IN     nm_ne_id_array
+                                      ,pi_datum_start_node_id IN     nm_elements_all.ne_no_start%TYPE
+                                      ,pi_datum_end_node_id   IN     nm_elements_all.ne_no_end%TYPE
+                                      ,po_cursor                 OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_element(pi_theme_name            IN     nm_themes_all.nth_theme_name%TYPE
+                          ,pi_network_type          IN     nm_elements_all.ne_nt_type%TYPE
+                          ,pi_element_type          IN     nm_elements_all.ne_type%TYPE
+                          ,pi_description           IN     nm_elements_all.ne_descr%TYPE
+                          ,pi_length                IN     nm_elements_all.ne_length%TYPE
+                          ,pi_admin_unit_id         IN     nm_elements_all.ne_admin_unit%TYPE
+                          ,pi_start_date            IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                          ,pi_end_date              IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
+                          ,pi_group_type            IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
+                          ,pi_start_node_id         IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
+                          ,pi_end_node_id           IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
+                          ,pi_element_attribs       IN     flex_attr_tab
+                          ,pi_shape_wkt             IN     CLOB
+                          ,pi_run_checks            IN     VARCHAR2 DEFAULT 'Y'
+                          ,pi_do_maintain_history   IN     VARCHAR2 DEFAULT 'N' 
+                          ,pi_circular_group_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab) 
+                          ,pi_circular_start_ne_ids IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                          ,pi_circular_group_ne_new IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab) --if the new element should be used for circ start then ui wil pas the route
+                          ,po_circular_route_cursor    OUT sys_refcursor
+                          ,po_ne_id                 IN OUT nm_elements_all.ne_id%TYPE
+                          ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_element(pi_theme_name            IN     nm_themes_all.nth_theme_name%TYPE
+                          ,pi_network_type          IN     nm_elements_all.ne_nt_type%TYPE
+                          ,pi_element_type          IN     nm_elements_all.ne_type%TYPE
+                          ,pi_description           IN     nm_elements_all.ne_descr%TYPE
+                          ,pi_length                IN     nm_elements_all.ne_length%TYPE
+                          ,pi_admin_unit_id         IN     nm_elements_all.ne_admin_unit%TYPE
+                          ,pi_start_date            IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                          ,pi_end_date              IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
+                          ,pi_group_type            IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
+                          ,pi_start_node_id         IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
+                          ,pi_end_node_id           IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
+                          ,pi_attrib_column_names   IN     attrib_column_name_tab
+                          ,pi_attrib_prompts        IN     attrib_prompt_tab
+                          ,pi_attrib_char_values    IN     attrib_char_value_tab
+                          ,pi_shape_wkt             IN     CLOB
+                          ,pi_run_checks            IN     VARCHAR2 DEFAULT 'Y'
+                          ,pi_do_maintain_history   IN     VARCHAR2 DEFAULT 'N' 
+                          ,pi_circular_group_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab) 
+                          ,pi_circular_start_ne_ids IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                          ,pi_circular_group_ne_new IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab) --if the new element should be used for circ start then ui wil pas the route
+                          ,po_circular_route_cursor    OUT sys_refcursor
+                          ,po_ne_id                 IN OUT nm_elements_all.ne_id%TYPE
+                          ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------

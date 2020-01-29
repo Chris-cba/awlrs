@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.38   Sep 06 2019 13:38:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.39   Jan 29 2020 10:20:32   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 06 2019 13:38:14  $
-  --       Date fetched Out : $Modtime:   Sep 06 2019 13:33:44  $
-  --       Version          : $Revision:   1.38  $
+  --       Date into PVCS   : $Date:   Jan 29 2020 10:20:32  $
+  --       Date fetched Out : $Modtime:   Jan 27 2020 15:50:26  $
+  --       Version          : $Revision:   1.39  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.38  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.39  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1021,6 +1021,7 @@ AS
           ,CAST(char_value AS VARCHAR2(500)) char_value
           ,required
           ,updateable
+          ,inclusion_parent_type
       FROM (SELECT 'NE_UNIQUE' column_name
                   ,'Unique'    prompt
                   ,'NE_UNIQUE' view_column_name
@@ -1046,6 +1047,7 @@ AS
                   ,'Y'         required
                   ,'N'         updateable
                   ,0           seq_no
+                  ,CAST(NULL AS VARCHAR2(4)) inclusion_parent_type
               FROM nm_types
              WHERE nt_type = pi_nt_type
                AND nt_pop_unique = 'N'
@@ -1108,9 +1110,18 @@ AS
                   ,ntc_mandatory      required
                   ,ntc_updatable      updateable
                   ,ntc_seq_no + 1     seq_no
-              FROM (SELECT ntc.*
+                  ,inclusion_parent_type
+              FROM (WITH inclusion AS (SELECT *
+                                         FROM nm_type_inclusion
+                                        WHERE nti_nw_child_type = pi_nt_type)
+                    SELECT ntc.*
                           ,awlrs_element_api.get_domain_sql_with_bind(pi_nt_type     => ntc_nt_type
                                                                      ,pi_column_name => ntc_column_name) domain_sql
+                          ,(SELECT nti_nw_parent_type
+                              FROM inclusion
+                             WHERE nti_child_column = ntc_column_name
+                               AND nti_parent_column  = 'NE_UNIQUE'
+                               AND nti_auto_create = 'N') inclusion_parent_type
                       FROM nm_type_columns ntc
                      WHERE ntc_nt_type = pi_nt_type
                        AND ntc_displayed = 'Y'
@@ -1118,9 +1129,8 @@ AS
                              OR ntc_inherit = 'N')
                        AND (lv_disp_derived = 'Y'
                             OR NOT EXISTS (SELECT 1
-                                             FROM nm_type_inclusion
-                                            WHERE nti_nw_child_type = ntc_nt_type
-                                              AND ntc_column_name = nti_code_control_column)))
+                                             FROM inclusion
+                                            WHERE ntc_column_name = nti_code_control_column)))
             UNION ALL
             SELECT ita_attrib_name   column_name
                   ,ita_scrn_text     prompt
@@ -1152,6 +1162,7 @@ AS
                   ,ita_mandatory_yn  required
                   ,'Y'               updateable
                   ,ita_disp_seq_no+100 seq_no
+                  ,CAST(NULL AS VARCHAR2(4)) inclusion_parent_type
               FROM nm_nw_ad_link adlink
                   ,nm_inv_type_attribs
                   ,nm_nw_ad_types adt
@@ -1851,23 +1862,393 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE create_element(pi_theme_name      IN     nm_themes_all.nth_theme_name%TYPE
-                          ,pi_network_type    IN     nm_elements_all.ne_nt_type%TYPE
-                          ,pi_element_type    IN     nm_elements_all.ne_type%TYPE
-                          ,pi_description     IN     nm_elements_all.ne_descr%TYPE
-                          ,pi_length          IN     nm_elements_all.ne_length%TYPE
-                          ,pi_admin_unit_id   IN     nm_elements_all.ne_admin_unit%TYPE
-                          ,pi_start_date      IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                          ,pi_end_date        IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
-                          ,pi_group_type      IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
-                          ,pi_start_node_id   IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
-                          ,pi_end_node_id     IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
-                          ,pi_element_attribs IN     flex_attr_tab
-                          ,pi_shape_wkt       IN     CLOB
-                          ,pi_run_checks      IN     VARCHAR2 DEFAULT 'Y'
-                          ,po_ne_id           IN OUT nm_elements_all.ne_id%TYPE
-                          ,po_message_severity   OUT hig_codes.hco_code%TYPE
-                          ,po_message_cursor     OUT sys_refcursor)
+  PROCEDURE do_rescale(pi_ne_id            IN     nm_elements.ne_id%TYPE
+                      ,pi_effective_date   IN     DATE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                      ,pi_offset_st        IN     NUMBER
+                      ,pi_start_ne_id      IN     nm_elements.ne_id%TYPE DEFAULT NULL
+                      ,pi_use_history      IN     VARCHAR2
+                      ,po_message_severity IN OUT hig_codes.hco_code%TYPE
+                      ,po_message_tab      IN OUT NOCOPY awlrs_message_tab)
+    IS
+    --
+    lv_message_cursor  sys_refcursor;
+    --
+    lt_messages  awlrs_util.message_tab;
+    --
+  BEGIN
+    --
+    awlrs_group_api.rescale_route(pi_ne_id            => pi_ne_id
+                                 ,pi_effective_date   => pi_effective_date
+                                 ,pi_offset_st        => pi_offset_st
+                                 ,pi_start_ne_id      => pi_start_ne_id
+                                 ,pi_use_history      => pi_use_history
+                                 ,po_message_severity => po_message_severity
+                                 ,po_message_cursor   => lv_message_cursor);
+    --
+    FETCH lv_message_cursor
+     BULK COLLECT
+     INTO lt_messages;
+    CLOSE lv_message_cursor;
+    --
+    FOR i IN 1..lt_messages.COUNT LOOP
+      --
+      awlrs_util.add_message(pi_category    => lt_messages(i).category
+                            ,pi_message     => lt_messages(i).message
+                            ,po_message_tab => po_message_tab);
+      --
+    END LOOP;
+    --
+  END do_rescale;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE rescale_parents(pi_ne_id                 IN     nm_elements_all.ne_id%TYPE
+                           ,pi_effective_date        IN     nm_elements_all.ne_start_date%TYPE DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                           ,pi_circular_group_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                           ,pi_circular_start_ne_ids IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                           ,po_message_severity      IN OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor           OUT sys_refcursor)
+    IS
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
+  BEGIN
+      --
+      rescale_parents(pi_ne_id                 => pi_ne_id
+                     ,pi_effective_date        => pi_effective_date
+                     ,pi_circular_group_ids    => pi_circular_group_ids
+                     ,pi_circular_start_ne_ids => pi_circular_start_ne_ids
+                     ,po_message_severity      => po_message_severity
+                     ,po_message_tab           => lt_messages);
+      /*
+      ||If there are any messages to return then create a cursor for them.
+      */
+      IF lt_messages.COUNT > 0
+       THEN
+          awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                       ,po_cursor      => po_message_cursor);
+          awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                         ,po_message_severity => po_message_severity);
+      ELSE
+          awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                               ,po_cursor           => po_message_cursor);
+      END IF;
+      --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END rescale_parents;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE rescale_parents(pi_ne_id                 IN     nm_elements_all.ne_id%TYPE
+                           ,pi_effective_date        IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                           ,pi_circular_group_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                           ,pi_circular_start_ne_ids IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                           ,po_message_severity      IN OUT hig_codes.hco_code%TYPE
+                           ,po_message_tab           IN OUT NOCOPY awlrs_message_tab)
+    IS
+    --
+    lv_severity        hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    lv_start_ne_id     nm_elements_all.ne_id%TYPE;
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
+    CURSOR get_linear_groups(cp_ne_id IN nm_elements_all.ne_id%TYPE)
+        IS
+    SELECT nm_ne_id_in group_id
+          ,NVL(nm3net.get_min_slk(pi_ne_id => nm_ne_id_in),0) min_slk
+      FROM nm_members
+     WHERE nm_ne_id_of = cp_ne_id
+       AND nm_obj_type IN(SELECT ngt_group_type
+                            FROM nm_group_types
+                           WHERE ngt_linear_flag = 'Y')
+         ;
+    --
+    TYPE groups_tab IS TABLE OF get_linear_groups%ROWTYPE;
+    lt_groups  groups_tab;
+    --
+  BEGIN
+      --
+      OPEN  get_linear_groups(pi_ne_id);
+      FETCH get_linear_groups
+       BULK COLLECT
+       INTO lt_groups;
+      CLOSE get_linear_groups;
+      --
+      FOR i IN 1..lt_groups.COUNT LOOP
+        --
+        lv_start_ne_id := null;
+        --
+        FOR j IN 1..pi_circular_group_ids.COUNT LOOP
+          IF pi_circular_group_ids(j) = lt_groups(i).group_id
+           THEN
+              lv_start_ne_id := pi_circular_start_ne_ids(j);
+              EXIT;
+          END IF;
+        END LOOP;
+
+        lv_severity := awlrs_util.c_msg_cat_success;
+        lt_messages.DELETE;
+        --
+        do_rescale(pi_ne_id            => lt_groups(i).group_id
+                  ,pi_effective_date   => pi_effective_date
+                  ,pi_offset_st        => lt_groups(i).min_slk
+                  ,pi_start_ne_id      => lv_start_ne_id
+                  ,pi_use_history      => 'Y'
+                  ,po_message_severity => lv_severity
+                  ,po_message_tab      => lt_messages);
+        --
+        IF lv_severity = awlrs_util.c_msg_cat_ask_continue
+         THEN
+            --
+            lt_messages.DELETE;
+            --
+            do_rescale(pi_ne_id            => lt_groups(i).group_id
+                      ,pi_effective_date   => pi_effective_date
+                      ,pi_offset_st        => lt_groups(i).min_slk
+                      ,pi_start_ne_id      => lv_start_ne_id
+                      ,pi_use_history      => 'N'
+                      ,po_message_severity => lv_severity
+                      ,po_message_tab      => lt_messages);
+            --
+        END IF;
+        --
+        IF lv_severity != awlrs_util.c_msg_cat_success
+         THEN
+            /*
+            ||If an error has occurred rescaling a group end the whole operation.
+            */
+            IF lv_severity = awlrs_util.c_msg_cat_circular_route
+             THEN
+                lt_messages.DELETE;
+                awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                 ,pi_ner_id             => 60
+                                                 ,pi_supplementary_info => NULL
+                                                 ,pi_category           => awlrs_util.c_msg_cat_error
+                                                 ,po_message_tab        => lt_messages);
+            END IF;
+            --
+            EXIT;
+            --
+        END IF;
+        --
+      END LOOP;
+      --
+      po_message_tab := lt_messages;
+      --
+  END rescale_parents;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE rescale_parents(pi_parent_ne_ids           IN     nm_ne_id_array
+                           ,pi_effective_date          IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                           ,po_message_severity        IN OUT hig_codes.hco_code%TYPE
+                           ,po_message_tab             IN OUT NOCOPY awlrs_message_tab)
+    IS
+    --
+    lv_severity  hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    lv_min_slk   NUMBER;
+    --
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
+  BEGIN
+      --
+      FOR i IN 1..pi_parent_ne_ids.COUNT LOOP
+        --
+        lv_severity := awlrs_util.c_msg_cat_success;
+        lt_messages.DELETE;
+        --
+        lv_min_slk := NVL(nm3net.get_min_slk(pi_ne_id => pi_parent_ne_ids(i).ne_id),0);
+        --
+        do_rescale(pi_ne_id            => pi_parent_ne_ids(i).ne_id
+                  ,pi_effective_date   => pi_effective_date
+                  ,pi_offset_st        => lv_min_slk
+                  ,pi_use_history      => 'Y'
+                  ,po_message_severity => lv_severity
+                  ,po_message_tab      => lt_messages);
+        --
+        IF lv_severity = awlrs_util.c_msg_cat_ask_continue
+         THEN
+            --
+            lt_messages.DELETE;
+            --
+            do_rescale(pi_ne_id            => pi_parent_ne_ids(i).ne_id
+                      ,pi_effective_date   => pi_effective_date
+                      ,pi_offset_st        => lv_min_slk
+                      ,pi_use_history      => 'N'
+                      ,po_message_severity => lv_severity
+                      ,po_message_tab      => lt_messages);
+            --
+        END IF;
+        --
+        IF lv_severity != awlrs_util.c_msg_cat_success
+         THEN
+            /*
+            ||If an error has occurred rescaling a group end the whole operation.
+            */
+            IF lv_severity = awlrs_util.c_msg_cat_circular_route
+             THEN
+                lt_messages.DELETE;
+                awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                 ,pi_ner_id             => 60
+                                                 ,pi_supplementary_info => NULL
+                                                 ,pi_category           => awlrs_util.c_msg_cat_error
+                                                 ,po_message_tab        => lt_messages);
+            END IF;
+            --
+            EXIT;
+            --
+        END IF;
+        --
+      END LOOP;
+      --
+      po_message_tab := lt_messages;
+      --
+  END rescale_parents;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_parent_circular_routes(pi_ne_id            IN     nm_elements_all.ne_id%TYPE
+                                      ,po_message_severity IN OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor      OUT sys_refcursor
+                                      ,po_cursor              OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT ne_id             group_id
+          ,ne_gty_group_type group_type
+          ,ne_unique         unique_name
+          ,ne_descr          description
+          ,ne_start_date     start_date
+          ,(SELECT nm_ne_id_of
+              FROM nm_members
+             WHERE nm_ne_id_in = ne_id
+               AND nm_seq_no = 1) circ_start_ne_id
+      FROM nm_elements_all
+     WHERE awlrs_group_api.is_circular_route(ne_id) = 'Y'
+       AND ne_id IN(SELECT nm_ne_id_in group_id
+                      FROM nm_members
+                     WHERE nm_ne_id_of = pi_ne_id
+                       AND nm_obj_type IN(SELECT ngt_group_type
+                                            FROM nm_group_types
+                                           WHERE ngt_linear_flag = 'Y'))
+    ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_parent_circular_routes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_parent_circular_routes(pi_parent_ne_ids       IN     nm_ne_id_array
+                                      ,pi_datum_start_node_id IN     nm_elements_all.ne_no_start%TYPE
+                                      ,pi_datum_end_node_id   IN     nm_elements_all.ne_no_end%TYPE
+                                      ,po_cursor                 OUT sys_refcursor)
+    IS
+    --
+    lv_chk  PLS_INTEGER;
+    --
+    lt_routes  nm_ne_id_array := nm_ne_id_array();
+    --
+    CURSOR chk_nodes(cp_datum_start_node_id nm_elements_all.ne_no_start%TYPE
+                    ,cp_datum_end_node_id   nm_elements_all.ne_no_end%TYPE)
+        IS
+    SELECT 1
+      FROM dual
+     WHERE EXISTS(SELECT 1 FROM nm_route_nodes WHERE node_id = cp_datum_start_node_id)
+       AND EXISTS(SELECT 1 FROM nm_route_nodes WHERE node_id = cp_datum_end_node_id)
+         ;
+    --
+  BEGIN
+    /*
+    ||Identify any parent routes that would become circular if
+    ||a new datum is created between the the given nodes.
+    */
+    FOR i IN 1..pi_parent_ne_ids.COUNT LOOP
+      --
+      nm3net_o.set_g_ne_id_to_restrict_on(pi_ne_id => pi_parent_ne_ids(i).ne_id);
+      --
+      OPEN  chk_nodes(pi_datum_start_node_id
+                     ,pi_datum_end_node_id);
+      FETCH chk_nodes
+       INTO lv_chk;
+      --
+      IF chk_nodes%FOUND
+       THEN
+          --
+          lt_routes.EXTEND;
+          --lt_routes(lt_routes.COUNT+1) := pi_parent_ne_ids(i);
+          lt_routes(lt_routes.COUNT) := pi_parent_ne_ids(i);
+          --
+      END IF;
+      --
+      CLOSE chk_nodes;
+      --
+    END LOOP;
+    /*
+    ||Return any parent routes that are already circular
+    ||or will become circular.
+    */
+    OPEN po_cursor FOR
+    WITH parent_routes AS (SELECT *
+                             FROM TABLE(pi_parent_ne_ids))
+    SELECT nm_ne_id_type(ne.ne_id)        group_id
+      FROM nm_elements_all ne
+          ,parent_routes p
+     WHERE ne.ne_id = p.ne_id
+       AND (awlrs_group_api.is_circular_route(ne.ne_id) = 'Y'
+            OR ne.ne_id IN(SELECT ne_id FROM TABLE(lt_routes)))
+       AND EXISTS (SELECT 1
+                     FROM nm_members
+                    WHERE nm_ne_id_in = ne.ne_id
+                      AND nm_obj_type IN(SELECT ngt_group_type
+                                           FROM nm_group_types
+                                          WHERE ngt_linear_flag = 'Y'))
+    ;
+    --
+  END get_parent_circular_routes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_element(pi_theme_name            IN     nm_themes_all.nth_theme_name%TYPE
+                          ,pi_network_type          IN     nm_elements_all.ne_nt_type%TYPE
+                          ,pi_element_type          IN     nm_elements_all.ne_type%TYPE
+                          ,pi_description           IN     nm_elements_all.ne_descr%TYPE
+                          ,pi_length                IN     nm_elements_all.ne_length%TYPE
+                          ,pi_admin_unit_id         IN     nm_elements_all.ne_admin_unit%TYPE
+                          ,pi_start_date            IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                          ,pi_end_date              IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
+                          ,pi_group_type            IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
+                          ,pi_start_node_id         IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
+                          ,pi_end_node_id           IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
+                          ,pi_element_attribs       IN     flex_attr_tab
+                          ,pi_shape_wkt             IN     CLOB
+                          ,pi_run_checks            IN     VARCHAR2 DEFAULT 'Y'
+                          ,pi_do_maintain_history   IN     VARCHAR2 DEFAULT 'N'
+                          ,pi_circular_group_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                          ,pi_circular_start_ne_ids IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                          ,pi_circular_group_ne_new IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab) --if the new element should be used for circ start then ui wil pas the route
+                          ,po_circular_route_cursor    OUT sys_refcursor
+                          ,po_ne_id                 IN OUT nm_elements_all.ne_id%TYPE
+                          ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor           OUT sys_refcursor)
     IS
     --
     lv_shape           mdsys.sdo_geometry;
@@ -1878,10 +2259,51 @@ AS
     lv_severity        hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
     lv_message_cursor  sys_refcursor;
     lv_esu_id          nm_elements_all.ne_name_1%TYPE;
+    lv_sql             nm3type.max_varchar2;
+    lv_parent_ne_id    nm_elements_all.ne_id%TYPE;
+    lv_cursor          sys_refcursor;
+    lv_start_ne_id     nm_elements_all.ne_id%TYPE;
+    lv_min_slk         NUMBER;
     --
     lr_ne  nm_elements_all%ROWTYPE;
     lr_nt  nm_types%ROWTYPE;
     lr_ad  nm_inv_items_all%ROWTYPE;
+    --
+    lt_messages        awlrs_message_tab := awlrs_message_tab();
+    lt_parent_ids      nm_ne_id_array := nm_ne_id_array();
+    lt_circular_routes nm_ne_id_array := nm_ne_id_array();
+    --
+    CURSOR get_parent_types(cp_nt_type  nm_type_inclusion.nti_nw_child_type%TYPE)
+        IS
+    SELECT nti_parent_column
+          ,nti_nw_parent_type
+          ,nti_child_column
+      FROM nm_type_inclusion
+          ,nm_type_columns
+     WHERE nti_nw_child_type = cp_nt_type
+       AND nti_nw_parent_type IN(SELECT nt_type
+                                   FROM nm_types
+                                  WHERE nt_linear = 'Y')
+       AND nti_nw_child_type = ntc_nt_type
+       AND nti_child_column = ntc_column_name
+         ;
+    --
+    CURSOR get_linear_groups(cp_ne_id IN nm_elements_all.ne_id%TYPE)
+        IS
+    SELECT nm_ne_id_in group_id
+          ,NVL(nm3net.get_min_slk(pi_ne_id => nm_ne_id_in),0) min_slk
+      FROM nm_members
+     WHERE nm_ne_id_of = cp_ne_id
+       AND nm_obj_type IN(SELECT ngt_group_type
+                            FROM nm_group_types
+                           WHERE ngt_linear_flag = 'Y')
+         ;
+    --
+    TYPE groups_tab IS TABLE OF get_linear_groups%ROWTYPE INDEX BY BINARY_INTEGER;
+    lt_groups  groups_tab;
+    --
+    TYPE parent_types_tab IS TABLE OF get_parent_types%ROWTYPE;
+    lt_parent_types  parent_types_tab;
     --
   BEGIN
     /*
@@ -1958,61 +2380,243 @@ AS
         lr_ne.ne_descr := lv_esu_id;
     END IF;
     /*
-    ||Create Nodes if needed.
+    ||rescale parents prior to creating element to maintain history as per Pano
     */
-    IF lr_nt.nt_node_type IS NOT NULL
-     AND lr_ne.ne_no_start IS NULL
+    IF pi_do_maintain_history = 'Y'
+     AND lr_nt.nt_datum = 'Y'
      THEN
-        awlrs_sdo.get_start_x_y(pi_shape => lv_shape
-                               ,po_x     => lv_x
-                               ,po_y     => lv_y);
         --
-        awlrs_node_api.create_node(pi_type       => lr_nt.nt_node_type
-                                  ,pi_name       => NULL
-                                  ,pi_descr      => 'Entered by exor'
-                                  ,pi_purpose    => NULL
-                                  ,pi_point_id   => NULL
-                                  ,pi_point_x    => lv_x
-                                  ,pi_point_y    => lv_y
-                                  ,pi_start_date => lr_ne.ne_start_date
-                                  ,po_node_id    => lr_ne.ne_no_start);
-    END IF;
-    --
-    IF lr_nt.nt_node_type IS NOT NULL
-     AND lr_ne.ne_no_end IS NULL
-     THEN
-        awlrs_sdo.get_end_x_y(pi_shape => lv_shape
-                             ,po_x     => lv_x
-                             ,po_y     => lv_y);
+        OPEN  get_parent_types(lr_ne.ne_nt_type);
+        FETCH get_parent_types
+         BULK COLLECT
+         INTO lt_parent_types;
+        CLOSE get_parent_types;
         --
-        awlrs_node_api.create_node(pi_type       => lr_nt.nt_node_type
-                                  ,pi_name       => NULL
-                                  ,pi_descr      => 'Entered by exor'
-                                  ,pi_purpose    => NULL
-                                  ,pi_point_id   => NULL
-                                  ,pi_point_x    => lv_x
-                                  ,pi_point_y    => lv_y
-                                  ,pi_start_date => lr_ne.ne_start_date
-                                  ,po_node_id    => lr_ne.ne_no_end);
+        FOR i IN 1..lt_parent_types.COUNT LOOP
+          --
+          lv_sql := 'DECLARE'
+         ||CHR(10)||'  lv_ne_id  nm_elements_all.ne_id%TYPE;'
+         ||CHR(10)||'BEGIN'
+         ||CHR(10)||'  BEGIN'
+         ||CHR(10)||'    SELECT ne_id'
+         ||CHR(10)||'      INTO lv_ne_id'
+         ||CHR(10)||'      FROM nm_elements_all'
+         ||CHR(10)||'     WHERE '||lt_parent_types(i).nti_parent_column||' = awlrs_element_api.g_new_element.'||lt_parent_types(i).nti_child_column
+         ||CHR(10)||'       AND ne_nt_type = :nt_type'
+         ||CHR(10)||'         ;'
+         ||CHR(10)||'  EXCEPTION'
+         ||CHR(10)||'    WHEN others'
+         ||CHR(10)||'     THEN'
+         ||CHR(10)||'        lv_ne_id := NULL;'
+         ||CHR(10)||'  END;'
+         ||CHR(10)||'  :ne_id := lv_ne_id;'
+         ||CHR(10)||'END;'
+          ;
+          EXECUTE IMMEDIATE lv_sql USING lt_parent_types(i).nti_nw_parent_type, OUT lv_parent_ne_id;
+          --
+          IF lv_parent_ne_id IS NOT NULL
+           THEN
+              lt_parent_ids.EXTEND;
+              lt_parent_ids(lt_parent_ids.COUNT) := nm_ne_id_type(lv_parent_ne_id);
+          END IF;
+          --
+        END LOOP;
+        --
+        IF lt_parent_ids.COUNT > 0
+         THEN
+            /*
+            || From the list of routes that this new element will be added
+            || check if any are circular
+            || and check if the new element will make it circular by passing in the new nodes.
+            */
+            get_parent_circular_routes(pi_parent_ne_ids       => lt_parent_ids
+                                      ,pi_datum_start_node_id => pi_start_node_id
+                                      ,pi_datum_end_node_id   => pi_end_node_id
+                                      ,po_cursor              => lv_cursor);
+            --
+            FETCH lv_cursor
+             BULK COLLECT
+             INTO lt_circular_routes;
+            CLOSE lv_cursor;
+            --
+            /*
+            || If this count is > 0 then we need to rescale based on the start ne ids.
+            || we error if there is count the same with circular route error.
+            || routes will be added in cursor and dealt with by the UI for getting dtart ne id.
+            */
+            IF lt_circular_routes.COUNT = 0
+             THEN
+               /*
+               ||No circular routes so just perform rescale all on all parent routes.
+               */
+               rescale_parents(pi_parent_ne_ids    => lt_parent_ids
+                              ,po_message_severity => lv_severity
+                              ,po_message_tab      => lt_messages);
+                --
+            ELSE
+               --
+               IF pi_circular_group_ids.COUNT != pi_circular_start_ne_ids.COUNT
+                THEN
+                   --check counts are the same.
+                   hig.raise_ner(pi_appl               => 'AWLRS'
+                                ,pi_id                 => 5
+                                ,pi_supplementary_info => 'awlrs_element_api.create_element');
+               END IF;
+               --
+               IF lt_circular_routes.COUNT = pi_circular_group_ids.COUNT
+                AND lt_circular_routes.COUNT = pi_circular_start_ne_ids.COUNT
+                THEN
+                   /*
+                   ||Rescale all based on circular route start ne id.
+                   */
+                   FOR i IN 1..lt_parent_ids.COUNT LOOP
+                     --
+                     lv_start_ne_id := null;
+                     --
+                     FOR j IN 1..pi_circular_group_ids.COUNT LOOP
+                       IF pi_circular_group_ids(j) = lt_parent_ids(i).ne_id
+                        THEN
+                           lv_start_ne_id := pi_circular_start_ne_ids(j);
+                           EXIT;
+                       END IF;
+                     END LOOP;
+                     --
+                     lv_severity := awlrs_util.c_msg_cat_success;
+                     lt_messages.DELETE;
+                     lv_min_slk := NVL(nm3net.get_min_slk(pi_ne_id => lt_parent_ids(i).ne_id),0);
+                     --
+                     do_rescale(pi_ne_id            => lt_parent_ids(i).ne_id
+                               ,pi_offset_st        => lv_min_slk
+                               ,pi_start_ne_id      => lv_start_ne_id
+                               ,pi_use_history      => 'Y'
+                               ,po_message_severity => lv_severity
+                               ,po_message_tab      => lt_messages);
+                     --
+                     IF lv_severity = awlrs_util.c_msg_cat_ask_continue
+                      THEN
+                         --
+                         lt_messages.DELETE;
+                         --
+                         do_rescale(pi_ne_id            => lt_parent_ids(i).ne_id
+                                   ,pi_offset_st        => lv_min_slk
+                                   ,pi_start_ne_id      => lv_start_ne_id
+                                   ,pi_use_history      => 'N'
+                                   ,po_message_severity => lv_severity
+                                   ,po_message_tab      => lt_messages);
+                         --
+                     END IF;
+                     --
+                     IF lv_severity != awlrs_util.c_msg_cat_success
+                      THEN
+                         /*
+                         ||If an error has occurred rescaling a group end the whole operation.
+                         ||This shouldnt happen as the array should be sent but this will capture any changes if done after selection
+                         */
+                         IF lv_severity = awlrs_util.c_msg_cat_circular_route
+                          THEN
+                             lt_messages.DELETE;
+                             awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                              ,pi_ner_id             => 60
+                                                              ,pi_supplementary_info => NULL
+                                                              ,pi_category           => awlrs_util.c_msg_cat_error
+                                                              ,po_message_tab        => lt_messages);
+                         END IF;
+                         --
+                         EXIT;
+                         --
+                     END IF;
+                     --
+                   END LOOP;
+                   --
+               ELSE
+                   /*
+                   || There is a mismatch of the circular routes we know exist and what the ui is sending through
+                   || This needs to be thrown back to the user as ciruclar route and all routes ids in the error cursor.
+                   */
+                   awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                    ,pi_ner_id             => 60
+                                                    ,pi_supplementary_info => NULL
+                                                    ,pi_category           => awlrs_util.c_msg_cat_circular_route
+                                                    ,po_message_tab        => lt_messages);
+                   --
+                   lv_severity := awlrs_util.c_msg_cat_circular_route;
+                   --
+                   OPEN po_circular_route_cursor  FOR
+                   SELECT nm_elements_all.ne_id group_id
+                         ,ne_gty_group_type     group_type
+                         ,ne_unique             unique_name
+                         ,ne_descr              description
+                         ,ne_start_date         start_date
+                         ,(SELECT nm_ne_id_of
+                             FROM nm_members
+                            WHERE nm_ne_id_in = nm_elements_all.ne_id
+                              AND nm_seq_no = 1) circ_start_ne_id
+                     FROM nm_elements_all
+                         ,TABLE(CAST(lt_circular_routes AS nm_ne_id_array)) circular_route_tab
+                    WHERE nm_elements_all.ne_id = circular_route_tab.ne_id;
+               END IF;
+            END IF;
+            --
+        END IF;
+        --
     END IF;
     /*
-    ||Run some route based checks.
-    ||NB. Checks commented out after consultation with MRWA 07-MAY-2019
+    ||Create Nodes if needed.
     */
-    --IF pi_run_checks = 'Y'
-    -- AND hig.get_sysopt('CHECKROUTE') = 'Y'
-    -- THEN
-    --    route_check(pi_ne_id             => NULL
-    --               ,pi_new_start_node_id => lr_ne.ne_no_start
-    --               ,pi_new_end_node_id   => lr_ne.ne_no_end
-    --               ,pi_new_ne_sub_class  => lr_ne.ne_sub_class
-    --               ,pi_new_ne_group      => lr_ne.ne_group
-    --               ,po_message_severity  => lv_severity
-    --               ,po_message_cursor    => lv_message_cursor);
-    --END IF;
-    --
     IF lv_severity = awlrs_util.c_msg_cat_success
      THEN
+        IF lr_nt.nt_node_type IS NOT NULL
+         AND lr_ne.ne_no_start IS NULL
+         THEN
+            awlrs_sdo.get_start_x_y(pi_shape => lv_shape
+                                   ,po_x     => lv_x
+                                   ,po_y     => lv_y);
+            --
+            awlrs_node_api.create_node(pi_type       => lr_nt.nt_node_type
+                                      ,pi_name       => NULL
+                                      ,pi_descr      => 'Entered by exor'
+                                      ,pi_purpose    => NULL
+                                      ,pi_point_id   => NULL
+                                      ,pi_point_x    => lv_x
+                                      ,pi_point_y    => lv_y
+                                      ,pi_start_date => lr_ne.ne_start_date
+                                      ,po_node_id    => lr_ne.ne_no_start);
+        END IF;
+        --
+        IF lr_nt.nt_node_type IS NOT NULL
+         AND lr_ne.ne_no_end IS NULL
+         THEN
+            awlrs_sdo.get_end_x_y(pi_shape => lv_shape
+                                 ,po_x     => lv_x
+                                 ,po_y     => lv_y);
+            --
+            awlrs_node_api.create_node(pi_type       => lr_nt.nt_node_type
+                                      ,pi_name       => NULL
+                                      ,pi_descr      => 'Entered by exor'
+                                      ,pi_purpose    => NULL
+                                      ,pi_point_id   => NULL
+                                      ,pi_point_x    => lv_x
+                                      ,pi_point_y    => lv_y
+                                      ,pi_start_date => lr_ne.ne_start_date
+                                      ,po_node_id    => lr_ne.ne_no_end);
+        END IF;
+        /*
+        ||Run some route based checks.
+        ||NB. Checks commented out after consultation with MRWA 07-MAY-2019
+        */
+        --IF pi_run_checks = 'Y'
+        -- AND hig.get_sysopt('CHECKROUTE') = 'Y'
+        -- THEN
+        --    route_check(pi_ne_id             => NULL
+        --               ,pi_new_start_node_id => lr_ne.ne_no_start
+        --               ,pi_new_end_node_id   => lr_ne.ne_no_end
+        --               ,pi_new_ne_sub_class  => lr_ne.ne_sub_class
+        --               ,pi_new_ne_group      => lr_ne.ne_group
+        --               ,po_message_severity  => lv_severity
+        --               ,po_message_cursor    => lv_message_cursor);
+        --END IF;
+        --
+
         /*
         ||TODO - passing in defaults for p_nm_cardinality and p_auto_include need to work out if this is okay.
         */
@@ -2038,16 +2642,115 @@ AS
             --
         END IF;
         --
-        po_ne_id := lr_ne.ne_id;
+        IF pi_do_maintain_history = 'Y'
+         AND lr_nt.nt_datum = 'Y'
+         THEN
+            --
+            lt_groups.DELETE;
+            --
+            OPEN  get_linear_groups(lr_ne.ne_id);
+            FETCH get_linear_groups
+             BULK COLLECT
+             INTO lt_groups;
+            CLOSE get_linear_groups;
+            --
+            FOR i IN 1..lt_groups.COUNT LOOP
+              --
+              lv_start_ne_id := null;
+              /*
+              || The new element may have stopped the route being circular so try and rescale without start ne_id.
+              || If circular error then pass in the circular start id or new ID.
+              */
+              do_rescale(pi_ne_id            => lt_groups(i).group_id
+                        ,pi_offset_st        => lt_groups(i).min_slk
+                        ,pi_use_history      => 'N'
+                        ,po_message_severity => lv_severity
+                        ,po_message_tab      => lt_messages);
+              --
+              IF lv_severity = awlrs_util.c_msg_cat_circular_route
+               THEN
+                  FOR j IN 1..pi_circular_group_ids.COUNT LOOP
+                    IF pi_circular_group_ids(j) = lt_groups(i).group_id
+                     THEN
+                        --
+                        lv_start_ne_id := pi_circular_start_ne_ids(j);
+                        --
+                        FOR k in 1..pi_circular_group_ne_new.COUNT LOOP
+                            /*
+                            || If the User would like the newly created element to act as the start NE ID of a circular route then
+                            || this will be selected and the route in question will be passed here so we need to check.
+                            */
+                            IF pi_circular_group_ids(j) = pi_circular_group_ne_new(k)
+                             THEN
+                                lv_start_ne_id := lr_ne.ne_id;
+                                EXIT;
+                            END IF;
+                        END LOOP;
+                        --
+                        EXIT;
+                        --
+                    END IF;
+                  END LOOP;
+                  --
+                  lv_severity := awlrs_util.c_msg_cat_success;
+                  lt_messages.DELETE;
+                  --
+                  do_rescale(pi_ne_id            => lt_groups(i).group_id
+                            ,pi_offset_st        => lt_groups(i).min_slk
+                            ,pi_start_ne_id      => lv_start_ne_id
+                            ,pi_use_history      => 'N'
+                            ,po_message_severity => lv_severity
+                            ,po_message_tab      => lt_messages);
+                  --
+              END IF;
+              --
+              IF lv_severity != awlrs_util.c_msg_cat_success
+               THEN
+                  /*
+                  ||If an error has occurred rescaling a group end the whole operation.
+                  */
+                  IF lv_severity = awlrs_util.c_msg_cat_circular_route
+                   THEN
+                      lt_messages.DELETE;
+                      awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                       ,pi_ner_id             => 60
+                                                       ,pi_supplementary_info => NULL
+                                                       ,pi_category           => awlrs_util.c_msg_cat_error
+                                                       ,po_message_tab        => lt_messages);
+                  END IF;
+                  --
+                  EXIT;
+                  --
+              END IF;
+              --
+            END LOOP;
+        END IF;
         --
+    END IF;
+    /*
+    ||If errors occurred rollback.
+    */
+    IF lv_severity IN(awlrs_util.c_msg_cat_error
+                     ,awlrs_util.c_msg_cat_ask_continue
+                     ,awlrs_util.c_msg_cat_circular_route)
+     THEN
+        ROLLBACK TO cre_element_sp;
+        po_ne_id := NULL;
+    ELSE
+        po_ne_id := lr_ne.ne_id;
+    END IF;
+    /*
+    ||If there are any messages to return then create a cursor for them.
+    */
+    IF lt_messages.COUNT > 0
+     THEN
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+    ELSE
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                              ,po_cursor           => po_message_cursor);
-        --
-    ELSE
-        --
-        po_message_severity := lv_severity;
-        po_message_cursor := lv_message_cursor;
-        --
     END IF;
     --
   EXCEPTION
@@ -2061,33 +2764,47 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE create_element(pi_theme_name          IN     nm_themes_all.nth_theme_name%TYPE
-                          ,pi_network_type        IN     nm_elements_all.ne_nt_type%TYPE
-                          ,pi_element_type        IN     nm_elements_all.ne_type%TYPE
-                          ,pi_description         IN     nm_elements_all.ne_descr%TYPE
-                          ,pi_length              IN     nm_elements_all.ne_length%TYPE
-                          ,pi_admin_unit_id       IN     nm_elements_all.ne_admin_unit%TYPE
-                          ,pi_start_date          IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
-                          ,pi_end_date            IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
-                          ,pi_group_type          IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
-                          ,pi_start_node_id       IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
-                          ,pi_end_node_id         IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
-                          ,pi_attrib_column_names IN     attrib_column_name_tab
-                          ,pi_attrib_prompts      IN     attrib_prompt_tab
-                          ,pi_attrib_char_values  IN     attrib_char_value_tab
-                          ,pi_shape_wkt           IN     CLOB
-                          ,pi_run_checks          IN     VARCHAR2 DEFAULT 'Y'
-                          ,po_ne_id               IN OUT nm_elements_all.ne_id%TYPE
-                          ,po_message_severity       OUT hig_codes.hco_code%TYPE
-                          ,po_message_cursor         OUT sys_refcursor)
+  PROCEDURE create_element(pi_theme_name            IN     nm_themes_all.nth_theme_name%TYPE
+                          ,pi_network_type          IN     nm_elements_all.ne_nt_type%TYPE
+                          ,pi_element_type          IN     nm_elements_all.ne_type%TYPE
+                          ,pi_description           IN     nm_elements_all.ne_descr%TYPE
+                          ,pi_length                IN     nm_elements_all.ne_length%TYPE
+                          ,pi_admin_unit_id         IN     nm_elements_all.ne_admin_unit%TYPE
+                          ,pi_start_date            IN     nm_elements_all.ne_start_date%TYPE     DEFAULT TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+                          ,pi_end_date              IN     nm_elements_all.ne_end_date%TYPE       DEFAULT NULL
+                          ,pi_group_type            IN     nm_elements_all.ne_gty_group_type%TYPE DEFAULT NULL
+                          ,pi_start_node_id         IN     nm_elements_all.ne_no_start%TYPE       DEFAULT NULL
+                          ,pi_end_node_id           IN     nm_elements_all.ne_no_end%TYPE         DEFAULT NULL
+                          ,pi_attrib_column_names   IN     attrib_column_name_tab
+                          ,pi_attrib_prompts        IN     attrib_prompt_tab
+                          ,pi_attrib_char_values    IN     attrib_char_value_tab
+                          ,pi_shape_wkt             IN     CLOB
+                          ,pi_run_checks            IN     VARCHAR2 DEFAULT 'Y'
+                          ,pi_do_maintain_history   IN     VARCHAR2 DEFAULT 'N' --
+                          ,pi_circular_group_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                          ,pi_circular_start_ne_ids IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                          ,pi_circular_group_ne_new IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                          ,po_circular_route_cursor    OUT sys_refcursor
+                          ,po_ne_id                 IN OUT nm_elements_all.ne_id%TYPE
+                          ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor           OUT sys_refcursor)
     IS
     --
-    lv_message_severity  hig_codes.hco_code%TYPE;
-    lv_message_cursor    sys_refcursor;
+    lv_message_severity       hig_codes.hco_code%TYPE;
+    lv_message_cursor         sys_refcursor;
+    lv_circular_route_cursor  sys_refcursor;
     --
     lt_element_attribs  flex_attr_tab;
     --
   BEGIN
+    --
+    IF pi_circular_group_ids.COUNT != pi_circular_start_ne_ids.COUNT
+     THEN
+        --check counts are the same.
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_element_api.create_element');
+    END IF;
     --
     IF pi_attrib_column_names.COUNT != pi_attrib_prompts.COUNT
      OR pi_attrib_column_names.COUNT != pi_attrib_char_values.COUNT
@@ -2106,24 +2823,30 @@ AS
       --
     END LOOP;
     --
-    create_element(pi_theme_name       => pi_theme_name
-                  ,pi_network_type     => pi_network_type
-                  ,pi_element_type     => pi_element_type
-                  ,pi_description      => pi_description
-                  ,pi_length           => pi_length
-                  ,pi_admin_unit_id    => pi_admin_unit_id
-                  ,pi_start_date       => pi_start_date
-                  ,pi_end_date         => pi_end_date
-                  ,pi_group_type       => pi_group_type
-                  ,pi_start_node_id    => pi_start_node_id
-                  ,pi_end_node_id      => pi_end_node_id
-                  ,pi_element_attribs  => lt_element_attribs
-                  ,pi_shape_wkt        => pi_shape_wkt
-                  ,pi_run_checks       => pi_run_checks
-                  ,po_ne_id            => po_ne_id
-                  ,po_message_severity => lv_message_severity
-                  ,po_message_cursor   => lv_message_cursor);
+    create_element(pi_theme_name            => pi_theme_name
+                  ,pi_network_type          => pi_network_type
+                  ,pi_element_type          => pi_element_type
+                  ,pi_description           => pi_description
+                  ,pi_length                => pi_length
+                  ,pi_admin_unit_id         => pi_admin_unit_id
+                  ,pi_start_date            => pi_start_date
+                  ,pi_end_date              => pi_end_date
+                  ,pi_group_type            => pi_group_type
+                  ,pi_start_node_id         => pi_start_node_id
+                  ,pi_end_node_id           => pi_end_node_id
+                  ,pi_element_attribs       => lt_element_attribs
+                  ,pi_shape_wkt             => pi_shape_wkt
+                  ,pi_run_checks            => pi_run_checks
+                  ,pi_do_maintain_history   => pi_do_maintain_history
+                  ,pi_circular_group_ids    => pi_circular_group_ids
+                  ,pi_circular_start_ne_ids => pi_circular_start_ne_ids
+                  ,pi_circular_group_ne_new => pi_circular_group_ne_new
+                  ,po_circular_route_cursor => lv_circular_route_cursor
+                  ,po_ne_id                 => po_ne_id
+                  ,po_message_severity      => lv_message_severity
+                  ,po_message_cursor        => lv_message_cursor);
     --
+    po_circular_route_cursor := lv_circular_route_cursor;
     po_message_severity := lv_message_severity;
     po_message_cursor := lv_message_cursor;
     --
