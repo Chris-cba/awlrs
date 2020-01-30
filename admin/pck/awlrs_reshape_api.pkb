@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.14   Dec 18 2019 15:33:10   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.15   Jan 30 2020 10:09:32   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkb  $
-  --       Date into PVCS   : $Date:   Dec 18 2019 15:33:10  $
-  --       Date fetched Out : $Modtime:   Dec 13 2019 12:35:22  $
-  --       Version          : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   Jan 30 2020 10:09:32  $
+  --       Date fetched Out : $Modtime:   Jan 29 2020 16:24:58  $
+  --       Version          : $Revision:   1.15  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.14  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.15  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reshape_api';
   --
@@ -280,6 +280,7 @@ AS
                            ,pi_run_checks               IN     VARCHAR2 DEFAULT 'Y'
                            ,pi_circular_group_ids       IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
                            ,pi_circular_start_ne_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                           ,po_circular_route_cursor       OUT sys_refcursor
                            ,po_new_ne_id                IN OUT nm_elements_all.ne_id%TYPE
                            ,po_message_severity            OUT hig_codes.hco_code%TYPE
                            ,po_message_cursor              OUT sys_refcursor)
@@ -289,6 +290,9 @@ AS
     lv_new_ne_id   nm_elements_all.ne_id%TYPE;
     lv_severity    hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
     lv_start_ne_id nm_elements_all.ne_id%TYPE;
+    lv_cursor      sys_refcursor;
+    --
+    lr_ne          nm_elements_all%ROWTYPE;
     --
     lt_messages  awlrs_message_tab := awlrs_message_tab();
     --
@@ -305,6 +309,8 @@ AS
     --
     TYPE groups_tab IS TABLE OF get_linear_groups%ROWTYPE;
     lt_groups  groups_tab;
+    lt_parent_ids      nm_ne_id_array := nm_ne_id_array();
+    lt_circular_routes nm_ne_id_array := nm_ne_id_array();
     --
   BEGIN
     /*
@@ -313,7 +319,7 @@ AS
     SAVEPOINT reshape_element1_sp;
     /*
     ||TFS 1068280
-    ||If replace and rescale are both set to Yes then do the rescale before and after the operation.
+    ||If replace and rescale are both set to Yes then do the rescale before and after the operation
     */
     IF (pi_do_rescale_parents = 'Y' AND pi_do_replace = 'Y')
      THEN
@@ -333,65 +339,120 @@ AS
         CLOSE get_linear_groups;
         --
         FOR i IN 1..lt_groups.COUNT LOOP
-          --
-          lv_start_ne_id := null;
-          --
-          FOR j IN 1..pi_circular_group_ids.COUNT LOOP
-            IF pi_circular_group_ids(j) = lt_groups(i).group_id
-             THEN 
-                lv_start_ne_id := pi_circular_start_ne_ids(j);
-            ELSE 
-                lv_start_ne_id := null;
-            END IF;
-          END LOOP;
-          --
-          lv_severity := awlrs_util.c_msg_cat_success;
-          lt_messages.DELETE;
-          --
-          do_rescale(pi_ne_id            => lt_groups(i).group_id
-                    ,pi_effective_date   => pi_effective_date
-                    ,pi_offset_st        => lt_groups(i).min_slk
-                    ,pi_start_ne_id      => lv_start_ne_id
-                    ,pi_use_history      => 'Y'
-                    ,po_message_severity => lv_severity
-                    ,po_message_tab      => lt_messages);
-          --
-          IF lv_severity = awlrs_util.c_msg_cat_ask_continue
-           THEN
+           --
+           lt_parent_ids.EXTEND;
+           lt_parent_ids(lt_parent_ids.COUNT) := nm_ne_id_type(lt_groups(i).group_id);
+           --
+        END LOOP;
+        /*
+        || From the list of routes 
+        || check if any are circular
+        || and check if the new nodes will make it circular
+        */
+        lr_ne := nm3net.get_ne(pi_ne_id => lv_ne_id);
+        --
+        awlrs_element_api.get_parent_circular_routes(pi_parent_ne_ids       => lt_parent_ids
+                                                    ,pi_datum_start_node_id => NVL(pi_new_start_node,lr_ne.ne_no_start)
+                                                    ,pi_datum_end_node_id   => NVL(pi_new_end_node,lr_ne.ne_no_end)
+                                                    ,po_cursor              => lv_cursor);  
+        --
+        FETCH lv_cursor
+         BULK COLLECT
+         INTO lt_circular_routes; 
+        CLOSE lv_cursor;
+        --
+        /*
+        ||Check the counts are correct for circ routes. If not then throw back in new cursor.
+        */
+        IF lt_circular_routes.COUNT = pi_circular_group_ids.COUNT 
+         AND lt_circular_routes.COUNT = pi_circular_start_ne_ids.COUNT
+         THEN
+            FOR i IN 1..lt_groups.COUNT LOOP
               --
+              lv_start_ne_id := null;
+              --
+              FOR j IN 1..pi_circular_group_ids.COUNT LOOP
+                IF pi_circular_group_ids(j) = lt_groups(i).group_id
+                 THEN 
+                    lv_start_ne_id := pi_circular_start_ne_ids(j);
+                    EXIT;
+                END IF;
+              END LOOP;
+              --
+              lv_severity := awlrs_util.c_msg_cat_success;
               lt_messages.DELETE;
               --
               do_rescale(pi_ne_id            => lt_groups(i).group_id
                         ,pi_effective_date   => pi_effective_date
                         ,pi_offset_st        => lt_groups(i).min_slk
                         ,pi_start_ne_id      => lv_start_ne_id
-                        ,pi_use_history      => 'N'
+                        ,pi_use_history      => 'Y'
                         ,po_message_severity => lv_severity
                         ,po_message_tab      => lt_messages);
               --
-          END IF;
-          --
-          IF lv_severity != awlrs_util.c_msg_cat_success
-           THEN
-              /*
-              ||If an error has occurred rescaling a group end the whole operation. 
-              ||This shouldnt happen as the array should be sent but this will capture any changes if done after selection
-              */
-              IF lv_severity = awlrs_util.c_msg_cat_circular_route
+              IF lv_severity = awlrs_util.c_msg_cat_ask_continue
                THEN
+                  --
                   lt_messages.DELETE;
-                  awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
-                                                   ,pi_ner_id             => 60
-                                                   ,pi_supplementary_info => NULL
-                                                   ,pi_category           => awlrs_util.c_msg_cat_error
-                                                   ,po_message_tab        => lt_messages);
+                  --
+                  do_rescale(pi_ne_id            => lt_groups(i).group_id
+                            ,pi_effective_date   => pi_effective_date
+                            ,pi_offset_st        => lt_groups(i).min_slk
+                            ,pi_start_ne_id      => lv_start_ne_id
+                            ,pi_use_history      => 'N'
+                            ,po_message_severity => lv_severity
+                            ,po_message_tab      => lt_messages);
+                  --
               END IF;
               --
-              EXIT;
+              IF lv_severity != awlrs_util.c_msg_cat_success
+               THEN
+                  /*
+                  ||If an error has occurred rescaling a group end the whole operation. 
+                  ||This shouldnt happen as the array should be sent but this will capture any changes if done after selection
+                  */
+                  IF lv_severity = awlrs_util.c_msg_cat_circular_route
+                   THEN
+                      lt_messages.DELETE;
+                      awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                       ,pi_ner_id             => 60
+                                                       ,pi_supplementary_info => NULL
+                                                       ,pi_category           => awlrs_util.c_msg_cat_error
+                                                       ,po_message_tab        => lt_messages);
+                  END IF;
+                  --
+                  EXIT;
+                  --
+              END IF;
               --
-          END IF;
-          --
-        END LOOP;
+            END LOOP;
+         ELSE
+            /*
+            || There is a mismatch of the circular routes we know exist and what the ui is sending through
+            || This needs to be thrown back to the user as ciruclar route and all routes ids in the error cursor.
+            */
+            awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                             ,pi_ner_id             => 60
+                                             ,pi_supplementary_info => NULL
+                                             ,pi_category           => awlrs_util.c_msg_cat_circular_route
+                                             ,po_message_tab        => lt_messages); 
+            --
+            lv_severity := awlrs_util.c_msg_cat_circular_route;
+            --
+            OPEN po_circular_route_cursor  FOR
+            SELECT nm_elements_all.ne_id group_id
+                  ,ne_gty_group_type     group_type
+                  ,ne_unique             unique_name
+                  ,ne_descr              description
+                  ,ne_start_date         start_date
+                  ,(SELECT nm_ne_id_of
+                      FROM nm_members
+                     WHERE nm_ne_id_in = nm_elements_all.ne_id
+                       AND nm_seq_no = 1) circ_start_ne_id   
+              FROM nm_elements_all
+                  ,TABLE(CAST(lt_circular_routes AS nm_ne_id_array)) circular_route_tab
+             WHERE nm_elements_all.ne_id = circular_route_tab.ne_id;
+         END IF;
     END IF;
     --
     IF lv_severity = awlrs_util.c_msg_cat_success
@@ -474,7 +535,10 @@ AS
          AND pi_do_rescale_parents = 'Y'
          THEN
             --
-            lt_groups.DELETE;
+            IF pi_do_replace = 'Y'
+             THEN
+                lt_groups.DELETE;
+            END IF;
             --
             OPEN  get_linear_groups(lv_ne_id);
             FETCH get_linear_groups
@@ -490,8 +554,14 @@ AS
                  IF pi_circular_group_ids(j) = lt_groups(i).group_id
                   THEN 
                      lv_start_ne_id := pi_circular_start_ne_ids(j);
-                 ELSE 
-                     lv_start_ne_id := null;
+                     IF pi_circular_start_ne_ids(j) = pi_ne_id
+                      THEN
+                        /*
+                        ||The start element is the one that may have been replaced so use the new element in the post rescale.
+                        */
+                        lv_start_ne_id := lv_ne_id;
+                     END IF; 
+                     EXIT;
                  END IF;
                END LOOP;
                --
@@ -502,24 +572,9 @@ AS
                          ,pi_effective_date   => pi_effective_date
                          ,pi_offset_st        => lt_groups(i).min_slk
                          ,pi_start_ne_id      => lv_start_ne_id
-                         ,pi_use_history      => 'Y'
+                         ,pi_use_history      => 'N'
                          ,po_message_severity => lv_severity
                          ,po_message_tab      => lt_messages);
-               --
-               IF lv_severity = awlrs_util.c_msg_cat_ask_continue
-                THEN
-                   --
-                   lt_messages.DELETE;
-                   --
-                   do_rescale(pi_ne_id            => lt_groups(i).group_id
-                             ,pi_effective_date   => pi_effective_date
-                             ,pi_offset_st        => lt_groups(i).min_slk
-                             ,pi_start_ne_id      => lv_start_ne_id
-                             ,pi_use_history      => 'N'
-                             ,po_message_severity => lv_severity
-                             ,po_message_tab      => lt_messages);
-                   --
-               END IF;
                --
                IF lv_severity != awlrs_util.c_msg_cat_success
                 THEN

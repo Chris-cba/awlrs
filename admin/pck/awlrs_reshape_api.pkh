@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkh-arc   1.5   Dec 18 2019 15:33:10   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkh-arc   1.6   Jan 30 2020 10:09:32   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkh  $
-  --       Date into PVCS   : $Date:   Dec 18 2019 15:33:10  $
-  --       Date fetched Out : $Modtime:   Dec 18 2019 15:30:50  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   Jan 30 2020 10:09:32  $
+  --       Date fetched Out : $Modtime:   Jan 24 2020 07:59:48  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.5  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.6  $';
   
   --
   -----------------------------------------------------------------------------
@@ -51,6 +51,7 @@ AS
                            ,pi_run_checks               IN     VARCHAR2 DEFAULT 'Y'
                            ,pi_circular_group_ids       IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
                            ,pi_circular_start_ne_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
+                           ,po_circular_route_cursor       OUT sys_refcursor
                            ,po_new_ne_id                IN OUT nm_elements_all.ne_id%TYPE
                            ,po_message_severity            OUT hig_codes.hco_code%TYPE
                            ,po_message_cursor              OUT sys_refcursor);
