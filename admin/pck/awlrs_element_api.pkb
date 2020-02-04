@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.39   Jan 29 2020 10:20:32   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.40   Feb 04 2020 16:40:02   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 29 2020 10:20:32  $
-  --       Date fetched Out : $Modtime:   Jan 27 2020 15:50:26  $
-  --       Version          : $Revision:   1.39  $
+  --       Date into PVCS   : $Date:   Feb 04 2020 16:40:02  $
+  --       Date fetched Out : $Modtime:   Feb 03 2020 16:44:58  $
+  --       Version          : $Revision:   1.40  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.39  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.40  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -2132,7 +2132,8 @@ AS
           ,(SELECT nm_ne_id_of
               FROM nm_members
              WHERE nm_ne_id_in = ne_id
-               AND nm_seq_no = 1) circ_start_ne_id
+               AND nm_seq_no = 1     
+               AND (SELECT COUNT(nm_ne_id_of) FROM nm_members where nm_ne_id_in = ne_id and nm_seq_no = 1 ) =1) circ_start_ne_id
       FROM nm_elements_all
      WHERE awlrs_group_api.is_circular_route(ne_id) = 'Y'
        AND ne_id IN(SELECT nm_ne_id_in group_id
