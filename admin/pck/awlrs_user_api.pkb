@@ -3,19 +3,19 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.7   Jan 14 2020 15:49:38   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jan 14 2020 15:49:38  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.8   Feb 04 2020 10:13:38   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Feb 04 2020 10:13:38  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Jan 14 2020 15:11:36  $
-  --       Version          : $Revision:   1.7  $
+  --       Date fetched Out : $Modtime:   Feb 03 2020 15:44:22  $
+  --       Version          : $Revision:   1.8  $
   --
   -----------------------------------------------------------------------------------
-  -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
+  -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.7  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.8  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -28,6 +28,9 @@ AS
   cv_pb      	  CONSTANT varchar2(1) := 'P';
   --constant user role
   cv_hig_user_role CONSTANT varchar2(8) := 'HIG_USER';
+  --hig_admin role constant
+  cv_hig_admin    CONSTANT varchar2(9) := 'HIG_ADMIN';
+  --
   --get_user constants
   cv_user_filter  CONSTANT varchar2(1) := 'A';
   --
@@ -52,6 +55,30 @@ AS
   BEGIN
     RETURN g_body_sccsid;
   END get_body_version;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION privs_check (pi_role_name  IN  varchar2) 
+    RETURN VARCHAR2  
+  IS
+     lv_exists varchar2(1) := 'N';
+  BEGIN
+      --
+      SELECT  'Y'
+      INTO    lv_exists
+      FROM    dba_role_privs
+      WHERE   granted_role = pi_role_name
+      AND     grantee      = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME');
+      --
+      RETURN lv_exists; 
+      -- 
+  EXCEPTION
+      --
+      When No_Data_Found Then
+        RETURN lv_exists;
+      --
+  END privs_check;
   
   --
   -----------------------------------------------------------------------------
@@ -1183,6 +1210,27 @@ AS
      THEN
         RETURN lv_exists;
   END proxy_user_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_application_owner                     
+    RETURN VARCHAR2
+  IS
+    lv_app_owner VARCHAR2(30) := Null;
+  BEGIN
+    --
+    SELECT UPPER(SYS_CONTEXT('NM3CORE','APPLICATION_OWNER'))
+      INTO lv_app_owner
+      FROM dual;      
+    --
+    RETURN lv_app_owner;
+    -- 
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_app_owner;
+  END get_application_owner;
    
   --
   -----------------------------------------------------------------------------
@@ -1224,25 +1272,23 @@ AS
   --  
   lv_proc_input varchar2(200) := '';
   --
+  e_invalid_proxy_user EXCEPTION;
+  --
   BEGIN
    -- 
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Email'
                                ,pi_parameter_value => pi_email);
     -- 
-    /*
-   	IF proxy_user_exists(pi_username => pi_username) <> 'Y'
-     THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 30
-                     ,pi_supplementary_info  => 'A Proxy User must be assigned for Single sign-On Users.');
-    END IF;
-    */
-    --
     --Firstly assign the proxy users--
     FOR i IN 1..pi_proxy_users.COUNT LOOP
-    --
-       lv_proc_input := 'ALTER USER '||pi_username||' GRANT CONNECT THROUGH '||pi_proxy_users(i);
-       hig.execute_ddl(lv_proc_input);
+    -- 
+       IF UPPER(pi_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
+         THEN
+           lv_proc_input := 'ALTER USER '||pi_username||' GRANT CONNECT THROUGH '||pi_proxy_users(i);
+           hig.execute_ddl(lv_proc_input);
+       ELSE
+           RAISE e_invalid_proxy_user;
+       END IF;    
     --
     END LOOP;
     --
@@ -1254,6 +1300,13 @@ AS
     lr_hig_relationship.hir_attribute4 := lv_key;
     -- 
     hig_relationship_api.create_relationship(pi_relationship => lr_hig_relationship);
+    --
+    EXCEPTION
+    WHEN e_invalid_proxy_user
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 560
+                     ,pi_Supplementary_Info => 'The Proxy Username specified is incorrect.'); 
   --
   END create_sso_user;                          
   --
@@ -1310,9 +1363,14 @@ AS
   --
   BEGIN
     --
-    SAVEPOINT create_user_sp;
-    --
     awlrs_util.check_historic_mode;  
+    --
+    --Firstly we need to check the caller has the correct roles to continue-- 
+    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Initials'
                                ,pi_parameter_value => pi_initials);
@@ -1482,7 +1540,6 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
-        ROLLBACK TO create_user_sp; 
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_user; 
@@ -1606,6 +1663,13 @@ AS
   BEGIN
     --
     awlrs_util.check_historic_mode; 
+    --
+    --Firstly we need to check the caller has the correct roles to continue-- 
+    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Copy User Id'
                                ,pi_parameter_value =>  pi_copy_user_id);
@@ -2582,6 +2646,9 @@ AS
   IS
   --
   lv_proc_input varchar2(200) := '';
+  lv_application_owner varchar2(40);
+  --
+  e_invalid_proxy_user EXCEPTION;
   --
   BEGIN
    -- 
@@ -2593,23 +2660,39 @@ AS
                                                 ,pi_attribute3 =>  pi_new_override_password);
     END IF;
     --
-    --Should we be checking for changes?
     --Firstly revoke current proxy users
     FOR i IN 1..pi_old_proxy_users.COUNT LOOP
 		--
-		lv_proc_input :='ALTER USER '||pi_username||' REVOKE CONNECT THROUGH '||pi_old_proxy_users(i);
-		hig.execute_ddl(lv_proc_input);
+		IF UPPER(pi_new_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
+         THEN
+           lv_proc_input :='ALTER USER '||pi_username||' REVOKE CONNECT THROUGH '||pi_old_proxy_users(i);
+           hig.execute_ddl(lv_proc_input);
+        ELSE
+           RAISE e_invalid_proxy_user;
+        END IF; 
         --
 	END LOOP;
 	--
 	--Now assign the new proxy users--
     FOR i IN 1..pi_new_proxy_users.COUNT LOOP
        --
-       lv_proc_input := 'ALTER USER '||pi_username||' GRANT CONNECT THROUGH '||pi_new_proxy_users(i);
-       hig.execute_ddl(lv_proc_input);
+       IF UPPER(pi_new_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
+         THEN
+           lv_proc_input := 'ALTER USER '||pi_username||' GRANT CONNECT THROUGH '||pi_new_proxy_users(i);
+           hig.execute_ddl(lv_proc_input);
+       ELSE
+           RAISE e_invalid_proxy_user;
+       END IF;    
        --
     END LOOP;
     --
+    EXCEPTION
+    WHEN e_invalid_proxy_user
+     THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 560
+                     ,pi_Supplementary_Info => 'The Proxy Username specified is incorrect.');
+  --                       
   END update_sso_user; 
   
   --
@@ -2704,6 +2787,13 @@ AS
     --
     awlrs_util.check_historic_mode; 
     --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --  
     validate_user_for_update(pi_old_user_id           =>  pi_old_user_id
                             ,pi_old_name              =>  pi_old_name
                             ,pi_old_initials          =>  pi_old_initials
@@ -3061,6 +3151,13 @@ AS
     --
     awlrs_util.check_historic_mode; 
     --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
     awlrs_util.validate_yn(pi_parameter_desc  => 'Disable User Jobs?'
                           ,pi_parameter_value =>  pi_disable_jobs);
     --
@@ -3135,6 +3232,13 @@ AS
   BEGIN
     --
     awlrs_util.check_historic_mode; 
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'User Id'
                                ,pi_parameter_value =>  pi_user_id);
@@ -3453,6 +3557,13 @@ AS
     --
     awlrs_util.check_historic_mode;  
     --
+    --Firstly we need to check the caller has the correct roles to continue-- 
+    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Username'
                                ,pi_parameter_value => pi_username);
     --
@@ -3582,6 +3693,13 @@ AS
     SAVEPOINT delete_user_role_sp;
     --
     awlrs_util.check_historic_mode;  
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Username'
                                ,pi_parameter_value => pi_username);
@@ -4021,6 +4139,13 @@ AS
     --
     awlrs_util.check_historic_mode;  
     --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'User Id'
                                ,pi_parameter_value => pi_user_id);
     --
@@ -4126,6 +4251,13 @@ AS
     SAVEPOINT update_user_admin_unit_sp;
     --
     awlrs_util.check_historic_mode;   
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'User Id'
                                ,pi_parameter_value =>  pi_new_user_id);
@@ -4258,6 +4390,13 @@ AS
     SAVEPOINT delete_user_admin_unit_sp;
     --
     awlrs_util.check_historic_mode; 
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
     --
     IF user_admin_unit_exists(pi_user_id     =>  pi_user_id
                              ,pi_admin_unit  =>  pi_admin_unit
@@ -4693,6 +4832,13 @@ AS
     --
     awlrs_util.check_historic_mode;  
     --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'User Id'
                                ,pi_parameter_value =>  pi_user_id);
     --
@@ -4777,6 +4923,13 @@ AS
     SAVEPOINT update_user_option_sp;
     --
     awlrs_util.check_historic_mode;   
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'User Id'
                                ,pi_parameter_value =>  pi_new_user_id);
@@ -4879,6 +5032,13 @@ AS
     SAVEPOINT delete_user_option_sp;
     --
     awlrs_util.check_historic_mode; 
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
     --
     IF user_option_exists(pi_user_id   => pi_user_id
                          ,pi_option_id => pi_option_id) <> 'Y'
