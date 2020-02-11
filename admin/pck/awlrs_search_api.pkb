@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.34   Jan 14 2020 14:34:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.35   Feb 11 2020 11:59:46   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 14 2020 14:34:44  $
-  --       Date fetched Out : $Modtime:   Jan 14 2020 14:24:54  $
-  --       Version          : $Revision:   1.34  $
+  --       Date into PVCS   : $Date:   Feb 11 2020 11:59:46  $
+  --       Date fetched Out : $Modtime:   Feb 11 2020 11:52:28  $
+  --       Version          : $Revision:   1.35  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.34  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.35  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -3204,7 +3204,7 @@ AS
       awlrs_util.add_column_data(pi_cursor_col   => lv_prompt
                                 ,pi_query_col    => lv_column
                                 ,pi_datatype     => lv_type
-                                ,pi_mask         => NULL
+                                ,pi_mask         => lt_attr(i).ntc_format
                                 ,pio_column_data => po_column_data);
       --
     END LOOP;
@@ -6362,8 +6362,6 @@ AS
     lr_nit  nm_inv_types_all%ROWTYPE;
     --
     lt_column_data  awlrs_util.column_data_tab;
-    --
-
     --
   BEGIN
     /*
