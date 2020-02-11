@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.35   Feb 11 2020 11:59:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.36   Feb 11 2020 13:17:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 11 2020 11:59:46  $
-  --       Date fetched Out : $Modtime:   Feb 11 2020 11:52:28  $
-  --       Version          : $Revision:   1.35  $
+  --       Date into PVCS   : $Date:   Feb 11 2020 13:17:56  $
+  --       Date fetched Out : $Modtime:   Feb 11 2020 12:38:46  $
+  --       Version          : $Revision:   1.36  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.35  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.36  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -3197,7 +3197,20 @@ AS
       ELSE
           --
           lv_column := lt_attr(i).ntc_column_name;
-          lv_type   := lt_attr(i).ntc_column_type;
+          --
+          CASE
+            WHEN awlrs_util.is_date_in_varchar(pi_nt_type     => pi_nt_type
+                                              ,pi_group_type  => NULL
+                                              ,pi_column_name => lt_attr(i).ntc_column_name)
+             THEN
+                --
+                lv_type := awlrs_util.c_date_in_varchar2_col;
+                --
+            ELSE
+                --
+                lv_type := lt_attr(i).ntc_column_type;
+                --
+          END CASE;
           --
       END IF;
       --
