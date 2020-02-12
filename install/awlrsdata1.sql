@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.19   Feb 12 2020 16:18:34   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.20   Feb 12 2020 16:30:02   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   Feb 12 2020 16:18:34  $
---       Date fetched Out : $Modtime:   Feb 12 2020 16:13:16  $
---       Version          : $Revision:   1.19  $
+--       Date into PVCS   : $Date:   Feb 12 2020 16:30:02  $
+--       Date fetched Out : $Modtime:   Feb 12 2020 16:29:24  $
+--       Version          : $Revision:   1.20  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 12-FEB-2020 16:13
+--       Generation Date  : 12-FEB-2020 16:29
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -423,11 +423,11 @@ SELECT 'AWLRECALRE'
       ,'AWLRS'
       ,'AWLRS Replace Default'
       ,'When perfoming certain network operations, such as Split, Merge and Reshape, on a Datum in AWLRS the user has the option to Replace the Datum, this option defines the default position of the switch when the dialog is displayed, when set to Y the switch will default to On otherwise it will default to Off.'
-      ,''
+      ,'Y_OR_N'
       ,'VARCHAR2'
       ,'N'
       ,'N'
-      ,4
+      ,1
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_OPTION_LIST
@@ -603,6 +603,17 @@ SELECT 'AWLRECALPG'
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_OPTION_VALUES
                    WHERE HOV_ID = 'AWLRECALPG');
+--
+INSERT
+  INTO HIG_OPTION_VALUES
+      (HOV_ID
+      ,HOV_VALUE)
+SELECT 'AWLRECALRE'
+      ,'N'
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_VALUES
+                   WHERE HOV_ID = 'AWLRECALRE');
 --
 INSERT
   INTO HIG_OPTION_VALUES
