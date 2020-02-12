@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.36   Feb 11 2020 13:17:56   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.37   Feb 12 2020 14:10:42   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 11 2020 13:17:56  $
-  --       Date fetched Out : $Modtime:   Feb 11 2020 12:38:46  $
-  --       Version          : $Revision:   1.36  $
+  --       Date into PVCS   : $Date:   Feb 12 2020 14:10:42  $
+  --       Date fetched Out : $Modtime:   Feb 12 2020 12:00:40  $
+  --       Version          : $Revision:   1.37  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.36  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.37  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -2946,7 +2946,7 @@ AS
       ||CHR(10)||'                    AND NVL(ne_gty_group_type,:nvl) = NVL(:group_type,:nvl)'
       ||CASE
           WHEN pi_include_enddated = 'N'
-           THEN CHR(10)||'                    AND ne_end_date IS NULL'
+           THEN CHR(10)||'                    AND NVL(ne_end_date,TO_DATE(''99991231'',''YYYYMMDD'')) > TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY'')'
         END
       ||CHR(10)||'                    AND ('||NVL(pi_where_clause,'1=1')||')'
       ||CHR(10)||'                    AND UPPER('||NVL(lv_like_cols,'ne_unique||'' ''||ne_descr')||') LIKE :like_string'
@@ -3524,7 +3524,7 @@ AS
            ||CHR(10)||'                WHERE iit.iit_inv_type = :inv_type'
            ||CASE
                WHEN pi_include_enddated = 'N'
-                THEN CHR(10)||'                  AND iit.iit_end_date IS NULL'
+                THEN CHR(10)||'                  AND NVL(iit.iit_end_date,TO_DATE(''99991231'',''YYYYMMDD'')) > TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY'')'
              END
            ||CHR(10)||'                  AND ('||NVL(pi_where_clause,'1=1')||')'
            ||CHR(10)||'                  AND UPPER('||NVL(lv_like_cols,'iit.iit_primary_key||'' ''||iit.iit_descr')||') LIKE :like_string'
@@ -4040,7 +4040,7 @@ AS
        ||CHR(10)||'         WHERE UPPER('||NVL(lv_like_cols,'no_node_name||'' ''||no_descr')||') LIKE :like_string'
        ||CASE
            WHEN pi_include_enddated = 'N'
-            THEN CHR(10)||'           AND no_end_date IS NULL'
+            THEN CHR(10)||'           AND NVL(no_end_date,TO_DATE(''99991231'',''YYYYMMDD'')) > TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY'')'
          END
        ||CHR(10)||'           AND ('||NVL(pi_where_clause,'1=1')||')'
        ||CHR(10)||'         ORDER BY '||NVL(LOWER(pi_order_column),'"match_quality", "name"')||')'
@@ -5114,8 +5114,7 @@ AS
       ||CHR(10)||'                    AND NVL(ne_gty_group_type,:nvl) = NVL(:group_type,:nvl)'
       ||CASE
           WHEN pi_include_enddated = 'N'
-           THEN
-              CHR(10)||'                    AND ne_end_date IS NULL'
+            THEN CHR(10)||'                  AND NVL(ne_end_date,TO_DATE(''99991231'',''YYYYMMDD'')) > TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY'')'
         END
       ||CHR(10)||'                    AND ('||pi_where_clause||')'
       ||CHR(10)||'                    AND ne_admin_unit = nau_admin_unit'
@@ -5741,7 +5740,7 @@ AS
            ||CHR(10)||'                WHERE iit.iit_inv_type = :inv_type'
            ||CASE
                WHEN pi_include_enddated = 'N'
-                THEN CHR(10)||'                  AND iit.iit_end_date IS NULL'
+                THEN CHR(10)||'                  AND NVL(iit.iit_end_date,TO_DATE(''99991231'',''YYYYMMDD'')) > TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY'')'
              END
            ||CASE
                WHEN pi_net_filter IS NOT NULL
@@ -6783,8 +6782,7 @@ AS
        ||CHR(10)||'         WHERE ('||pi_where_clause||')'
        ||CASE
           WHEN pi_include_enddated = 'N'
-           THEN
-              CHR(10)||'           AND no_end_date IS NULL'
+           THEN CHR(10)||'         AND NVL(no_end_date,TO_DATE(''99991231'',''YYYYMMDD'')) > TO_DATE(SYS_CONTEXT(''NM3CORE'',''EFFECTIVE_DATE''),''DD-MON-YYYY'')'
          END
        ||CHR(10)||'         ORDER BY '||NVL(LOWER(pi_order_column),'"name" asc ')||')'
     ;
