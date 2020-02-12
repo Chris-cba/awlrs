@@ -7,11 +7,11 @@
 --
 --  PVCS Identifiers :-
 --
---      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12110_metadata_upg.sql-arc   1.1   Feb 12 2020 16:18:34   Peter.Bibby  $
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12110_metadata_upg.sql-arc   1.2   Feb 12 2020 16:42:36   Peter.Bibby  $
 --      Module Name      : $Workfile:   awlrs1010_awlrs12110_metadata_upg.sql  $
---      Date into PVCS   : $Date:   Feb 12 2020 16:18:34  $
---      Date fetched Out : $Modtime:   Feb 12 2020 16:12:38  $
---      Version          : $Revision:   1.1  $
+--      Date into PVCS   : $Date:   Feb 12 2020 16:42:36  $
+--      Date fetched Out : $Modtime:   Feb 12 2020 16:41:08  $
+--      Version          : $Revision:   1.2  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2019 Bentley Systems Incorporated. All rights reserved.
@@ -1408,6 +1408,18 @@ SELECT 'AWLRECALRE'
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_OPTION_LIST
                    WHERE HOL_ID = 'AWLRECALRE')
+/
+
+INSERT
+  INTO HIG_OPTION_VALUES
+      (HOV_ID
+      ,HOV_VALUE)
+SELECT 'AWLRECALRE'
+      ,'N'
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_VALUES
+                   WHERE HOV_ID = 'AWLRECALRE')
 /
 ------------------------------------------------------------------
 Commit;
