@@ -1,19 +1,19 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.24   Nov 26 2019 08:47:38   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.25   Feb 12 2020 15:51:14   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Nov 26 2019 08:47:38  $
---       Date fetched Out : $Modtime:   Nov 26 2019 08:44:24  $
---       Version          : $Revision:   1.24  $
+--       Date into PVCS   : $Date:   Feb 12 2020 15:51:14  $
+--       Date fetched Out : $Modtime:   Feb 12 2020 15:47:30  $
+--       Version          : $Revision:   1.25  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 26-NOV-2019 08:44
+--       Generation Date  : 12-FEB-2020 15:47
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
 --
 -------------------------------------------------------------------------
---   Copyright (c) 2019 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
 --
 --   TABLES PROCESSED
@@ -1534,6 +1534,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 83);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,84
+      ,null
+      ,'Admin Unit Start Date cannot be earlier than the User''s Start Date'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 84);
 --
 ----------------------------------------------------------------------------------------
 -- HIG_STANDARD_FAVOURITES
