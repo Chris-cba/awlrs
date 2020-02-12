@@ -3,11 +3,11 @@
 --
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12110_upg.sql-arc   1.0   Feb 12 2020 14:23:02   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12110_upg.sql-arc   1.1   Feb 12 2020 14:28:02   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrs1010_awlrs12110_upg.sql  $
---       Date into PVCS   : $Date:   Feb 12 2020 14:23:02  $
---       Date fetched Out : $Modtime:   Feb 12 2020 14:21:50  $
---       Version          : $Revision:   1.0  $
+--       Date into PVCS   : $Date:   Feb 12 2020 14:28:02  $
+--       Date fetched Out : $Modtime:   Feb 12 2020 14:26:14  $
+--       Version          : $Revision:   1.1  $
 --
 --   Product upgrade script
 --
@@ -75,27 +75,6 @@ FROM dual
 SET FEEDBACK ON
 start &&run_file
 SET FEEDBACK OFF
---
----------------------------------------------------------------------------------------------------
---                        **************** VIEWS   ****************
-SET TERM ON
-PROMPT Views...
-SET TERM OFF
-SET DEFINE ON
-SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||
-        '&terminator'||'views'||'&terminator'||'awlrsviews.sql' run_file
-FROM dual
-/
-SET FEEDBACK ON
-start &&run_file
-SET FEEDBACK OFF
---
----------------------------------------------------------------------------------------------------
---                        **************** TRIGGERS   ****************
---
----------------------------------------------------------------------------------------------------
---                        **************** APPLICATION CONTEXTS ****************
---
 --
 ---------------------------------------------------------------------------------------------------
 --                  **************** PACKAGE HEADERS AND BODIES   ****************
@@ -208,7 +187,7 @@ SET TERM ON
 Prompt Setting The Version Number...
 SET TERM OFF
 BEGIN
-      hig2.upgrade('AWLRS','awlrs1010_awlrs12110_upg.sql','Upgrade from 1.0.1.0 to 1.2.11.0','1.2.11.0');
+      hig2.upgrade('AWLRS','awlrs1010_awlrs12110_upg.sql','Upgrade from 1.0.1.0 to 1.2.11.1','1.2.11.1');
 END;
 /
 COMMIT;
