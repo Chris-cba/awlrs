@@ -7,11 +7,11 @@
 --
 --  PVCS Identifiers :-
 --
---      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12110_metadata_upg.sql-arc   1.0   Feb 12 2020 14:23:02   Peter.Bibby  $
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12110_metadata_upg.sql-arc   1.1   Feb 12 2020 16:18:34   Peter.Bibby  $
 --      Module Name      : $Workfile:   awlrs1010_awlrs12110_metadata_upg.sql  $
---      Date into PVCS   : $Date:   Feb 12 2020 14:23:02  $
---      Date fetched Out : $Modtime:   Feb 12 2020 14:12:30  $
---      Version          : $Revision:   1.0  $
+--      Date into PVCS   : $Date:   Feb 12 2020 16:18:34  $
+--      Date fetched Out : $Modtime:   Feb 12 2020 16:12:38  $
+--      Version          : $Revision:   1.1  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2019 Bentley Systems Incorporated. All rights reserved.
@@ -1379,7 +1379,7 @@ WHERE hol_id in ('AWLRECALHS')
 /
 
 UPDATE hig_option_list
-  SET hol_name = 'AWLRS All Parents Default'
+  SET hol_name = 'AWLRS Rescale Default'
      ,hol_remarks = 'When perfoming certain network operations, such as Split, Merge and Reshape, on a Datum in AWLRS the user has the option to Rescale all parent groups at the end of the operation, this option defines the default position of the switch when the dialog is displayed, when set to Y the switch will default to On otherwise it will default to Off.'
 WHERE hol_id in ('AWLRECALPG')
 /
@@ -1399,11 +1399,11 @@ SELECT 'AWLRECALRE'
       ,'AWLRS'
       ,'AWLRS Replace Default'
       ,'When perfoming certain network operations, such as Split, Merge and Reshape, on a Datum in AWLRS the user has the option to Replace the Datum, this option defines the default position of the switch when the dialog is displayed, when set to Y the switch will default to On otherwise it will default to Off.'
-      ,''
+      ,'Y_OR_N'
       ,'VARCHAR2'
       ,'N'
       ,'N'
-      ,4
+      ,1
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_OPTION_LIST
