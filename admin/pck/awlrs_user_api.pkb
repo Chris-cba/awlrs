@@ -1,13 +1,13 @@
 CREATE OR REPLACE PACKAGE BODY awlrs_user_api
-AS
+AS 
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.4.1.0   Feb 03 2020 15:17:54   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Feb 03 2020 15:17:54  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.4.1.1   Feb 13 2020 15:57:54   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Feb 13 2020 15:57:54  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Feb 03 2020 15:06:36  $
-  --       Version          : $Revision:   1.4.1.0  $
+  --       Date fetched Out : $Modtime:   Feb 13 2020 14:23:06  $
+  --       Version          : $Revision:   1.4.1.1  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4.1.0  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4.1.1  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -28,8 +28,9 @@ AS
   cv_pb      	  CONSTANT varchar2(1) := 'P';
   --get_user constants
   cv_user_filter  CONSTANT varchar2(1) := 'A';
-  --hig_admin role constant
-  cv_hig_admin    CONSTANT varchar2(9) := 'HIG_ADMIN';
+  --roles constant
+  cv_hig_admin    CONSTANT varchar2(9)  := 'HIG_ADMIN';
+  cv_proxy_owner  CONSTANT varchar2(11) := 'PROXY_OWNER';
   --
   cv_Quota_Option_Name	CONSTANT hig_option_list.hol_id%TYPE :='USRQUOTA';
   --
@@ -1131,20 +1132,22 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT hur_username proxy_user   
-          ,'N'          proxy_user_assigned 
-      FROM hig_user_roles
-     WHERE hur_role = 'PROXY_OWNER'
-     AND NOT EXISTS(SELECT 1 FROM PROXY_USERS
-                     WHERE PROXY  = hur_username
-                       AND CLIENT = pi_username)
+    SELECT grantee  proxy_user   
+          ,'N'      proxy_user_assigned 
+      FROM dba_role_privs
+     WHERE granted_role =  cv_proxy_owner
+       AND grantee      <> 'SYSTEM'
+       AND NOT EXISTS(SELECT 1 FROM PROXY_USERS
+                       WHERE PROXY  = grantee
+                         AND CLIENT = pi_username)
     UNION ALL
-    SELECT hur_username proxy_user
-          ,'Y'          proxy_user_assigned 
-      FROM hig_user_roles
-     WHERE hur_role = 'PROXY_OWNER'
+    SELECT grantee  proxy_user
+          ,'Y'      proxy_user_assigned 
+      FROM dba_role_privs
+     WHERE granted_role = cv_proxy_owner
+       AND grantee      <> 'SYSTEM'
        AND EXISTS(SELECT 1 FROM PROXY_USERS
-                   WHERE PROXY  = hur_username
+                   WHERE PROXY  = grantee
                      AND CLIENT = pi_username)                               
     ORDER BY proxy_user;
     --
@@ -1169,10 +1172,11 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT hur_username proxy_user
-      FROM hig_user_roles
-     WHERE hur_role = 'PROXY_OWNER'
-     ORDER BY hur_username;
+    SELECT grantee proxy_user
+      FROM dba_role_privs
+     WHERE granted_role = cv_proxy_owner
+       AND grantee      <> 'SYSTEM'
+     ORDER BY grantee;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1205,6 +1209,32 @@ AS
      THEN
         RETURN lv_exists;
   END proxy_user_exists; 
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION proxy_role_exists(pi_username  IN  hig_users.hus_username%TYPE)                     
+    RETURN BOOLEAN
+  IS
+    lv_exists BOOLEAN := FALSE;
+    lv_dummy  varchar2(1) := 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_dummy
+      FROM dba_role_privs
+     WHERE grantee       =  UPPER(pi_username)
+       AND grantee       <> 'SYSTEM'
+       AND granted_role  =  cv_proxy_owner;    
+    --
+    RETURN (lv_dummy = 'Y');
+    -- 
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        nm_debug.debug('proxy_role exception, returning '||lv_dummy);
+        RETURN lv_exists;
+  END proxy_role_exists;
   
   --
   -----------------------------------------------------------------------------
@@ -1251,7 +1281,8 @@ AS
     --Firstly assign the proxy users--
     FOR i IN 1..pi_proxy_users.COUNT LOOP
     -- 
-       IF UPPER(pi_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
+       IF (    UPPER(pi_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
+           AND proxy_role_exists(pi_username => pi_proxy_users(i))) 
          THEN
            lv_proc_input := 'ALTER USER '||pi_username||' GRANT CONNECT THROUGH '||pi_proxy_users(i);
            hig.execute_ddl(lv_proc_input);
@@ -2622,7 +2653,8 @@ AS
     --Firstly revoke current proxy users
     FOR i IN 1..pi_old_proxy_users.COUNT LOOP
 		--
-		IF UPPER(pi_new_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
+		IF (    UPPER(pi_old_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
+            AND proxy_role_exists(pi_username => pi_old_proxy_users(i))) 
          THEN
            lv_proc_input :='ALTER USER '||pi_username||' REVOKE CONNECT THROUGH '||pi_old_proxy_users(i);
            hig.execute_ddl(lv_proc_input);
@@ -2635,7 +2667,8 @@ AS
 	--Now assign the new proxy users--
     FOR i IN 1..pi_new_proxy_users.COUNT LOOP
        --
-       IF UPPER(pi_new_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
+       IF (    UPPER(pi_new_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
+           AND proxy_role_exists(pi_username => pi_new_proxy_users(i)))
          THEN
            lv_proc_input := 'ALTER USER '||pi_username||' GRANT CONNECT THROUGH '||pi_new_proxy_users(i);
            hig.execute_ddl(lv_proc_input);
@@ -3207,7 +3240,8 @@ AS
           ,admin_option   admin_option
           ,default_role   default_role
       FROM dba_role_privs               
-     WHERE grantee = pi_username
+     WHERE grantee       = pi_username
+       AND granted_role <> cv_proxy_owner
      ORDER BY granted_role;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -3239,7 +3273,8 @@ AS
           ,default_role   default_role
       FROM dba_role_privs               
      WHERE grantee      = pi_username
-       AND granted_role = pi_role;
+       AND granted_role = pi_role
+       AND granted_role <> cv_proxy_owner;
      --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -3395,6 +3430,7 @@ AS
     SELECT hro_role   role
           ,SUBSTR(hro_descr,1,30)  role_descr 
       FROM hig_roles 
+     WHERE hro_role <> cv_proxy_owner 
     ORDER BY hro_role;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -3422,7 +3458,8 @@ AS
     SELECT hro_role   role
           ,SUBSTR(hro_descr,1,30)  role_descr 
       FROM hig_roles 
-     WHERE hro_role = pi_role;
+     WHERE hro_role = pi_role
+       AND hro_role <> cv_proxy_owner;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -3461,6 +3498,18 @@ AS
   --
   -----------------------------------------------------------------------------
   --  
+  FUNCTION proxy_owner_role(pi_role  IN  dba_role_privs.granted_role%TYPE)
+    RETURN BOOLEAN
+  IS
+  BEGIN
+    --
+    RETURN (pi_role = cv_proxy_owner);
+    -- 
+  END proxy_owner_role;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE create_user_role(pi_username          IN     hig_users.hus_username%TYPE
                             ,pi_role              IN     dba_role_privs.granted_role%TYPE
                             ,pi_admin_option      IN     dba_role_privs.admin_option%TYPE DEFAULT Null
@@ -3502,6 +3551,14 @@ AS
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 29
                      ,pi_supplementary_info  => 'Role '||pi_role||' already assigned for this User');
+    END IF;
+    --
+    --Proxy Owner role is not to be assigned to any user via these apis--
+    IF proxy_owner_role(pi_role => pi_role) 
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 30
+                     ,pi_supplementary_info  => 'Role '||pi_role||' cannot be assigned to this User');
     END IF;
     --
     /*
