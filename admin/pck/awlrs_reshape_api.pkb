@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.15   Jan 30 2020 10:09:32   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_reshape_api.pkb-arc   1.16   Feb 27 2020 15:13:04   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_reshape_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 30 2020 10:09:32  $
-  --       Date fetched Out : $Modtime:   Jan 29 2020 16:24:58  $
-  --       Version          : $Revision:   1.15  $
+  --       Date into PVCS   : $Date:   Feb 27 2020 15:13:04  $
+  --       Date fetched Out : $Modtime:   Feb 27 2020 15:10:22  $
+  --       Version          : $Revision:   1.16  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.15  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.16  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_reshape_api';
   --
@@ -535,11 +535,6 @@ AS
          AND pi_do_rescale_parents = 'Y'
          THEN
             --
-            IF pi_do_replace = 'Y'
-             THEN
-                lt_groups.DELETE;
-            END IF;
-            --
             OPEN  get_linear_groups(lv_ne_id);
             FETCH get_linear_groups
              BULK COLLECT
@@ -572,9 +567,24 @@ AS
                          ,pi_effective_date   => pi_effective_date
                          ,pi_offset_st        => lt_groups(i).min_slk
                          ,pi_start_ne_id      => lv_start_ne_id
-                         ,pi_use_history      => 'N'
+                         ,pi_use_history      => CASE WHEN pi_do_replace = 'Y' THEN 'N' ELSE 'Y' END
                          ,po_message_severity => lv_severity
                          ,po_message_tab      => lt_messages);
+               --                       --
+               IF lv_severity = awlrs_util.c_msg_cat_ask_continue
+                THEN
+                   --
+                   lt_messages.DELETE;
+                   --
+                   do_rescale(pi_ne_id            => lt_groups(i).group_id
+                             ,pi_effective_date   => pi_effective_date
+                             ,pi_offset_st        => lt_groups(i).min_slk
+                             ,pi_start_ne_id      => lv_start_ne_id
+                             ,pi_use_history      => 'N'
+                             ,po_message_severity => lv_severity
+                             ,po_message_tab      => lt_messages);
+                   --
+               END IF;
                --
                IF lv_severity != awlrs_util.c_msg_cat_success
                 THEN
