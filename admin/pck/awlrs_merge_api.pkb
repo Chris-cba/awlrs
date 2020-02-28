@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.16   Jan 22 2020 15:54:04   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.17   Feb 28 2020 10:00:54   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_merge_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 22 2020 15:54:04  $
-  --       Date fetched Out : $Modtime:   Jan 22 2020 15:53:12  $
-  --       Version          : $Revision:   1.16  $
+  --       Date into PVCS   : $Date:   Feb 28 2020 10:00:54  $
+  --       Date fetched Out : $Modtime:   Feb 26 2020 11:43:00  $
+  --       Version          : $Revision:   1.17  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.16  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_merge_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -521,120 +521,126 @@ AS
               --
             END LOOP;              
         END IF;
-        --
-        init_element_globals;
-        --
-        lr_ne := nm3get.get_ne(pi_ne_id1);
-        --
-        awlrs_element_api.build_element_rec(pi_nt_type    => lr_ne.ne_nt_type
-                                           ,pi_global     => 'awlrs_merge_api.g_new_element'
-                                           ,pi_attributes => pi_new_element_attribs);
-        --
-        BEGIN
-          nm3merge.do_merge_datum_or_group(pi_ne_id_1           => pi_ne_id1
-                                          ,pi_ne_id_2           => pi_ne_id2
-                                          ,pi_effective_date    => pi_effective_date
-                                          ,pi_merge_at_node     => NULL /* TODO - Do we need to support this? */
-                                          ,pi_ne_type           => NULL
-                                          ,pi_ne_nt_type        => NULL
-                                          ,pi_ne_descr          => NULL
-                                          ,pi_ne_length         => NULL
-                                          ,pi_ne_admin_unit     => NULL
-                                          ,pi_ne_gty_group_type => NULL
-                                          ,pi_ne_no_start       => NULL
-                                          ,pi_ne_no_end         => NULL
-                                          ,pi_ne_unique         => g_new_element.ne_unique
-                                          ,pi_ne_owner          => g_new_element.ne_owner
-                                          ,pi_ne_name_1         => g_new_element.ne_name_1
-                                          ,pi_ne_name_2         => g_new_element.ne_name_2
-                                          ,pi_ne_prefix         => g_new_element.ne_prefix
-                                          ,pi_ne_number         => g_new_element.ne_number
-                                          ,pi_ne_sub_type       => g_new_element.ne_sub_type
-                                          ,pi_ne_group          => g_new_element.ne_group
-                                          ,pi_ne_sub_class      => g_new_element.ne_sub_class
-                                          ,pi_ne_nsg_ref        => g_new_element.ne_nsg_ref
-                                          ,pi_ne_version_no     => g_new_element.ne_version_no
-                                          ,pi_test_poe_at_node  => 'N'
-                                          ,po_ne_id_new         => po_new_ne_id
-                                          ,pi_neh_descr         => pi_reason);
-        EXCEPTION
-          WHEN not_connected
-           THEN
-              hig.raise_ner(pi_appl => 'NET'
-                           ,pi_id   => 168);
-          WHEN xsp_violation
-           THEN
-              hig.raise_ner(pi_appl => 'NET'
-                           ,pi_id   => 173);
-          WHEN record_locked
-           THEN
-              hig.raise_ner(pi_appl => 'HIG'
-                           ,pi_id   => 33);
-        END;
         /*
-        ||Rescale any linear groups the element belongs to.
+        ||Only do operation if success
         */
-        IF pi_do_maintain_history = 'Y' AND lv_severity = awlrs_util.c_msg_cat_success
+        IF lv_severity = awlrs_util.c_msg_cat_success
          THEN
-            lt_groups.DELETE;
-            --
-            OPEN  get_linear_groups_post(po_new_ne_id);
-            FETCH get_linear_groups_post
-             BULK COLLECT
-             INTO lt_groups;
-            CLOSE get_linear_groups_post;
-            --
-            FOR i IN 1..lt_groups.COUNT LOOP
+           --
+           init_element_globals;
+           --
+           lr_ne := nm3get.get_ne(pi_ne_id1);
+           --
+           awlrs_element_api.build_element_rec(pi_nt_type    => lr_ne.ne_nt_type
+                                              ,pi_global     => 'awlrs_merge_api.g_new_element'
+                                              ,pi_attributes => pi_new_element_attribs);
+           --
+           BEGIN
+             nm3merge.do_merge_datum_or_group(pi_ne_id_1           => pi_ne_id1
+                                             ,pi_ne_id_2           => pi_ne_id2
+                                             ,pi_effective_date    => pi_effective_date
+                                             ,pi_merge_at_node     => NULL /* TODO - Do we need to support this? */
+                                             ,pi_ne_type           => NULL
+                                             ,pi_ne_nt_type        => NULL
+                                             ,pi_ne_descr          => NULL
+                                             ,pi_ne_length         => NULL
+                                             ,pi_ne_admin_unit     => NULL
+                                             ,pi_ne_gty_group_type => NULL
+                                             ,pi_ne_no_start       => NULL
+                                             ,pi_ne_no_end         => NULL
+                                             ,pi_ne_unique         => g_new_element.ne_unique
+                                             ,pi_ne_owner          => g_new_element.ne_owner
+                                             ,pi_ne_name_1         => g_new_element.ne_name_1
+                                             ,pi_ne_name_2         => g_new_element.ne_name_2
+                                             ,pi_ne_prefix         => g_new_element.ne_prefix
+                                             ,pi_ne_number         => g_new_element.ne_number
+                                             ,pi_ne_sub_type       => g_new_element.ne_sub_type
+                                             ,pi_ne_group          => g_new_element.ne_group
+                                             ,pi_ne_sub_class      => g_new_element.ne_sub_class
+                                             ,pi_ne_nsg_ref        => g_new_element.ne_nsg_ref
+                                             ,pi_ne_version_no     => g_new_element.ne_version_no
+                                             ,pi_test_poe_at_node  => 'N'
+                                             ,po_ne_id_new         => po_new_ne_id
+                                             ,pi_neh_descr         => pi_reason);
+           EXCEPTION
+             WHEN not_connected
+              THEN
+                 hig.raise_ner(pi_appl => 'NET'
+                              ,pi_id   => 168);
+             WHEN xsp_violation
+              THEN
+                 hig.raise_ner(pi_appl => 'NET'
+                              ,pi_id   => 173);
+             WHEN record_locked
+              THEN
+                 hig.raise_ner(pi_appl => 'HIG'
+                              ,pi_id   => 33);
+           END;
+           /*
+           ||Rescale any linear groups the element belongs to.
+           */
+           IF pi_do_maintain_history = 'Y' AND lv_severity = awlrs_util.c_msg_cat_success
+            THEN
+               lt_groups.DELETE;
                --
-               FOR j IN 1..pi_circular_group_ids.COUNT LOOP
-                 IF pi_circular_group_ids(j) = lt_groups(i).group_id
-                  THEN 
-                     IF pi_circular_start_ne_ids(j) = pi_ne_id1 
-                      OR pi_circular_start_ne_ids(j) = pi_ne_id2
-                      THEN
-                         /*
-                         || The start NE ID for the circular route was one of the merged elements so make the start element the newly created merged element.
-                         */
-                         lv_start_ne_id := po_new_ne_id;
-                     ELSE
-                         lv_start_ne_id := pi_circular_start_ne_ids(j);
-                     END IF;
-                     --
-                     EXIT;
-                 END IF;
+               OPEN  get_linear_groups_post(po_new_ne_id);
+               FETCH get_linear_groups_post
+                BULK COLLECT
+                INTO lt_groups;
+               CLOSE get_linear_groups_post;
+               --
+               FOR i IN 1..lt_groups.COUNT LOOP
+                  --
+                  FOR j IN 1..pi_circular_group_ids.COUNT LOOP
+                    IF pi_circular_group_ids(j) = lt_groups(i).group_id
+                     THEN 
+                        IF pi_circular_start_ne_ids(j) = pi_ne_id1 
+                         OR pi_circular_start_ne_ids(j) = pi_ne_id2
+                         THEN
+                            /*
+                            || The start NE ID for the circular route was one of the merged elements so make the start element the newly created merged element.
+                            */
+                            lv_start_ne_id := po_new_ne_id;
+                        ELSE
+                            lv_start_ne_id := pi_circular_start_ne_ids(j);
+                        END IF;
+                        --
+                        EXIT;
+                    END IF;
+                  END LOOP;
+                  --
+                  lv_severity := awlrs_util.c_msg_cat_success;
+                  lt_messages.DELETE;
+                  --
+                  do_rescale(pi_ne_id            => lt_groups(i).group_id
+                            ,pi_effective_date   => pi_effective_date
+                            ,pi_offset_st        => lt_groups(i).min_slk
+                            ,pi_start_ne_id      => lv_start_ne_id
+                            ,pi_use_history      => 'N'
+                            ,po_message_severity => lv_severity
+                            ,po_message_tab      => lt_messages);
+                  --
+                  IF lv_severity != awlrs_util.c_msg_cat_success
+                   THEN
+                      /*
+                      ||If an error has occurred rescaling a group end the whole operation.
+                      */
+                      IF lv_severity = awlrs_util.c_msg_cat_circular_route
+                       THEN
+                          lt_messages.DELETE;
+                          awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
+                                                           ,pi_ner_id             => 60
+                                                           ,pi_supplementary_info => NULL
+                                                           ,pi_category           => awlrs_util.c_msg_cat_error
+                                                           ,po_message_tab        => lt_messages);
+                      END IF;
+                      --
+                      EXIT;
+                      --
+                  END IF;
+                 --
                END LOOP;
-               --
-               lv_severity := awlrs_util.c_msg_cat_success;
-               lt_messages.DELETE;
-               --
-               do_rescale(pi_ne_id            => lt_groups(i).group_id
-                         ,pi_effective_date   => pi_effective_date
-                         ,pi_offset_st        => lt_groups(i).min_slk
-                         ,pi_start_ne_id      => lv_start_ne_id
-                         ,pi_use_history      => 'N'
-                         ,po_message_severity => lv_severity
-                         ,po_message_tab      => lt_messages);
-               --
-               IF lv_severity != awlrs_util.c_msg_cat_success
-                THEN
-                   /*
-                   ||If an error has occurred rescaling a group end the whole operation.
-                   */
-                   IF lv_severity = awlrs_util.c_msg_cat_circular_route
-                    THEN
-                       lt_messages.DELETE;
-                       awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'AWLRS'
-                                                        ,pi_ner_id             => 60
-                                                        ,pi_supplementary_info => NULL
-                                                        ,pi_category           => awlrs_util.c_msg_cat_error
-                                                        ,po_message_tab        => lt_messages);
-                   END IF;
-                   --
-                   EXIT;
-                   --
-               END IF;
-              --
-            END LOOP;
+           END IF;
         END IF;
         /*
         ||If errors occurred rollback.
