@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkh-arc   1.9   Dec 18 2019 15:36:38   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkh-arc   1.10   Mar 02 2020 12:19:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkh  $
-  --       Date into PVCS   : $Date:   Dec 18 2019 15:36:38  $
-  --       Date fetched Out : $Modtime:   Dec 04 2019 13:32:42  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   Mar 02 2020 12:19:20  $
+  --       Date fetched Out : $Modtime:   Feb 27 2020 12:02:52  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -32,6 +32,13 @@ AS
   --
   FUNCTION is_circular_route(pi_ne_id IN nm_elements_all.ne_id%TYPE)
     RETURN VARCHAR2;
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_poe(pi_route_id IN nm_elements_all.ne_id%TYPE
+                  ,pi_node_id  IN nm_nodes_all.no_node_id%TYPE)
+    RETURN VARCHAR2;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -151,7 +158,7 @@ AS
   -----------------------------------------------------------------------------
   --
   --NB. If the value of pi_use_history passed in is not 'Y' then the calling
-  --code should have already called the procedure with the value as 'Y' and 
+  --code should have already called the procedure with the value as 'Y' and
   --handled any prompts for user confirmation.
   --
   PROCEDURE rescale_route(pi_ne_id            IN  nm_elements.ne_id%TYPE
@@ -182,7 +189,7 @@ AS
   -----------------------------------------------------------------------------
   --
   --NB. If the value of pi_use_history passed in is not 'Y' then the calling
-  --code should have already called the procedure with the value as 'Y' and 
+  --code should have already called the procedure with the value as 'Y' and
   --handled any prompts for user confirmation.
   --
   PROCEDURE local_rescale(pi_ne_id_in         IN  nm_elements.ne_id%TYPE
