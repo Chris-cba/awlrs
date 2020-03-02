@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.30   Dec 18 2019 15:36:38   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.31   Mar 02 2020 12:29:18   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   Dec 18 2019 15:36:38  $
-  --       Date fetched Out : $Modtime:   Dec 04 2019 13:33:54  $
-  --       Version          : $Revision:   1.30  $
+  --       Date into PVCS   : $Date:   Mar 02 2020 12:29:18  $
+  --       Date fetched Out : $Modtime:   Mar 02 2020 12:26:42  $
+  --       Version          : $Revision:   1.31  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.30  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.31  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -33,6 +33,24 @@ AS
   BEGIN
     RETURN g_body_sccsid;
   END get_body_version;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_poe(pi_route_id IN nm_elements_all.ne_id%TYPE
+                  ,pi_node_id  IN nm_nodes_all.no_node_id%TYPE)
+    RETURN VARCHAR2 IS
+    --
+    lv_poe NUMBER;
+    --
+  BEGIN
+    --
+    lv_poe := nm3net_o.get_node_class(p_route_id => pi_route_id
+                                     ,p_node_id  => pi_node_id).nc_poe;
+    --
+    RETURN CASE WHEN lv_poe = 0 THEN NULL WHEN lv_poe < 0 THEN 'O' ELSE 'G' END;
+    --
+  END get_poe;
 
   --
   -----------------------------------------------------------------------------
@@ -141,27 +159,35 @@ AS
                                   ,po_upper_index  => lv_upper_index
                                   ,po_statement    => lv_additional_where);
     --
-    lv_sql :=  'SELECT *'
-    ||CHR(10)||'  FROM (WITH membs AS (SELECT group_element_id'
-    ||CHR(10)||'                             ,member_element_id'
-    ||CHR(10)||'                             ,member_seq_no'
-    ||CHR(10)||'                             ,member_element_type'
-    ||CHR(10)||'                             ,member_network_type'
-    ||CHR(10)||'                             ,member_network_type_descr'
-    ||CHR(10)||'                             ,member_unique'
-    ||CHR(10)||'                             ,member_description'
-    ||CHR(10)||'                             ,member_length'
-    ||CHR(10)||'                             ,member_start_node'
-    ||CHR(10)||'                             ,member_end_node'
-    ||CHR(10)||'                             ,member_start_mp'
-    ||CHR(10)||'                             ,member_end_mp'
-    ||CHR(10)||'                             ,member_partial_ind'
-    ||CHR(10)||'                             ,member_membership_length'
-    ||CHR(10)||'                             ,member_offset'
-    ||CHR(10)||'                             ,CASE WHEN member_poe = 0 THEN NULL WHEN member_poe < 0 THEN ''O'' ELSE ''G'' END member_poe'
-    ||CHR(10)||'                             ,member_cardinality'
-    ||CHR(10)||'                             ,member_start_date'
-    ||CHR(10)||'                             ,member_end_date'
+    lv_sql :=  'SELECT ind'
+    ||CHR(10)||'      ,row_count'
+    ||CHR(10)||'      ,group_element_id'
+    ||CHR(10)||'      ,member_element_id'
+    ||CHR(10)||'      ,member_seq_no'
+    ||CHR(10)||'      ,member_element_type'
+    ||CHR(10)||'      ,member_network_type'
+    ||CHR(10)||'      ,member_network_type_descr'
+    ||CHR(10)||'      ,member_unique'
+    ||CHR(10)||'      ,member_description'
+    ||CHR(10)||'      ,member_length'
+    ||CHR(10)||'      ,member_start_node'
+    ||CHR(10)||'      ,member_end_node'
+    ||CHR(10)||'      ,member_start_mp'
+    ||CHR(10)||'      ,member_end_mp'
+    ||CHR(10)||'      ,member_partial_ind'
+    ||CHR(10)||'      ,member_membership_length'
+    ||CHR(10)||'      ,member_offset'
+    ||CHR(10)||CASE
+                 WHEN LOWER(pi_order_column) = 'member_poe'
+                  THEN
+                     '      ,member_poe'
+                 ELSE
+                     '      ,awlrs_group_api.get_poe(group_element_id,CASE WHEN member_cardinality = 1 THEN member_start_node ELSE member_end_node END) member_poe'
+               END
+    ||CHR(10)||'      ,member_cardinality'
+    ||CHR(10)||'      ,member_start_date'
+    ||CHR(10)||'      ,member_end_date'
+    ||CHR(10)||'  FROM (WITH membs AS (SELECT *'
     ||CHR(10)||'                         FROM (SELECT nm_seq_no member_seq_no'
     ||CHR(10)||'                                     ,ne.ne_type member_element_type'
     ||CHR(10)||'                                     ,ne.ne_nt_type member_network_type'
@@ -183,8 +209,11 @@ AS
     ||CHR(10)||'                                      END member_partial_ind'
     ||CHR(10)||'                                     ,(nm.nm_end_mp - nm.nm_begin_mp) member_membership_length'
     ||CHR(10)||'                                     ,nm.nm_slk member_offset'
-    ||CHR(10)||'                                     ,nm3net_o.get_node_class(nm.nm_ne_id_in'
-    ||CHR(10)||'                                                             ,CASE WHEN nm.nm_cardinality = 1 THEN ne.ne_no_start ELSE ne.ne_no_end END).nc_poe member_poe'
+    ||CHR(10)||CASE
+                 WHEN LOWER(pi_order_column) = 'member_poe'
+                  THEN
+                     '      ,awlrs_group_api.get_poe(nm.nm_ne_id_in,CASE WHEN nm.nm_cardinality = 1 THEN ne.ne_no_start ELSE ne.ne_no_end END) member_poe'
+               END
     ||CHR(10)||'                                     ,nm.nm_cardinality member_cardinality'
     ||CHR(10)||'                                     ,nm.nm_start_date member_start_date'
     ||CHR(10)||'                                     ,nm.nm_end_date member_end_date'
@@ -206,11 +235,19 @@ AS
              ||lv_additional_where
     ;
     --
-    OPEN po_cursor FOR lv_sql
-    USING pi_ne_id
-         ,lv_lower_index
-         ,lv_upper_index
-        ;
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_sql
+        USING pi_ne_id
+             ,lv_lower_index
+             ,lv_upper_index
+            ;
+    ELSE
+        OPEN po_cursor FOR lv_sql
+        USING pi_ne_id
+             ,lv_lower_index
+            ;
+    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -307,11 +344,19 @@ AS
              ||lv_additional_where
     ;
     --
-    OPEN po_cursor FOR lv_sql
-    USING pi_ne_id
-         ,lv_lower_index
-         ,lv_upper_index
-        ;
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_sql
+        USING pi_ne_id
+             ,lv_lower_index
+             ,lv_upper_index
+            ;
+    ELSE
+        OPEN po_cursor FOR lv_sql
+        USING pi_ne_id
+             ,lv_lower_index
+            ;
+    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -514,7 +559,7 @@ AS
     nm3ins.ins_nm(l_nm_rec);
     --
   END add_member;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -671,7 +716,7 @@ AS
            hig.raise_ner(pi_appl => 'AWLRS'
                         ,pi_id   => 41);
       END;
-      --       
+      --
     END get_db_rec;
     --
   BEGIN
@@ -737,7 +782,7 @@ AS
         ||Only the end mp can be changed.
         */
         hig.raise_ner(pi_appl => 'AWLRS'
-                     ,pi_id   => 63);     
+                     ,pi_id   => 63);
     END IF;
     /*
     ||If start or end have changed check such a change is allowed.
@@ -758,7 +803,7 @@ AS
             ||not allowed for non Partial Group Types.
             */
             hig.raise_ner(pi_appl => 'AWLRS'
-                         ,pi_id   => 40);        
+                         ,pi_id   => 40);
         END IF;
         --
         IF awlrs_element_api.is_nt_inclusion_parent(pi_nt_type => lr_group_ne.ne_nt_type)
@@ -1077,7 +1122,7 @@ AS
   -----------------------------------------------------------------------------
   --
   --NB. If the value of pi_use_history passed in is not 'Y' then the calling
-  --code should have already called the procedure with the value as 'Y' and 
+  --code should have already called the procedure with the value as 'Y' and
   --handled any prompts for user confirmation.
   --
   PROCEDURE rescale_route(pi_ne_id            IN  nm_elements.ne_id%TYPE
@@ -1417,7 +1462,7 @@ AS
   -----------------------------------------------------------------------------
   --
   --NB. If the value of pi_use_history passed in is not 'Y' then the calling
-  --code should have already called the procedure with the value as 'Y' and 
+  --code should have already called the procedure with the value as 'Y' and
   --handled any prompts for user confirmation.
   --
   PROCEDURE local_rescale(pi_ne_id_in         IN  nm_elements.ne_id%TYPE
@@ -1716,7 +1761,7 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_route_details;
-  
+
   --
   -----------------------------------------------------------------------------
   --
