@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_recalibrate_api.pkb-arc   1.7   Jan 23 2020 14:08:20   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_recalibrate_api.pkb-arc   1.8   Mar 05 2020 10:43:46   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_recalibrate_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 23 2020 14:08:20  $
-  --       Date fetched Out : $Modtime:   Jan 21 2020 08:40:28  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   Mar 05 2020 10:43:46  $
+  --       Date fetched Out : $Modtime:   Feb 26 2020 11:45:36  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_recalibrate_api';
   --
@@ -307,7 +307,7 @@ AS
     /*
     ||
     */
-    IF pi_maintain_history = 'Y'
+    IF pi_maintain_history = 'Y' AND lv_severity = awlrs_util.c_msg_cat_success
      THEN
         /*
         ||Rescale any linear groups the element belongs to.
