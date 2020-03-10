@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.31   Mar 02 2020 12:29:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.32   Mar 10 2020 11:17:20   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 02 2020 12:29:18  $
-  --       Date fetched Out : $Modtime:   Mar 02 2020 12:26:42  $
-  --       Version          : $Revision:   1.31  $
+  --       Date into PVCS   : $Date:   Mar 10 2020 11:17:20  $
+  --       Date fetched Out : $Modtime:   Mar 10 2020 11:02:40  $
+  --       Version          : $Revision:   1.32  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.31  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.32  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -1045,8 +1045,8 @@ AS
     */
     IF NOT(nm3rsc.stranded_element_check)
      THEN
-        awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'NET'
-                                         ,pi_ner_id      => 154
+        awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'AWLRS'
+                                         ,pi_ner_id      => 85
                                          ,pi_category    => awlrs_util.c_msg_cat_warning
                                          ,po_message_tab => po_message_tab);
         po_message_severity := awlrs_util.c_msg_cat_warning;
