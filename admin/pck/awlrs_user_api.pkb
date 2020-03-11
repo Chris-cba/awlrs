@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.10   Mar 11 2020 10:18:42   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Mar 11 2020 10:18:42  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.11   Mar 11 2020 10:34:42   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Mar 11 2020 10:34:42  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Mar 11 2020 10:04:30  $
-  --       Version          : $Revision:   1.10  $
+  --       Date fetched Out : $Modtime:   Mar 11 2020 10:32:22  $
+  --       Version          : $Revision:   1.11  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.10  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.11  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -1720,10 +1720,10 @@ AS
     awlrs_util.check_historic_mode; 
     --
     --Firstly we need to check the caller has the correct roles to continue-- 
-    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+    IF user_privs_check = 'N'
       THEN
          hig.raise_ner(pi_appl => 'HIG'
-                      ,pi_id   => 86);
+                      ,pi_id   => 146);
     END IF;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Copy User Id'
