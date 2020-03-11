@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.9   Feb 13 2020 15:50:50   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Feb 13 2020 15:50:50  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.10   Mar 11 2020 10:18:42   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Mar 11 2020 10:18:42  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Feb 13 2020 15:48:20  $
-  --       Version          : $Revision:   1.9  $
+  --       Date fetched Out : $Modtime:   Mar 11 2020 10:04:30  $
+  --       Version          : $Revision:   1.10  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.9  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.10  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -26,11 +26,11 @@ AS
   cv_gb	  		  CONSTANT varchar2(1) := 'G';
   cv_tb           CONSTANT varchar2(1) := 'T';
   cv_pb      	  CONSTANT varchar2(1) := 'P';
-  --constant user role
-  cv_hig_user_role CONSTANT varchar2(8) := 'HIG_USER';
-  --roles constant
-  cv_hig_admin    CONSTANT varchar2(9)  := 'HIG_ADMIN';
-  cv_proxy_owner  CONSTANT varchar2(11) := 'PROXY_OWNER';
+  --roles constants
+  cv_hig_user_role  CONSTANT varchar2(8)  := 'HIG_USER';
+  cv_hig_admin      CONSTANT varchar2(9)  := 'HIG_ADMIN';
+  cv_hig_user_admin CONSTANT varchar2(14) := 'HIG_USER_ADMIN';
+  cv_proxy_owner    CONSTANT varchar2(11) := 'PROXY_OWNER';
   --
   --get_user constants
   cv_user_filter  CONSTANT varchar2(1) := 'A';
@@ -80,6 +80,29 @@ AS
         RETURN lv_exists;
       --
   END privs_check;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION user_privs_check RETURN VARCHAR2  
+  IS
+     lv_count number(1);
+  BEGIN
+      --
+      SELECT  COUNT(*)
+      INTO    lv_count
+      FROM    hig_user_roles
+      WHERE   hur_role    IN (cv_hig_admin,cv_hig_user_admin)
+      AND     hur_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME');
+      --
+      IF lv_count = 2  --to create/alter a user, the user needs both roles 
+        THEN
+          RETURN 'Y';
+      ELSE     
+          RETURN 'N';
+      END IF;    
+      -- 
+  END user_privs_check;
   
   --
   -----------------------------------------------------------------------------
@@ -1309,18 +1332,23 @@ AS
                                ,pi_parameter_value => pi_email);
     -- 
     --Firstly assign the proxy users--
-    FOR i IN 1..pi_proxy_users.COUNT LOOP
-    -- 
-       IF (    UPPER(pi_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
-           AND proxy_role_exists(pi_username => pi_proxy_users(i))) 
-        THEN
-           lv_proc_input := 'ALTER USER '||pi_username||' GRANT CONNECT THROUGH '||pi_proxy_users(i);
-           hig.execute_ddl(lv_proc_input);
-       ELSE
-           RAISE e_invalid_proxy_user;
-       END IF;    
-    --
-    END LOOP;
+    IF  pi_proxy_users.COUNT = 1
+        AND pi_proxy_users(1) is not null 
+      THEN
+        FOR i IN 1..pi_proxy_users.COUNT LOOP
+        -- 
+           IF (    UPPER(pi_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
+               AND proxy_role_exists(pi_username => pi_proxy_users(i))) 
+            THEN
+               lv_proc_input := 'ALTER USER '||pi_username||' GRANT CONNECT THROUGH '||pi_proxy_users(i);
+               hig.execute_ddl(lv_proc_input);
+           ELSE
+               RAISE e_invalid_proxy_user;
+           END IF;    
+        --
+        END LOOP;
+       --
+    END IF;    
     --
     lv_key := DBMS_CRYPTO.RANDOMBYTES(32);
     lr_hig_relationship.hir_attribute1 := pi_email;
@@ -1396,10 +1424,10 @@ AS
     awlrs_util.check_historic_mode;  
     --
     --Firstly we need to check the caller has the correct roles to continue-- 
-    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+    IF user_privs_check = 'N'
       THEN
          hig.raise_ner(pi_appl => 'HIG'
-                      ,pi_id   => 86);
+                      ,pi_id   => 146);
     END IF;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Initials'
@@ -1464,9 +1492,8 @@ AS
     Note, sso not tested at all so expect some changes --
     */
     -- SSO
-    IF (   NVL(hig.get_sysopt('DEFSSO'),'N') = 'Y' 
-        OR pi_sso_user = 'Y')
-       AND pi_override_password = 'Y'
+    IF (    pi_sso_user = 'Y'
+        AND pi_override_password = 'Y')
       THEN
         lv_password := hig_relationship_api.f_generate_password;
     --ELSE
@@ -1527,11 +1554,9 @@ AS
                              ,pi_name     => pi_name  
                              ,pi_email    => pi_email);                             
     --
-    --
     --check sso
     --
-    IF (   NVL(hig.get_sysopt('DEFSSO'),'N') = 'Y' 
-        OR pi_sso_user = 'Y')
+    IF pi_sso_user = 'Y'
      THEN
        create_sso_user(pi_username           => pi_username
                       ,pi_email              => pi_email
@@ -2691,32 +2716,42 @@ AS
     END IF;
     --
     --Firstly revoke current proxy users
-    FOR i IN 1..pi_old_proxy_users.COUNT LOOP
+    IF  pi_old_proxy_users.COUNT = 1
+        AND pi_old_proxy_users(1) is not null 
+      THEN          
+        FOR i IN 1..pi_old_proxy_users.COUNT LOOP
 		--
-		IF (    UPPER(pi_old_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
-            AND proxy_role_exists(pi_username => pi_old_proxy_users(i))) 
-         THEN
-           lv_proc_input :='ALTER USER '||pi_username||' REVOKE CONNECT THROUGH '||pi_old_proxy_users(i);
-           hig.execute_ddl(lv_proc_input);
-        ELSE
-           RAISE e_invalid_proxy_user;
-        END IF; 
-        --
-	END LOOP;
-	--
+		    IF (    UPPER(pi_old_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
+                AND proxy_role_exists(pi_username => pi_old_proxy_users(i))) 
+             THEN
+               lv_proc_input :='ALTER USER '||pi_username||' REVOKE CONNECT THROUGH '||pi_old_proxy_users(i);
+               hig.execute_ddl(lv_proc_input);
+            ELSE
+               RAISE e_invalid_proxy_user;
+            END IF; 
+            --
+        END LOOP;
+      --        
+    END IF;
+    --
 	--Now assign the new proxy users--
-    FOR i IN 1..pi_new_proxy_users.COUNT LOOP
-       --
-       IF (    UPPER(pi_new_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
-           AND proxy_role_exists(pi_username => pi_new_proxy_users(i))) 
-         THEN
-           lv_proc_input := 'ALTER USER '||pi_username||' GRANT CONNECT THROUGH '||pi_new_proxy_users(i);
-           hig.execute_ddl(lv_proc_input);
-       ELSE
-           RAISE e_invalid_proxy_user;
-       END IF;    
-       --
-    END LOOP;
+	IF  pi_new_proxy_users.COUNT = 1
+        AND pi_new_proxy_users(1) is not null 
+      THEN 
+        FOR i IN 1..pi_new_proxy_users.COUNT LOOP
+           --
+           IF (    UPPER(pi_new_proxy_users(i)) NOT IN ('SYS', 'SYSTEM', get_application_owner)
+               AND proxy_role_exists(pi_username => pi_new_proxy_users(i))) 
+             THEN
+               lv_proc_input := 'ALTER USER '||pi_username||' GRANT CONNECT THROUGH '||pi_new_proxy_users(i);
+               hig.execute_ddl(lv_proc_input);
+           ELSE
+               RAISE e_invalid_proxy_user;
+           END IF;    
+           --
+        END LOOP;
+        --
+    END IF;    
     --
     EXCEPTION
     WHEN e_invalid_proxy_user
@@ -2820,10 +2855,10 @@ AS
     awlrs_util.check_historic_mode; 
     --
     --Firstly we need to check the caller has the correct roles to continue--
-    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+    IF user_privs_check = 'N'
       THEN
-         hig.raise_ner(pi_appl => 'HIG'
-                      ,pi_id   => 86);
+         hig.raise_ner(pi_appl => 'NET'
+                      ,pi_id   => 236);
     END IF;
     --  
     validate_user_for_update(pi_old_user_id           =>  pi_old_user_id
@@ -3060,10 +3095,8 @@ AS
     END IF; 
     --
     --sso user 
-    IF (   NVL(hig.get_sysopt('DEFSSO'),'N') = 'Y' 
-        OR 
-           (    pi_old_sso_user = 'Y' 
-            AND pi_old_sso_user = pi_new_sso_user) 
+    IF  (    pi_old_sso_user = 'Y' 
+         AND pi_old_sso_user = pi_new_sso_user
         )      
       THEN 
         update_sso_user(pi_username               => pi_old_username
