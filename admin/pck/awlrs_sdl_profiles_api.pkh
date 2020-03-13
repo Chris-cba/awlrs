@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkh-arc   1.0   Mar 12 2020 20:22:54   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkh-arc   1.1   Mar 13 2020 13:28:20   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkh  $
-  --       Date into PVCS   : $Date:   Mar 12 2020 20:22:54  $
-  --       Date fetched Out : $Modtime:   Mar 12 2020 19:12:18  $
-  --       PVCS Version     : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Mar 13 2020 13:28:20  $
+  --       Date fetched Out : $Modtime:   Mar 13 2020 12:10:06  $
+  --       PVCS Version     : $Revision:   1.1  $
   --
   --   Author : Vikas Mhetre
   --
@@ -333,18 +333,6 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
                                      ,pi_action           IN  sdl_spatial_review_levels.ssrl_default_action%TYPE
                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
                                      ,po_message_cursor   OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE set_show_list_at_startup(pi_show_at_startup  IN  sdl_user_config.suc_show_list_at_startup%TYPE
-                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                    ,po_message_cursor   OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_user_config(po_message_severity OUT hig_codes.hco_code%TYPE
-                           ,po_message_cursor   OUT sys_refcursor
-                           ,po_cursor           OUT sys_refcursor);
   --
   -----------------------------------------------------------------------------
   --
