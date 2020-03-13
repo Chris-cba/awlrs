@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.0   Mar 12 2020 20:22:54   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.1   Mar 13 2020 13:29:12   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 12 2020 20:22:54  $
-  --       Date fetched Out : $Modtime:   Mar 12 2020 19:16:42  $
-  --       PVCS Version     : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Mar 13 2020 13:29:12  $
+  --       Date fetched Out : $Modtime:   Mar 13 2020 12:11:12  $
+  --       PVCS Version     : $Revision:   1.1  $
   --
   --   Author : Vikas Mhetre
   --
@@ -1329,9 +1329,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                  'Delete not allowed. User ' || lv_username ||' is linked to the profile ' || get_profile_name(pi_profile_id) || ' and it has active file data exists in the system');
       END IF;
     --
-    DELETE sdl_user_config
-     WHERE suc_user_id = ln_user_id;
-    --
     DELETE sdl_user_profiles
      WHERE sup_sp_id = pi_profile_id
        AND sup_id = pi_sup_id;
@@ -2379,55 +2376,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END set_spatial_review_action;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE set_show_list_at_startup(pi_show_at_startup  IN  sdl_user_config.suc_show_list_at_startup%TYPE
-                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                    ,po_message_cursor   OUT sys_refcursor)
-  IS
-    --
-  BEGIN
-    --
-    UPDATE sdl_user_config
-       SET suc_show_list_at_startup = pi_show_at_startup
-     WHERE suc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
-       AND suc_show_list_at_startup != pi_show_at_startup;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-     THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END set_show_list_at_startup;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_user_config(po_message_severity OUT hig_codes.hco_code%TYPE
-                           ,po_message_cursor   OUT sys_refcursor
-                           ,po_cursor           OUT sys_refcursor)
-  IS
-    --
-  BEGIN
-    --
-    OPEN po_cursor FOR
-    SELECT suc_user_id
-          ,suc_show_list_at_startup
-     FROM sdl_user_config
-    WHERE suc_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID');
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-     THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END get_user_config;
   --
   -----------------------------------------------------------------------------
   --
