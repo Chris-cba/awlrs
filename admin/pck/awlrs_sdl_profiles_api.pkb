@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.1   Mar 13 2020 13:29:12   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.2   Mar 16 2020 12:19:24   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 13 2020 13:29:12  $
-  --       Date fetched Out : $Modtime:   Mar 13 2020 12:11:12  $
-  --       PVCS Version     : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Mar 16 2020 12:19:24  $
+  --       Date fetched Out : $Modtime:   Mar 16 2020 12:15:02  $
+  --       PVCS Version     : $Revision:   1.2  $
   --
   --   Author : Vikas Mhetre
   --
@@ -270,6 +270,167 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE default_datum_attribute_mapping (pi_profile_id IN sdl_attribute_adjustment_rules.saar_sp_id%TYPE)
+  IS
+    --
+    CURSOR c_remaining_columns(p_profile_id NUMBER) IS
+    SELECT network_type, column_name, mandatory, field_type, format_mask, domain, lov_query,
+           CASE WHEN domain IS NOT NULL
+                THEN (SELECT hco_code FROM hig_codes WHERE hco_domain = domain AND ROWNUM = 1)
+                WHEN field_type = 'NUMBER'
+                THEN TO_CHAR(1)
+                WHEN field_type = 'VARCHAR2'
+                THEN 'Z'
+                WHEN field_type = 'DATE'
+                THEN TO_CHAR(SYSDATE, format_mask)
+                ELSE 'X'
+            END default_value
+      FROM v_nm_nw_columns
+     WHERE network_type = (SELECT datum_nt_type FROM v_sdl_profile_nw_types WHERE sp_id = p_profile_id)
+       AND column_name NOT IN ('NE_ADMIN_UNIT', 'NE_SUB_CLASS', 'NE_START_DATE', 'NE_OWNER', 'NE_NAME_1', 'NE_NAME_2',
+                               'NE_GROUP', 'NE_PREFIX', 'NE_NSG_REF', 'NE_VERSION_NO', 'NE_DESCR')
+       AND (mandatory = 'Y' OR domain IS NOT NULL)
+     ORDER BY column_name;
+    --
+    lv_datum_type    sdl_datum_attribute_mapping.sdam_nw_type%TYPE;
+    lv_column_name   sdl_datum_attribute_mapping.sdam_column_name%TYPE;
+    lv_default_value sdl_datum_attribute_mapping.sdam_default_value%TYPE;
+    lv_formula       sdl_datum_attribute_mapping.sdam_formula%TYPE;
+    ln_max_seq       sdl_datum_attribute_mapping.sdam_seq_no%TYPE;
+    lv_insert        nm3type.max_varchar2;
+    --
+    FUNCTION get_domain_default_value (pi_datum_type    sdl_datum_attribute_mapping.sdam_nw_type%TYPE,
+                                       pi_column_name   sdl_datum_attribute_mapping.sdam_column_name%TYPE)
+    RETURN VARCHAR2
+    IS
+      lv_default_value sdl_datum_attribute_mapping.sdam_default_value%TYPE;
+    BEGIN
+      SELECT (SELECT hco_code
+                FROM hig_codes
+               WHERE hco_domain = domain
+                 AND ROWNUM = 1)
+        INTO lv_default_value
+        FROM v_nm_nw_columns
+       WHERE network_type = pi_datum_type
+         AND column_name = pi_column_name
+         AND domain IS NOT NULL;
+
+      RETURN lv_default_value;
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        RETURN NULL;
+    END get_domain_default_value;
+    --
+  BEGIN
+    --
+    SELECT datum_nt_type
+      INTO lv_datum_type
+      FROM v_sdl_profile_nw_types
+     WHERE sp_id = pi_profile_id;
+    -- NE_ADMIN_UNIT
+    lv_column_name := 'NE_ADMIN_UNIT';
+    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
+
+    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
+    VALUES (pi_profile_id, lv_datum_type, 1, lv_column_name, NVL(lv_default_value,1), NULL);
+    -- NE_SUB_CLASS
+    lv_column_name := 'NE_SUB_CLASS';
+    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
+
+    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
+    VALUES (pi_profile_id, lv_datum_type, 2, lv_column_name, NVL(lv_default_value,'S'), NULL);
+    -- NE_START_DATE
+    lv_column_name := 'NE_START_DATE';
+    lv_formula := '';
+    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
+    IF lv_default_value IS NULL THEN
+      lv_formula := 'l.ne_start_date';
+    END IF;
+
+    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
+    VALUES (pi_profile_id, lv_datum_type, 3, lv_column_name, lv_default_value, lv_formula);
+    -- NE_OWNER
+    lv_column_name := 'NE_OWNER';
+    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
+
+    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
+    VALUES (pi_profile_id, lv_datum_type, 4, lv_column_name, NVL(lv_default_value,'L'), NULL);
+    -- NE_NAME_1
+    lv_column_name := 'NE_NAME_1';
+    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
+
+    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
+    VALUES (pi_profile_id, lv_datum_type, 5, lv_column_name, NVL(lv_default_value,'AS-BUILT'), NULL);
+    -- NE_NAME_2
+    lv_column_name := 'NE_NAME_2';
+    lv_formula := '';
+    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
+    IF lv_default_value IS NULL THEN
+      lv_formula := 'l.ne_owner';
+    END IF;
+
+    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
+    VALUES (pi_profile_id, lv_datum_type, 6, lv_column_name, lv_default_value, lv_formula);
+    -- NE_GROUP
+    lv_column_name := 'NE_GROUP';
+    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
+
+    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
+    VALUES (pi_profile_id, lv_datum_type, 7, lv_column_name, NVL(lv_default_value,'O'), NULL);
+    -- NE_PREFIX
+    lv_column_name := 'NE_PREFIX';
+    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
+
+    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
+    VALUES (pi_profile_id, lv_datum_type, 8, lv_column_name, NVL(lv_default_value, 'NULL'), NULL);
+    -- NE_NSG_REF
+    lv_column_name := 'NE_NSG_REF';
+    lv_formula := '';
+    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
+    IF lv_default_value IS NULL THEN
+      lv_formula := 'sdo_lrs.geom_segment_start_measure(d.geom)';
+    END IF;
+
+    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
+    VALUES (pi_profile_id, lv_datum_type, 9, lv_column_name, lv_default_value, lv_formula);
+    -- NE_VERSION_NO
+    lv_column_name := 'NE_VERSION_NO';
+    lv_formula := '';
+    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
+    IF lv_default_value IS NULL THEN
+      lv_formula := 'sdo_lrs.geom_segment_end_measure(d.geom)';
+    END IF;
+
+    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
+    VALUES (pi_profile_id, lv_datum_type, 10, lv_column_name, lv_default_value, lv_formula);
+    -- NE_DESCR
+    lv_column_name := 'NE_DESCR';
+    lv_formula := '';
+    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
+    IF lv_default_value IS NULL THEN
+      lv_formula := '''RD - ''||l.ne_unique||'' - ''||to_char(round(sdo_lrs.geom_segment_start_measure(d.geom),2))||'' TO ''||to_char(round(sdo_lrs.geom_segment_end_measure(d.geom),2))';
+    END IF;
+
+    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
+    VALUES (pi_profile_id, lv_datum_type, 11, lv_column_name, lv_default_value, lv_formula);
+    --
+    -- Other Mandatory Datum Columns
+    SELECT MAX(sdam_seq_no)
+      INTO ln_max_seq
+      FROM sdl_datum_attribute_mapping
+     WHERE sdam_profile_id = pi_profile_id;
+    -- See if there are any mandatory datum columns that are still missing
+    FOR cur IN c_remaining_columns(pi_profile_id)
+    LOOP
+      lv_insert := 'INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
+                    VALUES ('|| pi_profile_id ||', '''||cur.network_type ||''','|| TO_NUMBER(ln_max_seq + 1) ||', '''||cur.column_name||''', '''||cur.default_value||''', NULL)';
+      EXECUTE IMMEDIATE lv_insert;
+    END LOOP;
+    --
+  END default_datum_attribute_mapping;
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE generate_profile_views(pi_profile_id IN sdl_profiles.sp_id%TYPE)
   IS
   --
@@ -303,6 +464,12 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   BEGIN
     --
     generate_profile_views(pi_profile_id);
+    --
+    -- default_datum_attribute_mapping to be replaced with a new UI to insert datum attribute mappings
+    -- in Manage Profiles screen in future release
+    -- Administrator should configure datum mappings along with profile attribute mappings through SDL application
+    -- This has been added as a temporary (kind of hardcoded) logic to insert default values for datum mappings
+    default_datum_attribute_mapping(pi_profile_id);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
