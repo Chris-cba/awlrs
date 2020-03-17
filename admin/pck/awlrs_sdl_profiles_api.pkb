@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.2   Mar 16 2020 12:19:24   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.3   Mar 17 2020 08:54:52   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 16 2020 12:19:24  $
-  --       Date fetched Out : $Modtime:   Mar 16 2020 12:15:02  $
-  --       PVCS Version     : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   Mar 17 2020 08:54:52  $
+  --       Date fetched Out : $Modtime:   Mar 17 2020 08:26:34  $
+  --       PVCS Version     : $Revision:   1.3  $
   --
   --   Author : Vikas Mhetre
   --
@@ -503,7 +503,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     END IF;
     --
   EXCEPTION
-    WHEN OTHERS THEN 
+    WHEN OTHERS THEN
       NULL;
   END update_profile_views;
   --
@@ -596,7 +596,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE create_profile(pi_name            IN  sdl_profiles.sp_name%TYPE
+  PROCEDURE create_profile(pi_name             IN  sdl_profiles.sp_name%TYPE
                           ,pi_desc             IN  sdl_profiles.sp_desc%TYPE
                           ,pi_file_type        IN  sdl_profiles.sp_import_file_type%TYPE
                           ,pi_import_level     IN  sdl_profiles.sp_max_import_level%TYPE
@@ -611,7 +611,26 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                           ,po_message_cursor   OUT sys_refcursor)
   IS
     --
+    ln_exists NUMBER;
+    --
   BEGIN
+    --
+    BEGIN
+      --
+      SELECT 1
+        INTO ln_exists
+        FROM dual
+       WHERE EXISTS (SELECT 1
+                       FROM sdl_profiles
+                      WHERE sp_name = pi_name);
+      --
+      RAISE_APPLICATION_ERROR (-20036,
+                              'Profile name ' || pi_name ||' is already exists.');
+      --
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        NULL;
+    END;
     --
     INSERT INTO sdl_profiles
         (sp_name
@@ -679,6 +698,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
     lr_db_rec sdl_profiles%ROWTYPE;
     lv_upd    VARCHAR2(1) := 'N';
+    ln_exists NUMBER;
     --
     PROCEDURE get_db_rec(pi_profile_id IN sdl_profiles.sp_id%TYPE)
       IS
@@ -730,6 +750,23 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
     validate_notnull(pi_parameter_desc  => 'Stop Count'
                     ,pi_parameter_value => pi_new_stop_count);
+    --
+    BEGIN
+      --
+      SELECT 1
+        INTO ln_exists
+        FROM dual
+       WHERE EXISTS (SELECT 1
+                       FROM sdl_profiles
+                      WHERE sp_name = pi_new_name);
+      --
+      RAISE_APPLICATION_ERROR (-20037,
+                              'Profile name ' || pi_new_name ||' is already exists.');
+      --
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        NULL;
+    END;    
     --
     IF active_batch_exists(pi_profile_id) THEN
       RAISE_APPLICATION_ERROR (-20024,
@@ -1348,7 +1385,27 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                ,po_message_cursor   OUT sys_refcursor)
   IS
     --
+    ln_exists NUMBER;
+    --
   BEGIN
+    --
+    BEGIN
+      --
+      SELECT 1
+        INTO ln_exists
+        FROM dual
+       WHERE EXISTS (SELECT 1
+                       FROM sdl_user_profiles s
+                      WHERE sup_sp_id = pi_profile_id
+                        AND s.sup_user_id = pi_user_id);
+      --
+      RAISE_APPLICATION_ERROR (-20038,
+                              'User ' || nm3user.get_username(pi_user_id) ||' is already assigned to the profile '|| get_profile_name(pi_profile_id) || '.');
+      --
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        NULL;
+    END;
     --
     INSERT INTO sdl_user_profiles
         (sup_user_id,
@@ -2192,7 +2249,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
      WHERE saar.saar_sp_id = cp_profile_id
        AND saar.saar_target_attribute_name = cp_target_attrib_name
        AND ((saar.saar_source_value = cp_source_value AND cp_source_value IS NOT NULL)
-            OR 
+            OR
             (saar.saar_source_value IS NULL AND cp_source_value IS NULL)
             );
     --
