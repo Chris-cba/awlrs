@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.7   Nov 13 2019 17:56:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.8   Mar 17 2020 10:37:24   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_maint_api.pkb  $
-  --       Date into PVCS   : $Date:   Nov 13 2019 17:56:44  $
-  --       Date fetched Out : $Modtime:   Nov 13 2019 17:43:40  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   Mar 17 2020 10:37:24  $
+  --       Date fetched Out : $Modtime:   Nov 18 2019 12:32:04  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_maint_api';
   --
   TYPE attr_name_tab IS TABLE OF nm_inv_type_attribs_all.ita_attrib_name%TYPE INDEX BY BINARY_INTEGER;
@@ -1149,7 +1149,7 @@ AS
               ||' WHERE '||lv_where
     ;
     --
-    EXECUTE IMMEDIATE(lv_sql) USING lv_job_id,lt_all_ids_and_locs;
+    EXECUTE IMMEDIATE lv_sql USING lv_job_id,lt_all_ids_and_locs;
     --
     po_job_id := lv_job_id;
     --
@@ -1297,11 +1297,25 @@ AS
                                             WHEN j <= NVL(lt_ita_by_nit(lt_nit(i).nit_inv_type).COUNT,0)
                                              THEN
                                                 CASE
-                                                  WHEN lt_ita_by_nit(lt_nit(i).nit_inv_type)(j).ita_format = 'VARCHAR2'
+                                                  WHEN lt_ita_by_nit(lt_nit(i).nit_inv_type)(j).ita_format = awlrs_util.c_date_col
+                                                   AND INSTR(lt_ita_by_nit(lt_nit(i).nit_inv_type)(j).ita_attrib_name
+                                                            ,lt_ita_by_nit(lt_nit(i).nit_inv_type)(j).ita_format,1,1) != 0
                                                    THEN
-                                                      lt_ita_by_nit(lt_nit(i).nit_inv_type)(j).ita_attrib_name
-                                                  ELSE
+                                                      'TO_CHAR('||lt_ita_by_nit(lt_nit(i).nit_inv_type)(j).ita_attrib_name
+                                                           ||','||nm3flx.string(NVL(lt_ita_by_nit(lt_nit(i).nit_inv_type)(j).ita_format_mask
+                                                                                   ,Sys_Context('NM3CORE','USER_DATE_MASK')))
+                                                           ||')'
+                                                  WHEN lt_ita_by_nit(lt_nit(i).nit_inv_type)(j).ita_format = awlrs_util.c_number_col
+                                                   AND lt_ita_by_nit(lt_nit(i).nit_inv_type)(j).ita_format_mask IS NOT NULL
+                                                   THEN
+                                                      'TO_CHAR('||lt_ita_by_nit(lt_nit(i).nit_inv_type)(j).ita_attrib_name
+                                                           ||','||nm3flx.string(lt_ita_by_nit(lt_nit(i).nit_inv_type)(j).ita_format_mask)
+                                                           ||')'
+                                                  WHEN lt_ita_by_nit(lt_nit(i).nit_inv_type)(j).ita_format IN(awlrs_util.c_date_col,awlrs_util.c_number_col)
+                                                   THEN
                                                       'TO_CHAR('||lt_ita_by_nit(lt_nit(i).nit_inv_type)(j).ita_attrib_name||')'
+                                                  ELSE
+                                                      lt_ita_by_nit(lt_nit(i).nit_inv_type)(j).ita_attrib_name
                                                 END
                                             ELSE
                                                 'NULL'
