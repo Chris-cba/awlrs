@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.3   Mar 17 2020 08:54:52   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.4   Mar 17 2020 14:50:50   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 17 2020 08:54:52  $
-  --       Date fetched Out : $Modtime:   Mar 17 2020 08:26:34  $
-  --       PVCS Version     : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   Mar 17 2020 14:50:50  $
+  --       Date fetched Out : $Modtime:   Mar 17 2020 14:50:18  $
+  --       PVCS Version     : $Revision:   1.4  $
   --
   --   Author : Vikas Mhetre
   --
@@ -758,7 +758,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
         FROM dual
        WHERE EXISTS (SELECT 1
                        FROM sdl_profiles
-                      WHERE sp_name = pi_new_name);
+                      WHERE sp_name = pi_new_name
+                        AND pi_old_name != pi_new_name);
       --
       RAISE_APPLICATION_ERROR (-20037,
                               'Profile name ' || pi_new_name ||' is already exists.');
