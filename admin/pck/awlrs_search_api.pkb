@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.38   Mar 18 2020 12:59:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.39   Mar 18 2020 15:31:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 18 2020 12:59:38  $
-  --       Date fetched Out : $Modtime:   Mar 18 2020 10:56:42  $
-  --       Version          : $Revision:   1.38  $
+  --       Date into PVCS   : $Date:   Mar 18 2020 15:31:22  $
+  --       Date fetched Out : $Modtime:   Mar 18 2020 15:27:10  $
+  --       Version          : $Revision:   1.39  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.38  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.39  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -2686,7 +2686,7 @@ AS
                      AND lt_ita(i).ita_format_mask IS NOT NULL
                      THEN
                         --
-                        'TO_CHAR(iit.'||LOWER(lt_ita(i).ita_attrib_name)||','||nm3flx.string(lt_ita(i).ita_format_mask)||')'
+                        'LTRIM(TO_CHAR(iit.'||LOWER(lt_ita(i).ita_attrib_name)||','||nm3flx.string(lt_ita(i).ita_format_mask)||'))'
                         --
                     WHEN lt_ita(i).ita_format IN(awlrs_util.c_date_col,awlrs_util.c_number_col)
                      THEN
@@ -2818,7 +2818,7 @@ AS
                  AND lt_ntc(i).ntc_format IS NOT NULL
                  THEN
                     --
-                    'TO_CHAR('||LOWER(lt_ntc(i).ntc_column_name)||','||nm3flx.string(lt_ntc(i).ntc_format)||')'
+                    'LTRIM(TO_CHAR('||LOWER(lt_ntc(i).ntc_column_name)||','||nm3flx.string(lt_ntc(i).ntc_format)||'))'
                     --
                 WHEN lt_ntc(i).ntc_column_type IN(awlrs_util.c_date_col,awlrs_util.c_number_col)
                  THEN
