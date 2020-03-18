@@ -3,22 +3,23 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.37   Feb 12 2020 14:10:42   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.38   Mar 18 2020 12:59:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 12 2020 14:10:42  $
-  --       Date fetched Out : $Modtime:   Feb 12 2020 12:00:40  $
-  --       Version          : $Revision:   1.37  $
+  --       Date into PVCS   : $Date:   Mar 18 2020 12:59:38  $
+  --       Date fetched Out : $Modtime:   Mar 18 2020 10:56:42  $
+  --       Version          : $Revision:   1.38  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.37  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.38  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
   g_default_date_format      VARCHAR2(100);
   g_default_datetime_format  VARCHAR2(100);
+  g_domain_values  nm_code_name_meaning_tbl := nm_code_name_meaning_tbl();
   --
   TYPE col_rec IS RECORD(data_type    VARCHAR2(106)
                         ,data_length  NUMBER
@@ -44,6 +45,16 @@ AS
   BEGIN
     RETURN g_body_sccsid;
   END get_body_version;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_domain_values_gv
+    RETURN nm_code_name_meaning_tbl
+    IS
+  BEGIN
+    RETURN g_domain_values;
+  END get_domain_values_gv;
 
   --
   ------------------------------------------------------------------------------
@@ -2734,9 +2745,14 @@ AS
     lv_sql      nm3type.max_varchar2;
     lv_flx_sql  nm3type.max_varchar2;
     --
-    lt_ntc  ntc_tab;
+    lt_domain_values  nm_code_name_meaning_tbl;
+    lt_ntc            ntc_tab;
     --
   BEGIN
+    /*
+    ||Initialise Domain Values
+    */
+    g_domain_values.DELETE;
     /*
     ||Add any attributes.
     */
@@ -2759,16 +2775,26 @@ AS
           --
           awlrs_element_api.gen_domain_sql(pi_nt_type     => pi_nt_type
                                           ,pi_column_name => lt_ntc(i).ntc_column_name
-                                          ,pi_bind_value  => REPLACE(nm3flx.extract_bind_variable(lv_flx_sql),':',NULL)
+                                          ,pi_bind_value  => NULL
                                           ,pi_ordered     => FALSE
                                           ,po_sql         => lv_sql);
-          lv_sql := '(SELECT meaning FROM ('||lv_sql||') WHERE code = '||lt_ntc(i).ntc_column_name||')';
+          lv_sql := 'SELECT nm_code_name_meaning_type(code,'''||lv_prompt||''', meaning) FROM (SELECT DISTINCT code,meaning FROM('||lv_sql||'))';
+          EXECUTE IMMEDIATE lv_sql BULK COLLECT INTO lt_domain_values;
+          FOR j IN 1..lt_domain_values.COUNT LOOP
+            --
+            g_domain_values.EXTEND;
+            g_domain_values(g_domain_values.COUNT):= lt_domain_values(j);
+            --
+          END LOOP;
           --
-          po_select_list := po_select_list||CHR(10)||'                       ,'||lv_sql||' "'||lv_prompt||'"';
+          po_select_list := po_select_list||CHR(10)||'                       ,(SELECT meaning'
+                                                                             ||' FROM domain_values'
+                                                                             ||' WHERE domain = '''||lv_prompt
+                                                                             ||''' AND code = '||lt_ntc(i).ntc_column_name
+                                                                               ||' AND rownum = 1) "'||lv_prompt||'"';
           --
       ELSE
           --
-          --po_select_list := po_select_list||CHR(10)||'                       ,'||LOWER(lt_ntc(i).ntc_column_name)||' "'||lv_prompt||'"';
           po_select_list := po_select_list||CHR(10)||'                     ,'
             ||CASE
                 WHEN lt_ntc(i).ntc_column_type = awlrs_util.c_date_col
@@ -2905,7 +2931,8 @@ AS
     --
     lv_match_cases := lv_match_cases||CHR(10)||'                          ELSE '||TO_CHAR((pi_like_cols.COUNT * 2) + 1);
     --
-    lv_retval := 'WITH elements AS(SELECT ne_id "result_id"'
+    lv_retval := 'WITH domain_values AS(SELECT name domain, code, meaning FROM TABLE(awlrs_search_api.get_domain_values_gv))'
+      ||CHR(10)||'    ,elements AS(SELECT ne_id "result_id"'
       ||CHR(10)||'                       ,ne_nt_type "network_type"'
       ||CHR(10)||'                       ,ne_gty_group_type "group_type"'
       ||CHR(10)||'                       ,ne_unique "unique_"'
@@ -5073,7 +5100,8 @@ AS
             ||CHR(10)||'      ,';
     END IF;
     --
-    lv_retval := 'WITH elements AS(SELECT ne_id "result_id"'
+    lv_retval := 'WITH domain_values AS(SELECT name domain, code, meaning FROM TABLE(awlrs_search_api.get_domain_values_gv))'
+      ||CHR(10)||'    ,elements AS(SELECT ne_id "result_id"'
       ||CHR(10)||'                       ,ne_nt_type "network_type"'
       ||CHR(10)||'                       ,ne_gty_group_type "group_type"'
       ||CHR(10)||'                       ,ne_unique "unique_"'
