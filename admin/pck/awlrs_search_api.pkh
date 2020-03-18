@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.13   Dec 11 2019 13:45:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.14   Mar 18 2020 12:59:44   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkh  $
-  --       Date into PVCS   : $Date:   Dec 11 2019 13:45:38  $
-  --       Date fetched Out : $Modtime:   Dec 11 2019 13:25:12  $
-  --       Version          : $Revision:   1.13  $
+  --       Date into PVCS   : $Date:   Mar 18 2020 12:59:44  $
+  --       Date fetched Out : $Modtime:   Mar 18 2020 10:42:12  $
+  --       Version          : $Revision:   1.14  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.14  $';
   --
   TYPE group_expression_rec IS RECORD(group_operation        VARCHAR2(100)
                                      ,group_expressions_xml  XMLTYPE
@@ -50,6 +50,12 @@ AS
   -- This function returns the current SCCS version of the package body
   FUNCTION get_body_version
     RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_domain_values_gv
+    RETURN nm_code_name_meaning_tbl;
 
   --
   -----------------------------------------------------------------------------
