@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrspkb.sql-arc   1.15   Sep 27 2019 13:09:36   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrspkb.sql-arc   1.16   Mar 18 2020 07:56:48   Vikas.Mhetre  $
 --       Module Name      : $Workfile:   awlrspkb.sql  $
---       Date into PVCS   : $Date:   Sep 27 2019 13:09:36  $
---       Date fetched Out : $Modtime:   Sep 27 2019 11:56:56  $
---       Version          : $Revision:   1.15  $
+--       Date into PVCS   : $Date:   Mar 18 2020 07:56:48  $
+--       Date fetched Out : $Modtime:   Mar 18 2020 07:55:28  $
+--       Version          : $Revision:   1.16  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
@@ -416,6 +416,48 @@ SET TERM OFF
 SET define ON
 SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
        ||'&terminator'||'awlrs_user_api.pkw' run_file
+  FROM dual
+     ;
+SET feedback ON
+START '&run_file'
+SET feedback OFF
+--
+-------------------------------------------------------------------------
+--
+SET TERM ON
+PROMPT awlrs_sdl_util
+SET TERM OFF
+SET define ON
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
+       ||'&terminator'||'awlrs_sdl_util.pkw' run_file
+  FROM dual
+     ;
+SET feedback ON
+START '&run_file'
+SET feedback OFF
+--
+-------------------------------------------------------------------------
+--
+SET TERM ON
+PROMPT awlrs_sdl_profiles_api
+SET TERM OFF
+SET define ON
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
+       ||'&terminator'||'awlrs_sdl_profiles_api.pkw' run_file
+  FROM dual
+     ;
+SET feedback ON
+START '&run_file'
+SET feedback OFF
+--
+-------------------------------------------------------------------------
+--
+SET TERM ON
+PROMPT awlrs_sdl_upload_api
+SET TERM OFF
+SET define ON
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
+       ||'&terminator'||'awlrs_sdl_upload_api.pkw' run_file
   FROM dual
      ;
 SET feedback ON
