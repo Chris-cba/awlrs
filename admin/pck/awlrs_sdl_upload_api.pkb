@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_upload_api.pkb-arc   1.0   Mar 12 2020 20:22:54   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_upload_api.pkb-arc   1.1   Mar 18 2020 14:00:54   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_upload_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 12 2020 20:22:54  $
-  --       Date fetched Out : $Modtime:   Mar 12 2020 19:08:56  $
-  --       PVCS Version     : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Mar 18 2020 14:00:54  $
+  --       Date fetched Out : $Modtime:   Mar 18 2020 13:48:08  $
+  --       PVCS Version     : $Revision:   1.1  $
   --
   --   Author : Vikas Mhetre
   --
@@ -168,10 +168,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
             );
     --
     sdl_audit.log_process_start(p_batch_id, p_status, NULL, NULL, NULL);
-    --
-	  IF SQL%ROWCOUNT > 0 THEN
-      COMMIT;
-	  END IF;
     --
     po_batch_id := p_batch_id;
     --
@@ -336,11 +332,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
     -- Update batch status to load
     sdl_audit.log_process_end(pi_batch_id, 'LOAD');
-    --
-    IF SQL%ROWCOUNT > 0 THEN
-      --DBMS_OUTPUT.PUT_LINE('updated records: '|| SQL%ROWCOUNT);
-      COMMIT;
-    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1094,10 +1085,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
      WHERE sld_status = 'INVALID'
        AND sld_sfs_id = pi_batch_id;
     --
-    IF SQL%ROWCOUNT > 0 THEN
-      COMMIT;
-    END IF;
-    --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
@@ -1120,10 +1107,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
        SET sfs_attri_validation_completed = 'Y'
      WHERE sfs_id = pi_batch_id
        AND sfs_attri_validation_completed = 'N';
-    --
-    IF SQL%ROWCOUNT > 0 THEN
-      COMMIT;
-    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1234,10 +1217,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
        SET sfs_spatial_analysis_completed = 'Y'
      WHERE sfs_id = pi_batch_id
        AND sfs_spatial_analysis_completed = 'N';
-    --
-    IF SQL%ROWCOUNT > 0 THEN
-      COMMIT;
-    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -2638,9 +2617,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
             SET sfs_attri_validation_completed = 'N'
           WHERE sfs_id = pi_batch_id;
          --
-         IF SQL%ROWCOUNT > 0 THEN
-           COMMIT;
-         END IF;
        END IF;
     --
   EXCEPTION
@@ -2670,9 +2646,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
           SET sfs_spatial_analysis_completed = 'N'
         WHERE sfs_id = pi_batch_id;
        --
-       IF SQL%ROWCOUNT > 0 THEN
-         COMMIT;
-       END IF;
      END IF;
     --
   EXCEPTION
@@ -2698,9 +2671,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
      WHERE sfs_id = pi_batch_id
        AND sfs_load_data_completed = 'N';
     --
-    IF SQL%ROWCOUNT > 0 THEN
-      COMMIT;
-    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
