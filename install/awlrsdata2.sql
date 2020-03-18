@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.25   Feb 12 2020 15:51:14   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.26   Mar 18 2020 16:00:18   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Feb 12 2020 15:51:14  $
---       Date fetched Out : $Modtime:   Feb 12 2020 15:47:30  $
---       Version          : $Revision:   1.25  $
+--       Date into PVCS   : $Date:   Mar 18 2020 16:00:18  $
+--       Date fetched Out : $Modtime:   Mar 18 2020 15:44:16  $
+--       Version          : $Revision:   1.26  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 12-FEB-2020 15:47
+--       Generation Date  : 18-MAR-2020 15:44
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -1552,6 +1552,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 84);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,85
+      ,null
+      ,'Route is ill-formed. Please check your changes'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 85);
 --
 ----------------------------------------------------------------------------------------
 -- HIG_STANDARD_FAVOURITES
