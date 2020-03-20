@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.40   Mar 20 2020 12:25:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.41   Mar 20 2020 14:15:44   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 20 2020 12:25:18  $
-  --       Date fetched Out : $Modtime:   Mar 19 2020 22:59:52  $
-  --       Version          : $Revision:   1.40  $
+  --       Date into PVCS   : $Date:   Mar 20 2020 14:15:44  $
+  --       Date fetched Out : $Modtime:   Mar 20 2020 14:14:26  $
+  --       Version          : $Revision:   1.41  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.40  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.41  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -5343,6 +5343,7 @@ AS
     lv_concat    nm3type.max_varchar2 := 'lt_results(i).ne_id||'',"''||lt_results(i).ne_nt_type||''","''||lt_results(i).ne_gty_group_type||''","''||lt_results(i).ne_unique||''"''';
     lv_flx_sql   nm3type.max_varchar2;
     lv_dom_sql   nm3type.max_varchar2;
+    lv_bind_var  VARCHAR2(30);
     lv_field     VARCHAR2(100);
     lv_tmp_clob  CLOB;
     lv_title     CLOB := '"Id","Network Type","Group Type","Unique"';
@@ -5393,12 +5394,22 @@ AS
       IF lv_flx_sql IS NOT NULL
        THEN
           --
-          awlrs_element_api.gen_domain_sql(pi_nt_type     => pi_theme_types.network_type
-                                          ,pi_column_name => lt_attr(i).ntc_column_name
-                                          ,pi_bind_value  => REPLACE(nm3flx.extract_bind_variable(lv_flx_sql),':',NULL)
-                                          ,pi_ordered     => FALSE
-                                          ,po_sql         => lv_dom_sql);
-          lv_dom_sql := '(SELECT meaning FROM ('||REPLACE(lv_dom_sql,CHR(10),' ')||') WHERE code = '||lt_attr(i).ntc_column_name||')';
+          lv_bind_var := REPLACE(nm3flx.extract_bind_variable(lv_flx_sql),':',NULL);
+          --
+          IF lv_bind_var IS NULL
+           THEN
+              awlrs_element_api.gen_domain_sql(pi_nt_type     => pi_theme_types.network_type
+                                              ,pi_column_name => lt_attr(i).ntc_column_name
+                                              ,pi_bind_value  => NULL
+                                              ,pi_ordered     => FALSE
+                                              ,po_sql         => lv_dom_sql);
+              lv_dom_sql := '(SELECT meaning FROM ('||REPLACE(lv_dom_sql,CHR(10),' ')||') WHERE code = '||lt_attr(i).ntc_column_name||')';
+              --
+          ELSE
+              --
+              lv_dom_sql := 'awlrs_search_api.get_sql_based_domain_meaning(ne_nt_type,'''||lt_attr(i).ntc_column_name||''','||lt_attr(i).ntc_column_name||','||lv_bind_var||')';
+              --
+          END IF;
           --
           lv_sql := lv_sql||','||lv_dom_sql||' '||lt_attr(i).ntc_column_name;
           --
@@ -5410,16 +5421,8 @@ AS
       /*
       ||Set the field for concatenation.
       */
-      lv_field := CASE
-                    WHEN lt_attr(i).ntc_column_type = 'VARCHAR2'
-                     THEN
-                        '''"''||lt_results(i).'||lt_attr(i).ntc_column_name||'||''"'''
-                    WHEN lt_attr(i).ntc_column_type = 'DATE'
-                     THEN
-                        'TO_CHAR(lt_results(i).'||lt_attr(i).ntc_column_name||',''DD-MON-YYYY HH24:MI'')'
-                    ELSE
-                        'lt_results(i).'||lt_attr(i).ntc_column_name
-                  END;
+      lv_field := '''"''||lt_results(i).'||lt_attr(i).ntc_column_name||'||''"''';
+      --
       lv_concat := lv_concat||'||'',''||'||lv_field;
       --
     END LOOP;
@@ -5454,6 +5457,7 @@ AS
     ||' END;'
     ;
     --
+dbms_output.put_line(lv_sql);
     EXECUTE IMMEDIATE lv_sql USING pi_ids, OUT lv_tmp_clob;
     --
     lv_retval := lv_title||lv_tmp_clob;
