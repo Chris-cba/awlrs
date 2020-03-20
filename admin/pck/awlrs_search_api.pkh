@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.14   Mar 18 2020 12:59:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.15   Mar 20 2020 12:22:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkh  $
-  --       Date into PVCS   : $Date:   Mar 18 2020 12:59:44  $
-  --       Date fetched Out : $Modtime:   Mar 18 2020 10:42:12  $
-  --       Version          : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   Mar 20 2020 12:22:56  $
+  --       Date fetched Out : $Modtime:   Mar 19 2020 21:43:52  $
+  --       Version          : $Revision:   1.15  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.14  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.15  $';
   --
   TYPE group_expression_rec IS RECORD(group_operation        VARCHAR2(100)
                                      ,group_expressions_xml  XMLTYPE
@@ -52,10 +52,13 @@ AS
     RETURN VARCHAR2;
 
   --
-  -----------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   --
-  FUNCTION get_domain_values_gv
-    RETURN nm_code_name_meaning_tbl;
+  FUNCTION get_sql_based_domain_meaning(pi_nt_type     IN nm_type_columns.ntc_nt_type%TYPE
+                                       ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE
+                                       ,pi_value       IN VARCHAR2
+                                       ,pi_bind_value  IN VARCHAR2)
+    RETURN VARCHAR2;
 
   --
   -----------------------------------------------------------------------------
