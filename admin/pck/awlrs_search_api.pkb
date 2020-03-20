@@ -3,23 +3,26 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.27.1.1   Mar 18 2020 16:58:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.27.1.2   Mar 20 2020 14:22:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 18 2020 16:58:30  $
-  --       Date fetched Out : $Modtime:   Mar 18 2020 16:53:24  $
-  --       Version          : $Revision:   1.27.1.1  $
+  --       Date into PVCS   : $Date:   Mar 20 2020 14:22:22  $
+  --       Date fetched Out : $Modtime:   Mar 20 2020 14:14:22  $
+  --       Version          : $Revision:   1.27.1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.27.1.1  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.27.1.2  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
   g_default_date_format      VARCHAR2(100);
   g_default_datetime_format  VARCHAR2(100);
   g_domain_values  nm_code_name_meaning_tbl := nm_code_name_meaning_tbl();
+  --
+  TYPE domain_meaning_store_tab IS TABLE OF VARCHAR2(32767) INDEX BY VARCHAR2(32767);
+  g_domain_meaning_store  domain_meaning_store_tab;
   --
   --
   -----------------------------------------------------------------------------
@@ -2436,6 +2439,55 @@ AS
   END get_asset_attributes_lists;
 
   --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_sql_based_domain_meaning(pi_nt_type     IN nm_type_columns.ntc_nt_type%TYPE
+                                       ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE
+                                       ,pi_value       IN VARCHAR2
+                                       ,pi_bind_value  IN VARCHAR2)
+    RETURN VARCHAR2 IS
+    --
+    lv_ne_id   nm_elements_all.ne_id%TYPE;
+    lv_key     nm3type.max_varchar2 := 'nt_type:'||pi_nt_type||',column_name:'||pi_column_name||',column_value:'||pi_value||',bind_value:'||pi_bind_value;
+    lv_retval  nm3type.max_varchar2 := pi_value;
+    --
+  BEGIN
+    --
+    IF lv_retval IS NOT NULL
+     THEN
+        BEGIN
+          --
+          lv_retval := g_domain_meaning_store(lv_key);
+          --
+        EXCEPTION
+          WHEN no_data_found
+           THEN
+              --
+              lv_retval := NULL;
+              --
+        END;
+        --
+        IF lv_retval IS NULL
+         THEN
+            --
+            lv_retval := pi_value;
+            --
+            nm3flx.validate_flex_column(pi_nt_type             => pi_nt_type
+                                       ,pi_column_name         => pi_column_name
+                                       ,pi_bind_variable_value => pi_bind_value
+                                       ,po_value               => lv_retval  -- actually goes in as actual value comes back out as meaning
+                                       ,po_ne_id               => lv_ne_id);
+            --
+            g_domain_meaning_store(lv_key) := lv_retval;
+            --
+        END IF;
+    END IF;
+    --
+    RETURN lv_retval;
+    --
+  END get_sql_based_domain_meaning;
+
+  --
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_network_attributes_lists(pi_nt_type       IN     nm_types.nt_type%TYPE
@@ -2446,8 +2498,7 @@ AS
     lv_prompt   nm_type_columns.ntc_prompt%TYPE;
     lv_sql      nm3type.max_varchar2;
     lv_flx_sql  nm3type.max_varchar2;
-    --
-    lt_domain_values  nm_code_name_meaning_tbl;
+    lv_bind_var  VARCHAR2(30);
     --
     TYPE ntc_rec IS RECORD(ntc_column_name  nm_type_columns.ntc_column_name%TYPE
                           ,ntc_prompt       nm_type_columns.ntc_prompt%TYPE);
@@ -2488,26 +2539,24 @@ AS
       IF lv_flx_sql IS NOT NULL
        THEN
           --
-          awlrs_element_api.gen_domain_sql(pi_nt_type     => pi_nt_type
-                                          ,pi_column_name => lt_ntc(i).ntc_column_name
-                                          ,pi_bind_value  => NULL
-                                          ,pi_ordered     => FALSE
-                                          ,po_sql         => lv_sql);
-          lv_sql := 'SELECT nm_code_name_meaning_type(code,'''||lv_prompt||''', meaning) FROM (SELECT DISTINCT code,meaning FROM('||lv_sql||'))';
-          EXECUTE IMMEDIATE lv_sql BULK COLLECT INTO lt_domain_values;
-          FOR j IN 1..lt_domain_values.COUNT LOOP
-            --
-            g_domain_values.EXTEND;
-            g_domain_values(g_domain_values.COUNT):= lt_domain_values(j);
-            --
-          END LOOP;
+          lv_bind_var := REPLACE(nm3flx.extract_bind_variable(lv_flx_sql),':',NULL);
           --
-          po_select_list := po_select_list||CHR(10)||'                       ,(SELECT meaning'
-                                                                             ||' FROM domain_values'
-                                                                             ||' WHERE domain = '''||lv_prompt
-                                                                             ||''' AND code = '||lt_ntc(i).ntc_column_name
-                                                                               ||' AND rownum = 1) "'||lv_prompt||'"';
-          --
+          IF lv_bind_var IS NULL
+           THEN
+              awlrs_element_api.gen_domain_sql(pi_nt_type     => pi_nt_type
+                                              ,pi_column_name => lt_ntc(i).ntc_column_name
+                                              ,pi_bind_value  => NULL
+                                              ,pi_ordered     => FALSE
+                                              ,po_sql         => lv_sql);
+              lv_sql := '(SELECT meaning FROM ('||lv_sql||') WHERE code = '||lt_ntc(i).ntc_column_name||')';
+              --
+              po_select_list := po_select_list||CHR(10)||'                       ,'||lv_sql||' "'||lv_prompt||'"';
+              --
+          ELSE
+              --
+              po_select_list := po_select_list||CHR(10)||'                       ,awlrs_search_api.get_sql_based_domain_meaning(ne_nt_type,'''||lt_ntc(i).ntc_column_name||''','||lt_ntc(i).ntc_column_name||','||lv_bind_var||') "'||lv_prompt||'"';
+              --
+          END IF;
       ELSE
           --
           po_select_list := po_select_list||CHR(10)||'                       ,'||LOWER(lt_ntc(i).ntc_column_name)||' "'||lv_prompt||'"';
@@ -2618,8 +2667,7 @@ AS
     --
     lv_match_cases := lv_match_cases||CHR(10)||'                          ELSE '||TO_CHAR((pi_like_cols.COUNT * 2) + 1);
     --
-    lv_retval := 'WITH domain_values AS(SELECT name domain, code, meaning FROM TABLE(awlrs_search_api.get_domain_values_gv))'
-      ||CHR(10)||'    ,elements AS(SELECT ne_id "result_id"'
+    lv_retval := 'WITH elements AS(SELECT ne_id "result_id"'
       ||CHR(10)||'                       ,ne_nt_type "network_type"'
       ||CHR(10)||'                       ,ne_gty_group_type "group_type"'
       ||CHR(10)||'                       ,ne_unique "unique_"'
@@ -2729,6 +2777,8 @@ AS
     --
   BEGIN
     --
+    g_domain_meaning_store.DELETE;
+    --
     lv_search_string := UPPER(pi_search_string);
     lv_like_string := '%'||lv_search_string||'%';
     --
@@ -2816,6 +2866,11 @@ AS
     lv_cursor            sys_refcursor;
     --
   BEGIN
+    --
+    IF NVL(pi_skip_n_rows,0) = 0
+     THEN
+        g_domain_meaning_store.DELETE;
+    END IF;
     --
     lv_search_string := UPPER(pi_search_string);
     lv_like_string := '%'||lv_search_string||'%';
@@ -3996,8 +4051,7 @@ AS
             ||CHR(10)||'      ,';
     END IF;
     --
-    lv_retval := 'WITH domain_values AS(SELECT name domain, code, meaning FROM TABLE(awlrs_search_api.get_domain_values_gv))'
-      ||CHR(10)||'    ,elements AS(SELECT ne_id "result_id"'
+    lv_retval := 'WITH elements AS(SELECT ne_id "result_id"'
       ||CHR(10)||'                       ,ne_nt_type "network_type"'
       ||CHR(10)||'                       ,ne_gty_group_type "group_type"'
       ||CHR(10)||'                       ,ne_unique "unique_"'
@@ -4080,6 +4134,8 @@ AS
     lv_nvl               VARCHAR2(10) := nm3type.get_nvl;
     --
   BEGIN
+    --
+    g_domain_meaning_store.DELETE;
     /*
     ||Generate the where clause from the given criteria.
     */
@@ -4145,6 +4201,8 @@ AS
     --
   BEGIN
     --
+    g_domain_meaning_store.DELETE;
+    --
     lv_where := 'ne_id IN(SELECT ne_id FROM TABLE(CAST(:ids AS nm_ne_id_array)))';
     --
     IF pi_max_rows IS NOT NULL
@@ -4201,6 +4259,7 @@ AS
     lv_concat    nm3type.max_varchar2 := 'lt_results(i).ne_id||'',"''||lt_results(i).ne_nt_type||''","''||lt_results(i).ne_gty_group_type||''","''||lt_results(i).ne_unique||''"''';
     lv_flx_sql   nm3type.max_varchar2;
     lv_dom_sql   nm3type.max_varchar2;
+    lv_bind_var  VARCHAR2(30);
     lv_field     VARCHAR2(100);
     lv_tmp_clob  CLOB;
     lv_title     CLOB := '"Id","Network Type","Group Type","Unique"';
@@ -4268,12 +4327,22 @@ AS
       IF lv_flx_sql IS NOT NULL
        THEN
           --
-          awlrs_element_api.gen_domain_sql(pi_nt_type     => pi_theme_types.network_type
-                                          ,pi_column_name => lt_attr(i).ntc_column_name
-                                          ,pi_bind_value  => REPLACE(nm3flx.extract_bind_variable(lv_flx_sql),':',NULL)
-                                          ,pi_ordered     => FALSE
-                                          ,po_sql         => lv_dom_sql);
-          lv_dom_sql := '(SELECT meaning FROM ('||REPLACE(lv_dom_sql,CHR(10),' ')||') WHERE code = '||lt_attr(i).ntc_column_name||')';
+          lv_bind_var := REPLACE(nm3flx.extract_bind_variable(lv_flx_sql),':',NULL);
+          --
+          IF lv_bind_var IS NULL
+           THEN
+              awlrs_element_api.gen_domain_sql(pi_nt_type     => pi_theme_types.network_type
+                                              ,pi_column_name => lt_attr(i).ntc_column_name
+                                              ,pi_bind_value  => NULL
+                                              ,pi_ordered     => FALSE
+                                              ,po_sql         => lv_dom_sql);
+              lv_dom_sql := '(SELECT meaning FROM ('||REPLACE(lv_dom_sql,CHR(10),' ')||') WHERE code = '||lt_attr(i).ntc_column_name||')';
+              --
+          ELSE
+              --
+              lv_dom_sql := 'awlrs_search_api.get_sql_based_domain_meaning(ne_nt_type,'''||lt_attr(i).ntc_column_name||''','||lt_attr(i).ntc_column_name||','||lv_bind_var||')';
+              --
+          END IF;
           --
           lv_sql := lv_sql||','||lv_dom_sql||' '||lt_attr(i).ntc_column_name;
           --
@@ -4285,16 +4354,8 @@ AS
       /*
       ||Set the field for concatenation.
       */
-      lv_field := CASE
-                    WHEN lt_attr(i).ntc_column_type = 'VARCHAR2'
-                     THEN
-                        '''"''||lt_results(i).'||lt_attr(i).ntc_column_name||'||''"'''
-                    WHEN lt_attr(i).ntc_column_type = 'DATE'
-                     THEN
-                        'TO_CHAR(lt_results(i).'||lt_attr(i).ntc_column_name||',''DD-MON-YYYY HH24:MI'')'
-                    ELSE
-                        'lt_results(i).'||lt_attr(i).ntc_column_name
-                  END;
+      lv_field := '''"''||lt_results(i).'||lt_attr(i).ntc_column_name||'||''"''';
+      --
       lv_concat := lv_concat||'||'',''||'||lv_field;
       --
     END LOOP;
@@ -4364,6 +4425,13 @@ AS
     lv_upper_index       PLS_INTEGER;
     --
   BEGIN
+    --
+    IF NVL(pi_skip_n_rows,0) = 0
+     THEN
+         --
+         g_domain_meaning_store.DELETE;
+         --
+    END IF;
     /*
     ||Generate the where clause from the given criteria.
     */
@@ -4439,6 +4507,13 @@ AS
     lv_upper_index       PLS_INTEGER;
     --
   BEGIN
+    --
+    IF NVL(pi_skip_n_rows,0) = 0
+     THEN
+         --
+         g_domain_meaning_store.DELETE;
+         --
+    END IF;
     --
     awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
                                   ,pi_skip_n_rows  => pi_skip_n_rows
@@ -4658,6 +4733,13 @@ AS
     END set_column_data;
     --
   BEGIN
+    --
+    IF NVL(pi_skip_n_rows,0) = 0
+     THEN
+         --
+         g_domain_meaning_store.DELETE;
+         --
+    END IF;
     /*
     ||Get the page parameters.
     */
