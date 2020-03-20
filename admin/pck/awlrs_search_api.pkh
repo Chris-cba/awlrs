@@ -1,0 +1,318 @@
+CREATE OR REPLACE PACKAGE awlrs_search_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.10.1.1   Mar 20 2020 14:22:50   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_search_api.pkh  $
+  --       Date into PVCS   : $Date:   Mar 20 2020 14:22:50  $
+  --       Date fetched Out : $Modtime:   Mar 19 2020 21:50:04  $
+  --       Version          : $Revision:   1.10.1.1  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10.1.1  $';
+  --
+  TYPE group_expression_rec IS RECORD(group_operation        VARCHAR2(100)
+                                     ,group_expressions_xml  XMLTYPE
+                                     ,single_expressions_xml XMLTYPE);
+  TYPE group_expression_tab IS TABLE OF group_expression_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE single_expression_rec IS RECORD(operation        VARCHAR2(10)
+                                      ,field_name       VARCHAR2(500)
+                                      ,filter_function  VARCHAR2(100)
+                                      ,has_value        VARCHAR2(10)
+                                      ,is_single_value  VARCHAR2(10)
+                                      ,is_double_value  VARCHAR2(10)
+                                      ,value1           nm3type.max_varchar2
+                                      ,value2           nm3type.max_varchar2);
+  TYPE single_expression_tab IS TABLE OF single_expression_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE columns_tab IS TABLE OF awlrs_quick_search_columns.aqsc_column%TYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE id_tab IS TABLE OF NUMBER(38) INDEX BY BINARY_INTEGER;
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_sql_based_domain_meaning(pi_nt_type     IN nm_type_columns.ntc_nt_type%TYPE
+                                       ,pi_column_name IN nm_type_columns.ntc_column_name%TYPE
+                                       ,pi_value       IN VARCHAR2
+                                       ,pi_bind_value  IN VARCHAR2)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_search_attributes(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_domain_values(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                             ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_domain_values(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                   ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
+                                   ,pi_filter           IN  VARCHAR2
+                                   ,pi_skip_n_rows      IN  PLS_INTEGER
+                                   ,pi_pagesize         IN  PLS_INTEGER
+                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_quick_search_results(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                    ,pi_search_string    IN  VARCHAR2
+                                    ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                                    ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                                    ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                                    ,pi_max_rows         IN  NUMBER DEFAULT NULL
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_quick_search_results(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                          ,pi_search_string    IN  VARCHAR2
+                                          ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                                          ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                                          ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                                          ,pi_skip_n_rows      IN  PLS_INTEGER
+                                          ,pi_pagesize         IN  PLS_INTEGER
+                                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor   OUT sys_refcursor
+                                          ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_search_results(pi_theme_name           IN  nm_themes_all.nth_theme_name%TYPE
+                              ,pi_criteria             IN  XMLTYPE
+                              ,pi_net_filter_ne_id     IN  nm_elements_all.ne_id%TYPE DEFAULT NULL
+                              ,pi_net_filter_marker_id IN  nm_inv_items_all.iit_ne_id%TYPE DEFAULT NULL
+                              ,pi_net_filter_from      IN  NUMBER DEFAULT NULL
+                              ,pi_net_filter_to        IN  NUMBER DEFAULT NULL
+                              ,pi_net_filter_nse_id    IN  nm_saved_extents.nse_id%TYPE DEFAULT NULL
+                              ,pi_include_enddated     IN  VARCHAR2 DEFAULT 'N'
+                              ,pi_order_column         IN  VARCHAR2 DEFAULT NULL
+                              ,pi_order_asc_desc       IN  VARCHAR2 DEFAULT NULL
+                              ,pi_max_rows             IN  NUMBER DEFAULT NULL
+                              ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor       OUT sys_refcursor
+                              ,po_cursor               OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_search_results(pi_theme_name           IN  nm_themes_all.nth_theme_name%TYPE
+                                    ,pi_criteria             IN  XMLTYPE
+                                    ,pi_net_filter_ne_id     IN  nm_elements_all.ne_id%TYPE DEFAULT NULL
+                                    ,pi_net_filter_marker_id IN  nm_inv_items_all.iit_ne_id%TYPE DEFAULT NULL
+                                    ,pi_net_filter_from      IN  NUMBER DEFAULT NULL
+                                    ,pi_net_filter_to        IN  NUMBER DEFAULT NULL
+                                    ,pi_net_filter_nse_id    IN  nm_saved_extents.nse_id%TYPE DEFAULT NULL
+                                    ,pi_include_enddated     IN  VARCHAR2 DEFAULT 'N'
+                                    ,pi_order_column         IN  VARCHAR2 DEFAULT NULL
+                                    ,pi_order_asc_desc       IN  VARCHAR2 DEFAULT NULL
+                                    ,pi_skip_n_rows          IN  PLS_INTEGER
+                                    ,pi_pagesize             IN  PLS_INTEGER
+                                    ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor       OUT sys_refcursor
+                                    ,po_cursor               OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_results_by_id(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                             ,pi_ids              IN  id_tab
+                             ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                             ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                             ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                             ,pi_max_rows         IN  NUMBER DEFAULT NULL
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_results_by_id(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                   ,pi_ids              IN  id_tab
+                                   ,pi_include_enddated IN  VARCHAR2 DEFAULT 'N'
+                                   ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                   ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                   ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                   ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                   ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                   ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                   ,pi_skip_n_rows      IN  PLS_INTEGER
+                                   ,pi_pagesize         IN  PLS_INTEGER
+                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_results_by_id_csv(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                 ,pi_ids              IN  id_tab
+                                 ,pi_include_wkt      IN  VARCHAR2 DEFAULT 'N'
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_all_results_csv(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                               ,pi_max_rows         IN  NUMBER DEFAULT NULL
+                               ,pi_include_wkt      IN  VARCHAR2 DEFAULT 'N'
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_network_types(pi_filter           IN  VARCHAR2
+                                     ,pi_skip_n_rows      IN  PLS_INTEGER
+                                     ,pi_pagesize         IN  PLS_INTEGER
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_group_types(pi_nt_type          IN  nm_types.nt_type%TYPE
+                                   ,pi_filter           IN  VARCHAR2
+                                   ,pi_skip_n_rows      IN  PLS_INTEGER
+                                   ,pi_pagesize         IN  PLS_INTEGER
+                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_marker_types(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                    ,pi_filter           IN  VARCHAR2
+                                    ,pi_skip_n_rows      IN  PLS_INTEGER
+                                    ,pi_pagesize         IN  PLS_INTEGER
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_marker_items(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                    ,pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                                    ,pi_filter           IN  VARCHAR2
+                                    ,pi_skip_n_rows      IN  PLS_INTEGER
+                                    ,pi_pagesize         IN  PLS_INTEGER
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_elements(pi_nt_type          IN  nm_types.nt_type%TYPE
+                                ,pi_group_type       IN  nm_group_types_all.ngt_group_type%TYPE DEFAULT NULL
+                                ,pi_filter           IN  VARCHAR2
+                                ,pi_skip_n_rows      IN  PLS_INTEGER
+                                ,pi_pagesize         IN  PLS_INTEGER
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_extents(pi_filter           IN  VARCHAR2
+                               ,pi_skip_n_rows      IN  PLS_INTEGER
+                               ,pi_pagesize         IN  PLS_INTEGER
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_element_and_extent(pi_filter           IN  VARCHAR2
+                                          ,pi_skip_n_rows      IN  PLS_INTEGER
+                                          ,pi_pagesize         IN  PLS_INTEGER
+                                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor   OUT sys_refcursor
+                                          ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE save_criteria(pi_theme_name           IN  nm_themes_all.nth_theme_name%TYPE
+                         ,pi_name                 IN  awlrs_saved_search_criteria.assc_name%TYPE
+                         ,pi_description          IN  awlrs_saved_search_criteria.assc_description%TYPE
+                         ,pi_criteria             IN  awlrs_saved_search_criteria.assc_criteria%TYPE
+                         ,pi_net_filter_ne_id     IN  nm_elements_all.ne_id%TYPE DEFAULT NULL
+                         ,pi_net_filter_nse_id    IN  nm_saved_extents.nse_id%TYPE DEFAULT NULL
+                         ,pi_net_filter_marker_id IN  nm_inv_items_all.iit_ne_id%TYPE DEFAULT NULL
+                         ,pi_net_filter_from      IN  NUMBER DEFAULT NULL
+                         ,pi_net_filter_to        IN  NUMBER DEFAULT NULL
+                         ,pi_overwrite_existing   IN  VARCHAR2 DEFAULT 'N'
+                         ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor       OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_criteria(pi_assc_id          IN  awlrs_saved_search_criteria.assc_id%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_criteria(pi_assc_id          IN  awlrs_saved_search_criteria.assc_id%TYPE
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor
+                        ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_criteria_list(po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor
+                             ,po_cursor           OUT sys_refcursor);
+
+END awlrs_search_api;
+/
