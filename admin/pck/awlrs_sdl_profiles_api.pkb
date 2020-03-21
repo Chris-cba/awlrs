@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.4   Mar 17 2020 14:50:50   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.5   Mar 21 2020 18:14:08   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 17 2020 14:50:50  $
-  --       Date fetched Out : $Modtime:   Mar 17 2020 14:50:18  $
-  --       PVCS Version     : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   Mar 21 2020 18:14:08  $
+  --       Date fetched Out : $Modtime:   Mar 21 2020 18:07:58  $
+  --       PVCS Version     : $Revision:   1.5  $
   --
   --   Author : Vikas Mhetre
   --
@@ -460,7 +460,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor   OUT sys_refcursor)
   IS
-  --
+    --
+    ln_count NUMBER;
+    --
   BEGIN
     --
     generate_profile_views(pi_profile_id);
@@ -469,7 +471,14 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     -- in Manage Profiles screen in future release
     -- Administrator should configure datum mappings along with profile attribute mappings through SDL application
     -- This has been added as a temporary (kind of hardcoded) logic to insert default values for datum mappings
-    default_datum_attribute_mapping(pi_profile_id);
+    SELECT COUNT(1)
+      INTO ln_count
+      FROM sdl_datum_attribute_mapping s
+     WHERE s.sdam_profile_id = pi_profile_id;
+
+    IF ln_count = 0 THEN -- If datum mappings already exists do not call it 
+      default_datum_attribute_mapping(pi_profile_id);
+    END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
