@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.11   Mar 11 2020 10:34:42   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Mar 11 2020 10:34:42  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.12   Apr 09 2020 15:40:48   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Apr 09 2020 15:40:48  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Mar 11 2020 10:32:22  $
-  --       Version          : $Revision:   1.11  $
+  --       Date fetched Out : $Modtime:   Apr 09 2020 15:38:12  $
+  --       Version          : $Revision:   1.12  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.11  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.12  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -197,6 +197,55 @@ AS
   --
   -----------------------------------------------------------------------------
   -- 
+  PROCEDURE sso_user_yn(pi_username         IN     hig_users.hus_username%TYPE
+                       ,po_sso_user           OUT  varchar2
+                       ,po_message_severity   OUT  hig_codes.hco_code%TYPE
+                       ,po_message_cursor     OUT  sys_refcursor)
+  IS   
+  --
+  lv_email  nm_mail_users.nmu_email_address%TYPE;
+  --
+  BEGIN
+    --
+    --first check that the username passed in matches who is actually logged in--
+    IF UPPER(pi_username) <> SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME')
+      THEN
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   =>  560
+                     ,pi_supplementary_info  => 'Username: '|| pi_username);
+    END IF;  
+    --
+    SELECT 'Y'      
+      INTO po_sso_user
+      FROM hig_users
+          ,nm_mail_users  
+          ,hig_relationship
+     WHERE UPPER(hus_username) = UPPER(pi_username)
+       AND hus_user_id         = nmu_hus_user_id
+       AND hir_attribute1      = nmu_email_address;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    --
+    WHEN NO_DATA_FOUND
+     THEN
+        po_sso_user := 'N';
+        -- although set by raising an exception, it is still valid so set it as successful --
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --    
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+    --                               
+  END sso_user_yn;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
   FUNCTION override_pwd(pi_email  IN  nm_mail_users.nmu_email_address%TYPE)                     
     RETURN varchar2
   IS
@@ -5151,7 +5200,97 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_user_option;                                                                                                                                                
-                                
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE change_password(pi_username           IN     hig_users.hus_username%TYPE
+                           ,pi_old_password       IN     varchar2
+                           ,pi_new_password1      IN     varchar2
+                           ,pi_new_password2      IN     varchar2
+                           ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                           ,po_message_cursor       OUT  sys_refcursor)    
+  IS
+    --
+   	e_field_mandatory exception;
+	e_passwds_different exception;
+    e_old_pass_invalid exception;
+    e_password_reuse   exception;
+    --pragma exception_init(e_password_reuse, -28007); 
+    --
+    lv_error_msg VARCHAR2(2000);
+    --
+  BEGIN
+    --
+    SAVEPOINT change_password_sp;
+    --
+    awlrs_util.check_historic_mode; 
+    --
+    /*  covered by UI, but kept in as placeholder should it need to be included 
+    IF not check_old_password  
+      THEN  
+        RAISE e_old_pass_invalid;
+    END IF;	
+	*/			
+	IF (   pi_new_password1 IS NULL
+	   OR  pi_new_password2 IS NULL)
+     THEN
+	   RAISE e_field_mandatory;
+	END IF;
+	--
+	IF pi_new_password1 <> pi_new_password2
+	  THEN
+	   RAISE e_passwds_different;
+	END IF;
+	--
+	IF NOT nm3flx.is_string_valid_for_password(pi_password => pi_new_password1
+                                              ,po_reason   => lv_error_msg
+                                             )
+     THEN
+        hig.raise_ner(pi_appl               => 'NET'
+                     ,pi_id                 => 555
+                     ,pi_supplementary_info => lv_error_msg);
+    END IF;
+	--
+	--first check that the username passed in matches who is actually logged in--
+    IF UPPER(pi_username) = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME')
+      THEN
+        nm3user_admin.change_user_password(pi_user       => pi_username 
+	                                      ,pi_new_passwd => pi_new_password1
+	                                      ,pi_old_passwd => pi_old_password);
+	ELSE  
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   =>  560
+                     ,pi_supplementary_info  => 'Username: '|| pi_username);
+    END IF;  
+    --
+	awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN e_field_mandatory
+      THEN
+         hig.raise_ner(pi_appl               => 'HIG'
+                      ,pi_id                 => 22
+                      ,pi_supplementary_info => 'New password');
+    WHEN e_passwds_different
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 89); 
+    WHEN e_old_pass_invalid
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 153);    
+    --WHEN e_password_reuse
+    --  THEN
+    --    debug_alert(dbms_error_text);
+    WHEN others
+     THEN
+        ROLLBACK TO change_password_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END change_password;     
+                                                     
   --                                  
 
 END awlrs_user_api;
