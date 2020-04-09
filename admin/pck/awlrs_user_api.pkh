@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkh-arc   1.2   Nov 25 2019 10:48:46   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Nov 25 2019 10:48:46  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkh-arc   1.3   Apr 09 2020 15:40:50   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Apr 09 2020 15:40:50  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkh  $
-  --       Date fetched Out : $Modtime:   Nov 13 2019 11:00:22  $
-  --       Version          : $Revision:   1.2  $
+  --       Date fetched Out : $Modtime:   Mar 13 2020 15:08:38  $
+  --       Version          : $Revision:   1.3  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
 
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.3  $"';
 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -36,6 +36,14 @@ AS
   -----------------------------------------------------------------------------
   --
   FUNCTION sso_user_yn(pi_email  IN  nm_mail_users.nmu_email_address%TYPE) RETURN varchar2;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE sso_user_yn(pi_username         IN     hig_users.hus_username%TYPE
+                       ,po_sso_user           OUT  varchar2
+                       ,po_message_severity   OUT  hig_codes.hco_code%TYPE
+                       ,po_message_cursor     OUT  sys_refcursor);
   
   --
   -----------------------------------------------------------------------------
@@ -562,7 +570,17 @@ AS
                               ,pi_option_id        IN      hig_user_options.huo_id%TYPE
                               ,pi_option_value     IN      hig_user_options.huo_value%TYPE
                               ,po_message_severity    OUT  hig_codes.hco_code%TYPE
-                              ,po_message_cursor      OUT  sys_refcursor);                                                                                                                                   
+                              ,po_message_cursor      OUT  sys_refcursor); 
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE change_password(pi_username           IN     hig_users.hus_username%TYPE
+                           ,pi_old_password       IN     varchar2
+                           ,pi_new_password1      IN     varchar2
+                           ,pi_new_password2      IN     varchar2
+                           ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                           ,po_message_cursor       OUT  sys_refcursor);                                                                                                                                                               
   --
   
 END awlrs_user_api;
