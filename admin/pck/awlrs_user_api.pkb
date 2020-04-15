@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.12   Apr 09 2020 15:40:48   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Apr 09 2020 15:40:48  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.13   Apr 15 2020 10:30:14   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Apr 15 2020 10:30:14  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Apr 09 2020 15:38:12  $
-  --       Version          : $Revision:   1.12  $
+  --       Date fetched Out : $Modtime:   Apr 14 2020 12:27:18  $
+  --       Version          : $Revision:   1.13  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.12  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.13  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -1488,9 +1488,6 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Username'
                                ,pi_parameter_value => pi_username);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Password'
-                               ,pi_parameter_value => pi_password);
-    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date'
                                ,pi_parameter_value => pi_start_date);
     --
@@ -1514,6 +1511,18 @@ AS
     --                           
     awlrs_util.validate_yn(pi_parameter_desc  => 'SSO User Override Password?'
                           ,pi_parameter_value => pi_override_password);                                                         
+    --
+    -- only need to validate password when either NOT SSO -- 
+    -- or SSO and user wants to override password with one of their own --
+    IF (    pi_sso_user = 'N'
+        OR 
+       (    pi_sso_user = 'Y' 
+        AND pi_override_password = 'Y')
+       )
+      THEN
+         awlrs_util.validate_notnull(pi_parameter_desc  => 'Password'
+                                    ,pi_parameter_value => pi_password);
+    END IF;                                
     --
     --Data Validation Routines
     --
@@ -1542,7 +1551,7 @@ AS
     */
     -- SSO
     IF (    pi_sso_user = 'Y'
-        AND pi_override_password = 'Y')
+        AND pi_override_password = 'N')
       THEN
         lv_password := hig_relationship_api.f_generate_password;
     --ELSE
