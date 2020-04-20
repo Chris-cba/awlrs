@@ -3,17 +3,21 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.9   Dec 10 2018 12:02:16   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.10   Apr 20 2020 15:19:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkh  $
-  --       Date into PVCS   : $Date:   Dec 10 2018 12:02:16  $
-  --       Date fetched Out : $Modtime:   Dec 06 2018 16:29:02  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   Apr 20 2020 15:19:04  $
+  --       Date fetched Out : $Modtime:   Apr 20 2020 14:02:20  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
+  --
+  TYPE iit_tab IS TABLE OF nm_inv_items_all%ROWTYPE INDEX BY BINARY_INTEGER;
+  gt_layers      iit_tab;
+  gt_new_layers  iit_tab;
   --
   TYPE iit_ne_id_tab IS TABLE OF nm_inv_items_all.iit_ne_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -39,9 +43,9 @@ AS
   */
   c_rc_mrg_qry_option      CONSTANT hig_options.hop_id%TYPE := 'AWL_RCMRGQ';--'
   c_rc_mrg_qry             CONSTANT nm_mrg_query.nmq_id%TYPE := hig.get_sysopt(p_option_id => c_rc_mrg_qry_option);
-  c_layer_attrib_name      CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := 'IIT_POSITION';
-  c_thickness_attrib_name  CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := 'IIT_NUM_ATTRIB16';
-  c_material_attrib_name   CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := 'IIT_CHR_ATTRIB27';
+  c_layer_attrib_name      CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := hig.get_sysopt(p_option_id => 'PLMLYRNO');
+  c_thickness_attrib_name  CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := hig.get_sysopt(p_option_id => 'PLMLYRTHIC');
+  c_material_attrib_name   CONSTANT nm_inv_type_attribs.ita_attrib_name%TYPE := hig.get_sysopt(p_option_id => 'PLMLYRMAT');
   --
   -----------------------------------------------------------------------------
   --
@@ -79,7 +83,7 @@ AS
                                        ,po_message_cursor              OUT sys_refcursor);
   --
   -----------------------------------------------------------------------------
-  --  
+  --
   PROCEDURE reconstruct_cons_records(pi_admin_unit               IN     nm_admin_units_all.nau_admin_unit%TYPE
                                     ,pi_description              IN     nm_inv_items_all.iit_descr%TYPE
                                     ,pi_start_date               IN     nm_inv_items_all.iit_start_date%TYPE
@@ -95,7 +99,7 @@ AS
                                     ,pi_gaps_xsps                IN     xsp_tab
                                     ,pi_gaps_ne_ids              IN     awlrs_util.ne_id_tab
                                     ,pi_gaps_begin_mps           IN     location_from_offset_tab
-                                    ,pi_gaps_end_mps             IN     location_to_offset_tab                                                 
+                                    ,pi_gaps_end_mps             IN     location_to_offset_tab
                                     ,pi_layer_attrib_idx         IN     iit_ne_id_tab
                                     ,pi_layer_attrib_names       IN     awlrs_asset_api.attrib_name_tab
                                     ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
@@ -125,8 +129,8 @@ AS
                                     ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab
                                     ,pi_depth_removed            IN     NUMBER
                                     ,po_message_severity            OUT hig_codes.hco_code%TYPE
-                                    ,po_message_cursor              OUT sys_refcursor);                                            
-                                       
+                                    ,po_message_cursor              OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
   --
@@ -167,9 +171,9 @@ AS
                                        ,pi_ne_id              IN     nm_elements_all.ne_id%TYPE
                                        ,pi_begin_mp           IN     nm_members_all.nm_begin_mp%TYPE
                                        ,pi_end_mp             IN     nm_members_all.nm_end_mp%TYPE
-                                       ,po_iit_ne_ids         IN OUT iit_ne_id_tab                                       
+                                       ,po_iit_ne_ids         IN OUT iit_ne_id_tab
                                        ,po_message_severity      OUT hig_codes.hco_code%TYPE
-                                       ,po_message_cursor        OUT sys_refcursor);                                       
+                                       ,po_message_cursor        OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
@@ -363,13 +367,13 @@ AS
                           ,po_message_severity OUT hig_codes.hco_code%TYPE
                           ,po_message_cursor   OUT sys_refcursor
                           ,po_cursor           OUT sys_refcursor);
-                          
+
   --
   -----------------------------------------------------------------------------
   --
   FUNCTION is_pavement_data(pi_ne_id nm_elements.ne_id%TYPE)
    RETURN VARCHAR2;
-   
+
   --
   -----------------------------------------------------------------------------
   --
@@ -382,14 +386,14 @@ AS
   PROCEDURE get_network_elements(pi_ne_ids awlrs_util.ne_id_tab
                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
                                 ,po_message_cursor   OUT sys_refcursor
-                                ,po_cursor           OUT sys_refcursor);      
+                                ,po_cursor           OUT sys_refcursor);
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_xsps(pi_ne_ids           awlrs_util.ne_id_tab
+  PROCEDURE get_xsps(pi_ne_ids           IN  awlrs_util.ne_id_tab
                     ,po_message_severity OUT hig_codes.hco_code%TYPE
                     ,po_message_cursor   OUT sys_refcursor
-                    ,po_cursor           OUT sys_refcursor);     
+                    ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
@@ -407,11 +411,11 @@ AS
   --
   PROCEDURE get_construction_gaps(pi_ne_ids             IN  awlrs_util.ne_id_tab
                                  ,pi_xsps               IN  xsp_tab
-                                 ,pi_begin_mps          IN  location_from_offset_tab                                 
-                                 ,pi_end_mps            IN  location_to_offset_tab                                 
+                                 ,pi_begin_mps          IN  location_from_offset_tab
+                                 ,pi_end_mps            IN  location_to_offset_tab
                                  ,po_cursor             OUT sys_refcursor
                                  ,po_message_severity   OUT hig_codes.hco_code%TYPE
-                                 ,po_message_cursor     OUT sys_refcursor);                                   
+                                 ,po_message_cursor     OUT sys_refcursor);
   --
 END awlrs_plm_api;
 /
