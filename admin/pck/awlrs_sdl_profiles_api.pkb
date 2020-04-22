@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.5   Mar 21 2020 18:14:08   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.6   Apr 22 2020 19:49:54   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 21 2020 18:14:08  $
-  --       Date fetched Out : $Modtime:   Mar 21 2020 18:07:58  $
-  --       PVCS Version     : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   Apr 22 2020 19:49:54  $
+  --       Date fetched Out : $Modtime:   Apr 22 2020 10:08:06  $
+  --       PVCS Version     : $Revision:   1.6  $
   --
   --   Author : Vikas Mhetre
   --
@@ -298,6 +298,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     lv_formula       sdl_datum_attribute_mapping.sdam_formula%TYPE;
     ln_max_seq       sdl_datum_attribute_mapping.sdam_seq_no%TYPE;
     lv_insert        nm3type.max_varchar2;
+    lv_exists        VARCHAR2(1) := 'N';
     --
     FUNCTION get_domain_default_value (pi_datum_type    sdl_datum_attribute_mapping.sdam_nw_type%TYPE,
                                        pi_column_name   sdl_datum_attribute_mapping.sdam_column_name%TYPE)
@@ -365,10 +366,25 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     lv_column_name := 'NE_NAME_2';
     lv_formula := '';
     lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
-    IF lv_default_value IS NULL THEN
+    --
+    BEGIN
+      SELECT 'Y'
+        INTO lv_exists
+        FROM sdl_attribute_mapping 
+       WHERE sam_sp_id = pi_profile_id 
+         AND sam_ne_column_name = 'NE_OWNER';
+    EXCEPTION
+      WHEN OTHERS THEN
+        lv_exists := 'N';     
+    END;     
+    --
+    IF lv_default_value IS NULL AND lv_exists = 'Y' THEN
       lv_formula := 'l.ne_owner';
+    ELSE
+      lv_formula := '';
+      lv_default_value := '00';
     END IF;
-
+    --
     INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
     VALUES (pi_profile_id, lv_datum_type, 6, lv_column_name, lv_default_value, lv_formula);
     -- NE_GROUP
@@ -465,8 +481,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
-    generate_profile_views(pi_profile_id);
-    --
     -- default_datum_attribute_mapping to be replaced with a new UI to insert datum attribute mappings
     -- in Manage Profiles screen in future release
     -- Administrator should configure datum mappings along with profile attribute mappings through SDL application
@@ -475,10 +489,14 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
       INTO ln_count
       FROM sdl_datum_attribute_mapping s
      WHERE s.sdam_profile_id = pi_profile_id;
-
-    IF ln_count = 0 THEN -- If datum mappings already exists do not call it 
-      default_datum_attribute_mapping(pi_profile_id);
+    --
+    IF ln_count > 0 THEN -- If datum mappings already exists re-create it
+      DELETE sdl_datum_attribute_mapping s WHERE s.sdam_profile_id = pi_profile_id;
     END IF;
+    --
+    default_datum_attribute_mapping(pi_profile_id);
+    --
+    generate_profile_views(pi_profile_id);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1976,6 +1994,12 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                     ,po_message_cursor    OUT sys_refcursor)
   IS
   --
+    CURSOR c_sam IS
+    SELECT ROWNUM col_id, sam_col_id, sam_id
+      FROM sdl_attribute_mapping 
+     WHERE sam_sp_id = pi_profile_id
+     ORDER BY sam_col_id;
+  --
   BEGIN
     --
     IF active_batch_exists(pi_profile_id) THEN
@@ -1986,6 +2010,15 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     DELETE sdl_attribute_mapping
      WHERE sam_sp_id = pi_profile_id
        AND sam_id = pi_sam_id;
+    --
+    -- Re-sequence the col_ids for the profile attribute mapping
+    FOR r_sam IN c_sam
+    LOOP
+      UPDATE sdl_attribute_mapping
+         SET sam_col_id  = r_sam.col_id
+       WHERE sam_id = r_sam.sam_id
+         AND sam_sp_id = pi_profile_id;
+    END LOOP;    
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -2019,6 +2052,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
       FROM v_nm_nw_columns vc,
            nm_linear_types nlt
      WHERE vc.network_type = nlt.nlt_nt_type
+       AND vc.group_type = nlt.nlt_gty_type
        AND nlt.nlt_id = pi_nlt_id
     ORDER BY vc.rn ;
     --
@@ -2506,6 +2540,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                             AND sp.sp_nlt_id = nlt.nlt_id
                             AND sam.sam_ne_column_name = vnc.column_name
                             AND vnc.network_type = nlt.nlt_nt_type
+                            AND vnc.group_type = nlt.nlt_gty_type
                             AND sp.sp_id = pi_profile_id
                             AND sam.sam_view_column_name = pi_attribute_name
                             AND vnc.domain IS NOT NULL);
