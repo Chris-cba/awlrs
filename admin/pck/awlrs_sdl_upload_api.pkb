@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_upload_api.pkb-arc   1.1   Mar 18 2020 14:00:54   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_upload_api.pkb-arc   1.2   Apr 22 2020 19:52:00   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_upload_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 18 2020 14:00:54  $
-  --       Date fetched Out : $Modtime:   Mar 18 2020 13:48:08  $
-  --       PVCS Version     : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Apr 22 2020 19:52:00  $
+  --       Date fetched Out : $Modtime:   Apr 22 2020 18:58:28  $
+  --       PVCS Version     : $Revision:   1.2  $
   --
   --   Author : Vikas Mhetre
   --
@@ -44,15 +44,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
       FROM sdl_file_submissions sfs
      WHERE sfs.sfs_name = cp_submission_name;
     --
-    CURSOR chk_mapping(cp_profile_id     sdl_profiles.sp_id%TYPE,
-                       cp_file_attribute sdl_attribute_mapping.sam_file_attribute_name%type)
-        IS
-    SELECT 1
-      FROM sdl_attribute_mapping sam
-     WHERE sam.sam_sp_id = cp_profile_id
-       AND sam.sam_file_attribute_name = cp_file_attribute
-    ORDER BY sam_col_id;
-    --
     CURSOR c_profile(cp_profile_id  sdl_profiles.sp_id%TYPE)
         IS
     SELECT sp.sp_name
@@ -67,10 +58,18 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
      WHERE object_name = cp_view_name
        AND object_type = 'VIEW';
     --
+    CURSOR chk_mapping(cp_profile_id  sdl_profiles.sp_id%TYPE)
+        IS
+    SELECT sam.sam_file_attribute_name
+      FROM sdl_attribute_mapping sam
+     WHERE sam.sam_sp_id = cp_profile_id      
+    ORDER BY sam_col_id;    
+    --
     lv_exists       NUMBER(1);
     lv_retval       BOOLEAN := FALSE;
     lv_profile_name sdl_profiles.sp_name%TYPE;
     lv_view_name    sdl_profiles.sp_loading_view_name%TYPE;
+    lv_match        VARCHAR2(1) := 'N';
     --
   BEGIN
     --
@@ -109,21 +108,28 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                'Profile views does not exists for the profile ' || lv_profile_name || '. Please contact the Administrator to generate Profile views before uploading a file.');
     END IF;
     --
-    FOR i in 1..pi_file_attributes.COUNT
+    FOR m IN chk_mapping(pi_profile_id)
     LOOP
+
+      FOR i IN 1..pi_file_attributes.COUNT
+      LOOP
+        --
+        IF m.sam_file_attribute_name = UPPER(pi_file_attributes(i)) THEN
+          lv_match := 'Y';
+          EXIT;
+        ELSE
+          lv_match := 'N';
+        END IF;
+        --
+      END LOOP;
       --
-       OPEN chk_mapping(pi_profile_id, pi_file_attributes(i));
-      FETCH chk_mapping INTO lv_exists;
-        lv_retval := chk_mapping%FOUND;
-      CLOSE chk_mapping;
-      --
-      IF NOT lv_retval THEN
-         RAISE_APPLICATION_ERROR (-20043,
-                                 'No attribute mappings setup exists for file attribute ' || pi_file_attributes(i) || '. Please configure valid attribute mappings for the Profile ' || lv_profile_name || ' before uploading a file.');
+      IF lv_match = 'N' THEN
+        RAISE_APPLICATION_ERROR (-20043,
+                                 'There is no matching attribute exists in file for the ' || lv_profile_name || ' profile file attribute ' || m.sam_file_attribute_name || '.');
       END IF;
     --
     END LOOP;
-    --
+	--
   END pre_file_submission;
   --
   -----------------------------------------------------------------------------
