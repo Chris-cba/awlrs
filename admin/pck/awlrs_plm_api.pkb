@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.17   Apr 20 2020 15:55:48   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.18   Apr 22 2020 14:59:50   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-  --       Date into PVCS   : $Date:   Apr 20 2020 15:55:48  $
-  --       Date fetched Out : $Modtime:   Apr 20 2020 15:53:40  $
-  --       Version          : $Revision:   1.17  $
+  --       Date into PVCS   : $Date:   Apr 22 2020 14:59:50  $
+  --       Date fetched Out : $Modtime:   Apr 22 2020 14:59:08  $
+  --       Version          : $Revision:   1.18  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.17  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.18  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
   --
   g_max_layers      PLS_INTEGER;
@@ -3596,6 +3596,10 @@ EXCEPTION
                                 ,pi_begin_mp  => pi_begin_mps_tab(i)
                                 ,pi_end_mp    => pi_end_mps_tab(i)
                                 ,po_job_id    => lv_location_job_id);
+        /*
+        ||Remove all distance breaks from temp extent
+        */
+        nm3extent.remove_db_from_temp_ne(lv_location_job_id);
         --
         IF lv_combined_job_id IS NULL
          THEN
