@@ -1,0 +1,252 @@
+CREATE OR REPLACE PACKAGE awlrs_map_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.18   Apr 27 2020 18:01:04   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_map_api.pkh  $
+  --       Date into PVCS   : $Date:   Apr 27 2020 18:01:04  $
+  --       Date fetched Out : $Modtime:   Apr 09 2020 15:09:44  $
+  --       Version          : $Revision:   1.18  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
+  --
+  TYPE theme_types_rec IS RECORD(admin_type                   nm_au_types.nat_admin_type%TYPE
+                                ,network_type                 nm_types.nt_type%TYPE
+                                ,network_element_type         nm_elements_all.ne_type%TYPE
+                                ,network_is_linear            VARCHAR2(1)
+                                ,network_is_incl_parent_type  VARCHAR2(1)
+                                ,network_group_type           nm_group_types_all.ngt_group_type%TYPE
+                                ,network_partial_memb         VARCHAR2(1)
+                                ,node_type                    nm_types.nt_node_type%TYPE
+                                ,unit_id                      nm_units.un_unit_id%TYPE
+                                ,asset_type                   nm_inv_types_all.nit_inv_type%TYPE
+                                ,asset_category               nm_inv_types_all.nit_category%TYPE
+                                ,ft_asset_type                VARCHAR2(1)
+                                ,multiple_locs_allowed        nm_inv_types_all.nit_multiple_allowed%TYPE
+                                ,xsp_allowed                  VARCHAR2(1)
+                                ,top_of_hierarchy             nm_inv_types_all.nit_top%TYPE
+                                ,hierarchy_relation           nm_inv_type_groupings.itg_relation%TYPE
+                                ,dependent_geometry           nm_themes_all.nth_dependency%TYPE
+                                ,location_updatable           nm_themes_all.nth_location_updatable%TYPE
+                                ,editable                     VARCHAR2(1)
+                                ,feature_table                nm_themes_all.nth_feature_table%TYPE
+                                ,feature_pk_column            nm_themes_all.nth_feature_pk_column%TYPE
+                                ,feature_shape_column         nm_themes_all.nth_feature_shape_column%TYPE);
+  TYPE theme_types_tab IS TABLE OF theme_types_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE wms_themes_rec IS RECORD(nwt_id                  v_nm_wms_themes.nwt_id%TYPE
+                               ,nwt_name                v_nm_wms_themes.nwt_name%TYPE
+                               ,nwt_is_background       v_nm_wms_themes.nwt_is_background%TYPE
+                               ,nwt_transparency        v_nm_wms_themes.nwt_transparency%TYPE
+                               ,nwt_visible_on_startup  v_nm_wms_themes.nwt_visible_on_startup%TYPE
+                               ,description             v_nm_wms_themes.description%TYPE
+                               ,service_url             v_nm_wms_themes.service_url%TYPE
+                               ,auth_user               v_nm_wms_themes.auth_user%TYPE
+                               ,auth_password           v_nm_wms_themes.auth_password%TYPE
+                               ,layers                  v_nm_wms_themes.layers%TYPE
+                               ,version                 v_nm_wms_themes.version%TYPE
+                               ,srs                     v_nm_wms_themes.srs%TYPE
+                               ,format                  v_nm_wms_themes.format%TYPE
+                               ,bgcolor                 v_nm_wms_themes.bgcolor%TYPE
+                               ,transparent             v_nm_wms_themes.transparent%TYPE
+                               ,styles                  v_nm_wms_themes.styles%TYPE
+                               ,exceptions              v_nm_wms_themes.exceptions%TYPE
+                               ,capabilities_url        v_nm_wms_themes.capabilities_url%TYPE
+                               ,trimmed_name            VARCHAR2(32)
+                               ,min_scale               VARCHAR2(100)
+                               ,max_scale               VARCHAR2(100));
+  TYPE wms_themes_tab IS TABLE OF wms_themes_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE themes_rec IS RECORD(nth_theme_id              nm_themes_all.nth_theme_id%TYPE
+                           ,name                      VARCHAR2(32)
+                           ,trimmed_name              VARCHAR2(32)
+                           ,min_scale                 VARCHAR2(100)
+                           ,max_scale                 VARCHAR2(100)
+                           ,nth_feature_pk_column     nm_themes_all.nth_feature_pk_column%TYPE
+                           ,nth_feature_shape_column  nm_themes_all.nth_feature_shape_column%TYPE
+                           ,nth_feature_table         nm_themes_all.nth_feature_table%TYPE
+                           ,nth_label_column          nm_themes_all.nth_label_column%TYPE
+                           ,label_min_scale           VARCHAR2(100)
+                           ,label_max_scale           VARCHAR2(100)
+                           ,styling_rules             CLOB
+                           ,geometry_column           VARCHAR2(30));
+  TYPE themes_tab IS TABLE OF themes_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE theme_name_tab IS TABLE OF nm_themes_all.nth_theme_name%TYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE theme_styling_rules_rec IS RECORD(name             VARCHAR2(32)
+                                        ,geometry_column  VARCHAR2(30)
+                                        ,styling_rules    CLOB);
+  TYPE theme_styling_rules_tab IS TABLE OF theme_styling_rules_rec INDEX BY BINARY_INTEGER;
+  --
+  TYPE xml_tab IS TABLE OF XMLTYPE INDEX BY BINARY_INTEGER;
+  --
+  TYPE clob_tab IS TABLE OF CLOB INDEX BY BINARY_INTEGER;
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_marker_filename(pi_style_name IN VARCHAR2)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_asset_loc_types(pi_inv_type IN nm_inv_types_all.nit_inv_type%TYPE)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_theme_types(pi_theme_name IN  nm_themes_all.nth_theme_name%TYPE)
+    RETURN theme_types_tab;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_style_value(pi_style IN VARCHAR2
+                          ,pi_field IN VARCHAR2)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_feature_details(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                               ,pi_feature_ids      IN  nm3type.tab_number
+                               ,pi_order_column     IN  VARCHAR2 DEFAULT NULL
+                               ,pi_order_asc_desc   IN  VARCHAR2 DEFAULT NULL
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION generate_map_file(pi_map_name       IN VARCHAR2
+                            ,pi_proj_lib       IN VARCHAR2
+                            ,pi_all_ft_cols    IN VARCHAR2 DEFAULT 'N'
+                            ,pi_effective_date IN DATE DEFAULT NULL)
+    RETURN CLOB;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_map_file(pi_map_name         IN  VARCHAR2
+                        ,pi_proj_lib         IN  VARCHAR2
+                        ,pi_all_ft_cols      IN  VARCHAR2 DEFAULT 'N'
+                        ,pi_effective_date   IN  DATE DEFAULT NULL
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor
+                        ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_marker_files(pi_map_name         IN  VARCHAR2
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_tooltip_templates(pi_map_name         IN  VARCHAR2
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE save_home_extent(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                            ,pi_data             IN  awlrs_saved_map_configs.asmc_data%TYPE
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_home_extent_data(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE save_map_config(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                           ,pi_name             IN  awlrs_saved_map_configs.asmc_name%TYPE
+                           ,pi_data             IN  awlrs_saved_map_configs.asmc_data%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_map_config(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                             ,pi_name             IN  awlrs_saved_map_configs.asmc_name%TYPE
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_map_config(pi_id               IN  awlrs_saved_map_configs.asmc_id%TYPE
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_map_config_data(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                               ,pi_name             IN  awlrs_saved_map_configs.asmc_name%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_map_config_data(pi_id               IN  awlrs_saved_map_configs.asmc_id%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_map_configs(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_map_configs_with_data(pi_product          IN  awlrs_saved_map_configs.asmc_product%TYPE
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor);
+
+--
+-----------------------------------------------------------------------------
+--
+END awlrs_map_api;
+/
