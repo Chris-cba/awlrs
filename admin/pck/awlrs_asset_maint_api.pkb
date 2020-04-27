@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.8   Mar 17 2020 10:37:24   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.9   Apr 27 2020 18:07:34   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_maint_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 17 2020 10:37:24  $
-  --       Date fetched Out : $Modtime:   Nov 18 2019 12:32:04  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   Apr 27 2020 18:07:34  $
+  --       Date fetched Out : $Modtime:   Apr 27 2020 17:44:36  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_maint_api';
   --
   TYPE attr_name_tab IS TABLE OF nm_inv_type_attribs_all.ita_attrib_name%TYPE INDEX BY BINARY_INTEGER;
@@ -80,12 +80,78 @@ AS
     OPEN po_cursor FOR
     SELECT asset_type_code
           ,asset_type_description
-      FROM (SELECT nit_inv_type asset_type_code
-                  ,nit_descr asset_type_description
-              FROM nm_inv_types
-             WHERE nit_category = 'I' /*TODO - Should be able to support FT Asset Types */
-               AND nit_table_name IS NULL
-               AND nit_use_xy = 'N'
+          ,asset_category
+          ,admin_type
+          ,ft_asset_type
+          ,off_network
+          ,loc_types
+          ,multiple_locs_allowed
+          ,xsp_allowed
+          ,top_of_hierarchy
+          ,hierarchy_relation
+          ,child_inv_types
+          ,is_editable
+          ,alim_doc_man_url
+      FROM (SELECT it1.nit_inv_type asset_type_code
+                  ,it1.nit_inv_type||' - '||it1.nit_descr asset_type_description
+                  ,it1.nit_category asset_category
+                  ,it1.nit_admin_type admin_type
+                  ,CASE WHEN it1.nit_table_name IS NOT NULL THEN 'Y' ELSE 'N' END ft_asset_type
+                  ,it1.nit_use_xy off_network
+                  ,awlrs_map_api.get_asset_loc_types(pi_inv_type => it1.nit_inv_type) loc_types
+                  ,it1.nit_multiple_allowed multiple_locs_allowed
+                  ,it1.nit_x_sect_allow_flag xsp_allowed
+                  ,it1.nit_top top_of_hierarchy
+                  ,(SELECT itg_relation
+                      FROM nm_inv_type_groupings
+                     WHERE itg_inv_type = it1.nit_inv_type) hierarchy_relation
+                  ,(SELECT LISTAGG(it2.nit_inv_type, ',') WITHIN GROUP (ORDER BY it2.nit_inv_type)
+                      FROM nm_inv_types it2
+                     WHERE it2.nit_table_name IS NULL
+                       AND it2.nit_update_allowed = 'Y'
+                       AND EXISTS (SELECT 1
+                                     FROM hig_user_roles ur
+                                         ,nm_inv_type_roles ir
+                                         ,nm_user_aus usr
+                                         ,nm_admin_units au
+                                         ,nm_admin_groups nag
+                                         ,hig_users hus
+                                    WHERE hus.hus_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME')
+                                      AND ur.hur_role = ir.itr_hro_role
+                                      AND ur.hur_username = hus.hus_username
+                                      AND ir.itr_inv_type = nit_inv_type
+                                      AND usr.nua_admin_unit = au.nau_admin_unit
+                                      AND au.nau_admin_unit = nag_child_admin_unit
+                                      AND au.nau_admin_type = nit_admin_type
+                                      AND usr.nua_admin_unit = nag_parent_admin_unit
+                                      AND usr.nua_user_id = hus.hus_user_id)
+                       AND it2.nit_inv_type IN(SELECT itg_inv_type
+                                                 FROM nm_inv_type_groupings
+                                                WHERE itg_parent_inv_type = it1.nit_inv_type
+                                                  AND itg_parent_inv_type != itg_inv_type)) child_inv_types
+                  ,(SELECT 'Y' editable
+                      FROM dual
+                     WHERE it1.nit_update_allowed = 'Y'
+                       AND it1.nit_table_name IS NULL
+                       AND awlrs_util.inv_category_is_updatable(it1.nit_category) = 'TRUE'
+                       AND EXISTS(SELECT 1
+                                    FROM hig_user_roles
+                                        ,nm_inv_type_roles
+                                   WHERE itr_inv_type = it1.nit_inv_type
+                                     AND itr_mode = 'NORMAL'
+                                     AND itr_hro_role = hur_role
+                                     AND hur_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME'))
+                       AND EXISTS(SELECT 1
+                                    FROM nm_user_aus
+                                        ,nm_admin_units
+                                   WHERE nua_user_id = SYS_CONTEXT('NM3CORE','USER_ID')
+                                     AND nua_mode = 'NORMAL'
+                                     AND nua_admin_unit = nau_admin_unit
+                                     AND nau_admin_type = it1.nit_admin_type)) is_editable
+                  ,awlrs_alim_doc_man_api.get_url_template(pi_table_name => CASE WHEN nit_table_name IS NOT NULL THEN nit_table_name ELSE 'NM_INV_ITEMS' END) alim_doc_man_url
+              FROM nm_inv_types it1
+             WHERE it1.nit_category = 'I' --IN ('I','F') will support FT when LB is fixed.
+               AND it1.nit_use_xy = 'N'
                AND EXISTS (SELECT 1
                              FROM hig_users hus
                                  ,hig_user_roles ur
@@ -96,7 +162,7 @@ AS
                             WHERE hus.hus_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME')
                               AND hus.hus_username = ur.hur_username
                               AND ur.hur_role = ir.itr_hro_role
-                              AND ir.itr_inv_type = nit_inv_type
+                              AND ir.itr_inv_type = it1.nit_inv_type
                               AND usr.nua_admin_unit = au.nau_admin_unit
                               AND au.nau_admin_unit = nag_child_admin_unit
                               AND au.nau_admin_type = nit_admin_type
@@ -104,13 +170,25 @@ AS
                               AND usr.nua_user_id = hus.hus_user_id)
                AND EXISTS(SELECT 'x'
                             FROM nm_inv_nw_all
-                           WHERE nin_nit_inv_code = nit_inv_type)
+                           WHERE nin_nit_inv_code = it1.nit_inv_type)
                AND NOT EXISTS(SELECT 'x'
                                 FROM nm_inv_type_groupings
-                               WHERE itg_inv_type = nit_inv_type)
+                               WHERE itg_inv_type = it1.nit_inv_type)
             UNION ALL
             SELECT NULL asset_type_code
                   ,'All Asset Types' asset_type_description
+                  ,NULL asset_category
+                  ,NULL admin_type
+                  ,NULL ft_asset_type
+                  ,NULL off_network
+                  ,NULL loc_types
+                  ,NULL multiple_locs_allowed
+                  ,NULL xsp_allowed
+                  ,NULL top_of_hierarchy
+                  ,NULL hierarchy_relation
+                  ,NULL child_inv_types
+                  ,NULL is_editable
+                  ,NULL alim_doc_man_url
               FROM dual)
      ORDER
         BY CASE WHEN asset_type_code IS NULL THEN 1 ELSE 2 END
@@ -593,6 +671,59 @@ AS
     --
   END generate_where_clause_lb;
 
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_locations(pi_iit_ne_id         IN nm_inv_items_all.iit_ne_id%TYPE
+                        ,pi_iit_inv_type      IN nm_inv_items_all.iit_inv_type%TYPE
+                        ,pi_tablename         IN nm_inv_types_all.nit_table_name%TYPE
+                        ,pi_net_filter_ne_id  IN nm_elements_all.ne_id%TYPE
+                        ,pi_output_group_type IN nm_elements.ne_gty_group_type%TYPE)
+    RETURN nm_placement_array_type IS
+    --
+    lt_pla  nm_placement_array := nm3pla.initialise_placement_array;
+    --
+    lt_route_locs  nm3route_ref.tab_rec_route_loc_dets;
+    --
+  BEGIN
+    --
+    IF pi_tablename IS NOT NULL
+     THEN
+        /*
+        ||Get connected chunks does not work for FT asset types souse nm3asset.
+        */
+        nm3asset.get_inv_route_location_details(pi_iit_ne_id          => pi_iit_ne_id
+                                               ,pi_nit_inv_type       => pi_iit_inv_type
+                                               ,po_tab_route_loc_dets => lt_route_locs);
+
+        FOR i IN 1..lt_route_locs.COUNT LOOP
+          --
+          nm3pla.add_element_to_pl_arr(pio_pl_arr => lt_pla
+                                      ,pi_ne_id   => lt_route_locs(i).route_ne_id
+                                      ,pi_start   => lt_route_locs(i).nm_slk
+                                      ,pi_end     => lt_route_locs(i).nm_end_slk);
+          --
+        END LOOP;
+        --
+    ELSIF pi_net_filter_ne_id IS NOT NULL
+     THEN
+        --
+        lt_pla := nm3pla.get_connected_chunks(pi_ne_id    => pi_iit_ne_id
+                                             ,pi_route_id => pi_net_filter_ne_id);
+        --
+    ELSE
+        --
+        lt_pla := nm3pla.get_connected_chunks(p_ne_id    => pi_iit_ne_id
+                                             ,p_route_id => NULL
+                                             ,p_obj_type => pi_output_group_type);
+        --
+    END IF;
+    --
+    RETURN lt_pla.npa_placement_array;
+    --
+  END get_locations;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -629,6 +760,7 @@ AS
                                              THEN 'DATUM'
                                             ELSE awlrs_util.get_preferred_lrm
                                           END;
+    lv_location_out_nt  nm_types.nt_type%TYPE;
     --
     lr_ngq  nm_gaz_query%ROWTYPE;
     lr_ne   nm_elements_all%ROWTYPE;
@@ -637,6 +769,13 @@ AS
     lt_ngqt  ngqt_tab;
     --
     lt_asset_types  asset_types_tab;
+    --
+    CURSOR get_grp_nt
+        IS
+    SELECT ngt_nt_type
+      FROM nm_group_types ngt
+     WHERE ngt_group_type = SYS_CONTEXT('NM3CORE','PREFERRED_LRM')
+         ;
     --
   BEGIN
     /*
@@ -749,8 +888,8 @@ AS
                   ,'I'
                   ,nit_inv_type
               FROM nm_inv_types
-             WHERE nit_category = 'I' /*TODO - Should be able to support FT Asset Types */
-               AND nit_table_name IS NULL
+             WHERE nit_category = 'I' --IN ('I','F') will support FT when LB is fixed.
+               AND nit_use_xy = 'N'
                AND EXISTS (SELECT 1
                              FROM hig_users hus
                                  ,hig_user_roles ur
@@ -784,25 +923,33 @@ AS
     --
     lv_job_id := nm3ddl.sequence_nextval('AAMR_JOB_ID_SEQ');
     --
-    IF pi_net_filter_ne_id IS NOT NULL
+    IF lv_location_out_type != 'DATUM'
      THEN
-        IF lv_location_out_type = NVL(lr_ne.ne_gty_group_type,'~~~~~')
+        --
+        OPEN  get_grp_nt;
+        FETCH get_grp_nt
+         INTO lv_location_out_nt;
+        CLOSE get_grp_nt;
+        --
+        lv_sql := lv_sql||',pla.pl_ne_id'
+                        ||',pla.pl_start'
+                        ||',pla.pl_end'
+                   ||' FROM (SELECT ngqi_item_type'
+                                ||',ngqi_item_id'
+                                ||',nit_table_name'
+                           ||' FROM nm_gaz_query_item_list'
+                                ||',nm_inv_types_all'
+                          ||' WHERE ngqi_job_id = :gaz_results_id'
+                            ||' AND ngqi_item_type = nit_inv_type'
+                            ||' AND '||lv_where||') items'
+                        ||',TABLE(awlrs_asset_maint_api.get_locations(ngqi_item_id,ngqi_item_type,nit_table_name,:net_filter_ne_id,:location_out_type)) pla'
+        ;
+        --
+        EXECUTE IMMEDIATE(lv_sql) USING lv_job_id, lv_gaz_results_id, pi_net_filter_ne_id, lv_location_out_type;
+        --
+    ELSE
+        IF pi_net_filter_ne_id IS NOT NULL
          THEN
-            --
-            lv_sql := lv_sql||',pla.pl_ne_id'
-                            ||',pla.pl_start'
-                            ||',pla.pl_end'
-                       ||' FROM (SELECT ngqi_item_type'
-                                    ||',ngqi_item_id'
-                               ||' FROM nm_gaz_query_item_list'
-                              ||' WHERE ngqi_job_id = :gaz_results_id'
-                                ||' AND '||lv_where||') items'
-                            ||',TABLE(nm3pla.get_connected_chunks(pi_ne_id => ngqi_item_id,pi_route_id => :net_filter_ne_id).npa_placement_array) pla'
-            ;
-            --
-            EXECUTE IMMEDIATE(lv_sql) USING lv_job_id, lv_gaz_results_id, pi_net_filter_ne_id;
-            --
-        ELSE
             --
             lv_sql := lv_sql||',nm_ne_id_of'
                             ||',nm_begin_mp'
@@ -825,28 +972,6 @@ AS
             --
             EXECUTE IMMEDIATE(lv_sql) USING lv_job_id, lv_gaz_results_id, pi_net_filter_ne_id;
             --
-        END IF;
-    END IF;
-    --
-    IF pi_net_filter_ne_id IS NULL
-     AND pi_net_filter_nse_id IS NOT NULL
-     THEN
-        IF lv_location_out_type != 'DATUM'
-         THEN
-            --
-            lv_sql := lv_sql||',pla.pl_ne_id'
-                            ||',pla.pl_start'
-                            ||',pla.pl_end'
-                       ||' FROM (SELECT ngqi_item_type'
-                                    ||',ngqi_item_id'
-                               ||' FROM nm_gaz_query_item_list'
-                              ||' WHERE ngqi_job_id = :gaz_results_id'
-                                ||' AND '||lv_where||') items'
-                            ||',TABLE(nm3pla.get_connected_chunks(p_ne_id => ngqi_item_id,p_route_id => NULL,p_obj_type => :location_out_type).npa_placement_array) pla'
-            ;
-            --
-            EXECUTE IMMEDIATE(lv_sql) USING lv_job_id, lv_gaz_results_id, lv_location_out_type;
-            --
         ELSE
             --
             lv_sql := lv_sql||',nm_ne_id_of'
@@ -859,7 +984,7 @@ AS
                       ||'   AND ngqi_item_id = nm_ne_id_in'
                  ;
             --
-            EXECUTE IMMEDIATE(lv_sql) USING lv_job_id, lv_gaz_results_id, pi_net_filter_ne_id;
+            EXECUTE IMMEDIATE(lv_sql) USING lv_job_id, lv_gaz_results_id;
             --
         END IF;
     END IF;
@@ -927,6 +1052,78 @@ AS
   END get_rpt_tab_from_nse;
 
   --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_obj_rpt_tab(pi_refnt_tab  IN lb_rpt_tab
+                          ,pi_obj_types IN nm_code_tbl)
+    RETURN lb_rpt_tab IS
+    --
+    lt_retval lb_rpt_tab;
+    --
+  BEGIN
+    --
+    IF pi_refnt_tab IS NOT NULL
+     AND lb_ops.lb_rpt_tab_has_network(pi_refnt_tab) = 'TRUE'
+     THEN
+        --
+        SELECT lb_rpt(nm_ne_id_of
+                     ,nlt_id
+                     ,nm_obj_type
+                     ,nm_ne_id_in
+                     ,nm_seg_no
+                     ,nm_seq_no
+                     ,nm_cardinality
+                     ,nm_begin_mp
+                     ,nm_end_mp
+                     ,nlt_units) rpt
+          BULK COLLECT
+          INTO lt_retval
+          FROM nm_members m
+              ,nm_linear_types
+              ,nm_elements
+         WHERE nlt_nt_type = ne_nt_type
+           AND nm_ne_id_of = ne_id
+           AND nlt_g_i_d = 'D'
+           AND nm_obj_type IN(SELECT column_value FROM TABLE(CAST(pi_obj_types AS nm_code_tbl)))
+           AND nm_ne_id_in IN(SELECT c.nm_ne_id_in
+                                FROM nm_members c
+                                    ,TABLE(pi_refnt_tab) t
+                               WHERE c.nm_ne_id_of = refnt
+                                 AND ((c.nm_begin_mp < t.end_m
+                                       AND c.nm_end_mp > t.start_m)
+                                      OR (c.nm_begin_mp = nm_end_mp
+                                          AND c.nm_begin_mp BETWEEN t.start_m AND t.end_m)))
+             ;
+        --
+    ELSE
+        --
+        SELECT lb_rpt(nm_ne_id_of
+                     ,nlt_id
+                     ,nm_obj_type
+                     ,nm_ne_id_in
+                     ,nm_seg_no
+                     ,nm_seq_no
+                     ,nm_cardinality
+                     ,nm_begin_mp
+                     ,nm_end_mp
+                     ,nlt_units)
+          BULK COLLECT
+          INTO lt_retval
+          FROM nm_members
+              ,nm_linear_types
+              ,nm_elements
+         WHERE nm_obj_type IN(SELECT column_value FROM TABLE(CAST(pi_obj_types AS nm_code_tbl)))
+           AND ne_id = nm_ne_id_of
+           AND ne_nt_type = nlt_nt_type
+           AND NVL (ne_gty_group_type, '~~~~~') = NVL (nlt_gty_type, '~~~~~');
+        --
+    END IF;
+    --
+    RETURN lt_retval;
+    --
+  END get_obj_rpt_tab;
+
+  --
   -----------------------------------------------------------------------------
   --
   PROCEDURE execute_query_lb(pi_asset_type        IN  nm_inv_types_all.nit_inv_type%TYPE DEFAULT NULL
@@ -971,9 +1168,24 @@ AS
     lr_nit  nm_inv_types_all%ROWTYPE;
     --
     lt_asset_types       asset_types_tab;
+    lt_non_ft_types      nm_code_tbl := nm_code_tbl();
     lt_d_rpt             lb_rpt_tab := lb_rpt_tab();
     lt_ids_and_locs      lb_rpt_tab;
     lt_all_ids_and_locs  lb_rpt_tab := lb_rpt_tab();
+    --
+    PROCEDURE add_results(pi_new_results IN     lb_rpt_tab
+                         ,po_all_results IN OUT NOCOPY lb_rpt_tab)
+      IS
+    BEGIN
+      --
+      FOR j IN 1..pi_new_results.COUNT LOOP
+        --
+        po_all_results.extend;
+        po_all_results(po_all_results.COUNT) := pi_new_results(j);
+        --
+      END LOOP;
+      --
+    END add_results;
     --
   BEGIN
     /*
@@ -1068,7 +1280,8 @@ AS
               BULK COLLECT
               INTO lt_asset_types
               FROM nm_inv_types
-             WHERE nit_category = 'I' /*TODO - Should be able to support FT Asset Types */
+             WHERE nit_category = 'I' --IN ('I','F') will support FT when LB is fixed.
+               AND nit_use_xy = 'N'
                AND EXISTS (SELECT 1
                              FROM hig_users hus
                                  ,hig_user_roles ur
@@ -1104,52 +1317,63 @@ AS
       IF lr_nit.nit_table_name IS NULL
        THEN
           --
-          lt_ids_and_locs := lb_get.get_obj_rpt_tab(p_refnt_tab   => lt_d_rpt
-                                                   ,p_obj_type    => lt_asset_types(i)
-                                                   ,p_obj_id      => NULL
-                                                   ,p_intsct      => 'FALSE'
-                                                   ,p_lb_only     => 'FALSE'
-                                                   ,p_whole_only  => 'FALSE'
-                                                   ,p_cardinality => 10);
+          lt_non_ft_types.EXTEND;
+          lt_non_ft_types(lt_non_ft_types.COUNT) := lt_asset_types(i);
           --
       ELSE
-          --TODO - Later version of LB may support FT assets in the above call to get_obj_rpt_tab.
+          /*
+          ||TODO - Later version of LB may support FT assets in the above call to get_obj_rpt_tab.
+          ||right now however we are not supporting FT Asset Types due to issues in LB and Gaz
+          ||query with FT Asset Types located at datum or route level so this code won't get called.
+          */
           lt_ids_and_locs := lb_get.get_ft_rpt_tab(p_rpt_tab    => lt_d_rpt
                                                   ,p_table_name => lr_nit.nit_table_name
                                                   ,p_inv_type   => lt_asset_types(i)
                                                   ,p_key        => lr_nit.nit_foreign_pk_column
                                                   ,p_ne_key     => lr_nit.nit_lr_ne_column_name
                                                   ,p_start_col  => lr_nit.nit_lr_st_chain
-                                                  ,p_end_col    => lr_nit.nit_lr_end_chain);
+                                                  ,p_end_col    => CASE WHEN lr_nit.nit_pnt_or_cont = 'P' THEN lr_nit.nit_lr_st_chain ELSE lr_nit.nit_lr_end_chain END);
+          --
+          add_results(pi_new_results => lt_ids_and_locs
+                     ,po_all_results => lt_all_ids_and_locs);
           --
       END IF;
-      --
-      --TODO - Is the a combine rpt_tabs type procedure for this?
-      FOR j IN 1..lt_ids_and_locs.COUNT LOOP
-        --
-        lt_all_ids_and_locs.extend;
-        lt_all_ids_and_locs(lt_all_ids_and_locs.COUNT) := lt_ids_and_locs(j);
-        --
-      END LOOP;
-      --
     END LOOP;
+    --
+    IF lt_non_ft_types.COUNT > 0
+     THEN
+        /*
+        ||TODO - Call below is to a temporary hacked version of LB procedure to allow it to be
+        ||called for multiple Asset Types when this is addressed in the LB package then the
+        ||official version should be called.
+        */
+        lt_ids_and_locs := get_obj_rpt_tab(pi_refnt_tab => lt_d_rpt
+                                          ,pi_obj_types => lt_non_ft_types);
+        --
+        add_results(pi_new_results => lt_ids_and_locs
+                   ,po_all_results => lt_all_ids_and_locs);
+        --
+    END IF;
     --
     IF lv_location_out_type != 'DATUM'
      AND lt_all_ids_and_locs.COUNT > 0
      THEN
-        lt_all_ids_and_locs := lb_get.get_lb_rpt_r_tab(p_lb_RPt_tab => lt_all_ids_and_locs
+        lt_all_ids_and_locs := lb_get.get_lb_rpt_r_tab(p_lb_rpt_tab      => lt_all_ids_and_locs
                                                       ,p_linear_obj_type => lv_location_out_type
-                                                      ,p_cardinality => 10);
+                                                      ,p_cardinality     => 10);
     END IF;
     --
     lv_job_id := nm3ddl.sequence_nextval('AAMR_JOB_ID_SEQ');
     --
-    lv_sql := lv_sql
-               ||' FROM TABLE(:rpt_tab) t'
-              ||' WHERE '||lv_where
+    lv_sql := lv_sql||' FROM TABLE(:rpt_tab) t WHERE '||lv_where
     ;
-    --
-    EXECUTE IMMEDIATE lv_sql USING lv_job_id,lt_all_ids_and_locs;
+    IF pi_net_filter_ne_id IS NOT NULL
+     THEN
+        lv_sql := lv_sql||' AND t.refnt = :net_filter_ne_id';
+        EXECUTE IMMEDIATE lv_sql USING lv_job_id,lt_all_ids_and_locs,pi_net_filter_ne_id;
+    ELSE
+        EXECUTE IMMEDIATE lv_sql USING lv_job_id,lt_all_ids_and_locs;
+    END IF;
     --
     po_job_id := lv_job_id;
     --
@@ -1179,29 +1403,15 @@ AS
     IS
   BEGIN
     --
-    IF pi_asset_type IS NOT NULL
-     OR pi_asset_criteria IS NOT NULL
-     THEN
-        execute_query_lb(pi_asset_type        => pi_asset_type
-                        ,pi_asset_criteria    => pi_asset_criteria
-                        ,pi_net_filter_ne_id  => pi_net_filter_ne_id
-                        ,pi_net_filter_from   => pi_net_filter_from
-                        ,pi_net_filter_to     => pi_net_filter_to
-                        ,pi_net_filter_nse_id => pi_net_filter_nse_id
-                        ,po_job_id            => po_job_id
-                        ,po_message_severity  => po_message_severity
-                        ,po_message_cursor    => po_message_cursor);
-    ELSE
-        execute_query_gaz(pi_asset_type        => pi_asset_type
-                         ,pi_asset_criteria    => pi_asset_criteria
-                         ,pi_net_filter_ne_id  => pi_net_filter_ne_id
-                         ,pi_net_filter_from   => pi_net_filter_from
-                         ,pi_net_filter_to     => pi_net_filter_to
-                         ,pi_net_filter_nse_id => pi_net_filter_nse_id
-                         ,po_job_id            => po_job_id
-                         ,po_message_severity  => po_message_severity
-                         ,po_message_cursor    => po_message_cursor);
-    END IF;
+    execute_query_lb(pi_asset_type        => pi_asset_type
+                    ,pi_asset_criteria    => pi_asset_criteria
+                    ,pi_net_filter_ne_id  => pi_net_filter_ne_id
+                    ,pi_net_filter_from   => pi_net_filter_from
+                    ,pi_net_filter_to     => pi_net_filter_to
+                    ,pi_net_filter_nse_id => pi_net_filter_nse_id
+                    ,po_job_id            => po_job_id
+                    ,po_message_severity  => po_message_severity
+                    ,po_message_cursor    => po_message_cursor);
     --
   END execute_query;
 
