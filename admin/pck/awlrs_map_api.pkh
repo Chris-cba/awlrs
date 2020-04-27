@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.17   Dec 03 2018 16:54:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.18   Apr 27 2020 18:01:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkh  $
-  --       Date into PVCS   : $Date:   Dec 03 2018 16:54:46  $
-  --       Date fetched Out : $Modtime:   Nov 28 2018 14:55:12  $
-  --       Version          : $Revision:   1.17  $
+  --       Date into PVCS   : $Date:   Apr 27 2020 18:01:04  $
+  --       Date fetched Out : $Modtime:   Apr 09 2020 15:09:44  $
+  --       Version          : $Revision:   1.18  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
   --
   TYPE theme_types_rec IS RECORD(admin_type                   nm_au_types.nat_admin_type%TYPE
                                 ,network_type                 nm_types.nt_type%TYPE
@@ -27,12 +27,12 @@ AS
                                 ,asset_type                   nm_inv_types_all.nit_inv_type%TYPE
                                 ,asset_category               nm_inv_types_all.nit_category%TYPE
                                 ,ft_asset_type                VARCHAR2(1)
-                                ,multiple_locs_allowed        nm_inv_types_all.nit_multiple_allowed%TYPE 
+                                ,multiple_locs_allowed        nm_inv_types_all.nit_multiple_allowed%TYPE
                                 ,xsp_allowed                  VARCHAR2(1)
                                 ,top_of_hierarchy             nm_inv_types_all.nit_top%TYPE
                                 ,hierarchy_relation           nm_inv_type_groupings.itg_relation%TYPE
                                 ,dependent_geometry           nm_themes_all.nth_dependency%TYPE
-                                ,location_updatable           nm_themes_all.nth_location_updatable%TYPE                                
+                                ,location_updatable           nm_themes_all.nth_location_updatable%TYPE
                                 ,editable                     VARCHAR2(1)
                                 ,feature_table                nm_themes_all.nth_feature_table%TYPE
                                 ,feature_pk_column            nm_themes_all.nth_feature_pk_column%TYPE
@@ -109,6 +109,12 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION get_asset_loc_types(pi_inv_type IN nm_inv_types_all.nit_inv_type%TYPE)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   FUNCTION get_theme_types(pi_theme_name IN  nm_themes_all.nth_theme_name%TYPE)
     RETURN theme_types_tab;
 
@@ -133,22 +139,22 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION generate_map_file(pi_map_name           IN VARCHAR2
-                            ,pi_proj_lib           IN VARCHAR2
-                            ,pi_all_ft_cols        IN VARCHAR2 DEFAULT 'N'
-                            ,pi_effective_date     IN DATE DEFAULT NULL)
+  FUNCTION generate_map_file(pi_map_name       IN VARCHAR2
+                            ,pi_proj_lib       IN VARCHAR2
+                            ,pi_all_ft_cols    IN VARCHAR2 DEFAULT 'N'
+                            ,pi_effective_date IN DATE DEFAULT NULL)
     RETURN CLOB;
 
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_map_file(pi_map_name           IN  VARCHAR2
-                        ,pi_proj_lib           IN  VARCHAR2
-                        ,pi_all_ft_cols        IN  VARCHAR2 DEFAULT 'N'
-                        ,pi_effective_date     IN  DATE DEFAULT NULL
-                        ,po_message_severity   OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor     OUT sys_refcursor
-                        ,po_cursor             OUT sys_refcursor);
+  PROCEDURE get_map_file(pi_map_name         IN  VARCHAR2
+                        ,pi_proj_lib         IN  VARCHAR2
+                        ,pi_all_ft_cols      IN  VARCHAR2 DEFAULT 'N'
+                        ,pi_effective_date   IN  DATE DEFAULT NULL
+                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor   OUT sys_refcursor
+                        ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
