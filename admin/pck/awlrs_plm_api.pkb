@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.18   Apr 22 2020 14:59:50   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.19   Apr 28 2020 17:42:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-  --       Date into PVCS   : $Date:   Apr 22 2020 14:59:50  $
-  --       Date fetched Out : $Modtime:   Apr 22 2020 14:59:08  $
-  --       Version          : $Revision:   1.18  $
+  --       Date into PVCS   : $Date:   Apr 28 2020 17:42:16  $
+  --       Date fetched Out : $Modtime:   Apr 28 2020 17:40:10  $
+  --       Version          : $Revision:   1.19  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.18  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.19  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
   --
   g_max_layers      PLS_INTEGER;
@@ -368,6 +368,7 @@ AS
                 ,po_message_tab    => po_message_tab);
     --
   END locate_asset;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -454,6 +455,7 @@ AS
         ROLLBACK TO create_cons_rec_sp;
         RAISE;
   END create_and_locate_asset;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -752,6 +754,7 @@ AS
         ROLLBACK TO replace_cons_recs_sp;
         RAISE;
   END replace_construction_records;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -809,6 +812,7 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END replace_construction_records;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -1021,6 +1025,7 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_construction_records;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -1046,7 +1051,6 @@ AS
     --
     lt_iit_ne_ids iit_ne_id_tab;
     --
-    --
   BEGIN
     --
     create_construction_records(pi_admin_unit               => pi_admin_unit
@@ -1069,13 +1073,14 @@ AS
                                ,po_iit_ne_ids               => lt_iit_ne_ids
                                ,po_message_severity         => po_message_severity
                                ,po_message_cursor           => po_message_cursor );
-  --
-EXCEPTION
-  WHEN others
-   THEN
-      awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
   END create_replace_cons_records;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -1158,6 +1163,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_construction_records;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -1206,13 +1212,14 @@ EXCEPTION
                                ,po_iit_ne_ids               => lt_iit_ne_ids
                                ,po_message_severity         => po_message_severity
                                ,po_message_cursor           => po_message_cursor );
-  --
-EXCEPTION
-  WHEN others
-   THEN
-      awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                 ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
   END reconstruct_cons_records;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -1237,7 +1244,6 @@ EXCEPTION
                                     ,pi_layer_attrib_scrn_texts  IN     awlrs_asset_api.attrib_scrn_text_tab
                                     ,pi_layer_attrib_char_values IN     awlrs_asset_api.attrib_value_tab
                                     ,pi_depth_removed            IN     NUMBER
-                                    --,po_iit_ne_ids               IN OUT iit_ne_id_tab GK doesnt want.
                                     ,po_message_severity            OUT hig_codes.hco_code%TYPE
                                     ,po_message_cursor              OUT sys_refcursor)
     IS
@@ -1254,7 +1260,6 @@ EXCEPTION
     lt_gaps_end_mps             location_to_offset_tab;
     --
   BEGIN
-    --
     /*
     ||Add standard records
     */
@@ -1279,77 +1284,78 @@ EXCEPTION
                                ,po_message_severity         => lv_severity
                                ,po_message_cursor           => lv_message_cursor);
     --
-    IF lv_severity = awlrs_util.c_msg_cat_success AND  pi_gaps_ne_ids.COUNT > 0 THEN
-      /*
-      ||Add Gaps so null depth and gaps network elements, xsp and measure
-      ||These will need to be passed in on there own as not all XSPs will have gaps
-      */
-      /*
-      ||Check row counts
-      */
-      IF pi_gaps_ne_ids.COUNT != pi_gaps_xsps.COUNT
-       OR pi_gaps_ne_ids.COUNT != pi_gaps_begin_mps.COUNT
-       OR pi_gaps_ne_ids.COUNT != pi_gaps_end_mps.COUNT
-        THEN
-          --
-          hig.raise_ner(pi_appl => 'AWLRS'
-                       ,pi_id   => 5);
-          --
-      END IF;
-      --
-      /*
-      ||PB TO DO - do we need to handle single null array records or will arrays be empty.
-      */
-      FOR i in 1..pi_gaps_ne_ids.COUNT LOOP
-        --
-        lt_gaps_xsps(1) := pi_gaps_xsps(i);
-        lt_gaps_ne_ids(1) := pi_gaps_ne_ids(i);
-        lt_gaps_begin_mps(1) := pi_gaps_begin_mps(i);
-        lt_gaps_end_mps(1) := pi_gaps_end_mps(i);
-        --
+    IF lv_severity = awlrs_util.c_msg_cat_success AND  pi_gaps_ne_ids.COUNT > 0
+     THEN
         /*
-        ||create new construction data for gaps.
+        ||Add Gaps so null depth and gaps network elements, xsp and measure
+        ||These will need to be passed in on there own as not all XSPs will have gaps
         */
-        create_construction_records(pi_admin_unit               => pi_admin_unit
-                                   ,pi_description              => pi_description
-                                   ,pi_start_date               => pi_start_date
-                                   ,pi_end_date                 => pi_end_date
-                                   ,pi_notes                    => pi_notes
-                                   ,pi_attrib_names             => pi_attrib_names
-                                   ,pi_attrib_scrn_texts        => pi_attrib_scrn_texts
-                                   ,pi_attrib_char_values       => pi_attrib_char_values
-                                   ,pi_xsps                     => lt_gaps_xsps
-                                   ,pi_ne_ids                   => lt_gaps_ne_ids
-                                   ,pi_begin_mps                => lt_gaps_begin_mps
-                                   ,pi_end_mps                  => lt_gaps_end_mps
-                                   ,pi_layer_attrib_idx         => pi_layer_attrib_idx
-                                   ,pi_layer_attrib_names       => pi_layer_attrib_names
-                                   ,pi_layer_attrib_scrn_texts  => pi_layer_attrib_scrn_texts
-                                   ,pi_layer_attrib_char_values => pi_layer_attrib_char_values
-                                   ,pi_depth_removed            => null
-                                   ,po_iit_ne_ids               => lt_iit_ne_ids_gaps
-                                   ,po_message_severity         => lv_severity
-                                   ,po_message_cursor           => lv_message_cursor);
-        --
-        IF lv_severity =  awlrs_util.c_msg_cat_success THEN
-          lt_iit_ne_ids(lt_iit_ne_ids.COUNT+1) := lt_iit_ne_ids_gaps(1);
-        ELSE
-          EXIT;
+        /*
+        ||Check row counts
+        */
+        IF pi_gaps_ne_ids.COUNT != pi_gaps_xsps.COUNT
+         OR pi_gaps_ne_ids.COUNT != pi_gaps_begin_mps.COUNT
+         OR pi_gaps_ne_ids.COUNT != pi_gaps_end_mps.COUNT
+          THEN
+             --
+             hig.raise_ner(pi_appl => 'AWLRS'
+                          ,pi_id   => 5);
+             --
         END IF;
+        /*
+        ||PB TO DO - do we need to handle single null array records or will arrays be empty.
+        */
+        FOR i in 1..pi_gaps_ne_ids.COUNT LOOP
+          --
+          lt_gaps_xsps(1) := pi_gaps_xsps(i);
+          lt_gaps_ne_ids(1) := pi_gaps_ne_ids(i);
+          lt_gaps_begin_mps(1) := pi_gaps_begin_mps(i);
+          lt_gaps_end_mps(1) := pi_gaps_end_mps(i);
+          --
+          /*
+          ||create new construction data for gaps.
+          */
+          create_construction_records(pi_admin_unit               => pi_admin_unit
+                                     ,pi_description              => pi_description
+                                     ,pi_start_date               => pi_start_date
+                                     ,pi_end_date                 => pi_end_date
+                                     ,pi_notes                    => pi_notes
+                                     ,pi_attrib_names             => pi_attrib_names
+                                     ,pi_attrib_scrn_texts        => pi_attrib_scrn_texts
+                                     ,pi_attrib_char_values       => pi_attrib_char_values
+                                     ,pi_xsps                     => lt_gaps_xsps
+                                     ,pi_ne_ids                   => lt_gaps_ne_ids
+                                     ,pi_begin_mps                => lt_gaps_begin_mps
+                                     ,pi_end_mps                  => lt_gaps_end_mps
+                                     ,pi_layer_attrib_idx         => pi_layer_attrib_idx
+                                     ,pi_layer_attrib_names       => pi_layer_attrib_names
+                                     ,pi_layer_attrib_scrn_texts  => pi_layer_attrib_scrn_texts
+                                     ,pi_layer_attrib_char_values => pi_layer_attrib_char_values
+                                     ,pi_depth_removed            => null
+                                     ,po_iit_ne_ids               => lt_iit_ne_ids_gaps
+                                     ,po_message_severity         => lv_severity
+                                     ,po_message_cursor           => lv_message_cursor);
+          --
+          IF lv_severity =  awlrs_util.c_msg_cat_success
+           THEN
+              lt_iit_ne_ids(lt_iit_ne_ids.COUNT+1) := lt_iit_ne_ids_gaps(1);
+          ELSE
+              EXIT;
+          END IF;
+          --
+        END LOOP;
         --
-      END LOOP;
-      --
     END IF;
     /*
     ||If there are any messages to return
     */
     IF lv_severity <> awlrs_util.c_msg_cat_success
      THEN
-       po_message_severity := lv_severity;
-       po_message_cursor := lv_message_cursor;
+        po_message_severity := lv_severity;
+        po_message_cursor := lv_message_cursor;
     ELSE
-       awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                            ,po_cursor           => po_message_cursor);
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
     END IF;
     --
   EXCEPTION
@@ -1358,6 +1364,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END reconstruct_cons_records;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -1418,6 +1425,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END create_construction_record;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -1534,6 +1542,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END add_layer;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -1571,6 +1580,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END enddate_layer;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -1692,6 +1702,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END copy_construction_data;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -1889,6 +1900,7 @@ EXCEPTION
     RETURN lv_preview;
     --
   END preview_reconstruct_changes;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2080,6 +2092,7 @@ EXCEPTION
     RETURN lv_preview;
     --
   END preview_createreplace_changes;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2092,9 +2105,11 @@ EXCEPTION
                                        ,po_message_severity      OUT hig_codes.hco_code%TYPE
                                        ,po_message_cursor        OUT sys_refcursor
                                        ,po_cursor                OUT sys_refcursor)
-  IS
+    IS
+    --
     lv_preview CLOB;
     lt_xsps    xsp_tab;
+    --
   BEGIN
     /*
     ||indexes for ne id and MPs should be the same so index 1 ne id is index 1 begin_mp,end_mp and so on
@@ -2155,6 +2170,7 @@ EXCEPTION
           awlrs_util.handle_exception(po_message_severity => po_message_severity
                                      ,po_cursor           => po_message_cursor);
   END preview_replacement_changes;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2193,6 +2209,7 @@ EXCEPTION
          ;
     --
   END get_construction_records;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2219,6 +2236,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_construction_records;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2249,6 +2267,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_construction_record;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2288,6 +2307,7 @@ EXCEPTION
     ;
     --
   END get_construction_layers;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2314,6 +2334,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_construction_layers;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2344,6 +2365,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_construction_layer;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2376,6 +2398,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END enddate_construction_record;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2435,6 +2458,7 @@ EXCEPTION
                                 ,po_message_cursor         => po_message_cursor);
     --
   END update_contruction_record;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2503,6 +2527,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_contruction_layer;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2541,6 +2566,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_groupings;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2590,9 +2616,9 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_flex_attribs;
+
   --
   -----------------------------------------------------------------------------
-  --
   --
   FUNCTION get_col_mrg_attrib_name(pi_inv_col IN nm_inv_type_attribs.ita_attrib_name%TYPE)
     RETURN user_tab_columns.column_name%TYPE IS
@@ -2619,6 +2645,7 @@ EXCEPTION
         hig.raise_ner(pi_appl => 'AWLRS'
                      ,pi_id   => 59);
   END get_col_mrg_attrib_name;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2629,6 +2656,7 @@ EXCEPTION
     RETURN get_col_mrg_attrib_name(pi_inv_col => c_layer_attrib_name);
     --
   END get_layer_mrg_attrib_name;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2639,6 +2667,7 @@ EXCEPTION
     RETURN get_col_mrg_attrib_name(pi_inv_col => c_material_attrib_name);
     --
   END get_material_mrg_attrib_name;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2649,6 +2678,7 @@ EXCEPTION
     RETURN get_col_mrg_attrib_name(pi_inv_col => c_thickness_attrib_name);
     --
   END get_depth_mrg_attrib_name;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2701,6 +2731,7 @@ EXCEPTION
     RETURN g_max_layers;
     --
   END get_max_layers;
+
   --
   -----------------------------------------------------------------------------
   --This procedure has been moved from STP. It executes the merge query on ROI
@@ -2852,6 +2883,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END execute_merge;
+
   --
   -----------------------------------------------------------------------------
   -- New Get the sections linked to the merge query run from execute merge. Based on ROI
@@ -2902,6 +2934,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_merge_sections;
+
   --
   -----------------------------------------------------------------------------
   -- In STP get_stp_rc_grid_data is built via build_grid_data_func based on attribute values set in step forms.
@@ -3007,6 +3040,7 @@ EXCEPTION
                                                ||':'||pi_layer);
         --
   END get_plm_rc_grid_data;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -3151,6 +3185,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_merge_data;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -3204,50 +3239,52 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_merge_cell_asset_id;
+
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION is_pavement_data(pi_ne_id nm_elements.ne_id%TYPE)
-    RETURN VARCHAR2 IS
+  PROCEDURE get_list_of_elements(pi_filter           IN  VARCHAR2
+                                ,pi_skip_n_rows      IN  PLS_INTEGER
+                                ,pi_pagesize         IN  PLS_INTEGER
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor)
+    IS
     --
-    lv_retval VARCHAR2(1);
-    lv_inv_type   nm_inv_items_all.iit_inv_type%TYPE := get_cons_rec_type;
+    lv_message_severity  hig_codes.hco_code%TYPE;
+    lv_message_cursor    sys_refcursor;
+    lv_cursor            sys_refcursor;
     --
   BEGIN
-    SELECT pavement_data
-      INTO lv_retval
-      FROM (SELECT 'Y' pavement_data--datums
-              FROM nm_members
-             WHERE nm_obj_type = lv_inv_type
-               AND nm_ne_id_of = pi_ne_id
-             UNION
-            SELECT 'Y' pavement_data--group of datums
-              FROM nm_members i
-                  ,nm_members g
-             WHERE g.nm_ne_id_of = i.nm_ne_id_of
-               AND i.nm_obj_type =lv_inv_type
-               AND i.nm_type = 'I'
-               AND g.nm_ne_id_in = pi_ne_id
-               AND g.nm_type = 'G')
-    ;
-    /*
-    ||if statement returns row then return as pcr data;
-    */
-    RETURN lv_retval;
+    --
+    awlrs_asset_api.get_list_of_elements(pi_inv_type         => get_cons_rec_type
+                                        ,pi_filter           => pi_filter
+                                        ,pi_skip_n_rows      => pi_skip_n_rows
+                                        ,pi_pagesize         => pi_pagesize
+                                        ,po_message_severity => lv_message_severity
+                                        ,po_message_cursor   => lv_message_cursor
+                                        ,po_cursor           => lv_cursor);
+    --
+    po_message_severity := lv_message_severity;
+    po_message_cursor := lv_message_cursor;
+    po_cursor := lv_cursor;
     --
   EXCEPTION
-    WHEN no_data_found THEN
-      --
-      RETURN 'N';
-      --
-  END is_pavement_data;
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_list_of_elements;
+
   --
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_network_elements(pi_ne_ids awlrs_util.ne_id_tab
                                 ,po_cursor OUT sys_refcursor)
     IS
-    --.
+    --
+    lv_inv_type   nm_inv_items_all.iit_inv_type%TYPE := get_cons_rec_type;
+    --
     lt_ids  nm_ne_id_array := nm_ne_id_array();
     --
   BEGIN
@@ -3260,19 +3297,34 @@ EXCEPTION
     END LOOP;
     --
     OPEN po_cursor FOR
-    SELECT ne_id                   element_id
-          ,ne_unique               element_name
-          ,ne_descr                element_desc
-          ,is_pavement_data(ne_id) pavement_data_exists
-          ,ne_admin_unit           admin_unit_code
-          ,nau_name                admin_unit_name
-          ,ne_length               element_length
+    SELECT ne_id         element_id
+          ,ne_unique     element_name
+          ,ne_descr      element_desc
+          ,NVL((SELECT 'Y' pavement_data--datums
+                  FROM nm_members
+                 WHERE nm_obj_type = lv_inv_type
+                   AND nm_ne_id_of = ne_id
+                 UNION
+                SELECT 'Y' pavement_data--group of datums
+                  FROM nm_members i
+                      ,nm_members g
+                 WHERE g.nm_ne_id_of = i.nm_ne_id_of
+                   AND i.nm_obj_type = lv_inv_type
+                   AND i.nm_type = 'I'
+                   AND g.nm_ne_id_in = ne_id
+                   AND g.nm_type = 'G')
+               ,'N') pavement_data_exists
+          ,ne_admin_unit admin_unit_code
+          ,nau_name      admin_unit_name
+          ,ne_length     element_length
       FROM nm_elements
           ,nm_admin_units_all
      WHERE ne_id IN(SELECT ne_id FROM TABLE(CAST(lt_ids AS nm_ne_id_array)))
+       AND ne_admin_unit = nau_admin_unit
          ;
     --
   END get_network_elements;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -3295,6 +3347,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_network_elements;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -3860,6 +3913,7 @@ EXCEPTION
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_construction_gaps;
+
   --
   -----------------------------------------------------------------------------
   --
