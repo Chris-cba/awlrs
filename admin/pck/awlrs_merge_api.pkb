@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.17   Feb 28 2020 10:00:54   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.18   Apr 30 2020 15:46:04   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_merge_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 28 2020 10:00:54  $
-  --       Date fetched Out : $Modtime:   Feb 26 2020 11:43:00  $
-  --       Version          : $Revision:   1.17  $
+  --       Date into PVCS   : $Date:   Apr 30 2020 15:46:04  $
+  --       Date fetched Out : $Modtime:   Apr 29 2020 15:11:54  $
+  --       Version          : $Revision:   1.18  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.17  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_merge_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -590,6 +590,8 @@ AS
                CLOSE get_linear_groups_post;
                --
                FOR i IN 1..lt_groups.COUNT LOOP
+                  --
+                  lv_start_ne_id := null;
                   --
                   FOR j IN 1..pi_circular_group_ids.COUNT LOOP
                     IF pi_circular_group_ids(j) = lt_groups(i).group_id
