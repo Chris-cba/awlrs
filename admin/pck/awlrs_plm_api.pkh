@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.11   Apr 28 2020 17:36:02   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.12   May 01 2020 16:45:06   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkh  $
-  --       Date into PVCS   : $Date:   Apr 28 2020 17:36:02  $
-  --       Date fetched Out : $Modtime:   Apr 28 2020 17:23:24  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   May 01 2020 16:45:06  $
+  --       Date fetched Out : $Modtime:   May 01 2020 14:15:14  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
   --
   TYPE iit_tab IS TABLE OF nm_inv_items_all%ROWTYPE INDEX BY BINARY_INTEGER;
   gt_layers      iit_tab;
@@ -59,6 +59,18 @@ AS
   -- This function returns the current SCCS version of the package body
   FUNCTION get_body_version
     RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_cons_rec_type
+    RETURN nm_inv_types_all.nit_inv_type%TYPE;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_layer_type
+    RETURN nm_inv_types_all.nit_inv_type%TYPE;
 
   --
   -----------------------------------------------------------------------------
