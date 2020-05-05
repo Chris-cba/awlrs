@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.0   May 01 2020 15:17:02   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   May 01 2020 15:17:02  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.1   May 05 2020 16:25:40   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   May 05 2020 16:25:40  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkb  $
-  --       Date fetched Out : $Modtime:   May 01 2020 10:15:32  $
-  --       Version          : $Revision:   1.0  $
+  --       Date fetched Out : $Modtime:   May 05 2020 15:57:28  $
+  --       Version          : $Revision:   1.1  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.0  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -800,6 +800,55 @@ AS
   
   --
   -----------------------------------------------------------------------------
+  --
+  FUNCTION is_a_view(pi_object_name IN VARCHAR2)
+    RETURN BOOLEAN
+  IS
+    lv_dummy user_views.view_name%TYPE;
+  BEGIN
+  	SELECT view_name 
+  	  INTO lv_dummy
+  	  FROM user_views
+  	 WHERE view_name = pi_object_name;
+  	RETURN TRUE;
+  EXCEPTION
+  	WHEN NO_DATA_FOUND
+  	  THEN RETURN FALSE;
+  	WHEN OTHERS
+  	  THEN RAISE;
+  END is_a_view;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION can_actions_occur(pi_base_feature_table  IN  nm_themes_all.nth_feature_table%TYPE) 
+    RETURN varchar2
+  -- 
+  IS
+  --
+  lv_results  varchar2(1) := 'N';
+  --
+  BEGIN
+    --
+    IF pi_base_feature_table IS NOT NULL
+      THEN
+        IF nm3ddl.does_object_exist(pi_base_feature_table)
+          THEN
+            IF is_a_view(pi_object_name => pi_base_feature_table)
+              THEN
+                lv_results := 'N';
+            ELSE     
+                lv_results := 'Y';
+            END IF;
+        END IF;                   
+    END IF;   
+    --
+    RETURN lv_results;
+    -- 
+  END can_actions_occur;
+  
+  --
+  -----------------------------------------------------------------------------
   --                            
   PROCEDURE get_spatial_details(pi_theme_id             IN     nm_themes_all.nth_theme_id%TYPE
                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
@@ -808,12 +857,17 @@ AS
   IS
   --
   lv_results    nm3layer_tool.tab_sdo_results;
+  lv_actions    varchar2(1);
   --
   BEGIN
   --
     BEGIN
       nm3layer_tool.get_sdo_details(pi_nth_theme_id => pi_theme_id
                                    ,po_results      => lv_results);
+      -- 
+      --this Y/N attribute is required to tell the UI when the Refresh metadata and Rebuild Spatial Index can be called  
+      lv_actions := can_actions_occur(pi_base_feature_table => lv_results(1).c_sdo_index_table);                            
+                                    
     END;   
     --
     OPEN po_cursor FOR
@@ -835,6 +889,7 @@ AS
           ,awlrs_theme_api.get_last_analysed_date(pi_table_name => nta1.nth_feature_table)  last_analysed_date
           ,lv_results(1).c_usgm_srid         srid
           ,lv_results(1).c_usgm_srid_meaning srid_meaning
+          ,lv_actions                        actions_yn
       FROM nm_themes_all  nta1
           ,nm_theme_gtypes ntg
           ,hig_codes hco
@@ -3543,49 +3598,7 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_base_theme;                                              
-
-  --
-  -----------------------------------------------------------------------------
-  -- 
-  PROCEDURE create_base_theme(pi_theme_id          IN      nm_theme_roles.nthr_theme_id%TYPE
-                             ,po_message_severity     OUT  hig_codes.hco_code%TYPE
-                             ,po_message_cursor       OUT  sys_refcursor)
-  IS
-  --
-  BEGIN
-    --
-    null;--placeholder
-    
-  END create_base_theme;                                                         
-  
-  --
-  -----------------------------------------------------------------------------
-  --       
-  PROCEDURE update_base_theme(pi_old_theme_id          IN      nm_theme_roles.nthr_theme_id%TYPE
-                             ,pi_new_theme_id          IN      nm_theme_roles.nthr_theme_id%TYPE
-                             ,po_message_severity         OUT  hig_codes.hco_code%TYPE
-                             ,po_message_cursor           OUT  sys_refcursor)
-  IS
-  --
-  BEGIN
-    --
-    null;--placeholder
-    
-  END update_base_theme;                               
-                                                          
-  --
-  -----------------------------------------------------------------------------
-  --                             
-  PROCEDURE delete_base_theme(pi_theme_id          IN      nm_theme_roles.nthr_theme_id%TYPE
-                             ,po_message_severity     OUT  hig_codes.hco_code%TYPE
-                             ,po_message_cursor       OUT  sys_refcursor)
-  IS
-  --
-  BEGIN
-    --
-    null;  --placeholder
-    
-  END delete_base_theme;                           
+                          
   --
   -----------------------------------------------------------------------------
   --                            
@@ -4672,7 +4685,7 @@ AS
   PROCEDURE rebuild_index(pi_index_name       IN    user_indexes.index_name%TYPE
                          ,pi_table_name       IN    user_tables.table_name%TYPE
                          ,pi_column_name      IN    user_tab_columns.column_name%TYPE
-                         ,pi_index_type       IN    VARCHAR2 
+                         ,pi_index_type       IN    VARCHAR2 DEFAULT 'RTREE'
                          ,po_message_severity    OUT hig_codes.hco_code%TYPE
                          ,po_message_cursor      OUT sys_refcursor)
   IS                       
@@ -4687,8 +4700,9 @@ AS
 		THEN 
     	   nm3layer_tool.rebuild_spatial_index(pi_index_name  => pi_index_name
                                               ,pi_table_name  => pi_table_name
-                                              ,pi_column_name => pi_column_name
-                                              ,pi_index_type  => pi_index_type);   
+                                              ,pi_column_name => pi_column_name   
+                                              ,pi_index_type  => NVL(pi_index_type,'RTREE'));
+                                     
 	END IF;   
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -4807,9 +4821,9 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE refresh_metadata(pi_theme_id            IN     nm_themes_all.nth_theme_id%TYPE
-                            ,pi_sdo_metadata_option IN     VARCHAR2
-                            ,pi_sde_metadata_option IN     VARCHAR2
-                            ,pi_dependency_option   IN     VARCHAR2
+                            ,pi_sdo_metadata_option IN     VARCHAR2  DEFAULT 'Y'
+                            ,pi_sde_metadata_option IN     VARCHAR2  DEFAULT 'Y'
+                            ,pi_dependency_option   IN     VARCHAR2  DEFAULT 'ALL_DATA'
                             ,po_message_severity       OUT hig_codes.hco_code%TYPE
                             ,po_message_cursor         OUT sys_refcursor)
   IS
@@ -4830,19 +4844,19 @@ AS
     	THEN
     	    lv_job_type := 'REFRESH_SDE';
     ELSIF 
-       (     pi_sdo_metadata_option = 'Y'  
+       (    pi_sdo_metadata_option = 'Y'  
     	AND pi_sde_metadata_option = 'Y')
     	THEN
     	    lv_job_type := 'REFRESH_BOTH';
     ELSE
-    	lv_job_type := NULL;
+    	lv_job_type := 'REFRESH_BOTH';
     END IF;
     --
     IF lv_job_type IS NOT NULL
       THEN
         nm3layer_tool.submit_job(pi_job_type => lv_job_type
                                 ,pi_arg_1    => pi_theme_id
-                                ,pi_arg_2    => pi_dependency_option
+                                ,pi_arg_2    => NVL(pi_dependency_option,'RTREE')
                                 ,pi_arg_3    => 'CLONE'
                                 ,po_out_1    => lv_dummy1
                                 ,po_out_2    => lv_dummy2
@@ -4905,12 +4919,19 @@ AS
   --
   BEGIN
     --
-    OPEN po_cursor FOR
-     SELECT view_name
-           ,text_length
-           ,text 
-       FROM user_views
-      WHERE view_name = pi_view_name;
+    IF is_a_view(pi_object_name => pi_view_name)
+      THEN
+    --
+       OPEN po_cursor FOR
+       SELECT view_name
+             ,text_length
+             ,text 
+         FROM user_views
+        WHERE view_name = pi_view_name;
+    ELSE
+       hig.raise_ner(pi_appl => 'NET'
+                    ,pi_id   => 265);  
+    END IF;    
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
