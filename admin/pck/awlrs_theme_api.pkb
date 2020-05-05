@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.1   May 05 2020 16:25:40   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   May 05 2020 16:25:40  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.2   May 05 2020 16:36:40   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   May 05 2020 16:36:40  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkb  $
-  --       Date fetched Out : $Modtime:   May 05 2020 15:57:28  $
-  --       Version          : $Revision:   1.1  $
+  --       Date fetched Out : $Modtime:   May 05 2020 16:32:58  $
+  --       Version          : $Revision:   1.2  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -4856,7 +4856,7 @@ AS
       THEN
         nm3layer_tool.submit_job(pi_job_type => lv_job_type
                                 ,pi_arg_1    => pi_theme_id
-                                ,pi_arg_2    => NVL(pi_dependency_option,'RTREE')
+                                ,pi_arg_2    => NVL(pi_dependency_option,'ALL_DATA')
                                 ,pi_arg_3    => 'CLONE'
                                 ,po_out_1    => lv_dummy1
                                 ,po_out_2    => lv_dummy2
