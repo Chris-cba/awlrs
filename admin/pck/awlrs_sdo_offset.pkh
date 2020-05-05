@@ -1,0 +1,98 @@
+CREATE OR REPLACE PACKAGE awlrs_sdo_offset
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo_offset.pkh-arc   1.1   May 05 2020 17:15:20   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_sdo_offset.pkh  $
+  --       Date into PVCS   : $Date:   May 05 2020 17:15:20  $
+  --       Date fetched Out : $Modtime:   May 05 2020 11:56:48  $
+  --       Version          : $Revision:   1.1  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION process_bbox(pi_bbox_string IN VARCHAR2
+                       ,pi_offset      IN NUMBER)
+    RETURN mdsys.sdo_ordinate_array;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION set_context(pi_offset_by_xsp IN VARCHAR2
+                      ,pi_offset        IN NUMBER
+                      ,pi_bbox_string   IN VARCHAR2)
+    RETURN NUMBER;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_offset_by_xsp
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_offset
+    RETURN NUMBER;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_bbox_string
+    RETURN NUMBER;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_bbox
+    RETURN mdsys.sdo_ordinate_array;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_offset_lrms
+    RETURN nm_code_tbl;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_offset_views(pi_inv_type IN nm_inv_types_all.nit_inv_type%TYPE);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_theme_offset_view(pi_theme_id IN nm_themes_all.nth_theme_id%TYPE)
+    RETURN nm_theme_offset_views.ntov_offset_view_name%TYPE;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_offset_geom(pi_geometry    IN mdsys.sdo_geometry
+                          ,pi_from_offset IN NUMBER
+                          ,pi_to_offset   IN NUMBER
+                          ,pi_offset      IN NUMBER)
+    RETURN mdsys.sdo_geometry DETERMINISTIC;
+
+END awlrs_sdo_offset;
+/
