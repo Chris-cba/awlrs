@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkh-arc   1.0   May 01 2020 15:17:04   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   May 01 2020 15:17:04  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkh-arc   1.1   May 05 2020 16:25:42   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   May 05 2020 16:25:42  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkh  $
-  --       Date fetched Out : $Modtime:   Apr 16 2020 15:19:20  $
-  --       Version          : $Revision:   1.0  $
+  --       Date fetched Out : $Modtime:   May 05 2020 15:57:26  $
+  --       Version          : $Revision:   1.1  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.0  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
   -- 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -520,28 +520,6 @@ AS
 
   --
   -----------------------------------------------------------------------------
-  -- 
-  PROCEDURE create_base_theme(pi_theme_id          IN      nm_theme_roles.nthr_theme_id%TYPE
-                             ,po_message_severity     OUT  hig_codes.hco_code%TYPE
-                             ,po_message_cursor       OUT  sys_refcursor);
-  
-  --
-  -----------------------------------------------------------------------------
-  --       
-  PROCEDURE update_base_theme(pi_old_theme_id          IN      nm_theme_roles.nthr_theme_id%TYPE
-                             ,pi_new_theme_id          IN      nm_theme_roles.nthr_theme_id%TYPE
-                             ,po_message_severity         OUT  hig_codes.hco_code%TYPE
-                             ,po_message_cursor           OUT  sys_refcursor);
-                                                          
-  --
-  -----------------------------------------------------------------------------
-  --                             
-  PROCEDURE delete_base_theme(pi_theme_id          IN      nm_theme_roles.nthr_theme_id%TYPE
-                             ,po_message_severity     OUT  hig_codes.hco_code%TYPE
-                             ,po_message_cursor       OUT  sys_refcursor);
-                             
-  --
-  -----------------------------------------------------------------------------
   --                             
   PROCEDURE get_theme_snappings(pi_theme_id          IN      nm_theme_snaps.nts_theme_id%TYPE
                                ,po_message_severity     OUT  hig_codes.hco_code%TYPE
@@ -672,7 +650,7 @@ AS
   PROCEDURE rebuild_index(pi_index_name       IN    user_indexes.index_name%TYPE
                          ,pi_table_name       IN    user_tables.table_name%TYPE
                          ,pi_column_name      IN    user_tab_columns.column_name%TYPE
-                         ,pi_index_type       IN    VARCHAR2 
+                         ,pi_index_type       IN    VARCHAR2 DEFAULT 'RTREE'
                          ,po_message_severity    OUT hig_codes.hco_code%TYPE
                          ,po_message_cursor      OUT sys_refcursor);
                          
@@ -689,9 +667,9 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE refresh_metadata(pi_theme_id            IN     nm_themes_all.nth_theme_id%TYPE
-                            ,pi_sdo_metadata_option IN     VARCHAR2
-                            ,pi_sde_metadata_option IN     VARCHAR2
-                            ,pi_dependency_option   IN     VARCHAR2
+                            ,pi_sdo_metadata_option IN     VARCHAR2  DEFAULT 'Y'
+                            ,pi_sde_metadata_option IN     VARCHAR2  DEFAULT 'Y'
+                            ,pi_dependency_option   IN     VARCHAR2  DEFAULT 'ALL_DATA'
                             ,po_message_severity       OUT hig_codes.hco_code%TYPE
                             ,po_message_cursor         OUT sys_refcursor);
   
