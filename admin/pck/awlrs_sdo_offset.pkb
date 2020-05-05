@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo_offset.pkb-arc   1.2   Oct 10 2018 18:48:08   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo_offset.pkb-arc   1.3   May 05 2020 17:15:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo_offset.pkb  $
-  --       Date into PVCS   : $Date:   Oct 10 2018 18:48:08  $
-  --       Date fetched Out : $Modtime:   Oct 10 2018 18:42:46  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   May 05 2020 17:15:20  $
+  --       Date fetched Out : $Modtime:   May 05 2020 17:13:36  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_sdo_offset';
   --
@@ -56,7 +56,7 @@ AS
      THEN
         c_max_xsp_offset := 0;
   END set_max_xsp_offset;
-  
+
   --
   -----------------------------------------------------------------------------
   --
@@ -246,7 +246,43 @@ AS
     RETURN lv_retval;
     --
   END get_datum_shape_sql;
-  
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_offset_lrms
+    RETURN nm_code_tbl IS
+    --
+    lt_values         nm3type.tab_varchar32767;
+    lt_option_values  nm_code_tbl := nm_code_tbl();
+    lt_retval         nm_code_tbl;
+    --
+  BEGIN
+    /*
+    ||Get a list of LRMs from the Product Option
+    */
+    lt_values := awlrs_util.tokenise_string(pi_string => hig.get_sysopt('AWLOFFSLRM'));
+    FOR i IN 1..lt_values.COUNT LOOP
+      --
+      lt_option_values.EXTEND;
+      lt_option_values(lt_option_values.COUNT) := lt_values(i);
+      --
+    END LOOP;
+    /*
+    ||Select the values from the Group Type table to ensure they are all Linear.
+    */
+    SELECT ngt_group_type
+      BULK COLLECT
+      INTO lt_retval
+      FROM nm_group_types_all
+     WHERE ngt_linear_flag = 'Y'
+       AND ngt_group_type IN(SELECT column_value FROM TABLE(CAST(lt_option_values AS nm_code_tbl)))
+         ;
+    --
+    RETURN lt_retval;
+    --
+  END get_offset_lrms;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -259,7 +295,6 @@ AS
     lv_theme_id        nm_themes_all.nth_theme_id%TYPE;
     lv_base_view_name  VARCHAR2(30) := 'V_NM_NIT_'||pi_inv_type||'_SDO_OFF';
     lv_dt_view_name    VARCHAR2(30) := 'V_NM_NIT_'||pi_inv_type||'_SDO_DT_OFF';
-    lv_awloffslrm      hig_option_values.hov_value%TYPE := NVL(hig.get_sysopt('AWLOFFSLRM'),'<NA>');
     lv_view_sql        CLOB;
     lv_xsp_offset_sql  nm3type.max_varchar2;
     --
@@ -442,7 +477,7 @@ AS
             ||Create equvalent of v_nm_nit_<inv_type>_sdo.
             ||NB This aggregates geometries by a linear group type before offsetting.
             */
-            IF lv_awloffslrm != '<NA>'
+            IF get_offset_lrms().COUNT > 0
              THEN
                 lv_view_sql := 'CREATE OR REPLACE FORCE VIEW '||lv_base_view_name||'_AGG AS'
                     ||CHR(10)||'SELECT objectid'
@@ -495,7 +530,7 @@ AS
                     ||CHR(10)||'         WHERE (SYS_CONTEXT(''NM3SQL'','''||c_offset_by_xsp_context||''') = ''Y'''
                     ||CHR(10)||'                OR TO_NUMBER(SYS_CONTEXT(''NM3SQL'','''||c_offset_context||''')) != 0)'
                     ||CHR(10)||'           AND sdo.ne_id_of = gm.nm_ne_id_of'
-                    ||CHR(10)||'           AND gm.nm_obj_type = '''||lv_awloffslrm||''''
+                    ||CHR(10)||'           AND gm.nm_obj_type IN(SELECT column_value FROM TABLE(CAST(awlrs_sdo_offset.get_offset_lrms AS nm_code_tbl)))'
                     ||CHR(10)||'           AND sdo_filter(sdo.geoloc'
                     ||CHR(10)||'                         ,mdsys.sdo_geometry(2003'
                     ||CHR(10)||'                                            ,'||lr_theme_meta.srid
@@ -559,7 +594,7 @@ AS
                     ||CHR(10)||'         WHERE (SYS_CONTEXT(''NM3SQL'','''||c_offset_by_xsp_context||''') = ''Y'''
                     ||CHR(10)||'                OR TO_NUMBER(SYS_CONTEXT(''NM3SQL'','''||c_offset_context||''')) != 0)'
                     ||CHR(10)||'           AND sdo.ne_id_of = gm.nm_ne_id_of'
-                    ||CHR(10)||'           AND gm.nm_obj_type = '''||lv_awloffslrm||''''
+                    ||CHR(10)||'           AND gm.nm_obj_type IN(SELECT column_value FROM TABLE(CAST(awlrs_sdo_offset.get_offset_lrms AS nm_code_tbl)))'
                     ||CHR(10)||'           AND sdo_filter(sdo.geoloc'
                     ||CHR(10)||'                         ,mdsys.sdo_geometry(2003'
                     ||CHR(10)||'                                            ,'||lr_theme_meta.srid

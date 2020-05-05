@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo_offset.pkh-arc   1.0   Sep 19 2018 12:43:24   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo_offset.pkh-arc   1.1   May 05 2020 17:15:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo_offset.pkh  $
-  --       Date into PVCS   : $Date:   Sep 19 2018 12:43:24  $
-  --       Date fetched Out : $Modtime:   Aug 14 2018 17:16:30  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   May 05 2020 17:15:20  $
+  --       Date fetched Out : $Modtime:   May 05 2020 11:56:48  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.0  $';
-  
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+
   --
   -----------------------------------------------------------------------------
   --
@@ -67,6 +67,12 @@ AS
   --
   FUNCTION get_bbox
     RETURN mdsys.sdo_ordinate_array;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_offset_lrms
+    RETURN nm_code_tbl;
 
   --
   -----------------------------------------------------------------------------
