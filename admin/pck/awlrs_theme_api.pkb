@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.2   May 05 2020 16:36:40   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   May 05 2020 16:36:40  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.3   May 06 2020 09:49:22   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   May 06 2020 09:49:22  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkb  $
-  --       Date fetched Out : $Modtime:   May 05 2020 16:32:58  $
-  --       Version          : $Revision:   1.2  $
+  --       Date fetched Out : $Modtime:   May 06 2020 09:38:16  $
+  --       Version          : $Revision:   1.3  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.3  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -4917,17 +4917,32 @@ AS
                          ,po_cursor                  OUT sys_refcursor)
   IS
   --
+  lv_view_name    user_views.view_name%TYPE;
+  lv_text_length  number;
+  lv_text         long;
+  lv_vc2          varchar2(32767);
+  --
   BEGIN
     --
     IF is_a_view(pi_object_name => pi_view_name)
       THEN
-    --
-       OPEN po_cursor FOR
+       --
        SELECT view_name
              ,text_length
              ,text 
+         INTO lv_view_name
+             ,lv_text_length
+             ,lv_text    
          FROM user_views
         WHERE view_name = pi_view_name;
+        --
+        lv_vc2 := substr(lv_text, 1, 32767);
+       --  
+       OPEN po_cursor FOR
+       SELECT lv_view_name
+             ,lv_text_length
+             ,lv_vc2 
+         FROM dual;
     ELSE
        hig.raise_ner(pi_appl => 'NET'
                     ,pi_id   => 265);  
