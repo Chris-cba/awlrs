@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.20   Feb 12 2020 16:30:02   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.21   May 06 2020 16:44:52   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   Feb 12 2020 16:30:02  $
---       Date fetched Out : $Modtime:   Feb 12 2020 16:29:24  $
---       Version          : $Revision:   1.20  $
+--       Date into PVCS   : $Date:   May 06 2020 16:44:52  $
+--       Date fetched Out : $Modtime:   May 06 2020 16:37:50  $
+--       Version          : $Revision:   1.21  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 12-FEB-2020 16:29
+--       Generation Date  : 06-MAY-2020 16:37
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -113,6 +113,28 @@ INSERT
       ,HCO_START_DATE
       ,HCO_END_DATE)
 SELECT 'AWLMESUNIT'
+      ,'FEET'
+      ,'Feet'
+      ,'Y'
+      ,3
+      ,null
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_CODES
+                   WHERE HCO_DOMAIN = 'AWLMESUNIT'
+                     AND HCO_CODE = 'FEET');
+--
+INSERT
+  INTO HIG_CODES
+      (HCO_DOMAIN
+      ,HCO_CODE
+      ,HCO_MEANING
+      ,HCO_SYSTEM
+      ,HCO_SEQ
+      ,HCO_START_DATE
+      ,HCO_END_DATE)
+SELECT 'AWLMESUNIT'
       ,'IMPERIAL'
       ,'Imperial'
       ,'Y'
@@ -135,6 +157,50 @@ INSERT
       ,HCO_START_DATE
       ,HCO_END_DATE)
 SELECT 'AWLMESUNIT'
+      ,'KILOMETERS'
+      ,'Kilometers'
+      ,'Y'
+      ,6
+      ,null
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_CODES
+                   WHERE HCO_DOMAIN = 'AWLMESUNIT'
+                     AND HCO_CODE = 'KILOMETERS');
+--
+INSERT
+  INTO HIG_CODES
+      (HCO_DOMAIN
+      ,HCO_CODE
+      ,HCO_MEANING
+      ,HCO_SYSTEM
+      ,HCO_SEQ
+      ,HCO_START_DATE
+      ,HCO_END_DATE)
+SELECT 'AWLMESUNIT'
+      ,'METERS'
+      ,'Meters'
+      ,'Y'
+      ,5
+      ,null
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_CODES
+                   WHERE HCO_DOMAIN = 'AWLMESUNIT'
+                     AND HCO_CODE = 'METERS');
+--
+INSERT
+  INTO HIG_CODES
+      (HCO_DOMAIN
+      ,HCO_CODE
+      ,HCO_MEANING
+      ,HCO_SYSTEM
+      ,HCO_SEQ
+      ,HCO_START_DATE
+      ,HCO_END_DATE)
+SELECT 'AWLMESUNIT'
       ,'METRIC'
       ,'Metric'
       ,'Y'
@@ -146,6 +212,28 @@ SELECT 'AWLMESUNIT'
                     FROM HIG_CODES
                    WHERE HCO_DOMAIN = 'AWLMESUNIT'
                      AND HCO_CODE = 'METRIC');
+--
+INSERT
+  INTO HIG_CODES
+      (HCO_DOMAIN
+      ,HCO_CODE
+      ,HCO_MEANING
+      ,HCO_SYSTEM
+      ,HCO_SEQ
+      ,HCO_START_DATE
+      ,HCO_END_DATE)
+SELECT 'AWLMESUNIT'
+      ,'MILES'
+      ,'Miles'
+      ,'Y'
+      ,4
+      ,null
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_CODES
+                   WHERE HCO_DOMAIN = 'AWLMESUNIT'
+                     AND HCO_CODE = 'MILES');
 --
 ----------------------------------------------------------------------------------------
 -- HIG_OPTION_LIST
@@ -296,13 +384,13 @@ INSERT
       ,HOL_MAX_LENGTH)
 SELECT 'AWLOFFSLRM'
       ,'AWLRS'
-      ,'Lateral Offset LRM'
-      ,'The LRM to use to aggregate geometries before creating the offset geometry. Aggregating by an LRM can help to eliminate gaps and overlaps in the resulting geometries. A value of ''<NA>'' will result in the aggregated views not being generated'
+      ,'Lateral Offset LRMs'
+      ,'A comma spearated list of LRMs (linear group type codes) to use to aggregate geometries before creating the offset geometry. Aggregating by an LRM can help to eliminate gaps and overlaps in the resulting geometries. A value of ''<NA>'' will result in the aggregated views not being generated.'
       ,''
       ,'VARCHAR2'
       ,'N'
       ,'N'
-      ,4
+      ,2000
   FROM DUAL
  WHERE NOT EXISTS(SELECT 1
                     FROM HIG_OPTION_LIST
