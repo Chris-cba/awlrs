@@ -3,11 +3,11 @@
 --
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12130_upg.sql-arc   1.0   May 06 2020 16:45:40   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12130_upg.sql-arc   1.1   May 06 2020 16:49:46   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrs1010_awlrs12130_upg.sql  $
---       Date into PVCS   : $Date:   May 06 2020 16:45:40  $
---       Date fetched Out : $Modtime:   May 05 2020 14:50:44  $
---       Version          : $Revision:   1.0  $
+--       Date into PVCS   : $Date:   May 06 2020 16:49:46  $
+--       Date fetched Out : $Modtime:   May 06 2020 16:49:30  $
+--       Version          : $Revision:   1.1  $
 --
 --   Product upgrade script
 --
@@ -43,6 +43,8 @@ begin
    hig2.pre_upgrade_check (p_product               => 'AWLRS'
                           ,p_new_version           => '1.2.13.0'
                           ,p_allowed_old_version_1 => '1.0.1.0'
+                          ,p_allowed_old_version_2 => '1.0.1.0'
+                          ,p_allowed_old_version_3 => '1.0.1.0'
                           );
 END;
 /
@@ -74,27 +76,6 @@ FROM dual
 SET FEEDBACK ON
 start &&run_file
 SET FEEDBACK OFF
---
----------------------------------------------------------------------------------------------------
---                        **************** VIEWS   ****************
-SET TERM ON
-PROMPT Views...
-SET TERM OFF
-SET DEFINE ON
-SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||
-        '&terminator'||'views'||'&terminator'||'awlrsviews.sql' run_file
-FROM dual
-/
-SET FEEDBACK ON
-start &&run_file
-SET FEEDBACK OFF
---
----------------------------------------------------------------------------------------------------
---                        **************** TRIGGERS   ****************
---
----------------------------------------------------------------------------------------------------
---                        **************** APPLICATION CONTEXTS ****************
---
 --
 ---------------------------------------------------------------------------------------------------
 --                  **************** PACKAGE HEADERS AND BODIES   ****************
@@ -207,7 +188,7 @@ SET TERM ON
 Prompt Setting The Version Number...
 SET TERM OFF
 BEGIN
-      hig2.upgrade('AWLRS','awlrs1010_awlrs12130_upg.sql','Upgrade from 1.0.1.0 to 1.2.13.0','1.2.13.0');
+      hig2.upgrade('AWLRS','awlrs1010_awlrs12130_upg.sql','Upgrade to 1.2.13.1','1.2.13.1');
 END;
 /
 COMMIT;
