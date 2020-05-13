@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.40   Feb 04 2020 16:40:02   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.41   May 13 2020 09:08:04   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 04 2020 16:40:02  $
-  --       Date fetched Out : $Modtime:   Feb 03 2020 16:44:58  $
-  --       Version          : $Revision:   1.40  $
+  --       Date into PVCS   : $Date:   May 13 2020 09:08:04  $
+  --       Date fetched Out : $Modtime:   May 13 2020 08:34:58  $
+  --       Version          : $Revision:   1.41  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.40  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.41  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -2473,14 +2473,21 @@ AS
                    FOR i IN 1..lt_parent_ids.COUNT LOOP
                      --
                      lv_start_ne_id := null;
-                     --
-                     FOR j IN 1..pi_circular_group_ids.COUNT LOOP
-                       IF pi_circular_group_ids(j) = lt_parent_ids(i).ne_id
-                        THEN
-                           lv_start_ne_id := pi_circular_start_ne_ids(j);
-                           EXIT;
-                       END IF;
-                     END LOOP;
+                     /*
+                     ||only need to worry about start ne id being set if it was circular before creating element.                     
+                     */
+                     IF awlrs_group_api.is_circular_route(lt_parent_ids(i).ne_id) = 'Y' 
+                      THEN
+                         --
+                         FOR j IN 1..pi_circular_group_ids.COUNT LOOP
+                           IF pi_circular_group_ids(j) = lt_parent_ids(i).ne_id
+                            THEN
+                               lv_start_ne_id := pi_circular_start_ne_ids(j);
+                               EXIT;
+                           END IF;
+                         END LOOP;
+                         --
+                     END IF;
                      --
                      lv_severity := awlrs_util.c_msg_cat_success;
                      lt_messages.DELETE;
