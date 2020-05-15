@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkh-arc   1.8   Sep 05 2019 11:58:10   Barbara.Odriscoll  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkh-arc   1.9   May 15 2020 11:53:56   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkh  $
-  --       Date into PVCS   : $Date:   Sep 05 2019 11:58:10  $
-  --       Date fetched Out : $Modtime:   Aug 13 2019 15:04:26  $
-  --       Version          : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   May 15 2020 11:53:56  $
+  --       Date fetched Out : $Modtime:   May 15 2020 11:13:44  $
+  --       Version          : $Revision:   1.9  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -622,6 +622,14 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_launchpad_detail(po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_launchpad_detail(pi_top                 IN      hig_standard_favourites.hstf_parent%TYPE
+                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                 ,po_message_cursor          OUT sys_refcursor
                                 ,po_cursor                  OUT sys_refcursor);
 
