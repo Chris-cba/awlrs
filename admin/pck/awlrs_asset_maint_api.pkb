@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.9   Apr 27 2020 18:07:34   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.10   May 15 2020 12:09:32   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_maint_api.pkb  $
-  --       Date into PVCS   : $Date:   Apr 27 2020 18:07:34  $
-  --       Date fetched Out : $Modtime:   Apr 27 2020 17:44:36  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   May 15 2020 12:09:32  $
+  --       Date fetched Out : $Modtime:   May 15 2020 11:43:06  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.9  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_maint_api';
   --
   TYPE attr_name_tab IS TABLE OF nm_inv_type_attribs_all.ita_attrib_name%TYPE INDEX BY BINARY_INTEGER;
@@ -92,6 +92,7 @@ AS
           ,child_inv_types
           ,is_editable
           ,alim_doc_man_url
+          ,asset_point_or_continuous
       FROM (SELECT it1.nit_inv_type asset_type_code
                   ,it1.nit_inv_type||' - '||it1.nit_descr asset_type_description
                   ,it1.nit_category asset_category
@@ -149,6 +150,7 @@ AS
                                      AND nua_admin_unit = nau_admin_unit
                                      AND nau_admin_type = it1.nit_admin_type)) is_editable
                   ,awlrs_alim_doc_man_api.get_url_template(pi_table_name => CASE WHEN nit_table_name IS NOT NULL THEN nit_table_name ELSE 'NM_INV_ITEMS' END) alim_doc_man_url
+                  ,it1.nit_pnt_or_cont asset_point_or_continuous
               FROM nm_inv_types it1
              WHERE it1.nit_category = 'I' --IN ('I','F') will support FT when LB is fixed.
                AND it1.nit_use_xy = 'N'
@@ -189,6 +191,7 @@ AS
                   ,NULL child_inv_types
                   ,NULL is_editable
                   ,NULL alim_doc_man_url
+                  ,NULL asset_point_or_continuous
               FROM dual)
      ORDER
         BY CASE WHEN asset_type_code IS NULL THEN 1 ELSE 2 END
