@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.17   Nov 13 2019 16:19:24   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metasec_api.pkb-arc   1.18   May 15 2020 11:54:44   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_metasec_api.pkb  $
-  --       Date into PVCS   : $Date:   Nov 13 2019 16:19:24  $
-  --       Date fetched Out : $Modtime:   Nov 13 2019 16:17:02  $
-  --       Version          : $Revision:   1.17  $
+  --       Date into PVCS   : $Date:   May 15 2020 11:54:44  $
+  --       Date fetched Out : $Modtime:   May 15 2020 11:29:34  $
+  --       Version          : $Revision:   1.18  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.17  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.18  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metasec_api';
   --
@@ -5363,6 +5363,32 @@ AS
     --
   BEGIN
     --
+    get_launchpad_detail(pi_top                 => 'AWLRS_LAUNCHPAD'
+                        ,po_message_severity    => po_message_severity
+                        ,po_message_cursor      => po_message_cursor
+                        ,po_cursor              => po_cursor);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_launchpad_detail;  
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_launchpad_detail(pi_top                 IN      hig_standard_favourites.hstf_parent%TYPE
+                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
     OPEN po_cursor FOR
     SELECT hstf_child  module_name
           ,hstf_parent parent_module
@@ -5371,7 +5397,7 @@ AS
           ,hstf_type   module_type
           ,level
       FROM hig_standard_favourites
-     START WITH hstf_parent = 'AWLRS_LAUNCHPAD'
+     START WITH hstf_parent = pi_top
      CONNECT BY PRIOR hstf_child = hstf_parent
        AND ((hstf_type = 'M' AND nm3user.user_can_run_module_vc(hstf_child) = 'Y' 
        AND (SELECT 'Y'
@@ -5392,7 +5418,7 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END get_launchpad_detail;    
+  END get_launchpad_detail;  
   --
 END awlrs_metasec_api;
 /
