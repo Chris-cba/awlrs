@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.43   Nov 12 2019 15:07:36   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.44   May 15 2020 12:09:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Nov 12 2019 15:07:36  $
-  --       Date fetched Out : $Modtime:   Nov 12 2019 14:36:22  $
-  --       Version          : $Revision:   1.43  $
+  --       Date into PVCS   : $Date:   May 15 2020 12:09:14  $
+  --       Date fetched Out : $Modtime:   May 15 2020 11:42:12  $
+  --       Version          : $Revision:   1.44  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.43  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.44  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -229,6 +229,7 @@ AS
           ,nw_themes.unit_id
           ,nith_nit_id asset_type
           ,nit_category asset_category
+          ,nit_pnt_or_cont asset_point_or_continuous
           ,CASE WHEN nit_table_name IS NOT NULL THEN 'Y' ELSE 'N' END ft_asset_type
           ,nit_multiple_allowed multiple_locs_allowed
           ,nit_x_sect_allow_flag xsp_allowed
@@ -1095,6 +1096,7 @@ AS
     RETURN lv_retval;
     --
   END get_group_member_types;
+
   --
   -----------------------------------------------------------------------------
   --
@@ -2745,6 +2747,12 @@ AS
         IF lr_theme_types.asset_category IS NOT NULL
          THEN
             lv_tmp := CHR(10)||'      "asset_category"              "'||lr_theme_types.asset_category||'"';
+            lv_layer_text := lv_layer_text||lv_tmp;
+        END IF;
+        --
+        IF lr_theme_types.asset_point_or_continuous IS NOT NULL
+         THEN
+            lv_tmp := CHR(10)||'      "asset_point_or_continuous"   "'||lr_theme_types.asset_point_or_continuous||'"';
             lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
         --
