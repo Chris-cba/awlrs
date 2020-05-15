@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.18   Apr 27 2020 18:01:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkh-arc   1.19   May 15 2020 12:09:12   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkh  $
-  --       Date into PVCS   : $Date:   Apr 27 2020 18:01:04  $
-  --       Date fetched Out : $Modtime:   Apr 09 2020 15:09:44  $
-  --       Version          : $Revision:   1.18  $
+  --       Date into PVCS   : $Date:   May 15 2020 12:09:12  $
+  --       Date fetched Out : $Modtime:   May 15 2020 11:42:12  $
+  --       Version          : $Revision:   1.19  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
   --
   TYPE theme_types_rec IS RECORD(admin_type                   nm_au_types.nat_admin_type%TYPE
                                 ,network_type                 nm_types.nt_type%TYPE
@@ -26,6 +26,7 @@ AS
                                 ,unit_id                      nm_units.un_unit_id%TYPE
                                 ,asset_type                   nm_inv_types_all.nit_inv_type%TYPE
                                 ,asset_category               nm_inv_types_all.nit_category%TYPE
+                                ,asset_point_or_continuous     nm_inv_types_all.nit_pnt_or_cont%TYPE
                                 ,ft_asset_type                VARCHAR2(1)
                                 ,multiple_locs_allowed        nm_inv_types_all.nit_multiple_allowed%TYPE
                                 ,xsp_allowed                  VARCHAR2(1)
