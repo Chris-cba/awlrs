@@ -3,23 +3,25 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkb-arc   1.0   May 01 2020 15:17:06   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   May 01 2020 15:17:06  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkb-arc   1.1   May 18 2020 15:45:22   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   May 18 2020 15:45:22  $
   --       Module Name      : $Workfile:   awlrs_process_framework_api.pkb  $
-  --       Date fetched Out : $Modtime:   May 01 2020 15:02:34  $
-  --       Version          : $Revision:   1.0  $
+  --       Date fetched Out : $Modtime:   May 18 2020 15:40:14  $
+  --       Version          : $Revision:   1.1  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.0  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
   --roles constants
   cv_process_user   CONSTANT VARCHAR2(12) := 'PROCESS_USER';
   cv_process_admin  CONSTANT VARCHAR2(13) := 'PROCESS_ADMIN';
+  --
+  cv_package        CONSTANT VARCHAR2(7) := 'PACKAGE';
   --
   -----------------------------------------------------------------------------
   --
@@ -62,6 +64,40 @@ AS
         RETURN lv_exists;
       --    
   END privs_check;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION valid_package_call(pi_code_to_execute   IN   hig_process_types.hpt_what_to_call%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    IF pi_code_to_execute IS NOT NULL
+     THEN 
+      SELECT 'Y'
+        INTO lv_exists
+        FROM dba_procedures
+       WHERE (   owner          = UPPER(SYS_CONTEXT('NM3CORE','APPLICATION_OWNER'))
+             AND object_type    = cv_package 
+             AND object_name    = SUBSTR(pi_code_to_execute,1,(INSTR(pi_code_to_execute,'.')) -1)
+             AND object_name    NOT IN ('NM3USER','NM3DDL')
+             AND procedure_name = RTRIM(SUBSTR(pi_code_to_execute,(INSTR(pi_code_to_execute,'.')) +1),';')
+          OR     owner          = 'EXOR_CORE'
+             AND object_type    = cv_package 
+             AND object_name    = SUBSTR(pi_code_to_execute,1,(INSTR(pi_code_to_execute,'.')) -1)
+             AND object_name    != 'NM3SECURITY'
+             AND procedure_name = RTRIM(SUBSTR(pi_code_to_execute,(INSTR(pi_code_to_execute,'.')) +1),';'));
+    END IF;     
+    --   
+    RETURN lv_exists;
+    -- 
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+  END valid_package_call;
   
   --
   -----------------------------------------------------------------------------
@@ -134,6 +170,27 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION process_type_exists(pi_process_type_id  IN      hig_process_type_roles.hptr_process_type_id%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM hig_process_types
+     WHERE hpt_process_type_id = pi_process_type_id;
+    --   
+    RETURN lv_exists;
+    -- 
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+  END process_type_exists;
+  --
+  -----------------------------------------------------------------------------
+  --
   FUNCTION process_type_role_exists(pi_process_type_id  IN      hig_process_type_roles.hptr_process_type_id%TYPE
                                    ,pi_role             IN      hig_process_type_roles.hptr_role%TYPE)
     RETURN VARCHAR2
@@ -157,6 +214,75 @@ AS
   
   --
   -----------------------------------------------------------------------------
+  --
+  FUNCTION process_type_freq_exists(pi_process_type_id IN   hig_process_type_frequencies.hpfr_process_type_id%TYPE
+                                   ,pi_frequency_id    IN   hig_process_type_frequencies.hpfr_frequency_id%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM hig_process_type_frequencies
+     WHERE hpfr_process_type_id = pi_process_type_id
+       AND hpfr_frequency_id    = pi_frequency_id;
+    --   
+    RETURN lv_exists;
+    -- 
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+  END process_type_freq_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION process_location_exists(pi_file_type_id     IN      hig_process_type_files.hptf_file_type_id%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM hig_process_type_files
+     WHERE hptf_file_type_id = pi_file_type_id;      
+    --   
+    RETURN lv_exists;
+    -- 
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+  END process_location_exists;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION file_ext_exists(pi_file_type_id    IN   hig_process_type_file_ext.hpte_file_type_id%TYPE
+                          ,pi_file_type_ext   IN   hig_process_type_file_ext.hpte_extension%TYPE)
+    RETURN VARCHAR2
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM hig_process_type_file_ext
+     WHERE hpte_file_type_id = pi_file_type_id
+       AND hpte_extension    = pi_file_type_ext;     
+    --   
+    RETURN lv_exists;
+    -- 
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        RETURN lv_exists;
+  END file_ext_exists;
+  --
+  -----------------------------------------------------------------------------
   -- 
   PROCEDURE get_process_types(po_message_severity OUT  hig_codes.hco_code%TYPE
                              ,po_message_cursor   OUT  sys_refcursor
@@ -172,9 +298,9 @@ AS
           ,hpt_system                  protected_
           ,hpt_descr                   process_descr 
           ,hpt_what_to_call            code_to_execute
-          ,hpt_polling_enabled         polling_enabled 
-          ,hpt_polling_ftp_type_id     polling_ftp_id
-          ,hpt_polling_ftp_type_descr  polling_ftp_id_descr
+          --,hpt_polling_enabled         polling_enabled 
+          --,hpt_polling_ftp_type_id     polling_ftp_id
+          --,hpt_polling_ftp_type_descr  polling_ftp_id_descr
           ,hpt_see_in_hig2510          see_in_form
           ,hpt_area_type               area_type  
           ,hpt_area_type_meaning       area_type_descr 
@@ -210,9 +336,9 @@ AS
           ,hpt_system                  protected_
           ,hpt_descr                   process_descr 
           ,hpt_what_to_call            code_to_execute
-          ,hpt_polling_enabled         polling_enabled 
-          ,hpt_polling_ftp_type_id     polling_ftp_id
-          ,hpt_polling_ftp_type_descr  polling_ftp_id_descr
+          --,hpt_polling_enabled         polling_enabled 
+          --,hpt_polling_ftp_type_id     polling_ftp_id
+          --,hpt_polling_ftp_type_descr  polling_ftp_id_descr
           ,hpt_see_in_hig2510          see_in_form
           ,hpt_area_type               area_type  
           ,hpt_area_type_meaning       area_type_descr 
@@ -258,9 +384,9 @@ AS
                                                      ,hpt_system                  protected_
                                                      ,hpt_descr                   process_descr 
                                                      ,hpt_what_to_call            code_to_execute
-                                                     ,hpt_polling_enabled         polling_enabled 
-                                                     ,hpt_polling_ftp_type_id     polling_ftp_id
-                                                     ,hpt_polling_ftp_type_descr  polling_ftp_id_descr
+                                                     --,hpt_polling_enabled         polling_enabled 
+                                                     --,hpt_polling_ftp_type_id     polling_ftp_id
+                                                     --,hpt_polling_ftp_type_descr  polling_ftp_id_descr
                                                      ,hpt_see_in_hig2510          see_in_form
                                                      ,hpt_area_type               area_type  
                                                      ,hpt_area_type_meaning       area_type_descr 
@@ -273,9 +399,9 @@ AS
                                                    ||',protected_'
                                                    ||',process_descr' 
                                                    ||',code_to_execute'
-                                                   ||',polling_enabled'
-                                                   ||',polling_ftp_id'
-                                                   ||',polling_ftp_id_descr'
+                                                  -- ||',polling_enabled'
+                                                  -- ||',polling_ftp_id'
+                                                  -- ||',polling_ftp_id_descr'
                                                    ||',see_in_form'
                                                    ||',area_type'
                                                    ||',area_type_descr'
@@ -329,6 +455,7 @@ AS
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
+      /*
       awlrs_util.add_column_data(pi_cursor_col   => 'polling_enabled'
                                 ,pi_query_col    => 'hpt_polling_enabled'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
@@ -346,6 +473,7 @@ AS
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
+      */                          
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'area_type'
                                 ,pi_query_col    => 'hpt_area_type'
@@ -430,8 +558,389 @@ AS
   
   --
   -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE create_process_type(pi_process_name          IN hig_process_types.hpt_name%TYPE
+                               ,pi_limit                 IN hig_process_types.hpt_process_limit%TYPE
+                               ,pi_process_descr         IN hig_process_types.hpt_descr%TYPE
+                               ,pi_code_to_execute       IN hig_process_types.hpt_what_to_call%TYPE
+                               ,pi_see_in_form           IN hig_process_types.hpt_see_in_hig2510%TYPE  
+                               ,pi_area_type             IN hig_process_types.hpt_area_type%TYPE
+                               ,pi_restartable           IN hig_process_types.hpt_restartable%TYPE
+                               --,pi_polling_enabled       IN hig_process_types.hpt_polling_enabled%TYPE
+                               --,pi_polling_ftp_type_id   IN hig_process_types.hpt_polling_ftp_type_id%TYPE
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor)
+  IS
   --
-  PROCEDURE get_process_type_roles(pi_process_type_id  IN      hig_process_types.hpt_process_type_id%TYPE
+  lv_rec hig_process_types%ROWTYPE;
+  --
+  BEGIN
+    --
+    SAVEPOINT create_process_type_sp;
+    --
+    awlrs_util.check_historic_mode;  
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_process_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Process Name'
+                               ,pi_parameter_value =>  pi_process_name);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Description'
+                               ,pi_parameter_value =>  pi_process_descr);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'See In Form'
+                               ,pi_parameter_value =>  pi_see_in_form);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Restartable'
+                               ,pi_parameter_value =>  pi_restartable);
+    --
+    IF valid_package_call(pi_code_to_execute  => pi_code_to_execute)  = 'N'
+      THEN
+         hig.raise_ner(pi_appl               => 'AWLRS'
+                      ,pi_id                 => 86
+                      ,pi_supplementary_info => pi_code_to_execute);
+    END IF;
+    --
+    /*
+    ||insert into hig_process_types.
+    */
+    lv_rec.hpt_name                  :=  pi_process_name;
+    lv_rec.hpt_descr                 :=  pi_process_descr;
+    lv_rec.hpt_what_to_call          :=  pi_code_to_execute;
+    lv_rec.hpt_process_limit         :=  pi_limit;
+    lv_rec.hpt_restartable           :=  pi_restartable;
+    lv_rec.hpt_see_in_hig2510        :=  pi_see_in_form;  
+    lv_rec.hpt_polling_enabled       :=  'N'; --pi_polling_enabled;
+    --lv_rec.hpt_polling_ftp_type_id   := pi_polling_ftp_type_id;
+    lv_rec.hpt_area_type             := pi_area_type;
+    --
+    hig_process_framework.insert_process_type(pi_process_type_rec => lv_rec);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        ROLLBACK TO create_process_type_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_process_type;                               
+  --
+  -----------------------------------------------------------------------------
+  --
+  
+  PROCEDURE update_process_type(pi_old_process_type_id    IN     hig_process_types.hpt_process_type_id%TYPE
+                               ,pi_old_process_name       IN     hig_process_types.hpt_name%TYPE
+                               ,pi_old_limit              IN     hig_process_types.hpt_process_limit%TYPE
+                               ,pi_old_process_descr      IN     hig_process_types.hpt_descr%TYPE
+                               --,pi_old_code_to_execute    IN     hig_process_types.hpt_what_to_call%TYPE
+                               ,pi_old_see_in_form        IN     hig_process_types.hpt_see_in_hig2510%TYPE  
+                               ,pi_old_area_type          IN     hig_process_types.hpt_area_type%TYPE
+                               ,pi_old_restartable        IN     hig_process_types.hpt_restartable%TYPE
+                               --,pi_old_polling_enabled       IN   hig_process_types.hpt_polling_enabled%TYPE
+                               --,pi_old_polling_ftp_type_id   IN   hig_process_types.hpt_polling_ftp_type_id%TYPE
+                               ,pi_new_process_type_id    IN     hig_process_types.hpt_process_type_id%TYPE
+                               ,pi_new_process_name       IN     hig_process_types.hpt_name%TYPE
+                               ,pi_new_limit              IN     hig_process_types.hpt_process_limit%TYPE
+                               ,pi_new_process_descr      IN     hig_process_types.hpt_descr%TYPE
+                               --,pi_new_code_to_execute    IN     hig_process_types.hpt_what_to_call%TYPE
+                               ,pi_new_see_in_form        IN     hig_process_types.hpt_see_in_hig2510%TYPE  
+                               ,pi_new_area_type          IN     hig_process_types.hpt_area_type%TYPE
+                               ,pi_new_restartable        IN     hig_process_types.hpt_restartable%TYPE
+                               --,pi_new_polling_enabled       IN   hig_process_types.hpt_polling_enabled%TYPE
+                               --,pi_new_polling_ftp_type_id   IN   hig_process_types.hpt_polling_ftp_type_id%TYPE
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor)
+  IS
+    --
+    lr_db_rec        hig_process_types%ROWTYPE;
+    lv_rec           hig_process_types%ROWTYPE;
+  --
+    lv_upd           VARCHAR2(1) := 'N';
+    --
+    PROCEDURE get_db_rec
+      IS
+    BEGIN
+      --
+      SELECT *
+        INTO lr_db_rec
+        FROM hig_process_types
+       WHERE hpt_process_type_id = pi_old_process_type_id
+         FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN NO_DATA_FOUND
+       THEN
+          --
+          hig.raise_ner(pi_appl               => 'HIG'
+                       ,pi_id                 => 85
+                       ,pi_supplementary_info => 'Process Type does not exist');
+          --
+    END get_db_rec;
+    --
+  BEGIN
+    --
+    SAVEPOINT update_process_type_sp;
+    --
+    awlrs_util.check_historic_mode;   
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_process_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Process Name'
+                               ,pi_parameter_value =>  pi_new_process_name);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Description'
+                               ,pi_parameter_value =>  pi_new_process_descr);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'See In Form'
+                               ,pi_parameter_value =>  pi_new_see_in_form);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Restartable'
+                               ,pi_parameter_value =>  pi_new_restartable);
+    --
+    /*
+    IF valid_package_call(pi_code_to_execute  => pi_new_code_to_execute)  = 'N'
+      THEN
+         hig.raise_ner(pi_appl               => 'AWLRS'
+                      ,pi_id                 => 86);
+                      
+    END IF;
+    */
+    --
+    get_db_rec;
+    --
+    /*
+    ||Compare Old with DB
+    */
+    IF   lr_db_rec.hpt_process_type_id != pi_old_process_type_id
+     OR (lr_db_rec.hpt_process_type_id IS NULL AND pi_old_process_type_id IS NOT NULL)
+     OR (lr_db_rec.hpt_process_type_id IS NOT NULL AND pi_old_process_type_id IS NULL)
+     --
+     OR (lr_db_rec.hpt_name != pi_old_process_name)
+     OR (lr_db_rec.hpt_name IS NULL AND pi_old_process_name IS NOT NULL)
+     OR (lr_db_rec.hpt_name IS NOT NULL AND pi_old_process_name IS NULL)
+     --
+     OR (lr_db_rec.hpt_process_limit != pi_old_limit)
+     OR (lr_db_rec.hpt_process_limit IS NULL AND pi_old_limit IS NOT NULL)
+     OR (lr_db_rec.hpt_process_limit IS NOT NULL AND pi_old_limit IS NULL)
+     --
+     OR (lr_db_rec.hpt_descr != pi_old_process_descr)
+     OR (lr_db_rec.hpt_descr IS NULL AND pi_old_process_descr IS NOT NULL)
+     OR (lr_db_rec.hpt_descr IS NOT NULL AND pi_old_process_descr IS NULL)
+     --
+     /*
+     OR (lr_db_rec.hpt_what_to_call != pi_old_code_to_execute)
+     OR (lr_db_rec.hpt_what_to_call IS NULL AND pi_old_code_to_execute IS NOT NULL)
+     OR (lr_db_rec.hpt_what_to_call IS NOT NULL AND pi_old_code_to_execute IS NULL)
+     */
+     --
+     OR (lr_db_rec.hpt_see_in_hig2510 != pi_old_see_in_form)
+     OR (lr_db_rec.hpt_see_in_hig2510 IS NULL AND pi_old_see_in_form IS NOT NULL)
+     OR (lr_db_rec.hpt_see_in_hig2510 IS NOT NULL AND pi_old_see_in_form IS NULL)
+     --
+     OR (lr_db_rec.hpt_area_type != pi_old_area_type)
+     OR (lr_db_rec.hpt_area_type IS NULL AND pi_old_area_type IS NOT NULL)
+     OR (lr_db_rec.hpt_area_type IS NOT NULL AND pi_old_area_type IS NULL)
+     --
+     OR (lr_db_rec.hpt_restartable != pi_old_restartable)
+     OR (lr_db_rec.hpt_restartable IS NULL AND pi_old_restartable IS NOT NULL)
+     OR (lr_db_rec.hpt_restartable IS NOT NULL AND pi_old_restartable IS NULL)
+     --
+     /*
+     OR (lr_db_rec.hpt_polling_enabled != pi_old_polling_enabled)
+     OR (lr_db_rec.hpt_polling_enabled IS NULL AND pi_old_polling_enabled IS NOT NULL)
+     OR (lr_db_rec.hpt_polling_enabled IS NOT NULL AND pi_old_polling_enabled IS NULL)
+     --
+     OR (lr_db_rec.hpt_polling_ftp_type_id != pi_old_polling_ftp_type_id)
+     OR (lr_db_rec.hpt_polling_ftp_type_id IS NULL AND pi_old_polling_ftp_type_id IS NOT NULL)
+     OR (lr_db_rec.hpt_polling_ftp_type_id IS NOT NULL AND pi_old_polling_ftp_type_id IS NULL)
+     */
+     --
+     THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    ELSE
+      /*
+      ||Compare Old with New
+      */
+      IF pi_old_process_type_id != pi_new_process_type_id
+       OR (pi_old_process_type_id IS NULL AND pi_new_process_type_id IS NOT NULL)
+       OR (pi_old_process_type_id IS NOT NULL AND pi_new_process_type_id IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_process_name != pi_new_process_name
+       OR (pi_old_process_name IS NULL AND pi_new_process_name IS NOT NULL)
+       OR (pi_old_process_name IS NOT NULL AND pi_new_process_name IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_limit != pi_new_limit
+       OR (pi_old_limit IS NULL AND pi_new_limit IS NOT NULL)
+       OR (pi_old_limit IS NOT NULL AND pi_new_limit IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_process_descr != pi_new_process_descr
+       OR (pi_old_process_descr IS NULL AND pi_new_process_descr IS NOT NULL)
+       OR (pi_old_process_descr IS NOT NULL AND pi_new_process_descr IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      /*
+      IF pi_old_code_to_execute != pi_new_code_to_execute
+       OR (pi_old_code_to_execute IS NULL AND pi_new_code_to_execute IS NOT NULL)
+       OR (pi_old_code_to_execute IS NOT NULL AND pi_new_code_to_execute IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      */
+      --
+      IF pi_old_see_in_form != pi_new_see_in_form
+       OR (pi_old_see_in_form IS NULL AND pi_new_see_in_form IS NOT NULL)
+       OR (pi_old_see_in_form IS NOT NULL AND pi_new_see_in_form IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_area_type != pi_new_area_type
+       OR (pi_old_area_type IS NULL AND pi_new_area_type IS NOT NULL)
+       OR (pi_old_area_type IS NOT NULL AND pi_new_area_type IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_restartable != pi_new_restartable
+       OR (pi_old_restartable IS NULL AND pi_new_restartable IS NOT NULL)
+       OR (pi_old_restartable IS NOT NULL AND pi_new_restartable IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      /*
+      IF pi_old_polling_enabled != pi_new_polling_enabled
+       OR (pi_old_polling_enabled IS NULL AND pi_new_polling_enabled IS NOT NULL)
+       OR (pi_old_polling_enabled IS NOT NULL AND pi_new_polling_enabled IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_polling_ftp_type_id != pi_new_polling_ftp_type_id
+       OR (pi_old_polling_ftp_type_id IS NULL AND pi_new_polling_ftp_type_id IS NOT NULL)
+       OR (pi_old_polling_ftp_type_id IS NOT NULL AND pi_new_polling_ftp_type_id IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      */
+      --
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      ELSE
+        --
+        lv_rec.hpt_process_type_id       :=  pi_new_process_type_id;
+    	lv_rec.hpt_name                  :=  pi_new_process_name;
+        --lv_rec.hpt_what_to_call          :=  pi_new_code_to_execute;
+        lv_rec.hpt_process_limit         :=  pi_new_limit;
+        lv_rec.hpt_descr                 :=  pi_new_process_descr;	
+        lv_rec.hpt_restartable           :=  pi_new_restartable;  
+        lv_rec.hpt_see_in_hig2510        :=  pi_new_see_in_form;    
+        lv_rec.hpt_polling_enabled       :=  'N'; --pi_new_polling_enabled;
+        --lv_rec.hpt_polling_ftp_type_id   :=  pi_new_polling_ftp_type_id;
+        lv_rec.hpt_area_type             :=  pi_new_area_type;  
+	    --
+        hig_process_framework.update_process_type(pi_process_type_id  => pi_old_process_type_id
+                                                 ,pi_process_type_rec => lv_rec);
+        --
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --
+      END IF;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        ROLLBACK TO update_process_type_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_process_type;                               
+  --
+  -----------------------------------------------------------------------------
+  --
+  
+  PROCEDURE delete_process_type(pi_process_type_id      IN     hig_process_types.hpt_process_type_id%TYPE
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor)
+  IS
+  --
+  lv_rec   hig_process_types%ROWTYPE;
+  --
+  BEGIN
+    --
+    SAVEPOINT delete_process_type_sp;
+    --
+    awlrs_util.check_historic_mode;  
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_process_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Process Type Id'
+                               ,pi_parameter_value =>  pi_process_type_id);
+    --
+    IF process_type_exists(pi_process_type_id => pi_process_type_id) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 30
+                     ,pi_supplementary_info  => 'Process Type: '||pi_process_type_id);
+    END IF;
+    --
+    /*
+    ||delete from hig_process_types.
+    */
+    --
+    hig_process_framework.delete_process_type(pi_process_type_id  =>  pi_process_type_id);
+    -- 
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        ROLLBACK TO delete_process_type_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_process_type;                               
+                                                         
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_process_type_roles(pi_process_type_id  IN      hig_process_type_roles.hptr_process_type_id%TYPE
                                   ,po_message_severity    OUT  hig_codes.hco_code%TYPE
                                   ,po_message_cursor      OUT  sys_refcursor
                                   ,po_cursor              OUT  sys_refcursor)
@@ -459,7 +968,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_paged_process_type_roles(pi_process_type_id      IN     hig_process_types.hpt_process_type_id%TYPE
+  PROCEDURE get_paged_process_type_roles(pi_process_type_id      IN     hig_process_type_roles.hptr_process_type_id%TYPE
                                         ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                         ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                         ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
@@ -757,8 +1266,6 @@ AS
                                     ,po_message_cursor      OUT  sys_refcursor)
   IS
   --
-  lv_rec hig_scheduling_frequencies%ROWTYPE;
-  --
   BEGIN
     --
     SAVEPOINT delete_role_sp;
@@ -802,7 +1309,1504 @@ AS
         ROLLBACK TO delete_role_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END delete_process_type_role;                                                                  
+  END delete_process_type_role;  
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_process_type_freqs(pi_process_type_id   IN     hig_process_type_frequencies.hpfr_process_type_id%TYPE
+                                  ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                  ,po_message_cursor      OUT  sys_refcursor
+                                  ,po_cursor              OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT hpfr_process_type_id  process_type_id
+          ,hpfr_frequency_id     frequency_id 
+          ,LOWER(hsfr_frequency) frequency  
+          ,hpfr_seq              seq 
+          ,hsfr_meaning          frequency_descr
+      FROM hig_process_type_frequencies
+          ,hig_scheduling_frequencies
+      WHERE hpfr_process_type_id = pi_process_type_id
+        AND hsfr_frequency_id    = hpfr_frequency_id 
+    ORDER BY hpfr_seq;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_process_type_freqs;                                 
+                             
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_process_type_freqs(pi_process_type_id      IN     hig_process_type_frequencies.hpfr_process_type_id%TYPE
+                                        ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                        ,pi_skip_n_rows          IN     PLS_INTEGER
+                                        ,pi_pagesize             IN     PLS_INTEGER
+                                        ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor          OUT sys_refcursor
+                                        ,po_cursor                  OUT sys_refcursor)
+  IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 := 'SELECT hpfr_process_type_id  process_type_id
+                                                     ,hpfr_frequency_id     frequency_id 
+                                                     ,LOWER(hsfr_frequency) frequency  
+                                                     ,hpfr_seq              seq 
+                                                     ,hsfr_meaning          frequency_descr
+                                                 FROM hig_process_type_frequencies
+                                                     ,hig_scheduling_frequencies
+                                                 WHERE hpfr_process_type_id = :pi_process_type_id
+                                                   AND hsfr_frequency_id    = hpfr_frequency_id ';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT   process_type_id'
+                                                   ||',frequency_id'
+                                                   ||',frequency'
+                                                   ||',seq'
+                                                   ||',frequency_descr'
+                                                   ||',row_count'
+                                             ||' FROM (SELECT rownum ind'
+                                                         ||' ,a.*'
+                                                         ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                     ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'process_type_id'
+                                ,pi_query_col    => 'hpfr_process_type_id'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'frequency_id'
+                                ,pi_query_col    => 'hpfr_frequency_id'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'frequency'
+                                ,pi_query_col    => 'hsfr_frequency'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'seq'
+                                ,pi_query_col    => 'hpfr_seq'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --  
+      awlrs_util.add_column_data(pi_cursor_col   => 'frequency_descr'
+                                ,pi_query_col    => 'hsfr_meaning'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+    END set_column_data;
+    --
+  BEGIN
+    
+      /*
+      ||Get the page parameters.
+      */    
+      awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                    ,pi_skip_n_rows  => pi_skip_n_rows
+                                    ,pi_pagesize     => pi_pagesize
+                                    ,po_lower_index  => lv_lower_index
+                                    ,po_upper_index  => lv_upper_index
+                                    ,po_statement    => lv_row_restriction);
+      /*
+      ||Get the Order By clause.
+      */
+      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                            ,pi_order_asc_desc => pi_order_asc_desc);
+      /*
+      ||Process the filter.
+      */
+      IF pi_filter_columns.COUNT > 0
+       THEN
+          
+          set_column_data(po_column_data => lt_column_data);
+          
+          awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                   ,pi_column_data  => lt_column_data
+                                   ,pi_operators    => pi_filter_operators
+                                   ,pi_values_1     => pi_filter_values_1
+                                   ,pi_values_2     => pi_filter_values_2
+                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,po_where_clause => lv_filter);
+          
+      END IF;
+      --
+      lv_cursor_sql := lv_cursor_sql
+                       ||CHR(10)||lv_filter
+                       ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'hpfr_seq')||') a)'
+                       ||CHR(10)||lv_row_restriction
+      ;
+      
+      IF pi_pagesize IS NOT NULL
+       THEN
+          OPEN po_cursor FOR lv_cursor_sql
+          USING pi_process_type_id
+               ,lv_lower_index
+               ,lv_upper_index;
+      ELSE
+          OPEN po_cursor FOR lv_cursor_sql
+          USING pi_process_type_id
+               ,lv_lower_index;
+      END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_process_type_freqs;  
+                                      
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE create_process_type_freq(pi_process_type_id  IN      hig_process_type_frequencies.hpfr_process_type_id%TYPE
+                                    ,pi_frequency_id     IN      hig_process_type_frequencies.hpfr_frequency_id%TYPE
+                                    ,pi_seq              IN      hig_process_type_frequencies.hpfr_seq%TYPE
+                                    ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                    ,po_message_cursor      OUT  sys_refcursor)
+  IS
+  --
+  lv_rec hig_process_type_frequencies%ROWTYPE;
+  --
+  BEGIN
+    --
+    SAVEPOINT create_freq_sp;
+    --
+    awlrs_util.check_historic_mode;  
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_process_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Process Type Id'
+                               ,pi_parameter_value =>  pi_process_type_id);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Frequency Id'
+                               ,pi_parameter_value =>  pi_frequency_id);
+    --
+    IF process_type_freq_exists(pi_process_type_id => pi_process_type_id
+                               ,pi_frequency_id    => pi_frequency_id) = 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 64
+                     ,pi_supplementary_info  => 'Frequency '||pi_frequency_id);
+    END IF;
+    --
+    /*
+    ||insert into hig_process_type_frequencies.
+    */
+    lv_rec.hpfr_process_type_id := pi_process_type_id;
+    lv_rec.hpfr_frequency_id    := pi_frequency_id;
+    lv_rec.hpfr_seq             := pi_seq;  
+    --
+    hig_process_framework.insert_process_type_frequency(pi_process_type_frequency_rec => lv_rec);
+    -- 
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        ROLLBACK TO create_freq_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_process_type_freq;                                       
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE update_process_type_freq(pi_old_process_type_id  IN      hig_process_type_frequencies.hpfr_process_type_id%TYPE
+                                    ,pi_old_frequency_id     IN      hig_process_type_frequencies.hpfr_frequency_id%TYPE
+                                    ,pi_old_seq              IN      hig_process_type_frequencies.hpfr_seq%TYPE
+                                    ,pi_new_process_type_id  IN      hig_process_type_frequencies.hpfr_process_type_id%TYPE
+                                    ,pi_new_frequency_id     IN      hig_process_type_frequencies.hpfr_frequency_id%TYPE
+                                    ,pi_new_seq              IN      hig_process_type_frequencies.hpfr_seq%TYPE
+                                    ,po_message_severity        OUT  hig_codes.hco_code%TYPE
+                                    ,po_message_cursor          OUT  sys_refcursor)
+  IS
+    --
+    lr_db_rec        hig_process_type_frequencies%ROWTYPE;
+    --
+    lv_upd           VARCHAR2(1) := 'N';
+    --
+    PROCEDURE get_db_rec
+      IS
+    BEGIN
+      --
+      SELECT *
+        INTO lr_db_rec
+        FROM hig_process_type_frequencies
+       WHERE hpfr_process_type_id = pi_old_process_type_id
+         AND hpfr_frequency_id    = pi_old_frequency_id 
+         FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN NO_DATA_FOUND
+       THEN
+          --
+          hig.raise_ner(pi_appl               => 'HIG'
+                       ,pi_id                 => 85
+                       ,pi_supplementary_info => 'Frequency does not exist for this Process Type');
+          --
+    END get_db_rec;
+    --
+  BEGIN
+    --
+    SAVEPOINT update_freq_sp;
+    --
+    awlrs_util.check_historic_mode;   
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_process_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Process Type Id'
+                               ,pi_parameter_value =>  pi_new_process_type_id);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Frequency Id'
+                               ,pi_parameter_value =>  pi_new_frequency_id);
+    --
+    get_db_rec;
+    --
+    /*
+    ||Compare Old with DB
+    */
+    IF   lr_db_rec.hpfr_process_type_id != pi_old_process_type_id
+     OR (lr_db_rec.hpfr_process_type_id IS NULL AND pi_old_process_type_id IS NOT NULL)
+     OR (lr_db_rec.hpfr_process_type_id IS NOT NULL AND pi_old_process_type_id IS NULL)
+     --
+     OR (lr_db_rec.hpfr_frequency_id != pi_old_frequency_id)
+     OR (lr_db_rec.hpfr_frequency_id IS NULL AND pi_old_frequency_id IS NOT NULL)
+     OR (lr_db_rec.hpfr_frequency_id IS NOT NULL AND pi_old_frequency_id IS NULL)
+     --
+     OR (lr_db_rec.hpfr_seq != pi_old_seq)
+     OR (lr_db_rec.hpfr_seq IS NULL AND pi_old_seq IS NOT NULL)
+     OR (lr_db_rec.hpfr_seq IS NOT NULL AND pi_old_seq IS NULL)
+     --
+     THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    ELSE
+      /*
+      ||Compare Old with New
+      */
+      IF pi_old_frequency_id != pi_new_frequency_id
+       OR (pi_old_frequency_id IS NULL AND pi_new_frequency_id IS NOT NULL)
+       OR (pi_old_frequency_id IS NOT NULL AND pi_new_frequency_id IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_seq != pi_new_seq
+       OR (pi_old_seq IS NULL AND pi_new_seq IS NOT NULL)
+       OR (pi_old_seq IS NOT NULL AND pi_new_seq IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      ELSE
+        --
+        UPDATE hig_process_type_frequencies
+           SET hpfr_frequency_id    = pi_new_frequency_id
+              ,hpfr_seq             = pi_new_seq
+         WHERE hpfr_process_type_id = pi_old_process_type_id
+           AND hpfr_frequency_id    = pi_old_frequency_id; 
+        --
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --
+      END IF;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        ROLLBACK TO update_freq_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_process_type_freq;                                    
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE delete_process_type_freq(pi_process_type_id  IN      hig_process_type_frequencies.hpfr_process_type_id%TYPE
+                                    ,pi_frequency_id     IN      hig_process_type_frequencies.hpfr_frequency_id%TYPE
+                                    ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                    ,po_message_cursor      OUT  sys_refcursor)
+  IS
+  --
+  lv_rec hig_process_type_frequencies%ROWTYPE;
+  --
+  BEGIN
+    --
+    SAVEPOINT delete_freq_sp;
+    --
+    awlrs_util.check_historic_mode;  
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_process_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Process Type Id'
+                               ,pi_parameter_value =>  pi_process_type_id);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Frequency Id'
+                               ,pi_parameter_value =>  pi_frequency_id);
+    --
+    IF process_type_freq_exists(pi_process_type_id => pi_process_type_id
+                               ,pi_frequency_id    => pi_frequency_id) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 30
+                     ,pi_supplementary_info  => 'Frequency '||pi_frequency_id);
+    END IF;
+    --
+    /*
+    ||delete from hig_process_type_roles.
+    */
+    hig_process_framework.delete_process_type_frequency(pi_process_type_id =>  pi_process_type_id
+                                                       ,pi_frequency_id    =>  pi_frequency_id);
+    -- 
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        ROLLBACK TO delete_freq_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_process_type_freq;     
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  /*
+  PROCEDURE get_process_polled_locs(pi_process_type_id   IN     hig_process_conns_by_area.hptc_process_type_id%TYPE
+                                   ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                   ,po_message_cursor      OUT  sys_refcursor
+                                   ,po_cursor              OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT hpfr_process_type_id  process_type_id
+          ,hpfr_frequency_id     frequency_id 
+          ,LOWER(hsfr_frequency) frequency  
+          ,hpfr_seq              seq 
+          ,hsfr_meaning          frequency_descr
+      FROM hig_process_type_frequencies
+          ,hig_scheduling_frequencies
+      WHERE hpfr_process_type_id = pi_process_type_id
+        AND hsfr_frequency_id    = hpfr_frequency_id 
+    ORDER BY hpfr_seq;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_process_polled_locs;                                   
+                             
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_process_polled_locs(pi_process_type_id      IN     hig_process_conns_by_area.hptc_process_type_id%TYPE
+                                         ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                         ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                         ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                         ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                         ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                         ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                         ,pi_skip_n_rows          IN     PLS_INTEGER
+                                         ,pi_pagesize             IN     PLS_INTEGER
+                                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                         ,po_message_cursor          OUT sys_refcursor
+                                         ,po_cursor                  OUT sys_refcursor);       
+  */  
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_process_locations(pi_process_type_id   IN     hig_process_type_files.hptf_process_type_id%TYPE
+                                 ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor      OUT  sys_refcursor
+                                 ,po_cursor              OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT hptf_file_type_id              file_type_id  
+          ,hptf_name                      file_type_descr       
+          ,hptf_process_type_id           process_type_id   
+          ,hptf_input                     input_yn  
+          ,hptf_input_destination         input_file_location 
+          ,hptf_input_destination_type    input_data_store
+          ,hptf_min_input_files           min_input_files
+          ,hptf_max_input_files           max_input_files 
+          ,hptf_output                    output_yn
+          ,hptf_output_destination        output_file_location  
+          ,hptf_output_destination_type   output_data_store
+      FROM hig_process_type_files 
+     WHERE hptf_process_type_id = pi_process_type_id
+    ORDER BY hptf_file_type_id;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_process_locations;                                  
+                             
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_process_locations(pi_process_type_id      IN     hig_process_type_files.hptf_process_type_id%TYPE
+                                       ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                       ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                       ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                       ,pi_skip_n_rows          IN     PLS_INTEGER
+                                       ,pi_pagesize             IN     PLS_INTEGER
+                                       ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor          OUT sys_refcursor
+                                       ,po_cursor                  OUT sys_refcursor)
+  IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 := 'SELECT hptf_file_type_id              file_type_id  
+                                                     ,hptf_name                      file_type_descr       
+                                                     ,hptf_process_type_id           process_type_id   
+                                                     ,hptf_input                     input_yn  
+                                                     ,hptf_input_destination         input_file_location 
+                                                     ,hptf_input_destination_type    input_data_store
+                                                     ,hptf_min_input_files           min_input_files
+                                                     ,hptf_max_input_files           max_input_files 
+                                                     ,hptf_output                    output_yn
+                                                     ,hptf_output_destination        output_file_location  
+                                                     ,hptf_output_destination_type   output_data_store
+                                                 FROM hig_process_type_files 
+                                                WHERE hptf_process_type_id = :pi_process_type_id ';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT   file_type_id'
+                                                   ||',file_type_descr'
+                                                   ||',process_type_id'
+                                                   ||',input_yn'
+                                                   ||',input_file_location'
+                                                   ||',input_data_store'
+                                                   ||',min_input_files'
+                                                   ||',max_input_files'
+                                                   ||',output_yn'
+                                                   ||',output_file_location'
+                                                   ||',output_data_store'
+                                                   ||',row_count'
+                                             ||' FROM (SELECT rownum ind'
+                                                         ||' ,a.*'
+                                                         ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                     ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'file_type_id'
+                                ,pi_query_col    => 'hptf_file_type_id'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'file_type_descr'
+                                ,pi_query_col    => 'hptf_name'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'process_type_id'
+                                ,pi_query_col    => 'hptf_process_type_id'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'input_yn'
+                                ,pi_query_col    => 'hptf_input'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --  
+      awlrs_util.add_column_data(pi_cursor_col   => 'input_file_location'
+                                ,pi_query_col    => 'hptf_input_destination'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --  
+      awlrs_util.add_column_data(pi_cursor_col   => 'input_data_store'
+                                ,pi_query_col    => 'hptf_input_destination_type'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data); 
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'min_input_files'
+                                ,pi_query_col    => 'hptf_min_input_files'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data); 
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'max_input_files'
+                                ,pi_query_col    => 'hptf_max_input_files'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data); 
+      --                          
+      awlrs_util.add_column_data(pi_cursor_col   => 'output_yn'
+                                ,pi_query_col    => 'hptf_output'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --  
+      awlrs_util.add_column_data(pi_cursor_col   => 'output_file_location'
+                                ,pi_query_col    => 'hptf_output_destination'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --  
+      awlrs_util.add_column_data(pi_cursor_col   => 'output_data_store'
+                                ,pi_query_col    => 'hptf_output_destination_type'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);                                                         
+      --
+    END set_column_data;
+    --
+  BEGIN
+    
+      /*
+      ||Get the page parameters.
+      */    
+      awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                    ,pi_skip_n_rows  => pi_skip_n_rows
+                                    ,pi_pagesize     => pi_pagesize
+                                    ,po_lower_index  => lv_lower_index
+                                    ,po_upper_index  => lv_upper_index
+                                    ,po_statement    => lv_row_restriction);
+      /*
+      ||Get the Order By clause.
+      */
+      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                            ,pi_order_asc_desc => pi_order_asc_desc);
+      /*
+      ||Process the filter.
+      */
+      IF pi_filter_columns.COUNT > 0
+       THEN
+          
+          set_column_data(po_column_data => lt_column_data);
+          
+          awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                   ,pi_column_data  => lt_column_data
+                                   ,pi_operators    => pi_filter_operators
+                                   ,pi_values_1     => pi_filter_values_1
+                                   ,pi_values_2     => pi_filter_values_2
+                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,po_where_clause => lv_filter);
+          
+      END IF;
+      --
+      lv_cursor_sql := lv_cursor_sql
+                       ||CHR(10)||lv_filter
+                       ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'hptf_file_type_id')||') a)'
+                       ||CHR(10)||lv_row_restriction
+      ;
+      
+      IF pi_pagesize IS NOT NULL
+       THEN
+          OPEN po_cursor FOR lv_cursor_sql
+          USING pi_process_type_id
+               ,lv_lower_index
+               ,lv_upper_index;
+      ELSE
+          OPEN po_cursor FOR lv_cursor_sql
+          USING pi_process_type_id
+               ,lv_lower_index;
+      END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_process_locations;     
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_file_exts(pi_file_type_id      IN     hig_process_type_file_ext.hpte_file_type_id%TYPE
+                         ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                         ,po_message_cursor      OUT  sys_refcursor
+                         ,po_cursor              OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT hpte_file_type_id   file_type_id 
+          ,hpte_extension      file_ext
+      FROM hig_process_type_file_ext 
+     WHERE hpte_file_type_id = pi_file_type_id
+    ORDER BY hpte_extension;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_file_exts;                            
+                             
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_file_exts(pi_file_type_id         IN     hig_process_type_file_ext.hpte_file_type_id%TYPE
+                               ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                               ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                               ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                               ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                               ,pi_skip_n_rows          IN     PLS_INTEGER
+                               ,pi_pagesize             IN     PLS_INTEGER
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor)
+  IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 := 'SELECT hpte_file_type_id   file_type_id 
+                                                     ,hpte_extension      file_ext
+                                                 FROM hig_process_type_file_ext 
+                                                WHERE hpte_file_type_id = :pi_file_type_id ';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT   file_type_id'
+                                                   ||',file_ext'
+                                                   ||',row_count'
+                                             ||' FROM (SELECT rownum ind'
+                                                         ||' ,a.*'
+                                                         ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                     ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'file_type_id'
+                                ,pi_query_col    => 'hpte_file_type_id'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'file_ext'
+                                ,pi_query_col    => 'hpte_extension'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+     
+    END set_column_data;
+    --
+  BEGIN
+    
+      /*
+      ||Get the page parameters.
+      */    
+      awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                    ,pi_skip_n_rows  => pi_skip_n_rows
+                                    ,pi_pagesize     => pi_pagesize
+                                    ,po_lower_index  => lv_lower_index
+                                    ,po_upper_index  => lv_upper_index
+                                    ,po_statement    => lv_row_restriction);
+      /*
+      ||Get the Order By clause.
+      */
+      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                            ,pi_order_asc_desc => pi_order_asc_desc);
+      /*
+      ||Process the filter.
+      */
+      IF pi_filter_columns.COUNT > 0
+       THEN
+          
+          set_column_data(po_column_data => lt_column_data);
+          
+          awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                   ,pi_column_data  => lt_column_data
+                                   ,pi_operators    => pi_filter_operators
+                                   ,pi_values_1     => pi_filter_values_1
+                                   ,pi_values_2     => pi_filter_values_2
+                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,po_where_clause => lv_filter);
+          
+      END IF;
+      --
+      lv_cursor_sql := lv_cursor_sql
+                       ||CHR(10)||lv_filter
+                       ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'hpte_extension')||') a)'
+                       ||CHR(10)||lv_row_restriction
+      ;
+      
+      IF pi_pagesize IS NOT NULL
+       THEN
+          OPEN po_cursor FOR lv_cursor_sql
+          USING pi_file_type_id
+               ,lv_lower_index
+               ,lv_upper_index;
+      ELSE
+          OPEN po_cursor FOR lv_cursor_sql
+          USING pi_file_type_id
+               ,lv_lower_index;
+      END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_file_exts;                                  
+                                     
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE file_destinations_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT  sys_refcursor
+                                 ,po_cursor           OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT hco_code     file_dest_code
+          ,hco_meaning  file_desc_descr
+      FROM hig_codes
+     WHERE hco_domain = 'FILE_DESTINATIONS' 
+       AND hco_system = 'Y'
+       AND hco_code   IN('DATABASE_SERVER','ORACLE_DIRECTORY')
+    ORDER BY hco_seq;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END file_destinations_lov;                                                               
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE create_process_location(pi_process_type_id      IN     hig_process_type_files.hptf_process_type_id%TYPE
+                                   ,pi_file_type_descr      IN     hig_process_type_files.hptf_name%TYPE
+                                   ,pi_input_file_location  IN     hig_process_type_files.hptf_input_destination%TYPE
+                                   ,pi_input_data_store     IN     hig_process_type_files.hptf_input_destination_type%TYPE 
+                                   ,pi_min_input_files      IN     hig_process_type_files.hptf_min_input_files%TYPE
+                                   ,pi_max_input_files      IN     hig_process_type_files.hptf_max_input_files%TYPE
+                                   ,pi_output_file_location IN     hig_process_type_files.hptf_output_destination%TYPE
+                                   ,pi_output_data_store    IN     hig_process_type_files.hptf_output_destination_type%TYPE
+                                   ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor          OUT sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    SAVEPOINT create_location_sp;
+    --
+    awlrs_util.check_historic_mode;  
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_process_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Process Type Id'
+                               ,pi_parameter_value =>  pi_process_type_id);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'File Type Descr'
+                               ,pi_parameter_value =>  pi_file_type_descr);
+    --
+    /*
+    ||insert into hig_process_type_files.
+    */
+    INSERT
+      INTO hig_process_type_files
+          (hptf_file_type_id
+          ,hptf_name
+          ,hptf_process_type_id
+          ,hptf_input
+          ,hptf_output  
+          ,hptf_input_destination    
+          ,hptf_input_destination_type 
+          ,hptf_min_input_files 
+          ,hptf_max_input_files
+          ,hptf_output_destination
+          ,hptf_output_destination_type
+  )
+    VALUES (nm3ddl.sequence_nextval('hptf_file_type_id_seq')
+           ,pi_file_type_descr
+           ,pi_process_type_id
+           ,CASE WHEN pi_input_file_location IS NOT NULL
+                   OR pi_input_data_store IS NOT NULL THEN 'Y'
+                 ELSE 'N'
+            END       
+           ,CASE WHEN pi_output_file_location IS NOT NULL
+                   OR pi_output_data_store IS NOT NULL THEN 'Y'
+                 ELSE 'N'
+            END         
+           ,pi_input_file_location
+           ,pi_input_data_store
+           ,pi_min_input_files
+           ,pi_max_input_files
+           ,pi_output_file_location
+           ,pi_output_data_store
+           ); 
+    -- 
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        ROLLBACK TO create_location_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_process_location;                                      
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE update_process_location(pi_old_process_type_id      IN     hig_process_type_files.hptf_process_type_id%TYPE
+                                   ,pi_old_file_type_id         IN     hig_process_type_files.hptf_file_type_id%TYPE 
+                                   ,pi_old_file_type_descr      IN     hig_process_type_files.hptf_name%TYPE
+                                   ,pi_old_input_yn             IN     hig_process_type_files.hptf_input%TYPE
+                                   ,pi_old_input_file_location  IN     hig_process_type_files.hptf_input_destination%TYPE
+                                   ,pi_old_input_data_store     IN     hig_process_type_files.hptf_input_destination_type%TYPE 
+                                   ,pi_old_min_input_files      IN     hig_process_type_files.hptf_min_input_files%TYPE
+                                   ,pi_old_max_input_files      IN     hig_process_type_files.hptf_max_input_files%TYPE
+                                   ,pi_old_output_yn            IN     hig_process_type_files.hptf_output%TYPE
+                                   ,pi_old_output_file_location IN     hig_process_type_files.hptf_output_destination%TYPE
+                                   ,pi_old_output_data_store    IN     hig_process_type_files.hptf_output_destination_type%TYPE
+                                   ,pi_new_process_type_id      IN     hig_process_type_files.hptf_process_type_id%TYPE
+                                   ,pi_new_file_type_id         IN     hig_process_type_files.hptf_file_type_id%TYPE 
+                                   ,pi_new_file_type_descr      IN     hig_process_type_files.hptf_name%TYPE
+                                   ,pi_new_input_yn             IN     hig_process_type_files.hptf_input%TYPE
+                                   ,pi_new_input_file_location  IN     hig_process_type_files.hptf_input_destination%TYPE
+                                   ,pi_new_input_data_store     IN     hig_process_type_files.hptf_input_destination_type%TYPE 
+                                   ,pi_new_min_input_files      IN     hig_process_type_files.hptf_min_input_files%TYPE
+                                   ,pi_new_max_input_files      IN     hig_process_type_files.hptf_max_input_files%TYPE
+                                   ,pi_new_output_yn            IN     hig_process_type_files.hptf_output%TYPE
+                                   ,pi_new_output_file_location IN     hig_process_type_files.hptf_output_destination%TYPE
+                                   ,pi_new_output_data_store    IN     hig_process_type_files.hptf_output_destination_type%TYPE
+                                   ,po_message_severity           OUT  hig_codes.hco_code%TYPE
+                                   ,po_message_cursor             OUT  sys_refcursor)
+  IS
+    --
+    lr_db_rec        hig_process_type_files%ROWTYPE;
+    --
+    lv_upd           VARCHAR2(1) := 'N';
+    --
+    PROCEDURE get_db_rec
+      IS
+    BEGIN
+      --
+      SELECT *
+        INTO lr_db_rec
+        FROM hig_process_type_files
+       WHERE hptf_file_type_id = pi_old_file_type_id
+      FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN NO_DATA_FOUND
+       THEN
+          --
+          hig.raise_ner(pi_appl               => 'HIG'
+                       ,pi_id                 => 85
+                       ,pi_supplementary_info => 'Location does not exist for this File Type');
+          --
+    END get_db_rec;
+    --
+  BEGIN
+    --
+    SAVEPOINT update_location_sp;
+    --
+    awlrs_util.check_historic_mode;   
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_process_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Process Type Id'
+                               ,pi_parameter_value =>  pi_new_process_type_id);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'File Type Id'
+                               ,pi_parameter_value =>  pi_new_file_type_id);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'File Type Descr'
+                               ,pi_parameter_value =>  pi_new_file_type_descr);
+    --
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Input'
+                          ,pi_parameter_value =>  pi_new_input_yn);
+    --
+    awlrs_util.validate_yn(pi_parameter_desc  => 'Output'
+                          ,pi_parameter_value =>  pi_new_output_yn);
+    --
+    IF (   pi_new_input_yn = 'Y'
+       AND pi_new_input_file_location IS NULL
+       AND pi_new_input_data_store IS NULL) 
+       THEN
+           hig.raise_ner(pi_appl               => 'HIG'
+                        ,pi_id                 => 110
+                        ,pi_supplementary_info => 'When Input is set to Y, the File Location or the Data Store must also be provided.');
+    END IF;
+    --
+    IF (   pi_new_output_yn = 'Y'
+       AND pi_new_output_file_location IS NULL
+       AND pi_new_output_data_store IS NULL) 
+       THEN
+           hig.raise_ner(pi_appl               => 'HIG'
+                        ,pi_id                 => 110
+                        ,pi_supplementary_info => 'When Output is set to Y, the File Location or the Data Store must also be provided.');
+    END IF;
+    --  
+    get_db_rec;
+    --
+    /*
+    ||Compare Old with DB
+    */
+    IF   lr_db_rec.hptf_file_type_id != pi_old_file_type_id
+     OR (lr_db_rec.hptf_file_type_id IS NULL AND pi_old_file_type_id IS NOT NULL)
+     OR (lr_db_rec.hptf_file_type_id IS NOT NULL AND pi_old_file_type_id IS NULL)
+     --
+     OR (lr_db_rec.hptf_process_type_id != pi_old_process_type_id)
+     OR (lr_db_rec.hptf_process_type_id IS NULL AND pi_old_process_type_id IS NOT NULL)
+     OR (lr_db_rec.hptf_process_type_id IS NOT NULL AND pi_old_process_type_id IS NULL)
+     --
+     OR (lr_db_rec.hptf_name != pi_old_file_type_descr)
+     OR (lr_db_rec.hptf_name IS NULL AND pi_old_file_type_descr IS NOT NULL)
+     OR (lr_db_rec.hptf_name IS NOT NULL AND pi_old_file_type_descr IS NULL)
+     --
+     OR (lr_db_rec.hptf_input != pi_old_input_yn)
+     OR (lr_db_rec.hptf_input IS NULL AND pi_old_input_yn IS NOT NULL)
+     OR (lr_db_rec.hptf_input IS NOT NULL AND pi_old_input_yn IS NULL)
+     --
+     OR (lr_db_rec.hptf_input_destination != pi_old_input_file_location)
+     OR (lr_db_rec.hptf_input_destination IS NULL AND pi_old_input_file_location IS NOT NULL)
+     OR (lr_db_rec.hptf_input_destination IS NOT NULL AND pi_old_input_file_location IS NULL)
+     --
+     OR (lr_db_rec.hptf_input_destination_type != pi_old_input_data_store)
+     OR (lr_db_rec.hptf_input_destination_type IS NULL AND pi_old_input_data_store IS NOT NULL)
+     OR (lr_db_rec.hptf_input_destination_type IS NOT NULL AND pi_old_input_data_store IS NULL)
+     --
+     OR (lr_db_rec.hptf_min_input_files != pi_old_min_input_files)
+     OR (lr_db_rec.hptf_min_input_files IS NULL AND pi_old_min_input_files IS NOT NULL)
+     OR (lr_db_rec.hptf_min_input_files IS NOT NULL AND pi_old_min_input_files IS NULL)
+     --
+     OR (lr_db_rec.hptf_max_input_files != pi_old_max_input_files)
+     OR (lr_db_rec.hptf_max_input_files IS NULL AND pi_old_max_input_files IS NOT NULL)
+     OR (lr_db_rec.hptf_max_input_files IS NOT NULL AND pi_old_max_input_files IS NULL)
+     --
+     OR (lr_db_rec.hptf_output != pi_old_output_yn)
+     OR (lr_db_rec.hptf_output IS NULL AND pi_old_output_yn IS NOT NULL)
+     OR (lr_db_rec.hptf_output IS NOT NULL AND pi_old_output_yn IS NULL)
+     --
+     OR (lr_db_rec.hptf_output_destination != pi_old_output_file_location)
+     OR (lr_db_rec.hptf_output_destination IS NULL AND pi_old_output_file_location IS NOT NULL)
+     OR (lr_db_rec.hptf_output_destination IS NOT NULL AND pi_old_output_file_location IS NULL)
+     --
+     OR (lr_db_rec.hptf_output_destination_type != pi_old_output_data_store)
+     OR (lr_db_rec.hptf_output_destination_type IS NULL AND pi_old_output_data_store IS NOT NULL)
+     OR (lr_db_rec.hptf_output_destination_type IS NOT NULL AND pi_old_output_data_store IS NULL)
+     --
+     THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    ELSE
+      /*
+      ||Compare Old with New
+      */
+      IF pi_old_file_type_id != pi_new_file_type_id
+       OR (pi_old_file_type_id IS NULL AND pi_new_file_type_id IS NOT NULL)
+       OR (pi_old_file_type_id IS NOT NULL AND pi_new_file_type_id IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_process_type_id != pi_new_process_type_id
+       OR (pi_old_process_type_id IS NULL AND pi_new_process_type_id IS NOT NULL)
+       OR (pi_old_process_type_id IS NOT NULL AND pi_new_process_type_id IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_file_type_descr != pi_new_file_type_descr
+       OR (pi_old_file_type_descr IS NULL AND pi_new_file_type_descr IS NOT NULL)
+       OR (pi_old_file_type_descr IS NOT NULL AND pi_new_file_type_descr IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_input_yn != pi_new_input_yn
+       OR (pi_old_input_yn IS NULL AND pi_new_input_yn IS NOT NULL)
+       OR (pi_old_input_yn IS NOT NULL AND pi_new_input_yn IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_input_file_location != pi_new_input_file_location
+       OR (pi_old_input_file_location IS NULL AND pi_new_input_file_location IS NOT NULL)
+       OR (pi_old_input_file_location IS NOT NULL AND pi_new_input_file_location IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_input_data_store != pi_new_input_data_store
+       OR (pi_old_input_data_store IS NULL AND pi_new_input_data_store IS NOT NULL)
+       OR (pi_old_input_data_store IS NOT NULL AND pi_new_input_data_store IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_min_input_files != pi_new_min_input_files
+       OR (pi_old_min_input_files IS NULL AND pi_new_min_input_files IS NOT NULL)
+       OR (pi_old_min_input_files IS NOT NULL AND pi_new_min_input_files IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_max_input_files != pi_new_max_input_files
+       OR (pi_old_max_input_files IS NULL AND pi_new_max_input_files IS NOT NULL)
+       OR (pi_old_max_input_files IS NOT NULL AND pi_new_max_input_files IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_output_yn != pi_new_output_yn
+       OR (pi_old_output_yn IS NULL AND pi_new_output_yn IS NOT NULL)
+       OR (pi_old_output_yn IS NOT NULL AND pi_new_output_yn IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_output_file_location != pi_new_output_file_location
+       OR (pi_old_output_file_location IS NULL AND pi_new_output_file_location IS NOT NULL)
+       OR (pi_old_output_file_location IS NOT NULL AND pi_new_output_file_location IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_output_data_store != pi_new_output_data_store
+       OR (pi_old_output_data_store IS NULL AND pi_new_output_data_store IS NOT NULL)
+       OR (pi_old_output_data_store IS NOT NULL AND pi_new_output_data_store IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      ELSE
+        --
+        UPDATE hig_process_type_files
+           SET hptf_process_type_id         = pi_new_process_type_id
+              ,hptf_name                    = pi_new_file_type_descr
+              ,hptf_input                   = pi_new_input_yn
+              ,hptf_input_destination       = pi_new_input_file_location
+              ,hptf_input_destination_type  = pi_new_input_data_store
+              ,hptf_min_input_files         = pi_new_min_input_files
+              ,hptf_max_input_files         = pi_new_max_input_files
+              ,hptf_output                  = pi_new_output_yn
+              ,hptf_output_destination      = pi_new_output_file_location
+              ,hptf_output_destination_type = pi_new_output_data_store
+         WHERE hptf_file_type_id = pi_old_file_type_id;
+        --
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --
+      END IF;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        ROLLBACK TO update_location_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_process_location;                                   
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE delete_process_location(pi_file_type_id     IN      hig_process_type_files.hptf_file_type_id%TYPE
+                                   ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                   ,po_message_cursor      OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    SAVEPOINT delete_location_sp;
+    --
+    awlrs_util.check_historic_mode;  
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_process_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'File Type Id'
+                               ,pi_parameter_value =>  pi_file_type_id);
+    --
+    IF process_location_exists(pi_file_type_id => pi_file_type_id) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 30
+                     ,pi_supplementary_info  => 'File '||pi_file_type_id);
+    END IF;
+    --
+    /*
+    ||delete from hig_process_type_files.
+    */
+    DELETE FROM hig_process_type_files
+     WHERE hptf_file_type_id = pi_file_type_id;
+        -- 
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        ROLLBACK TO delete_location_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_process_location;                                      
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE create_file_ext(pi_file_type_id       IN     hig_process_type_file_ext.hpte_file_type_id%TYPE
+                           ,pi_file_type_ext      IN     hig_process_type_file_ext.hpte_extension%TYPE
+                           ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor        OUT sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    SAVEPOINT create_file_ext_sp;
+    --
+    awlrs_util.check_historic_mode;  
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_process_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'File Type Id'
+                               ,pi_parameter_value =>  pi_file_type_id);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'File Extenison'
+                               ,pi_parameter_value =>  pi_file_type_ext);
+    --
+    /*
+    ||insert into hig_process_type_file_ext.
+    */
+    INSERT
+      INTO hig_process_type_file_ext
+          (hpte_file_type_id
+          ,hpte_extension
+          )
+    VALUES (pi_file_type_id
+           ,pi_file_type_ext
+           ); 
+    -- 
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        ROLLBACK TO create_file_ext_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_file_ext;                                
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE update_file_ext(pi_old_file_type_id    IN     hig_process_type_file_ext.hpte_file_type_id%TYPE
+                           ,pi_old_file_type_ext   IN     hig_process_type_file_ext.hpte_extension%TYPE
+                           ,pi_new_file_type_id    IN     hig_process_type_file_ext.hpte_file_type_id%TYPE
+                           ,pi_new_file_type_ext   IN     hig_process_type_file_ext.hpte_extension%TYPE
+                           ,po_message_severity      OUT  hig_codes.hco_code%TYPE
+                           ,po_message_cursor        OUT  sys_refcursor)
+  IS
+    --
+    lr_db_rec        hig_process_type_file_ext%ROWTYPE;
+    --
+    lv_upd           VARCHAR2(1) := 'N';
+    --
+    PROCEDURE get_db_rec
+      IS
+    BEGIN
+      --
+      SELECT *
+        INTO lr_db_rec
+        FROM hig_process_type_file_ext
+       WHERE hpte_file_type_id = pi_old_file_type_id
+         AND hpte_extension    = pi_old_file_type_ext
+      FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN NO_DATA_FOUND
+       THEN
+          --
+          hig.raise_ner(pi_appl               => 'HIG'
+                       ,pi_id                 => 85
+                       ,pi_supplementary_info => 'File Extension does not exist for this File Type');
+          --
+    END get_db_rec;
+    --
+  BEGIN
+    --
+    SAVEPOINT update_file_ext_sp;
+    --
+    awlrs_util.check_historic_mode;   
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_process_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'File Type Id'
+                               ,pi_parameter_value =>  pi_new_file_type_id);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'File Extension'
+                               ,pi_parameter_value =>  pi_new_file_type_ext);
+    --
+    get_db_rec;
+    --
+    /*
+    ||Compare Old with DB
+    */
+    IF   lr_db_rec.hpte_file_type_id != pi_old_file_type_id
+     OR (lr_db_rec.hpte_file_type_id IS NULL AND pi_old_file_type_id IS NOT NULL)
+     OR (lr_db_rec.hpte_file_type_id IS NOT NULL AND pi_old_file_type_id IS NULL)
+     --
+     OR (lr_db_rec.hpte_extension != pi_old_file_type_ext)
+     OR (lr_db_rec.hpte_extension IS NULL AND pi_old_file_type_ext IS NOT NULL)
+     OR (lr_db_rec.hpte_extension IS NOT NULL AND pi_old_file_type_ext IS NULL)
+     --
+     THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    ELSE
+      /*
+      ||Compare Old with New
+      */
+      IF pi_old_file_type_id != pi_new_file_type_id
+       OR (pi_old_file_type_id IS NULL AND pi_new_file_type_id IS NOT NULL)
+       OR (pi_old_file_type_id IS NOT NULL AND pi_new_file_type_id IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_file_type_ext != pi_new_file_type_ext
+       OR (pi_old_file_type_ext IS NULL AND pi_new_file_type_ext IS NOT NULL)
+       OR (pi_old_file_type_ext IS NOT NULL AND pi_new_file_type_ext IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      ELSE
+        --
+        UPDATE hig_process_type_file_ext
+           SET hpte_file_type_id  = pi_new_file_type_id
+              ,hpte_extension     = pi_new_file_type_ext
+         WHERE hpte_file_type_id  = pi_old_file_type_id
+           AND hpte_extension     = pi_old_file_type_ext;
+        --
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --
+      END IF;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        ROLLBACK TO update_file_ext_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_file_ext;                           
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE delete_file_ext(pi_file_type_id      IN     hig_process_type_file_ext.hpte_file_type_id%TYPE
+                           ,pi_file_type_ext     IN     hig_process_type_file_ext.hpte_extension%TYPE
+                           ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                           ,po_message_cursor      OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    SAVEPOINT delete_file_ext_sp;
+    --
+    awlrs_util.check_historic_mode;  
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_process_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'File Type Id'
+                               ,pi_parameter_value =>  pi_file_type_id);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'File Extenison'
+                               ,pi_parameter_value =>  pi_file_type_ext);
+    --
+    IF file_ext_exists(pi_file_type_id  => pi_file_type_id
+                      ,pi_file_type_ext => pi_file_type_ext) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 30
+                     ,pi_supplementary_info  => 'File Id/Extension '||pi_file_type_id||'/'||pi_file_type_ext);
+    END IF;
+    --
+    /*
+    ||delete from hig_process_type_file_ext.
+    */
+    DELETE FROM hig_process_type_file_ext
+     WHERE hpte_file_type_id = pi_file_type_id
+       AND hpte_extension    = pi_file_type_ext; 
+        -- 
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        ROLLBACK TO delete_file_ext_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_file_ext;                                                                                                                                                                                       
   --
   -----------------------------------------------------------------------------
   --
@@ -1766,7 +3770,7 @@ AS
                      ,pi_id   => 110
                      ,pi_supplementary_info  => 'Start Date must be greater or equal to todays''s date: '||pi_start_date);
     END IF;
-    --  
+    -- 
     --valid frequency id
     IF frequency_exists(pi_frequency_id  =>  pi_frequency_id) = 'N'
      THEN
@@ -1792,6 +3796,10 @@ AS
                                                ,po_job_name                => lv_job_name
                                                ,po_scheduled_start_date    => lv_scheduled_start_date); 
     -- 
+    po_process_id            := lv_process_id; 
+    po_job_name              := lv_job_name;
+    po_scheduled_start_date  := lv_scheduled_start_date;
+    --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
@@ -2493,6 +4501,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  /*
   PROCEDURE get_polled_locations(pi_process_id       IN     hig_process_job_runs.hpjr_process_id%TYPE
                                 ,po_message_severity   OUT  hig_codes.hco_code%TYPE
                                 ,po_message_cursor     OUT  sys_refcursor
@@ -2616,6 +4625,7 @@ AS
       /*
       ||Get the page parameters.
       */    
+      /*
       awlrs_util.gen_row_restriction(pi_index_column => 'ind'
                                     ,pi_skip_n_rows  => pi_skip_n_rows
                                     ,pi_pagesize     => pi_pagesize
@@ -2625,11 +4635,13 @@ AS
       /*
       ||Get the Order By clause.
       */
+      /*
       lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
                                             ,pi_order_asc_desc => pi_order_asc_desc);
       /*
       ||Process the filter.
       */
+      /*
       IF pi_filter_columns.COUNT > 0
        THEN
           
@@ -2672,7 +4684,7 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_paged_polled_locations;
-  
+  */
   --
   -----------------------------------------------------------------------------
   --
@@ -3524,18 +5536,5 @@ BEGIN
   -----------------------------------------------------------------------------
   --
   
-  
-  --to be deleted, test procedure 
-  PROCEDURE process_housekeeping
-  IS
-  BEGIN
-    nm_debug.debug_on;
-    nm_debug.debug('AWLRS_PROCESS_FRAMEWORK.PROCESS_HOUSEKEEPING starting: '||to_char(sysdate,'dd-mon-yy hh24:mi:ss'));
-    nm_debug.debug('AWLRS_PROCESS_FRAMEWORK.PROCESS_HOUSEKEEPING finishing: '||to_char(sysdate,'dd-mon-yy hh24:mi:ss'));
-    nm_debug.debug_off;
-  
-  END process_housekeeping;                             
-  --                                  
-
 END awlrs_process_framework_api;
 /
