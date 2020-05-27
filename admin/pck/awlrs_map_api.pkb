@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.44   May 15 2020 12:09:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.45   May 27 2020 13:08:32   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   May 15 2020 12:09:14  $
-  --       Date fetched Out : $Modtime:   May 15 2020 11:42:12  $
-  --       Version          : $Revision:   1.44  $
+  --       Date into PVCS   : $Date:   May 27 2020 13:08:32  $
+  --       Date fetched Out : $Modtime:   May 27 2020 12:30:12  $
+  --       Version          : $Revision:   1.45  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.44  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.45  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -24,6 +24,8 @@ AS
   g_debug  hig_option_values.hov_value%TYPE;
   --
   gt_epsg  nm3type.tab_number;
+  --
+  c_show_labels_alias CONSTANT VARCHAR2(30) := 'show$$labels$$';
   --
   -----------------------------------------------------------------------------
   --
@@ -1826,6 +1828,7 @@ AS
           --                                       ,pi_field => 'fill-opacity:');
           --
           lv_retval := '      LABEL'
+            ||CHR(10)||'        EXPRESSION ("[SHOW$$LABELS$$]" = "Y")'
             ||CHR(10)||'        ANGLE '||CASE pi_layer_type WHEN 'POINT' THEN 'AUTO' ELSE 'FOLLOW' END
             ||CHR(10)||'        FONT "'||REPLACE(lv_font_family,' ','')||'"'
             ||CHR(10)||'        SIZE '||REGEXP_REPLACE(lv_font_size,'[^0-9]','')
@@ -1948,6 +1951,7 @@ AS
     SELECT EXTRACTVALUE(collection_buckets.column_value,'CollectionBucket') bucket_value
           ,EXTRACTVALUE(collection_buckets.column_value,'CollectionBucket/@label') bucket_label
           ,EXTRACTVALUE(collection_buckets.column_value,'CollectionBucket/@style') bucket_style
+          ,EXTRACTVALUE(collection_buckets.column_value,'CollectionBucket/@label_style') bucket_label_style
       FROM XMLTABLE('/AdvancedStyle/BucketStyle/Buckets/CollectionBucket' PASSING cp_xml) collection_buckets
          ;
     --
@@ -2176,11 +2180,13 @@ AS
                                                            ,pi_layer_type    => pi_layer_type);
             /*
             ||Write the label data if required.
+            ||NB. Label Style can be specified on the advanced style
+            ||and will override the style specified on the theme.
             */
             IF pi_label_column IS NOT NULL
              AND pi_label_style IS NOT NULL
              THEN
-                lv_retval := lv_retval||CHR(10)||get_label_style(pi_style_name    => pi_label_style
+                lv_retval := lv_retval||CHR(10)||get_label_style(pi_style_name    => NVL(lt_adv_style_data(i).bucket_label_style,pi_label_style)
                                                                 ,pi_text_column   => pi_label_column
                                                                 ,pi_min_scale     => pi_label_min_scale
                                                                 ,pi_max_scale     => pi_label_max_scale
@@ -2392,11 +2398,13 @@ AS
       --
       lt_columns  nm3type.tab_varchar30;
       --
-      lv_label_col  nm3type.max_varchar2;
-      lv_retval     nm3type.max_varchar2;
+      lv_label_col    nm3type.max_varchar2;
+      lv_retval       nm3type.max_varchar2;
       --
     BEGIN
-      --
+      /*
+      ||Get the Label Column.
+      */
       lv_label_col := get_theme_label_col(pi_theme_name => pi_theme_name
                                          ,pi_pk_column  => pi_pk_column);
       --
@@ -2406,23 +2414,29 @@ AS
           ||If this is a node layer then some columns will be added later
           ||so no need to add them here.
           */
-          IF (pi_is_node_layer AND UPPER(lv_label_col) IN('NO_NODE_ID','NO_NODE_NAME','NO_DESCR'))
+          IF NOT(pi_is_node_layer AND UPPER(lv_label_col) IN('NO_NODE_ID','NO_NODE_NAME','NO_DESCR'))
            THEN
-              NULL;
-          ELSE
               lv_retval := ', '||pi_alias||lv_label_col;
           END IF;
+          /*
+          ||If there are labels then add a derived column to be used with
+          ||a mapfile substitution variable to allow labels to be switched off.
+          */
+          lv_retval := lv_retval||', ''%show_labels%'' '||c_show_labels_alias;
+          --
       END IF;
-      --
-      SELECT DISTINCT pi_alias||theme_styles.label_column
+      /*
+      ||Get any columns used for Advanced Styles
+      */
+      SELECT DISTINCT pi_alias||theme_styles.rule_column
         BULK COLLECT
         INTO lt_columns
         FROM user_sdo_themes themes
             ,XMLTABLE('/styling_rules/rule'
                       PASSING XMLTYPE(themes.styling_rules)
-                      COLUMNS label_column VARCHAR2(30) path '@column') theme_styles
+                      COLUMNS rule_column VARCHAR2(30) path '@column') theme_styles
        WHERE themes.name = pi_theme_name
-         AND UPPER(theme_styles.label_column) NOT IN(UPPER(pi_pk_column),UPPER(NVL(lv_label_col,'~~~~~')))
+         AND UPPER(theme_styles.rule_column) NOT IN(UPPER(pi_pk_column),UPPER(NVL(lv_label_col,'~~~~~')))
            ;
       --
       FOR i IN 1..lt_columns.COUNT LOOP
@@ -2434,6 +2448,7 @@ AS
             ELSE
                 lv_retval := lv_retval||', '||lt_columns(i);
             END IF;
+            --
         END IF;
       END LOOP;
       /*
@@ -2925,20 +2940,32 @@ AS
                                                          ||lv_using_index_hint||'"'
               ||CHR(10)||'    VALIDATION'
               ||CHR(10)||'      "featurekey"               "^[0-9a-zA-Z_]*$"'
-              ||CHR(10)||'      "featurekeyvalues"         "^(((-?([0-9]+)(\.?[0-9]+)?)|(\''(-?[\.0-9a-zA-Z])*\''))(,((-?([0-9]+)(\.?[0-9]+)?)|(\''(-?[\.0-9a-zA-Z])*\''))+)*)$"'
               ||CHR(10)||'      "default_featurekey"       "1"'
+              ||CHR(10)||'      "featurekeyvalues"         "^(((-?([0-9]+)(\.?[0-9]+)?)|(\''(-?[\.0-9a-zA-Z])*\''))(,((-?([0-9]+)(\.?[0-9]+)?)|(\''(-?[\.0-9a-zA-Z])*\''))+)*)$"'
               ||CHR(10)||'      "default_featurekeyvalues" "1"'
         ;
         lv_layer_text := lv_layer_text||lv_tmp;
-        --
+        /*
+        ||Add substitution variable for label display if required.
+        */
+        IF INSTR(lv_theme_extra_cols,c_show_labels_alias) > 0
+         THEN
+            lv_tmp := CHR(10)||'      "show_labels"              "^[YN]$"'
+              ||CHR(10)||'      "default_show_labels"       "Y"'
+            ;
+            lv_layer_text := lv_layer_text||lv_tmp;
+        END IF;
+        /*
+        ||Add substitution variables for lateral offsets if required.
+        */
         IF lv_using_index_hint IS NOT NULL
          THEN
-            lv_tmp := CHR(10)||'      "default_offsetval"        "0"'
-              ||CHR(10)||'      "default_offsetbyxsp"      "N"'
-              ||CHR(10)||'      "default_bbox"             "'||REPLACE(lv_theme_extent,' ',',')||'"'
-              ||CHR(10)||'      "offsetval"                "^-?[0-9]{0,10}$"'
+            lv_tmp := CHR(10)||'      "offsetval"                "^-?[0-9]{0,10}$"'
+              ||CHR(10)||'      "default_offsetval"        "0"'
               ||CHR(10)||'      "offsetbyxsp"              "^[YN]$"'
+              ||CHR(10)||'      "default_offsetbyxsp"      "N"'
               ||CHR(10)||'      "bbox"                     "^-?[\.0-9]+((,-?[\.0-9]+){3})$"'
+              ||CHR(10)||'      "default_bbox"             "'||REPLACE(lv_theme_extent,' ',',')||'"'
             ;
             lv_layer_text := lv_layer_text||lv_tmp;
         END IF;
