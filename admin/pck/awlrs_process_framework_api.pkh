@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkh-arc   1.1   May 18 2020 15:45:22   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   May 18 2020 15:45:22  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkh-arc   1.2   May 27 2020 11:58:38   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   May 27 2020 11:58:38  $
   --       Module Name      : $Workfile:   awlrs_process_framework_api.pkh  $
-  --       Date fetched Out : $Modtime:   May 18 2020 15:40:10  $
-  --       Version          : $Revision:   1.1  $
+  --       Date fetched Out : $Modtime:   May 27 2020 11:24:42  $
+  --       Version          : $Revision:   1.2  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
   -- 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -60,7 +60,14 @@ AS
                                    ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                    ,po_message_cursor          OUT sys_refcursor
                                    ,po_cursor                  OUT sys_refcursor);
-                                            
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE area_types_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                          ,po_message_cursor   OUT  sys_refcursor
+                          ,po_cursor           OUT  sys_refcursor);
+                                                                           
   --
   -----------------------------------------------------------------------------
   -- 
@@ -83,7 +90,7 @@ AS
                                ,pi_old_process_name       IN     hig_process_types.hpt_name%TYPE
                                ,pi_old_limit              IN     hig_process_types.hpt_process_limit%TYPE
                                ,pi_old_process_descr      IN     hig_process_types.hpt_descr%TYPE
-                               --,pi_old_code_to_execute    IN     hig_process_types.hpt_what_to_call%TYPE
+                               ,pi_old_code_to_execute    IN     hig_process_types.hpt_what_to_call%TYPE
                                ,pi_old_see_in_form        IN     hig_process_types.hpt_see_in_hig2510%TYPE  
                                ,pi_old_area_type          IN     hig_process_types.hpt_area_type%TYPE
                                ,pi_old_restartable        IN     hig_process_types.hpt_restartable%TYPE
@@ -93,7 +100,7 @@ AS
                                ,pi_new_process_name       IN     hig_process_types.hpt_name%TYPE
                                ,pi_new_limit              IN     hig_process_types.hpt_process_limit%TYPE
                                ,pi_new_process_descr      IN     hig_process_types.hpt_descr%TYPE
-                               --,pi_new_code_to_execute    IN     hig_process_types.hpt_what_to_call%TYPE
+                               ,pi_new_code_to_execute    IN     hig_process_types.hpt_what_to_call%TYPE
                                ,pi_new_see_in_form        IN     hig_process_types.hpt_see_in_hig2510%TYPE  
                                ,pi_new_area_type          IN     hig_process_types.hpt_area_type%TYPE
                                ,pi_new_restartable        IN     hig_process_types.hpt_restartable%TYPE
@@ -453,7 +460,53 @@ AS
                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor          OUT sys_refcursor
                                ,po_cursor                  OUT sys_refcursor);
-                                                                  
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_process_type_for_sub(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT  sys_refcursor
+                                    ,po_cursor           OUT  sys_refcursor);
+                             
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_process_type_for_sub(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                          ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                          ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                          ,pi_skip_n_rows          IN     PLS_INTEGER
+                                          ,pi_pagesize             IN     PLS_INTEGER
+                                          ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor          OUT sys_refcursor
+                                          ,po_cursor                  OUT sys_refcursor);    
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_scheduled_date(pi_start_date        IN      DATE
+                              ,pi_frequency_id      IN      hig_scheduling_frequencies.hsfr_frequency_id%TYPE
+                              ,po_scheduled_date       OUT  DATE
+                              ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor       OUT  sys_refcursor); 
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE process_type_freq_lov(pi_process_type_id  IN     hig_process_types.hpt_process_type_id%TYPE
+                                 ,po_message_severity   OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor     OUT  sys_refcursor
+                                 ,po_cursor             OUT  sys_refcursor);   
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE process_area_type_lov(pi_process_type_id  IN     hig_process_types.hpt_process_type_id%TYPE
+                                 ,po_message_severity   OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor     OUT  sys_refcursor
+                                 ,po_cursor             OUT  sys_refcursor);                                                                                                                                                              
   --
   -----------------------------------------------------------------------------
   --
@@ -475,21 +528,38 @@ AS
 
   --
   -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE delete_process(pi_process_type_id  IN      hig_process_types.hpt_process_type_id%TYPE
+                          ,pi_job_owner        IN      hig_processes.hp_job_owner%TYPE
+                          ,pi_job_name         IN      hig_processes.hp_job_name%TYPE
+                          ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                          ,po_message_cursor      OUT  sys_refcursor);
+  
   --
-  PROCEDURE amend_process(pi_old_process_id         IN     hig_processes.hp_process_id%TYPE
-                         ,pi_old_job_name           IN     hig_processes.hp_job_name%TYPE
-                         ,pi_old_initiators_ref     IN     hig_processes.hp_initiators_ref%TYPE
-                         ,pi_old_frequency_id       IN     hig_processes.hp_frequency_id%TYPE
-                         ,pi_old_area_id            IN     hig_processes.hp_area_id%TYPE
-                         ,pi_old_scheduled_date     IN     date
-                         ,pi_new_process_id         IN     hig_processes.hp_process_id%TYPE
-                         ,pi_new_job_name           IN     hig_processes.hp_job_name%TYPE
-                         ,pi_new_initiators_ref     IN     hig_processes.hp_initiators_ref%TYPE
-                         ,pi_new_frequency_id       IN     hig_processes.hp_frequency_id%TYPE
-                         ,pi_new_area_id            IN     hig_processes.hp_area_id%TYPE
-                         ,pi_new_scheduled_date     IN     date
-                         ,po_message_severity          OUT hig_codes.hco_code%TYPE
-                         ,po_message_cursor            OUT sys_refcursor);
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE delete_processes(pi_delete_tab       IN      hig2520.t_delete_tab
+                            ,pi_exceptions_tab   IN      hig2520.t_bulk_exceptions_tab
+                            ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                            ,po_message_cursor      OUT  sys_refcursor);
+                                               
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE edit_process(pi_old_process_id           IN     hig_processes.hp_process_id%TYPE
+                        ,pi_old_job_name             IN     hig_processes.hp_job_name%TYPE
+                        ,pi_old_initiators_ref       IN     hig_processes.hp_initiators_ref%TYPE
+                        ,pi_old_frequency_id         IN     hig_processes.hp_frequency_id%TYPE
+                        ,pi_old_area_id              IN     hig_processes.hp_area_id%TYPE
+                        ,pi_old_scheduled_start_date IN     date
+                        ,pi_new_process_id           IN     hig_processes.hp_process_id%TYPE
+                        ,pi_new_job_name             IN     hig_processes.hp_job_name%TYPE
+                        ,pi_new_initiators_ref       IN     hig_processes.hp_initiators_ref%TYPE
+                        ,pi_new_frequency_id         IN     hig_processes.hp_frequency_id%TYPE
+                        ,pi_new_area_id              IN     hig_processes.hp_area_id%TYPE
+                        ,pi_new_scheduled_start_date IN     date
+                        ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor              OUT sys_refcursor);
                          
   --
   -----------------------------------------------------------------------------
@@ -662,6 +732,7 @@ AS
   --
   PROCEDURE get_process_job_log(pi_process_id       IN     hig_process_log.hpl_process_id%TYPE
                                ,pi_job_run_seq      IN     hig_process_log.hpl_job_run_seq%TYPE
+                               ,pi_summary_flag     IN     hig_process_log.hpl_summary_flag%TYPE  DEFAULT 'Y' 
                                ,po_message_severity   OUT  hig_codes.hco_code%TYPE
                                ,po_message_cursor     OUT  sys_refcursor
                                ,po_cursor             OUT  sys_refcursor);
@@ -671,6 +742,7 @@ AS
   --
   PROCEDURE get_paged_process_job_log(pi_process_id           IN     hig_process_log.hpl_process_id%TYPE
                                      ,pi_job_run_seq          IN     hig_process_log.hpl_job_run_seq%TYPE
+                                     ,pi_summary_flag         IN     hig_process_log.hpl_summary_flag%TYPE  DEFAULT 'Y' 
                                      ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                      ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                      ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
@@ -683,7 +755,7 @@ AS
                                      ,po_message_cursor          OUT sys_refcursor
                                      ,po_cursor                  OUT sys_refcursor);                                                                                                                                                                                                                                                                                                
  
- --
+  --
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_scheduler_state(po_scheduler_state  OUT  VARCHAR2
@@ -719,6 +791,6 @@ AS
                                        ,po_cursor                  OUT sys_refcursor);
             
   --
-  
+
 END awlrs_process_framework_api;
 /
