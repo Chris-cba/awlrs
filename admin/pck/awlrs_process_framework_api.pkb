@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkb-arc   1.1   May 18 2020 15:45:22   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   May 18 2020 15:45:22  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkb-arc   1.2   May 27 2020 11:58:36   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   May 27 2020 11:58:36  $
   --       Module Name      : $Workfile:   awlrs_process_framework_api.pkb  $
-  --       Date fetched Out : $Modtime:   May 18 2020 15:40:14  $
-  --       Version          : $Revision:   1.1  $
+  --       Date fetched Out : $Modtime:   May 27 2020 11:24:42  $
+  --       Version          : $Revision:   1.2  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -81,14 +81,14 @@ AS
         FROM dba_procedures
        WHERE (   owner          = UPPER(SYS_CONTEXT('NM3CORE','APPLICATION_OWNER'))
              AND object_type    = cv_package 
-             AND object_name    = SUBSTR(pi_code_to_execute,1,(INSTR(pi_code_to_execute,'.')) -1)
+             AND object_name    = UPPER(SUBSTR(pi_code_to_execute,1,(INSTR(pi_code_to_execute,'.')) -1))
              AND object_name    NOT IN ('NM3USER','NM3DDL')
-             AND procedure_name = RTRIM(SUBSTR(pi_code_to_execute,(INSTR(pi_code_to_execute,'.')) +1),';')
+             AND procedure_name = UPPER(RTRIM(SUBSTR(pi_code_to_execute,(INSTR(pi_code_to_execute,'.')) +1),';'))
           OR     owner          = 'EXOR_CORE'
              AND object_type    = cv_package 
-             AND object_name    = SUBSTR(pi_code_to_execute,1,(INSTR(pi_code_to_execute,'.')) -1)
+             AND object_name    = UPPER(SUBSTR(pi_code_to_execute,1,(INSTR(pi_code_to_execute,'.')) -1))
              AND object_name    != 'NM3SECURITY'
-             AND procedure_name = RTRIM(SUBSTR(pi_code_to_execute,(INSTR(pi_code_to_execute,'.')) +1),';'));
+             AND procedure_name = UPPER(RTRIM(SUBSTR(pi_code_to_execute,(INSTR(pi_code_to_execute,'.')) +1),';')));
     END IF;     
     --   
     RETURN lv_exists;
@@ -301,7 +301,7 @@ AS
           --,hpt_polling_enabled         polling_enabled 
           --,hpt_polling_ftp_type_id     polling_ftp_id
           --,hpt_polling_ftp_type_descr  polling_ftp_id_descr
-          ,hpt_see_in_hig2510          see_in_form
+          ,hpt_see_in_hig2510          see_in_submission_module
           ,hpt_area_type               area_type  
           ,hpt_area_type_meaning       area_type_descr 
           ,hpt_restartable             restartable  
@@ -339,7 +339,7 @@ AS
           --,hpt_polling_enabled         polling_enabled 
           --,hpt_polling_ftp_type_id     polling_ftp_id
           --,hpt_polling_ftp_type_descr  polling_ftp_id_descr
-          ,hpt_see_in_hig2510          see_in_form
+          ,hpt_see_in_hig2510          see_in_submission_module
           ,hpt_area_type               area_type  
           ,hpt_area_type_meaning       area_type_descr 
           ,hpt_restartable             restartable
@@ -387,7 +387,7 @@ AS
                                                      --,hpt_polling_enabled         polling_enabled 
                                                      --,hpt_polling_ftp_type_id     polling_ftp_id
                                                      --,hpt_polling_ftp_type_descr  polling_ftp_id_descr
-                                                     ,hpt_see_in_hig2510          see_in_form
+                                                     ,hpt_see_in_hig2510          see_in_submission_module
                                                      ,hpt_area_type               area_type  
                                                      ,hpt_area_type_meaning       area_type_descr 
                                                      ,hpt_restartable             restartable
@@ -402,7 +402,7 @@ AS
                                                   -- ||',polling_enabled'
                                                   -- ||',polling_ftp_id'
                                                   -- ||',polling_ftp_id_descr'
-                                                   ||',see_in_form'
+                                                   ||',see_in_submission_module'
                                                    ||',area_type'
                                                    ||',area_type_descr'
                                                    ||',restartable'
@@ -449,8 +449,14 @@ AS
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
-      awlrs_util.add_column_data(pi_cursor_col   => 'coed_to_execute'
+      awlrs_util.add_column_data(pi_cursor_col   => 'code_to_execute'
                                 ,pi_query_col    => 'hpt_what_to_call'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'see_in_submission_module'
+                                ,pi_query_col    => 'hpt_see_in_hig2510'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
@@ -559,6 +565,31 @@ AS
   --
   -----------------------------------------------------------------------------
   -- 
+  PROCEDURE area_types_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT  sys_refcursor
+                         ,po_cursor           OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT hpa_area_type     area_type 
+          ,hpa_description   area_type_descr
+      FROM hig_process_areas
+    ORDER BY hpa_description;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END area_types_lov;                          
+  --
+  -----------------------------------------------------------------------------
+  -- 
   PROCEDURE create_process_type(pi_process_name          IN hig_process_types.hpt_name%TYPE
                                ,pi_limit                 IN hig_process_types.hpt_process_limit%TYPE
                                ,pi_process_descr         IN hig_process_types.hpt_descr%TYPE
@@ -639,7 +670,7 @@ AS
                                ,pi_old_process_name       IN     hig_process_types.hpt_name%TYPE
                                ,pi_old_limit              IN     hig_process_types.hpt_process_limit%TYPE
                                ,pi_old_process_descr      IN     hig_process_types.hpt_descr%TYPE
-                               --,pi_old_code_to_execute    IN     hig_process_types.hpt_what_to_call%TYPE
+                               ,pi_old_code_to_execute    IN     hig_process_types.hpt_what_to_call%TYPE
                                ,pi_old_see_in_form        IN     hig_process_types.hpt_see_in_hig2510%TYPE  
                                ,pi_old_area_type          IN     hig_process_types.hpt_area_type%TYPE
                                ,pi_old_restartable        IN     hig_process_types.hpt_restartable%TYPE
@@ -649,7 +680,7 @@ AS
                                ,pi_new_process_name       IN     hig_process_types.hpt_name%TYPE
                                ,pi_new_limit              IN     hig_process_types.hpt_process_limit%TYPE
                                ,pi_new_process_descr      IN     hig_process_types.hpt_descr%TYPE
-                               --,pi_new_code_to_execute    IN     hig_process_types.hpt_what_to_call%TYPE
+                               ,pi_new_code_to_execute    IN     hig_process_types.hpt_what_to_call%TYPE
                                ,pi_new_see_in_form        IN     hig_process_types.hpt_see_in_hig2510%TYPE  
                                ,pi_new_area_type          IN     hig_process_types.hpt_area_type%TYPE
                                ,pi_new_restartable        IN     hig_process_types.hpt_restartable%TYPE
@@ -739,11 +770,9 @@ AS
      OR (lr_db_rec.hpt_descr IS NULL AND pi_old_process_descr IS NOT NULL)
      OR (lr_db_rec.hpt_descr IS NOT NULL AND pi_old_process_descr IS NULL)
      --
-     /*
      OR (lr_db_rec.hpt_what_to_call != pi_old_code_to_execute)
      OR (lr_db_rec.hpt_what_to_call IS NULL AND pi_old_code_to_execute IS NOT NULL)
      OR (lr_db_rec.hpt_what_to_call IS NOT NULL AND pi_old_code_to_execute IS NULL)
-     */
      --
      OR (lr_db_rec.hpt_see_in_hig2510 != pi_old_see_in_form)
      OR (lr_db_rec.hpt_see_in_hig2510 IS NULL AND pi_old_see_in_form IS NOT NULL)
@@ -858,7 +887,7 @@ AS
         --
         lv_rec.hpt_process_type_id       :=  pi_new_process_type_id;
     	lv_rec.hpt_name                  :=  pi_new_process_name;
-        --lv_rec.hpt_what_to_call          :=  pi_new_code_to_execute;
+        lv_rec.hpt_what_to_call          :=  pi_old_code_to_execute;  -- no update allowed to existing value
         lv_rec.hpt_process_limit         :=  pi_new_limit;
         lv_rec.hpt_descr                 :=  pi_new_process_descr;	
         lv_rec.hpt_restartable           :=  pi_new_restartable;  
@@ -3293,7 +3322,7 @@ AS
           ,hp_job_name                      job_name 
           ,hp_job_owner                     job_owner
           ,hp_frequency_id                  frequency_id
-          --,hp_frequency_id                frequency_descr
+          ,hsfr_meaning                     frequency_descr
           ,max_runs                         max_runs
           ,max_failures                     max_failures
           ,hp_success_flag                  success_flag 
@@ -3314,6 +3343,8 @@ AS
           ,hpj_next_run_date                next_run_date
           ,hp_requires_attention_flag       requires_attention_flag
       FROM hig_processes_v
+          ,hig_scheduling_frequencies 
+     WHERE hsfr_frequency_id = hp_frequency_id
     ORDER BY hp_process_id;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -3348,7 +3379,7 @@ AS
           ,hp_job_name                      job_name 
           ,hp_job_owner                     job_owner
           ,hp_frequency_id                  frequency_id
-          --,hp_frequency_id                frequency_descr
+          ,hsfr_meaning                     frequency_descr
           ,max_runs                         max_runs
           ,max_failures                     max_failures
           ,hp_success_flag                  success_flag 
@@ -3369,7 +3400,9 @@ AS
           ,hpj_next_run_date                next_run_date
           ,hp_requires_attention_flag       requires_attention_flag
       FROM hig_processes_v
-     WHERE hp_process_id = pi_process_id;
+          ,hig_scheduling_frequencies 
+     WHERE hp_process_id     = pi_process_id
+       AND hsfr_frequency_id = hp_frequency_id;  
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -3413,7 +3446,7 @@ AS
                                                      ,hp_job_name                      job_name 
                                                      ,hp_job_owner                     job_owner
                                                      ,hp_frequency_id                  frequency_id
-                                                     --,hp_frequency_id                frequency_descr
+                                                     ,hsfr_meaning                     frequency_descr
                                                      ,max_runs                         max_runs
                                                      ,max_failures                     max_failures
                                                      ,hp_success_flag                  success_flag 
@@ -3433,7 +3466,9 @@ AS
                                                      ,hpj_last_run_date                last_run_date
                                                      ,hpj_next_run_date                next_run_date
                                                      ,hp_requires_attention_flag       requires_attention_flag
-                                                 FROM hig_processes_v ';
+                                                 FROM hig_processes_v 
+                                                     ,hig_scheduling_frequencies 
+                                                WHERE hsfr_frequency_id = hp_frequency_id ';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT   process_id'
                                                    ||',process_type_id'
@@ -3445,7 +3480,7 @@ AS
                                                    ||',job_name'
                                                    ||',job_owner'
                                                    ||',frequency_id'
-                                                   --||',frequency_descr'
+                                                   ||',frequency_descr'
                                                    ||',max_runs'
                                                    ||',max_failures' 
                                                    ||',success_flag'
@@ -3538,6 +3573,12 @@ AS
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
+      awlrs_util.add_column_data(pi_cursor_col   => 'frequency_descr'
+                                ,pi_query_col    => 'hsfr_meaning'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
       awlrs_util.add_column_data(pi_cursor_col   => 'max_runs'
                                 ,pi_query_col    => 'hp_max_runs'
                                 ,pi_datatype     => awlrs_util.c_number_col
@@ -3593,59 +3634,59 @@ AS
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'job_action'
-                                ,pi_query_col    => 'hp_job_action'
+                                ,pi_query_col    => 'hpj_job_action'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'schedule_type'
-                                ,pi_query_col    => 'hp_area_meaning'
+                                ,pi_query_col    => 'hpj_schedule_type'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'repeat_interval'
-                                ,pi_query_col    => 'hp_repeat_interval'
+                                ,pi_query_col    => 'hpj_repeat_interval'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'job_state'
-                                ,pi_query_col    => 'hp_job_state'
+                                ,pi_query_col    => 'hpj_job_state'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'run_count'
-                                ,pi_query_col    => 'hp_run_count'
+                                ,pi_query_col    => 'hpj_run_count'
                                 ,pi_datatype     => awlrs_util.c_number_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'run_failure_count'
-                                ,pi_query_col    => 'hp_run_failure_count'
+                                ,pi_query_col    => 'hpj_run_failure_count'
                                 ,pi_datatype     => awlrs_util.c_number_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'last_start_date'
-                                ,pi_query_col    => 'hp_last_start_date'
+                                ,pi_query_col    => 'hpj_last_start_date'
                                 ,pi_datatype     => awlrs_util.c_datetime_col
-                                ,pi_mask         => 'DD-MON-YY HH24:MI:SS'
+                                ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'last_run_date'
-                                ,pi_query_col    => 'hp_last_run_date'
-                                ,pi_datatype     => awlrs_util.c_date_col
-                                ,pi_mask         => 'DD-MON-YYYY'
+                                ,pi_query_col    => 'hpj_last_run_date'
+                                ,pi_datatype     => awlrs_util.c_datetime_col
+                                ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
-      awlrs_util.add_column_data(pi_cursor_col   => 'next_start_date'
-                                ,pi_query_col    => 'hp_next_start_date'
-                                ,pi_datatype     => awlrs_util.c_date_col
-                                ,pi_mask         => 'DD-MON-YYYY'
+      awlrs_util.add_column_data(pi_cursor_col   => 'next_run_date'
+                                ,pi_query_col    => 'hpj_next_run_date'
+                                ,pi_datatype     => awlrs_util.c_datetime_col
+                                ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
-      --
+      --  
     END set_column_data;
     --
   BEGIN
@@ -3707,7 +3748,317 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_paged_processes;                               
-                                                             
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_process_type_for_sub(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT  sys_refcursor
+                                    ,po_cursor           OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT hpt_process_type_id         process_type_id
+          ,hpt_name                    process_name
+          ,hpt_area_type               area_type
+      FROM hig_process_types_v
+     WHERE hpt_see_in_hig2510  =  'Y';
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_process_type_for_sub;                                    
+                             
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_process_type_for_sub(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                          ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                          ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                          ,pi_skip_n_rows          IN     PLS_INTEGER
+                                          ,pi_pagesize             IN     PLS_INTEGER
+                                          ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor          OUT sys_refcursor
+                                          ,po_cursor                  OUT sys_refcursor)
+  IS
+      --
+      lv_lower_index      PLS_INTEGER;
+      lv_upper_index      PLS_INTEGER;
+      lv_row_restriction  nm3type.max_varchar2;
+      lv_order_by         nm3type.max_varchar2;
+      lv_filter           nm3type.max_varchar2;
+      --
+      lv_driving_sql  nm3type.max_varchar2 := 'SELECT hpt_process_type_id         process_type_id
+                                                     ,hpt_name                    process_name  
+                                                     ,hpt_area_type               area_type          
+                                                 FROM hig_process_types_v
+                                                WHERE hpt_see_in_hig2510  =  ''Y'' ';
+      --
+      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT   process_type_id'
+                                                   ||',process_name'
+                                                   ||',area_type'
+                                                   ||',row_count'
+                                             ||' FROM (SELECT rownum ind'
+                                                         ||' ,a.*'
+                                                         ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                     ||' FROM ('||lv_driving_sql
+      ;
+      --
+      lt_column_data  awlrs_util.column_data_tab;
+      --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'process_type_id'
+                                ,pi_query_col    => 'hpt_process_type_id'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'process_name'
+                                ,pi_query_col    => 'hpt_name'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'area_type'
+                                ,pi_query_col    => 'hpt_area_type'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --     
+    END set_column_data;
+    --
+  BEGIN
+    
+      /*
+      ||Get the page parameters.
+      */    
+      awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                    ,pi_skip_n_rows  => pi_skip_n_rows
+                                    ,pi_pagesize     => pi_pagesize
+                                    ,po_lower_index  => lv_lower_index
+                                    ,po_upper_index  => lv_upper_index
+                                    ,po_statement    => lv_row_restriction);
+      /*
+      ||Get the Order By clause.
+      */
+      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                            ,pi_order_asc_desc => pi_order_asc_desc);
+      /*
+      ||Process the filter.
+      */
+      IF pi_filter_columns.COUNT > 0
+       THEN
+          
+          set_column_data(po_column_data => lt_column_data);
+          
+          awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                   ,pi_column_data  => lt_column_data
+                                   ,pi_operators    => pi_filter_operators
+                                   ,pi_values_1     => pi_filter_values_1
+                                   ,pi_values_2     => pi_filter_values_2
+                                   ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,po_where_clause => lv_filter);
+          
+      END IF;
+      --
+      lv_cursor_sql := lv_cursor_sql
+                       ||CHR(10)||lv_filter
+                       ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'hpt_name')||') a)'
+                       ||CHR(10)||lv_row_restriction
+      ;
+      
+      IF pi_pagesize IS NOT NULL
+       THEN
+          OPEN po_cursor FOR lv_cursor_sql
+          USING lv_lower_index
+               ,lv_upper_index;
+      ELSE
+          OPEN po_cursor FOR lv_cursor_sql
+          USING lv_lower_index;
+      END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_process_type_for_sub;                                           
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_scheduled_date(pi_start_date        IN      DATE
+                              ,pi_frequency_id      IN      hig_scheduling_frequencies.hsfr_frequency_id%TYPE
+                              ,po_scheduled_date       OUT  DATE
+                              ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor       OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+     awlrs_util.check_historic_mode;  
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_process_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Frequency Id'
+                               ,pi_parameter_value =>  pi_frequency_id);
+    --
+    po_scheduled_date := hig_process_framework.when_would_job_be_scheduled(pi_start_date    => pi_start_date
+                                                                          ,pi_frequency_id  => pi_frequency_id);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_scheduled_date;   
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE process_type_freq_lov(pi_process_type_id  IN     hig_process_types.hpt_process_type_id%TYPE
+                                 ,po_message_severity   OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor     OUT  sys_refcursor
+                                 ,po_cursor             OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT frequency_id
+          ,freq_descr
+      FROM (SELECT hpfr_frequency_id         frequency_id
+                  ,hsfr_meaning              freq_descr
+              FROM hig_process_type_frequencies
+                  ,hig_scheduling_frequencies
+             WHERE hpfr_process_type_id = pi_process_type_id
+               AND hpfr_frequency_id    = hsfr_frequency_id
+            UNION -- always at least return a frequency of ONCE
+            SELECT hsfr_frequency_id         frequency_id
+                  ,hsfr_meaning              freq_descr
+              FROM hig_scheduling_frequencies 
+             WHERE hsfr_frequency_id = -1
+	  	)	       
+    ORDER BY frequency_id;  
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END process_type_freq_lov;
+    
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  FUNCTION get_process_type_area(pi_process_type_id     IN hig_process_types.hpt_process_type_id%TYPE
+                                ,pi_restricted_list     IN varchar2 DEFAULT 'N'
+                                ,pi_include_dummy       IN varchar2 DEFAULT 'N') RETURN VARCHAR2 IS
+ 
+
+  CURSOR c1 IS
+  SELECT 
+               'select id, meaning'||chr(10)
+             ||'from'||chr(10)
+             ||'('||chr(10)
+             || case when pi_include_dummy = 'Y' then
+                  'select 1 seq, ''None'' meaning, null id from dual'||chr(10)
+                   ||'union all'||chr(10)
+                  else
+                   null
+                  end 
+            || case when pi_restricted_list = 'Y' THEN 
+                          'select 2 seq, SUBSTR('||hpa_meaning_column||',1,100) meaning, TO_CHAR('||hpa_id_column||') id from '||NVL(hpa_restricted_table,hpa_table)||chr(10)||' where '||NVL(hpa_restricted_where_clause,'1=1')||chr(10)
+                     else 
+                          'select 2 seq, SUBSTR('||hpa_meaning_column||',1,100) meaning, TO_CHAR('||hpa_id_column||') id from '||hpa_table||chr(10)||' where '||NVL(hpa_where_clause,'1=1')||chr(10)
+                     end                                                                         
+             ||')'||chr(10)
+                 ||' order by seq,meaning' the_sql
+     FROM   hig_process_areas
+          , hig_process_types
+     WHERE  hpt_process_type_id = pi_process_type_id
+     AND    hpa_area_type = hpt_area_type;
+ 
+  lv_retval    nm3type.max_varchar2;
+  --                                 
+  BEGIN
+
+     OPEN c1;
+     FETCH c1 INTO lv_retval;
+     CLOSE c1;
+     
+     IF lv_retval IS NULL THEN
+     
+      IF pi_include_dummy = 'Y' THEN
+        RETURN('select ''None'' meaning, null id from dual');
+      ELSE
+        RETURN('select null meaning, null from dual where 1=2');
+      END IF;  
+      
+     ELSE 
+      RETURN(lv_retval);
+     END IF; 
+     
+  EXCEPTION
+     WHEN others THEN
+         RETURN Null;
+
+  END get_process_type_area;
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE process_area_type_lov(pi_process_type_id  IN     hig_process_types.hpt_process_type_id%TYPE
+                                 ,po_message_severity   OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor     OUT  sys_refcursor
+                                 ,po_cursor             OUT  sys_refcursor)
+  IS
+  --
+  lv_retval varchar2(4000);
+  lv_sql    varchar2(4000);
+  --
+  BEGIN
+    --
+    lv_sql := get_process_type_area(pi_process_type_id => pi_process_type_id);
+    --
+    OPEN po_cursor 
+     FOR lv_sql;    
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END process_area_type_lov;                                                                                                                                                 
   --
   -----------------------------------------------------------------------------
   --
@@ -3716,7 +4067,7 @@ AS
                                        ,pi_initiated_by_username    IN     hig_processes.hp_initiated_by_username%TYPE DEFAULT Sys_Context('NM3_SECURITY_CTX','USERNAME')
                                        ,pi_initiated_date           IN     hig_processes.hp_initiated_date%TYPE 
                                        ,pi_initiators_ref           IN     hig_processes.hp_initiators_ref%TYPE
-                                       ,pi_start_date               IN     date
+                                       ,pi_start_date               IN     DATE
                                        ,pi_frequency_id             IN     hig_processes.hp_frequency_id%TYPE
                                        ,pi_polling_flag             IN     hig_processes.hp_polling_flag%TYPE DEFAULT 'N'
                                        ,pi_area_id                  IN     hig_processes.hp_area_id%TYPE DEFAULT NULL
@@ -3813,21 +4164,120 @@ AS
   
   --
   -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE delete_process(pi_process_type_id  IN      hig_process_types.hpt_process_type_id%TYPE
+                          ,pi_job_owner        IN      hig_processes.hp_job_owner%TYPE
+                          ,pi_job_name         IN      hig_processes.hp_job_name%TYPE
+                          ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                          ,po_message_cursor      OUT  sys_refcursor)
+  IS
   --
-  PROCEDURE amend_process(pi_old_process_id         IN     hig_processes.hp_process_id%TYPE
-                         ,pi_old_job_name           IN     hig_processes.hp_job_name%TYPE
-                         ,pi_old_initiators_ref     IN     hig_processes.hp_initiators_ref%TYPE
-                         ,pi_old_frequency_id       IN     hig_processes.hp_frequency_id%TYPE
-                         ,pi_old_area_id            IN     hig_processes.hp_area_id%TYPE
-                         ,pi_old_scheduled_date     IN     date
-                         ,pi_new_process_id         IN     hig_processes.hp_process_id%TYPE
-                         ,pi_new_job_name           IN     hig_processes.hp_job_name%TYPE
-                         ,pi_new_initiators_ref     IN     hig_processes.hp_initiators_ref%TYPE
-                         ,pi_new_frequency_id       IN     hig_processes.hp_frequency_id%TYPE
-                         ,pi_new_area_id            IN     hig_processes.hp_area_id%TYPE
-                         ,pi_new_scheduled_date     IN     date
-                         ,po_message_severity          OUT hig_codes.hco_code%TYPE
-                         ,po_message_cursor            OUT sys_refcursor)
+  	lt_Delete_Tab			Hig2520.t_Delete_Tab;
+  	lt_Exceptions_Tab 		Hig2520.t_Bulk_Exceptions_Tab;
+  --
+  BEGIN
+    --
+    SAVEPOINT delete_process_sp;
+    --
+    awlrs_util.check_historic_mode;  
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_process_user) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Process Type Id'
+                               ,pi_parameter_value =>  pi_process_type_id);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Job Owner'
+                               ,pi_parameter_value =>  pi_job_owner);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Job Name'
+                               ,pi_parameter_value =>  pi_job_name);
+    --
+    lt_delete_tab(1).process_id := pi_process_type_id;
+    lt_delete_tab(1).job_owner  := pi_job_owner;
+    lt_delete_tab(1).job_name   := pi_job_name;
+    --
+    hig2520.delete_processes(p_delete_tab      =>  lt_delete_tab
+	      		            ,p_exceptions_tab  =>  lt_exceptions_tab);
+    --
+    IF lt_exceptions_tab.count > 0 
+      THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 514
+                     ,pi_supplementary_info => 'Job Name: '||pi_job_name ||' '||lt_exceptions_tab(1).Error_Code);
+    END IF;  
+    --  
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        ROLLBACK TO delete_process_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_process;  
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE delete_processes(pi_delete_tab       IN      hig2520.t_delete_tab
+                            ,pi_exceptions_tab   IN      hig2520.t_bulk_exceptions_tab
+                            ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                            ,po_message_cursor      OUT  sys_refcursor)
+   IS
+   --
+   lt_delete_tab			hig2520.t_delete_tab;
+   lt_exceptions_tab 		hig2520.t_bulk_exceptions_tab;
+   --
+   lv_message_severity      hig_codes.hco_code%TYPE;
+   lv_message_cursor        sys_refcursor;	
+   lv_idx                   pls_integer;
+  --
+  BEGIN                         
+    --  
+    lv_idx:= pi_delete_tab.FIRST;
+    WHILE lv_idx IS NOT NULL
+     --
+     LOOP 
+        delete_process(pi_process_type_id  =>  pi_delete_tab(lv_idx).process_id
+                      ,pi_job_owner        =>  pi_delete_tab(lv_idx).job_owner
+                      ,pi_job_name         =>  pi_delete_tab(lv_idx).job_name
+                      ,po_message_severity =>  lv_message_severity
+                      ,po_message_cursor   =>  lv_message_cursor);
+        --              
+        lv_Idx:=pi_delete_tab.NEXT(lv_Idx);
+        --
+     END LOOP;
+     --                                                    
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        ROLLBACK TO delete_process_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_processes;                                                                          
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE edit_process(pi_old_process_id           IN     hig_processes.hp_process_id%TYPE
+                        ,pi_old_job_name             IN     hig_processes.hp_job_name%TYPE
+                        ,pi_old_initiators_ref       IN     hig_processes.hp_initiators_ref%TYPE
+                        ,pi_old_frequency_id         IN     hig_processes.hp_frequency_id%TYPE
+                        ,pi_old_area_id              IN     hig_processes.hp_area_id%TYPE
+                        ,pi_old_scheduled_start_date IN     date
+                        ,pi_new_process_id           IN     hig_processes.hp_process_id%TYPE
+                        ,pi_new_job_name             IN     hig_processes.hp_job_name%TYPE
+                        ,pi_new_initiators_ref       IN     hig_processes.hp_initiators_ref%TYPE
+                        ,pi_new_frequency_id         IN     hig_processes.hp_frequency_id%TYPE
+                        ,pi_new_area_id              IN     hig_processes.hp_area_id%TYPE
+                        ,pi_new_scheduled_start_date IN     date
+                        ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor              OUT sys_refcursor)
   IS
     --
     lr_db_rec                  hig_processes%ROWTYPE;
@@ -3965,11 +4415,13 @@ AS
                                      ,pi_initiators_ref  =>  pi_new_initiators_ref
                                      ,pi_frequency_id    =>  pi_new_frequency_id
                                      ,pi_area_id         =>  pi_new_area_id
-                                     ,pi_scheduled_date  =>  pi_new_scheduled_date);
+                                     ,pi_scheduled_date  =>  pi_new_scheduled_start_date);
         --
         IF lv_we_disabled_the_process 
          THEN
+           --
   	       hig_process_api.enable_process(pi_process_Id => pi_old_process_id);
+  	       --
         END IF;
         --
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -3987,7 +4439,7 @@ AS
         ROLLBACK TO amend_process_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END amend_process;                         
+  END edit_process;                         
   --
   -----------------------------------------------------------------------------
   --
@@ -4249,7 +4701,8 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT hro_role
+    SELECT hro_role     role_
+          ,hro_descr    role_descr
       FROM hig_roles
     ORDER BY hro_role;
     --
@@ -4333,6 +4786,7 @@ AS
           ,hpjr_end_date                 end_date 
           ,hpjr_success_flag             success_flag
           ,hpjr_success_flag_meaning     success_flag_meaning 
+          ,hpjr_additional_info          additional_info 
       FROM hig_process_job_runs_v
      WHERE hpjr_process_id = pi_process_id
     ORDER BY hpjr_job_run_seq DESC;
@@ -4375,7 +4829,8 @@ AS
                                                      ,hpjr_start_date               start_date  
                                                      ,hpjr_end_date                 end_date 
                                                      ,hpjr_success_flag             success_flag
-                                                     ,hpjr_success_flag_meaning     success_flag_meaning       
+                                                     ,hpjr_success_flag_meaning     success_flag_meaning    
+                                                     ,hpjr_additional_info          additional_info    
                                                  FROM hig_process_job_runs_v
                                                 WHERE hpjr_process_id = :pi_process_id ';
       --
@@ -4385,6 +4840,7 @@ AS
                                                    ||',end_date'
                                                    ||',success_flag' 
                                                    ||',success_flag_meaning'
+                                                   ||',additional_info'
                                                    ||',row_count'
                                              ||' FROM (SELECT rownum ind'
                                                          ||' ,a.*'
@@ -4430,6 +4886,12 @@ AS
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'success_flag_meaning'
                                 ,pi_query_col    => 'hpjr_success_flag_meaning'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'additional_info'
+                                ,pi_query_col    => 'hpjr_additional_info'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
@@ -5088,6 +5550,7 @@ AS
   --
   PROCEDURE get_process_job_log(pi_process_id       IN     hig_process_log.hpl_process_id%TYPE
                                ,pi_job_run_seq      IN     hig_process_log.hpl_job_run_seq%TYPE
+                               ,pi_summary_flag     IN     hig_process_log.hpl_summary_flag%TYPE  DEFAULT 'Y' 
                                ,po_message_severity   OUT  hig_codes.hco_code%TYPE
                                ,po_message_cursor     OUT  sys_refcursor
                                ,po_cursor             OUT  sys_refcursor)
@@ -5105,7 +5568,7 @@ AS
       FROM hig_process_log_v
      WHERE hpl_process_id   = pi_process_id
        AND hpl_job_run_seq  = pi_job_run_seq 
-       AND hpl_summary_flag = 'Y'
+       AND hpl_summary_flag IN  ('Y', pi_summary_flag)  -- we need to always return data where summary flag = 'Y' regardless of pi_summary_flag value --
     ORDER BY hpl_log_seq ASC;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -5123,6 +5586,7 @@ AS
   --
   PROCEDURE get_paged_process_job_log(pi_process_id           IN     hig_process_log.hpl_process_id%TYPE
                                      ,pi_job_run_seq          IN     hig_process_log.hpl_job_run_seq%TYPE
+                                     ,pi_summary_flag         IN     hig_process_log.hpl_summary_flag%TYPE  DEFAULT 'Y' 
                                      ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                      ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                      ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
@@ -5151,7 +5615,7 @@ AS
                                                  FROM hig_process_log_v
                                                 WHERE hpl_process_id   = :pi_process_id
                                                   AND hpl_job_run_seq  = :pi_job_run_seq 
-                                                  AND hpl_summary_flag = ''Y'' ';
+                                                  AND hpl_summary_flag IN  (''Y'', :pi_summary_flag) ';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT   process_id'
                                                    ||',job_run_seq'
@@ -5255,12 +5719,14 @@ AS
           OPEN po_cursor FOR lv_cursor_sql
           USING pi_process_id
                ,pi_job_run_seq
+               ,pi_summary_flag
                ,lv_lower_index
                ,lv_upper_index;
       ELSE
           OPEN po_cursor FOR lv_cursor_sql
           USING pi_process_id
                ,pi_job_run_seq
+               ,pi_summary_flag
                ,lv_lower_index;
       END IF;
     --
