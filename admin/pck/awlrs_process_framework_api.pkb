@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkb-arc   1.2   May 27 2020 11:58:36   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   May 27 2020 11:58:36  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkb-arc   1.3   May 29 2020 09:11:40   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   May 29 2020 09:11:40  $
   --       Module Name      : $Workfile:   awlrs_process_framework_api.pkb  $
-  --       Date fetched Out : $Modtime:   May 27 2020 11:24:42  $
-  --       Version          : $Revision:   1.2  $
+  --       Date fetched Out : $Modtime:   May 28 2020 15:06:52  $
+  --       Version          : $Revision:   1.3  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.3  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -4065,17 +4065,10 @@ AS
   --until its decided what data the UI needs, the api out params are as per the from, this will be updated once the design has been reviewed--
   PROCEDURE create_and_schedule_process(pi_process_type_id          IN     hig_processes.hp_process_type_id%TYPE
                                        ,pi_initiated_by_username    IN     hig_processes.hp_initiated_by_username%TYPE DEFAULT Sys_Context('NM3_SECURITY_CTX','USERNAME')
-                                       ,pi_initiated_date           IN     hig_processes.hp_initiated_date%TYPE 
                                        ,pi_initiators_ref           IN     hig_processes.hp_initiators_ref%TYPE
                                        ,pi_start_date               IN     DATE
                                        ,pi_frequency_id             IN     hig_processes.hp_frequency_id%TYPE
-                                       ,pi_polling_flag             IN     hig_processes.hp_polling_flag%TYPE DEFAULT 'N'
                                        ,pi_area_id                  IN     hig_processes.hp_area_id%TYPE DEFAULT NULL
-                                       ,pi_check_file_cardinality   IN     BOOLEAN DEFAULT FALSE
-                                       ,pi_max_failures             IN     NUMBER DEFAULT NULL
-                                       ,po_process_id                  OUT hig_processes.hp_process_id%TYPE
-                                       ,po_job_name                    OUT hig_processes.hp_job_name%TYPE
-                                       ,po_scheduled_start_date        OUT date
                                        ,po_message_severity            OUT hig_codes.hco_code%TYPE
                                        ,po_message_cursor              OUT sys_refcursor)
   IS
@@ -4106,14 +4099,6 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Frequency Id'
                                ,pi_parameter_value =>  pi_frequency_id);
     --
-    --initiated date >= sysdate
-    IF NOT valid_date(pi_date => pi_initiated_date)
-      THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 110
-                     ,pi_supplementary_info  => 'Initiated Date must be greater or equal to todays''s date: '||pi_initiated_date);
-    END IF;
-    --
     --start date >= sysdate
     IF NOT valid_date(pi_date => pi_start_date)
       THEN
@@ -4130,27 +4115,16 @@ AS
                      ,pi_supplementary_info  => 'Frequency Id: '||pi_frequency_id);
     END IF;
     --
-    awlrs_util.validate_yn(pi_parameter_desc  => 'Polling?'
-                          ,pi_parameter_value => pi_polling_flag);
-    --
     hig_process_api.create_and_schedule_process(pi_process_type_id         => pi_process_type_id
                                                ,pi_initiated_by_username   => pi_initiated_by_username
-                                               ,pi_initiated_date          => pi_initiated_date 
                                                ,pi_initiators_ref          => pi_initiators_ref
                                                ,pi_start_date              => pi_start_date
                                                ,pi_frequency_id            => pi_frequency_id
-                                               ,pi_polling_flag            => pi_polling_flag 
                                                ,pi_area_id                 => pi_area_id 
-                                               ,pi_check_file_cardinality  => pi_check_file_cardinality
-                                               ,pi_max_failures            => pi_max_failures 
                                                ,po_process_id              => lv_process_id 
                                                ,po_job_name                => lv_job_name
                                                ,po_scheduled_start_date    => lv_scheduled_start_date); 
     -- 
-    po_process_id            := lv_process_id; 
-    po_job_name              := lv_job_name;
-    po_scheduled_start_date  := lv_scheduled_start_date;
-    --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
