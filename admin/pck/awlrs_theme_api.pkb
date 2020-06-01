@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.3   May 06 2020 09:49:22   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   May 06 2020 09:49:22  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.4   Jun 01 2020 16:29:46   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jun 01 2020 16:29:46  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkb  $
-  --       Date fetched Out : $Modtime:   May 06 2020 09:38:16  $
-  --       Version          : $Revision:   1.3  $
+  --       Date fetched Out : $Modtime:   Jun 01 2020 16:26:20  $
+  --       Version          : $Revision:   1.4  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.3  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -2073,9 +2073,6 @@ AS
                         ,pi_old_is_updatable       IN      nm_themes_all.nth_location_updatable%TYPE
                         ,pi_old_base_theme         IN      nm_themes_all.nth_base_table_theme%TYPE
                         ,pi_old_where_clause       IN      nm_themes_all.nth_where%TYPE
-                        ,pi_old_use_history        IN      nm_themes_all.nth_use_history%TYPE
-                        ,pi_old_start_date         IN      nm_themes_all.nth_start_date_column%TYPE
-                        ,pi_old_end_date           IN      nm_themes_all.nth_end_date_column%TYPE
                         ,pi_old_start_chainage     IN      nm_themes_all.nth_st_chain_column%TYPE
                         ,pi_old_end_chainage       IN      nm_themes_all.nth_end_chain_column%TYPE
                         ,pi_new_theme_id           IN      nm_themes_all.nth_theme_id%TYPE
@@ -2085,9 +2082,6 @@ AS
                         ,pi_new_is_updatable       IN      nm_themes_all.nth_location_updatable%TYPE
                         ,pi_new_base_theme         IN      nm_themes_all.nth_base_table_theme%TYPE
                         ,pi_new_where_clause       IN      nm_themes_all.nth_where%TYPE
-                        ,pi_new_use_history        IN      nm_themes_all.nth_use_history%TYPE
-                        ,pi_new_start_date         IN      nm_themes_all.nth_start_date_column%TYPE
-                        ,pi_new_end_date           IN      nm_themes_all.nth_end_date_column%TYPE
                         ,pi_new_start_chainage     IN      nm_themes_all.nth_st_chain_column%TYPE
                         ,pi_new_end_chainage       IN      nm_themes_all.nth_end_chain_column%TYPE
                         ,po_message_severity          OUT  hig_codes.hco_code%TYPE
@@ -2145,10 +2139,6 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Location Updatable'
                                ,pi_parameter_value =>  pi_new_is_updatable);
     --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Use History'
-                               ,pi_parameter_value =>  pi_new_use_history);
-    --
-                                   
     get_db_rec;
     --
     /*
@@ -2181,18 +2171,6 @@ AS
      OR (lr_db_rec.nth_where != pi_old_where_clause)
      OR (lr_db_rec.nth_where IS NULL AND pi_old_where_clause IS NOT NULL)
      OR (lr_db_rec.nth_where IS NOT NULL AND pi_old_where_clause IS NULL)
-     --
-     OR (lr_db_rec.nth_use_history != pi_old_use_history)
-     OR (lr_db_rec.nth_use_history IS NULL AND pi_old_use_history IS NOT NULL)
-     OR (lr_db_rec.nth_use_history IS NOT NULL AND pi_old_use_history IS NULL)
-     --
-     OR (lr_db_rec.nth_start_date_column != pi_old_start_date)
-     OR (lr_db_rec.nth_start_date_column IS NULL AND pi_old_start_date IS NOT NULL)
-     OR (lr_db_rec.nth_start_date_column IS NOT NULL AND pi_old_start_date IS NULL)
-     --
-     OR (lr_db_rec.nth_end_date_column != pi_old_end_date)
-     OR (lr_db_rec.nth_end_date_column IS NULL AND pi_old_end_date IS NOT NULL)
-     OR (lr_db_rec.nth_end_date_column IS NOT NULL AND pi_old_end_date IS NULL)
      --
      OR (lr_db_rec.nth_st_chain_column != pi_old_start_chainage)
      OR (lr_db_rec.nth_st_chain_column IS NULL AND pi_old_start_chainage IS NOT NULL)
@@ -2261,27 +2239,6 @@ AS
          END IF;
       END IF;
       --
-      IF pi_old_use_history != pi_new_use_history
-       OR (pi_old_use_history IS NULL AND pi_new_use_history IS NOT NULL)
-       OR (pi_old_use_history IS NOT NULL AND pi_new_use_history IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;
-      --
-      IF pi_old_start_date != pi_new_start_date
-       OR (pi_old_start_date IS NULL AND pi_new_start_date IS NOT NULL)
-       OR (pi_old_start_date IS NOT NULL AND pi_new_start_date IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;
-      --
-      IF pi_old_end_date != pi_new_end_date
-       OR (pi_old_end_date IS NULL AND pi_new_end_date IS NOT NULL)
-       OR (pi_old_end_date IS NOT NULL AND pi_new_end_date IS NULL)
-       THEN
-         lv_upd := 'Y';
-      END IF;
-      --
       IF pi_old_start_chainage != pi_new_start_chainage
        OR (pi_old_start_chainage IS NULL AND pi_new_start_chainage IS NOT NULL)
        OR (pi_old_start_chainage IS NOT NULL AND pi_new_start_chainage IS NULL)
@@ -2310,9 +2267,6 @@ AS
               ,nth_label_column       =  pi_new_pk_label
               ,nth_location_updatable =  pi_new_is_updatable
               ,nth_where              =  pi_new_where_clause 
-              ,nth_use_history        =  pi_new_use_history 
-              ,nth_start_date_column  =  pi_new_start_date
-              ,nth_end_date_column    =  pi_new_end_date 
               ,nth_st_chain_column    =  pi_new_start_chainage
               ,nth_end_chain_column   =  pi_new_end_chainage
          WHERE nth_theme_id =  pi_old_theme_id;
@@ -2336,8 +2290,7 @@ AS
                                                 
   --
   -----------------------------------------------------------------------------
-  --
-                              
+  --                                   
   PROCEDURE delete_theme(pi_theme_id          IN      nm_themes_all.nth_theme_id%TYPE
                         ,po_message_severity     OUT  hig_codes.hco_code%TYPE
                         ,po_message_cursor       OUT  sys_refcursor)

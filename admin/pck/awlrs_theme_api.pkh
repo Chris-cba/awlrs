@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkh-arc   1.1   May 05 2020 16:25:42   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   May 05 2020 16:25:42  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkh-arc   1.2   Jun 01 2020 16:29:46   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jun 01 2020 16:29:46  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkh  $
-  --       Date fetched Out : $Modtime:   May 05 2020 15:57:26  $
-  --       Version          : $Revision:   1.1  $
+  --       Date fetched Out : $Modtime:   May 27 2020 13:42:54  $
+  --       Version          : $Revision:   1.2  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
   -- 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -296,9 +296,6 @@ AS
                         ,pi_old_is_updatable       IN      nm_themes_all.nth_location_updatable%TYPE
                         ,pi_old_base_theme         IN      nm_themes_all.nth_base_table_theme%TYPE
                         ,pi_old_where_clause       IN      nm_themes_all.nth_where%TYPE
-                        ,pi_old_use_history        IN      nm_themes_all.nth_use_history%TYPE
-                        ,pi_old_start_date         IN      nm_themes_all.nth_start_date_column%TYPE
-                        ,pi_old_end_date           IN      nm_themes_all.nth_end_date_column%TYPE
                         ,pi_old_start_chainage     IN      nm_themes_all.nth_st_chain_column%TYPE
                         ,pi_old_end_chainage       IN      nm_themes_all.nth_end_chain_column%TYPE
                         ,pi_new_theme_id           IN      nm_themes_all.nth_theme_id%TYPE
@@ -308,9 +305,6 @@ AS
                         ,pi_new_is_updatable       IN      nm_themes_all.nth_location_updatable%TYPE
                         ,pi_new_base_theme         IN      nm_themes_all.nth_base_table_theme%TYPE
                         ,pi_new_where_clause       IN      nm_themes_all.nth_where%TYPE
-                        ,pi_new_use_history        IN      nm_themes_all.nth_use_history%TYPE
-                        ,pi_new_start_date         IN      nm_themes_all.nth_start_date_column%TYPE
-                        ,pi_new_end_date           IN      nm_themes_all.nth_end_date_column%TYPE
                         ,pi_new_start_chainage     IN      nm_themes_all.nth_st_chain_column%TYPE
                         ,pi_new_end_chainage       IN      nm_themes_all.nth_end_chain_column%TYPE
                         ,po_message_severity          OUT  hig_codes.hco_code%TYPE
