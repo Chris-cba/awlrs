@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkb-arc   1.3   May 29 2020 09:11:40   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   May 29 2020 09:11:40  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkb-arc   1.4   Jun 02 2020 11:21:50   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jun 02 2020 11:21:50  $
   --       Module Name      : $Workfile:   awlrs_process_framework_api.pkb  $
-  --       Date fetched Out : $Modtime:   May 28 2020 15:06:52  $
-  --       Version          : $Revision:   1.3  $
+  --       Date fetched Out : $Modtime:   Jun 02 2020 11:18:08  $
+  --       Version          : $Revision:   1.4  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.3  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -3718,7 +3718,7 @@ AS
                                    ,pi_operators    => pi_filter_operators
                                    ,pi_values_1     => pi_filter_values_1
                                    ,pi_values_2     => pi_filter_values_2
-                                   ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
                                    ,po_where_clause => lv_filter);
           
       END IF;
@@ -4373,6 +4373,13 @@ AS
       IF pi_old_area_id != pi_new_area_id
        OR (pi_old_area_id IS NULL AND pi_new_area_id IS NOT NULL)
        OR (pi_old_area_id IS NOT NULL AND pi_new_area_id IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_scheduled_start_date != pi_new_scheduled_start_date
+       OR (pi_old_scheduled_start_date IS NULL AND pi_new_scheduled_start_date IS NOT NULL)
+       OR (pi_old_scheduled_start_date IS NOT NULL AND pi_new_scheduled_start_date IS NULL)
        THEN
          lv_upd := 'Y';
       END IF;
