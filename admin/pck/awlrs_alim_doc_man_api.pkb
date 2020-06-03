@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alim_doc_man_api.pkb-arc   1.1   Mar 04 2019 12:09:48   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alim_doc_man_api.pkb-arc   1.2   Jun 03 2020 16:58:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_alim_doc_man_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 04 2019 12:09:48  $
-  --       Date fetched Out : $Modtime:   Mar 04 2019 12:08:52  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Jun 03 2020 16:58:48  $
+  --       Date fetched Out : $Modtime:   Jun 03 2020 16:56:10  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_alim_doc_man_api';
   --
   -----------------------------------------------------------------------------
@@ -129,7 +129,7 @@ AS
     --
   BEGIN
     --
-    RETURN hig.get_sysopt('eBAssoURL')||'tab/'||pi_gateway_name||'/feature/{0}?loadTab=DocumentsRelationshipTemplateId';
+    RETURN hig.get_sysopt('eBAssoURL')||'Tab/'||pi_gateway_name||'/Feature/{0}?loadTab=DocumentsRelationshipTemplateId';
     --
   END get_url_template;
 
@@ -262,6 +262,6 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_document_count;
-  
+
 END awlrs_alim_doc_man_api;
 /
