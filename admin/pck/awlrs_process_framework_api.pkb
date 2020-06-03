@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkb-arc   1.4   Jun 02 2020 11:21:50   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jun 02 2020 11:21:50  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkb-arc   1.5   Jun 03 2020 16:22:04   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jun 03 2020 16:22:04  $
   --       Module Name      : $Workfile:   awlrs_process_framework_api.pkb  $
-  --       Date fetched Out : $Modtime:   Jun 02 2020 11:18:08  $
-  --       Version          : $Revision:   1.4  $
+  --       Date fetched Out : $Modtime:   Jun 03 2020 16:16:36  $
+  --       Version          : $Revision:   1.5  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -3545,8 +3545,8 @@ AS
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'initiated_date'
                                 ,pi_query_col    => 'hp_initiated_date'
-                                ,pi_datatype     => awlrs_util.c_date_col
-                                ,pi_mask         => NULL
+                                ,pi_datatype     => awlrs_util.c_datetime_col
+                                ,pi_mask         => 'DD-MON-YYYY HH24:MI:SS'
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'initiators_ref'
@@ -3672,19 +3672,19 @@ AS
       awlrs_util.add_column_data(pi_cursor_col   => 'last_start_date'
                                 ,pi_query_col    => 'hpj_last_start_date'
                                 ,pi_datatype     => awlrs_util.c_datetime_col
-                                ,pi_mask         => NULL
+                                ,pi_mask         => 'DD-MON-YYYY HH24:MI:SS'
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'last_run_date'
                                 ,pi_query_col    => 'hpj_last_run_date'
                                 ,pi_datatype     => awlrs_util.c_datetime_col
-                                ,pi_mask         => NULL
+                                ,pi_mask         => 'DD-MON-YYYY HH24:MI:SS'
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'next_run_date'
                                 ,pi_query_col    => 'hpj_next_run_date'
                                 ,pi_datatype     => awlrs_util.c_datetime_col
-                                ,pi_mask         => NULL
+                                ,pi_mask         => 'DD-MON-YYYY HH24:MI:SS'
                                 ,pio_column_data => po_column_data);
       --  
     END set_column_data;
@@ -5900,12 +5900,11 @@ AS
                               ,pi_mask         => NULL
                               ,pio_column_data => po_column_data);
     --
-    awlrs_util.add_column_data(pi_cursor_col => 'last_run_date'
-                              ,pi_query_col  => 'hpj_last_run_date'
-                              ,pi_datatype   => awlrs_util.c_date_col
-                              ,pi_mask       => 'DD-MON-YYYY'
+    awlrs_util.add_column_data(pi_cursor_col   => 'last_run_date'
+                              ,pi_query_col    => 'hpj_last_run_date'
+                              ,pi_datatype     => awlrs_util.c_datetime_col
+                              ,pi_mask         => 'DD-MON-YYYY HH24:MI:SS'
                               ,pio_column_data => po_column_data);
-    --
     --     
   END set_column_data;
   --
