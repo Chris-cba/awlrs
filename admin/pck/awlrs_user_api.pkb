@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.13   Apr 15 2020 10:30:14   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Apr 15 2020 10:30:14  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.14   Jun 08 2020 15:58:50   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jun 08 2020 15:58:50  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Apr 14 2020 12:27:18  $
-  --       Version          : $Revision:   1.13  $
+  --       Date fetched Out : $Modtime:   Jun 08 2020 15:44:02  $
+  --       Version          : $Revision:   1.14  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.13  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.14  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -1001,7 +1001,9 @@ AS
   EXCEPTION
     WHEN NO_DATA_FOUND
      THEN
-        null;
+        hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   =>  29
+                       ,pi_supplementary_info  => 'Job Title: '|| pi_job_title);
         
   END validate_job_title;
   
@@ -1021,9 +1023,16 @@ AS
     IF lv_exists <> 'Y' 
      THEN
        hig.raise_ner(pi_appl => 'HIG'
-                    ,pi_id   =>  30
+                    ,pi_id   =>  29
                     ,pi_supplementary_info  => 'Profile: '|| pi_profile);
-    END IF;   
+    END IF; 
+    --
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                       ,pi_id   =>  29
+                       ,pi_supplementary_info  => 'Profile: '|| pi_profile);    
     --        
   END validate_profile;
   
@@ -1773,6 +1782,8 @@ AS
   --
   lv_new_user_id  hig_users.hus_user_id%TYPE;
   --
+  lt_messages awlrs_message_tab := awlrs_message_tab();
+  --
   BEGIN
     --
     awlrs_util.check_historic_mode; 
@@ -1844,14 +1855,24 @@ AS
     --
     IF NVL(hig.get_sysopt('DEFSSO'),'N') = 'Y'
      THEN
-       hig.raise_ner(pi_appl               => 'HIG'
-                    ,pi_id                 => 2
-                    ,pi_supplementary_info => 'Please note: New users created using ''Copy User'' are not registered as SSO users by default');
+       awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'HIG'
+                                        ,pi_ner_id      => 2
+                                        ,pi_supplementary_info => '. Please note: New users created using ''Copy User'' are not registered as SSO users by default'
+                                        ,pi_category    => awlrs_util.c_msg_cat_info
+                                        ,po_message_tab => lt_messages);                                                            
     END IF;
     -- 
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
+    IF lt_messages.COUNT > 0
+       THEN
+            awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                         ,po_cursor      => po_message_cursor);
+            awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                           ,po_message_severity => po_message_severity);
+    ELSE
+           awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                                ,po_cursor           => po_message_cursor);                                     
+    END IF;
+    --                                   
   EXCEPTION
     WHEN OTHERS
      THEN
@@ -2072,7 +2093,7 @@ AS
       IF pi_old_name != pi_new_name
        OR (pi_old_name IS NULL AND pi_new_name IS NOT NULL)
        OR (pi_old_name IS NOT NULL AND pi_new_name IS NULL)
-       THEN
+       THEN        
          lv_upd := 'Y';
       END IF;
       --
@@ -2083,7 +2104,12 @@ AS
          lv_upd := 'Y';
       END IF;
       --
-      --password
+      IF pi_old_password != pi_new_password
+       OR (pi_old_password IS NULL AND pi_new_password IS NOT NULL)
+       OR (pi_old_password IS NOT NULL AND pi_new_password IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
       --
       IF pi_old_job_title != pi_new_job_title
        OR (pi_old_job_title IS NULL AND pi_new_job_title IS NOT NULL)
@@ -2155,6 +2181,36 @@ AS
       END IF;     
     END IF;
     --  
+    --Data Validation Routines
+    --
+    IF lv_upd = 'Y' 
+      THEN
+        IF   pi_old_name != pi_new_name
+         AND pi_new_name IS NOT NULL
+          THEN
+           validate_name(pi_name => pi_new_name);
+        END IF;   
+        --
+        IF pi_old_initials != pi_new_initials
+         AND pi_new_initials IS NOT NULL
+          THEN
+           validate_initials(pi_initials => pi_new_initials);
+        END IF;   
+        --
+        IF pi_old_job_title != pi_new_job_title
+         OR (pi_old_job_title IS NULL AND pi_new_job_title IS NOT NULL)
+         THEN
+          validate_job_title(pi_job_title => pi_new_job_title);
+        END IF;  
+        --
+        IF pi_old_profile != pi_new_profile
+         OR (pi_old_profile IS NULL AND pi_new_profile IS NOT NULL)
+         THEN
+           validate_profile(pi_profile => pi_new_profile);
+        END IF;   
+        --
+    END IF;
+    --    
   END validate_user_for_update;                              
 
   --
@@ -2700,7 +2756,8 @@ AS
   --
   BEGIN
     --  
-    IF pi_old_password <> pi_new_password
+    IF    pi_old_password <> pi_new_password
+      OR (pi_old_password IS NULL AND pi_new_password IS NOT NULL)
      THEN 
         --
         BEGIN 
@@ -2715,10 +2772,10 @@ AS
 			 THEN 
 			    hig.raise_ner(pi_appl => 'NET'
                              ,pi_id   => 560);			
-        END;								        
-	    --
+        END;	
+        --
 	END IF;
-   --   
+	--   
   END process_password;
   
   --
@@ -3052,7 +3109,7 @@ AS
         --
         process_password(pi_username      => pi_new_username
 						,pi_old_password  => pi_old_password
-						,pi_new_password  => pi_new_password);
+						,pi_new_password  => pi_new_password);					
         --
         process_profile(pi_username    => pi_new_username
 				       ,pi_old_profile => pi_old_profile
