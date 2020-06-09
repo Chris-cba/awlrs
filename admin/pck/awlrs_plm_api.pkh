@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.12   May 01 2020 16:45:06   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.13   Jun 09 2020 16:41:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkh  $
-  --       Date into PVCS   : $Date:   May 01 2020 16:45:06  $
-  --       Date fetched Out : $Modtime:   May 01 2020 14:15:14  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   Jun 09 2020 16:41:22  $
+  --       Date fetched Out : $Modtime:   Jun 02 2020 12:09:14  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
   --
   TYPE iit_tab IS TABLE OF nm_inv_items_all%ROWTYPE INDEX BY BINARY_INTEGER;
   gt_layers      iit_tab;
@@ -414,14 +414,23 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_merge_cell_asset_id(pi_ne_id       IN nm_elements_all.ne_id%TYPE
-                                   ,pi_from_offset IN nm_gaz_query.ngq_begin_mp%TYPE DEFAULT NULL
-                                   ,pi_to_offset   IN nm_gaz_query.ngq_end_mp%TYPE DEFAULT NULL
-                                   ,pi_xsp         IN nm_inv_items.iit_x_sect%TYPE
-                                   ,pi_layer       IN NUMBER
-                                   ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                                   ,po_message_cursor      OUT sys_refcursor
-                                   ,po_cursor              OUT sys_refcursor);
+  PROCEDURE get_merge_cell_asset_id(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                   ,pi_from_offset      IN  nm_gaz_query.ngq_begin_mp%TYPE DEFAULT NULL
+                                   ,pi_to_offset        IN  nm_gaz_query.ngq_end_mp%TYPE DEFAULT NULL
+                                   ,pi_xsp              IN  nm_inv_items.iit_x_sect%TYPE
+                                   ,pi_layer            IN  NUMBER
+                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_merge_cell_asset(pi_primary_key      IN  nm_inv_items_all.iit_primary_key%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
   --
