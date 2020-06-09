@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.14   Jun 08 2020 15:58:50   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jun 08 2020 15:58:50  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.15   Jun 09 2020 15:46:18   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jun 09 2020 15:46:18  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Jun 08 2020 15:44:02  $
-  --       Version          : $Revision:   1.14  $
+  --       Date fetched Out : $Modtime:   Jun 09 2020 15:43:58  $
+  --       Version          : $Revision:   1.15  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.14  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.15  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -1585,18 +1585,14 @@ AS
 	lr_rec_hus.Hus_End_Date      := pi_end_date;           
 	lr_rec_hus.Hus_Unrestricted  := pi_unrestricted;       
 	lr_rec_hus.Hus_Admin_Unit    := pi_admin_unit;
-	--
-	--required to call nnm3ddl.create_user--
-	get_default_quota(po_quota           => lv_quota
-                     ,po_quota_size_type => lv_quota_size_type);
-    --                 
+	--           
 	nm3ddl.create_user(p_rec_hus            =>	lr_rec_hus
 	                  ,p_password           => 	NVL(lv_password, pi_password)
 	                  ,p_default_tablespace => 	pi_dflt_tablespace
 	                  ,p_temp_tablespace    => 	pi_temp_tablespace
-	                  ,p_default_quota      => 	(lv_quota||lv_quota_size_type)
+	                  ,p_default_quota      => 	'UNLIMITED' 
 	                  ,p_profile            => 	pi_profile);
-    --	 
+    --	
     create_user_contact_details(pi_user_id                => lr_rec_hus.hus_user_id
                                ,pi_address1               => pi_address1 
                                ,pi_address2               => pi_address2
@@ -2724,20 +2720,16 @@ AS
   BEGIN
     --  
     IF (    pi_old_dflt_tablespace <> pi_new_dflt_tablespace
-        OR  pi_old_dflt_tablespace IS NULL AND  pi_new_dflt_tablespace IS NOT NULL
-        OR  pi_old_dflt_tablespace IS NOT NULL AND  pi_new_dflt_tablespace IS NULL)
+        OR  pi_old_dflt_tablespace IS NULL AND  pi_new_dflt_tablespace IS NOT NULL)       
      THEN 
         --
-        get_default_quota(po_quota           => lv_quota
-                         ,po_quota_size_type => lv_quota_size_type);
-        -- 
         nm3user_admin.set_default_tablespace(p_User                    => pi_username
 											,p_Default_Tablespace_Name => pi_new_dflt_tablespace
-											,p_Quota				   => lv_quota
-											,p_Quota_Size_Type		   => lv_quota_size_type);                
+											,p_Quota				   => -1 
+											,p_Quota_Size_Type		   => NULL);                
     --
 	END IF;
-   --   
+   --    
   END process_tablespace;
 
   --
