@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.45   May 27 2020 13:08:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.46   Jun 09 2020 14:22:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   May 27 2020 13:08:32  $
-  --       Date fetched Out : $Modtime:   May 27 2020 12:30:12  $
-  --       Version          : $Revision:   1.45  $
+  --       Date into PVCS   : $Date:   Jun 09 2020 14:22:50  $
+  --       Date fetched Out : $Modtime:   Jun 09 2020 13:08:48  $
+  --       Version          : $Revision:   1.46  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.45  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.46  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -2348,6 +2348,7 @@ AS
     lv_displayed_on_startup      VARCHAR2(10);
     lv_displayed_in_legend       VARCHAR2(10);
     lv_legend_group              nm3type.max_varchar2;
+    lv_filter_col                nm3type.max_varchar2;
     lv_theme_offset_view         nm_theme_offset_views.ntov_offset_view_name%TYPE;
     lv_doc_man_url_template      nm3type.max_varchar2;
     lv_gtype_restriction         VARCHAR2(100);
@@ -2392,16 +2393,24 @@ AS
     --
     FUNCTION get_theme_extra_cols(pi_theme_name    IN VARCHAR2
                                  ,pi_pk_column     IN VARCHAR2
+                                 ,pi_filter_column IN VARCHAR2
                                  ,pi_alias         IN VARCHAR2
                                  ,pi_is_node_layer IN BOOLEAN)
       RETURN VARCHAR2 IS
       --
       lt_columns  nm3type.tab_varchar30;
       --
-      lv_label_col    nm3type.max_varchar2;
-      lv_retval       nm3type.max_varchar2;
+      lv_label_col   nm3type.max_varchar2;
+      lv_retval      nm3type.max_varchar2;
       --
     BEGIN
+      /*
+      ||Add the filter column.
+      */
+      IF pi_filter_column IS NOT NULL
+       THEN
+          lv_retval := ', '||pi_alias||LOWER(pi_filter_column);
+      END IF;
       /*
       ||Get the Label Column.
       */
@@ -2412,11 +2421,13 @@ AS
        THEN
           /*
           ||If this is a node layer then some columns will be added later
-          ||so no need to add them here.
+          ||so no need to add them here, also if the Filter Colmun is the
+          ||same as the label column there is no need to add it again.
           */
           IF NOT(pi_is_node_layer AND UPPER(lv_label_col) IN('NO_NODE_ID','NO_NODE_NAME','NO_DESCR'))
+           AND UPPER(lv_label_col) != UPPER(NVL(pi_filter_column,nm3type.c_nvl))
            THEN
-              lv_retval := ', '||pi_alias||lv_label_col;
+              lv_retval := lv_retval||', '||pi_alias||LOWER(lv_label_col);
           END IF;
           /*
           ||If there are labels then add a derived column to be used with
@@ -2436,7 +2447,7 @@ AS
                       PASSING XMLTYPE(themes.styling_rules)
                       COLUMNS rule_column VARCHAR2(30) path '@column') theme_styles
        WHERE themes.name = pi_theme_name
-         AND UPPER(theme_styles.rule_column) NOT IN(UPPER(pi_pk_column),UPPER(NVL(lv_label_col,'~~~~~')))
+         AND UPPER(theme_styles.rule_column) NOT IN(UPPER(pi_pk_column),UPPER(NVL(lv_label_col,'~~~~~')),UPPER(NVL(pi_filter_column,'~~~~~')))
            ;
       --
       FOR i IN 1..lt_columns.COUNT LOOP
@@ -2446,7 +2457,7 @@ AS
              THEN
                 NULL;
             ELSE
-                lv_retval := lv_retval||', '||lt_columns(i);
+                lv_retval := lv_retval||', '||LOWER(lt_columns(i));
             END IF;
             --
         END IF;
@@ -2574,10 +2585,13 @@ AS
           lv_using_srid := NULL;
       END IF;
       /*
-      ||Get the style data from user_sdo_themes and user_sdo_styles.
+      ||Get additional columns required for the data statement.
       */
+      lv_filter_col := get_custom_tag_value(pi_theme_name => lt_themes(i).name
+                                           ,pi_tag_name   => 'FilterColumn');
       lv_theme_extra_cols := get_theme_extra_cols(pi_theme_name    => lt_themes(i).name
                                                  ,pi_pk_column     => lt_themes(i).nth_feature_pk_column
+                                                 ,pi_filter_column => lv_filter_col
                                                  ,pi_alias         => 'ft.'
                                                  ,pi_is_node_layer => is_node_layer(pi_feature_table => lt_themes(i).nth_feature_table));
       /*
@@ -2845,6 +2859,7 @@ AS
                 ||CHR(10)||'      "displayed_at_startup"        "'||lv_displayed_on_startup||'"'
                 ||CHR(10)||'      "displayed_in_legend"         "'||lv_displayed_in_legend||'"'
                 ||CHR(10)||'      "legend_group"                "'||lv_legend_group||'"'
+                ||CASE WHEN lv_filter_col IS NOT NULL THEN CHR(10)||'      "filter_column"               "'||lv_filter_col||'"' ELSE NULL END
                 ||CHR(10)||'    END'
                 ||CASE g_debug WHEN 'Y' THEN CHR(10)||'    DEBUG 5' ELSE NULL END
                 ||CHR(10)||'    TYPE '||lv_layer_type
