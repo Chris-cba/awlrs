@@ -1,0 +1,20 @@
+CREATE OR REPLACE TYPE awlrs_plm_layer_label
+-------------------------------------------------------------------------
+--   PVCS Identifiers :-
+--
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/typ/awlrs_plm_layer_label.tyh-arc   1.1   Jun 09 2020 16:43:18   Mike.Huitson  $
+--       Module Name      : $Workfile:   awlrs_plm_layer_label.tyh  $
+--       Date into PVCS   : $Date:   Jun 09 2020 16:43:18  $
+--       Date fetched Out : $Modtime:   Jun 01 2020 16:16:52  $
+--       Version          : $Revision:   1.1  $
+-------------------------------------------------------------------------
+--   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+-------------------------------------------------------------------------
+--
+AS OBJECT(xsp         VARCHAR(80)
+         ,layer       NUMBER
+         ,label       VARCHAR(80)
+         ,material    VARCHAR(30)
+         ,thickness   NUMBER
+         ,primary_key VARCHAR2(50))
+/
