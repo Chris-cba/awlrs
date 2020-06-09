@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_install.sql-arc   1.45   Jun 09 2020 12:02:46   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_install.sql-arc   1.46   Jun 09 2020 14:02:48   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrs_install.sql  $
---       Date into PVCS   : $Date:   Jun 09 2020 12:02:46  $
---       Date fetched Out : $Modtime:   Jun 09 2020 11:57:44  $
---       Version          : $Revision:   1.45  $
+--       Date into PVCS   : $Date:   Jun 09 2020 14:02:48  $
+--       Date fetched Out : $Modtime:   Jun 09 2020 14:02:32  $
+--       Version          : $Revision:   1.46  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
@@ -93,7 +93,7 @@ END;
 --
 BEGIN
   hig2.product_exists_at_version(p_product => 'HIG'
-                                ,p_version => '4.8.0.3');
+                                ,p_version => '4.9.0.0');
 END;
 /
                              
