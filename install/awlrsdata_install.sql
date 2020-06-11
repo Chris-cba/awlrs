@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata_install.sql-arc   1.1   02 Feb 2017 10:03:20   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata_install.sql-arc   1.2   Jun 11 2020 11:04:18   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata_install.sql  $
---       Date into PVCS   : $Date:   02 Feb 2017 10:03:20  $
---       Date fetched Out : $Modtime:   02 Feb 2017 09:51:20  $
---       Version          : $Revision:   1.1  $
+--       Date into PVCS   : $Date:   Jun 11 2020 11:04:18  $
+--       Date fetched Out : $Modtime:   Jun 11 2020 11:03:48  $
+--       Version          : $Revision:   1.2  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
@@ -70,6 +70,31 @@ SELECT '&exor_base'||'awlrs'||'&terminator'||'install'||'&terminator'||'awlrsdat
 SET FEEDBACK ON
 START '&run_file'
 SET FEEDBACK OFF
+--
+-------------------------------------------------------------------------
+--Ensure that Unit Names are compatible with LB
+-------------------------------------------------------------------------
+--
+UPDATE nm_units
+   SET un_unit_name = 'Meter'
+ WHERE un_unit_id = 1
+/
+
+UPDATE nm_units
+   SET un_unit_name = 'Kilometer'
+ WHERE un_unit_id = 2
+/
+
+UPDATE nm_units
+   SET un_unit_name = 'Centimeter'
+ WHERE un_unit_id = 3
+/
+
+UPDATE nm_units
+   SET un_unit_name = 'Mile'
+ WHERE un_unit_id = 4
+/
+
 --
 -------------------------------------------------------------------------
 --
