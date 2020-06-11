@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.26   Mar 18 2020 16:00:18   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.27   Jun 11 2020 13:59:08   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Mar 18 2020 16:00:18  $
---       Date fetched Out : $Modtime:   Mar 18 2020 15:44:16  $
---       Version          : $Revision:   1.26  $
+--       Date into PVCS   : $Date:   Jun 11 2020 13:59:08  $
+--       Date fetched Out : $Modtime:   Jun 11 2020 13:57:20  $
+--       Version          : $Revision:   1.27  $
 --       Table Owner      : AWLRS_METADATA
 --       Generation Date  : 18-MAR-2020 15:44
 --
@@ -1570,6 +1570,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 85);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,86
+      ,null
+      ,'Invalid Package/Procedure name'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 86);
 --
 ----------------------------------------------------------------------------------------
 -- HIG_STANDARD_FAVOURITES
