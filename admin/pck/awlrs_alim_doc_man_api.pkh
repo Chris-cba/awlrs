@@ -1,0 +1,98 @@
+CREATE OR REPLACE PACKAGE awlrs_alim_doc_man_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alim_doc_man_api.pkh-arc   1.2   Jun 12 2020 14:23:48   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_alim_doc_man_api.pkh  $
+  --       Date into PVCS   : $Date:   Jun 12 2020 14:23:48  $
+  --       Date fetched Out : $Modtime:   Jun 12 2020 14:20:10  $
+  --       Version          : $Revision:   1.2  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.2  $';
+  --
+  c_network  CONSTANT VARCHAR2(10) := 'NETWORK';
+  c_asset    CONSTANT VARCHAR2(10) := 'ASSET';
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION doc_gateway_exists(pi_table_name IN doc_gateways.dgt_table_name%TYPE)
+    RETURN BOOLEAN;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION doc_gateway_exists(pi_theme_name IN nm_themes_all.nth_theme_name%TYPE)
+    RETURN BOOLEAN;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_url_template(pi_gateway_name IN doc_gateways.dgt_table_name%TYPE)
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_url_template(pi_table_name IN doc_gateways.dgt_table_name%TYPE)
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_url_template(pi_theme_name IN nm_themes_all.nth_theme_name%TYPE)
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_document_count(pi_gateway_name IN doc_gateways.dgt_table_name%TYPE
+                             ,pi_id           IN NUMBER)
+    RETURN NUMBER;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_document_count(pi_theme_name IN nm_themes_all.nth_theme_name%TYPE
+                             ,pi_feature_id IN NUMBER)
+    RETURN NUMBER;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_document_count(pi_entity_type      IN  awlrs_external_link_params.aelp_entity_type%TYPE
+                              ,pi_entity_type_type IN  awlrs_external_link_params.aelp_entity_type_type%TYPE
+                              ,pi_entity_id        IN  NUMBER
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_document_count(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                              ,pi_feature_id       IN  NUMBER
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor);
+
+END awlrs_alim_doc_man_api;
+/
