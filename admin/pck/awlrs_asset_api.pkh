@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.19   Aug 22 2019 10:41:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.20   Jun 12 2020 18:36:40   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   Aug 22 2019 10:41:22  $
-  --       Date fetched Out : $Modtime:   Aug 22 2019 10:25:50  $
-  --       Version          : $Revision:   1.19  $
+  --       Date into PVCS   : $Date:   Jun 12 2020 18:36:40  $
+  --       Date fetched Out : $Modtime:   May 27 2020 17:48:12  $
+  --       Version          : $Revision:   1.20  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.19  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.20  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -21,19 +21,21 @@ AS
   g_new_iit_rec         nm_inv_items_all%ROWTYPE;
   g_attr_valid_iit_rec  nm_inv_items_all%ROWTYPE;
   --
-  TYPE flex_attr_rec IS RECORD(attrib_name     nm_inv_type_attribs_all.ita_attrib_name%TYPE
-                              ,scrn_text       nm_inv_type_attribs_all.ita_scrn_text%TYPE
-                              ,view_col_name   nm_inv_type_attribs_all.ita_view_col_name%TYPE
-                              ,datatype        nm_inv_type_attribs_all.ita_format%TYPE
-                              ,format_mask     nm_inv_type_attribs_all.ita_format_mask%TYPE
-                              ,field_length    nm_inv_type_attribs_all.ita_fld_length%TYPE
-                              ,decimal_places  nm_inv_type_attribs_all.ita_dec_places%TYPE
-                              ,min_value       nm_inv_type_attribs_all.ita_min%TYPE
-                              ,max_value       nm_inv_type_attribs_all.ita_max%TYPE
-                              ,field_case      nm_inv_type_attribs_all.ita_case%TYPE
-                              ,domain_id       nm_inv_type_attribs_all.ita_id_domain%TYPE
-                              ,char_value      VARCHAR2(500)
-                              ,required        nm_inv_type_attribs_all.ita_mandatory_yn%TYPE);
+  TYPE flex_attr_rec IS RECORD(attrib_name         nm_inv_type_attribs_all.ita_attrib_name%TYPE
+                              ,scrn_text           nm_inv_type_attribs_all.ita_scrn_text%TYPE
+                              ,view_col_name       nm_inv_type_attribs_all.ita_view_col_name%TYPE
+                              ,datatype            nm_inv_type_attribs_all.ita_format%TYPE
+                              ,format_mask         nm_inv_type_attribs_all.ita_format_mask%TYPE
+                              ,field_length        nm_inv_type_attribs_all.ita_fld_length%TYPE
+                              ,decimal_places      nm_inv_type_attribs_all.ita_dec_places%TYPE
+                              ,min_value           nm_inv_type_attribs_all.ita_min%TYPE
+                              ,max_value           nm_inv_type_attribs_all.ita_max%TYPE
+                              ,field_case          nm_inv_type_attribs_all.ita_case%TYPE
+                              ,domain_id           nm_inv_type_attribs_all.ita_id_domain%TYPE
+                              ,domain_bind_column  VARCHAR2(30)
+                              ,char_value          VARCHAR2(500)
+                              ,required            nm_inv_type_attribs_all.ita_mandatory_yn%TYPE
+                              ,updateable          VARCHAR2(1));
   TYPE flex_attr_tab IS TABLE OF flex_attr_rec INDEX BY BINARY_INTEGER;
   --
   TYPE attrib_name_tab IS TABLE OF nm_inv_type_attribs_all.ita_attrib_name%TYPE INDEX BY BINARY_INTEGER;
