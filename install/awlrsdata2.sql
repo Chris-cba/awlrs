@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.28   Jun 17 2020 14:57:40   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.29   Jun 17 2020 15:44:02   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Jun 17 2020 14:57:40  $
---       Date fetched Out : $Modtime:   Jun 17 2020 14:44:52  $
---       Version          : $Revision:   1.28  $
+--       Date into PVCS   : $Date:   Jun 17 2020 15:44:02  $
+--       Date fetched Out : $Modtime:   Jun 17 2020 15:32:04  $
+--       Version          : $Revision:   1.29  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 17-JUN-2020 14:44
+--       Generation Date  : 17-JUN-2020 15:32
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -1861,24 +1861,6 @@ INSERT
       ,HSTF_TYPE
       ,HSTF_ORDER)
 SELECT 'AWLRS_REFERENCE'
-      ,'HIG1832'
-      ,'Users'
-      ,'M'
-      ,10
-  FROM DUAL
- WHERE NOT EXISTS(SELECT 1
-                    FROM HIG_STANDARD_FAVOURITES
-                   WHERE HSTF_PARENT = 'AWLRS_REFERENCE'
-                     AND HSTF_CHILD = 'HIG1832');
---
-INSERT
-  INTO HIG_STANDARD_FAVOURITES
-      (HSTF_PARENT
-      ,HSTF_CHILD
-      ,HSTF_DESCR
-      ,HSTF_TYPE
-      ,HSTF_ORDER)
-SELECT 'AWLRS_REFERENCE'
       ,'HIG1837'
       ,'User Option Administration'
       ,'M'
@@ -1960,6 +1942,24 @@ SELECT 'AWLRS_REFERENCE'
                     FROM HIG_STANDARD_FAVOURITES
                    WHERE HSTF_PARENT = 'AWLRS_REFERENCE'
                      AND HSTF_CHILD = 'HIG9185');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_SECURITY'
+      ,'HIG1832'
+      ,'Users'
+      ,'M'
+      ,20
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_SECURITY'
+                     AND HSTF_CHILD = 'HIG1832');
 --
 INSERT
   INTO HIG_STANDARD_FAVOURITES
