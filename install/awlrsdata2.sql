@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.27   Jun 11 2020 13:59:08   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.28   Jun 17 2020 14:57:40   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Jun 11 2020 13:59:08  $
---       Date fetched Out : $Modtime:   Jun 11 2020 13:57:20  $
---       Version          : $Revision:   1.27  $
+--       Date into PVCS   : $Date:   Jun 17 2020 14:57:40  $
+--       Date fetched Out : $Modtime:   Jun 17 2020 14:44:52  $
+--       Version          : $Revision:   1.28  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 18-MAR-2020 15:44
+--       Generation Date  : 17-JUN-2020 14:44
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -2050,6 +2050,24 @@ SELECT 'AWLRS_SECURITY'
                     FROM HIG_STANDARD_FAVOURITES
                    WHERE HSTF_PARENT = 'AWLRS_SECURITY'
                      AND HSTF_CHILD = 'HIG1890');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_SPATIAL'
+      ,'GIS0010'
+      ,'GIS Themes'
+      ,'M'
+      ,10
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_SPATIAL'
+                     AND HSTF_CHILD = 'GIS0010');
 --
 ----------------------------------------------------------------------------------------
 --
