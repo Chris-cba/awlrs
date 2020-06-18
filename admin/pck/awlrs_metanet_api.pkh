@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkh-arc   1.5   Sep 24 2019 09:55:50   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Sep 24 2019 09:55:50  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkh-arc   1.6   Jun 18 2020 16:51:08   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jun 18 2020 16:51:08  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkh  $
-  --       Date fetched Out : $Modtime:   Sep 17 2019 14:12:36  $
-  --       Version          : $Revision:   1.5  $
+  --       Date fetched Out : $Modtime:   Jun 18 2020 09:20:08  $
+  --       Version          : $Revision:   1.6  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
 
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.6  $"';
 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -770,6 +770,13 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_nt_type_columns_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT  sys_refcursor
+                                   ,po_cursor           OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE type_inclusion_cols_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
                                    ,po_message_cursor   OUT  sys_refcursor
                                    ,po_cursor           OUT  sys_refcursor);
 

@@ -4,11 +4,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.10   Nov 14 2019 10:20:20   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Nov 14 2019 10:20:20  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.11   Jun 18 2020 16:51:08   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jun 18 2020 16:51:08  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkb  $
-  --       Date fetched Out : $Modtime:   Nov 14 2019 10:16:02  $
-  --       Version          : $Revision:   1.10  $
+  --       Date fetched Out : $Modtime:   Jun 18 2020 09:21:54  $
+  --       Version          : $Revision:   1.11  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -16,7 +16,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.10  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.11  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metanet_api';
   --
@@ -5612,6 +5612,33 @@ AS
                                    ,po_cursor           => po_message_cursor);
   END get_nt_type_columns_lov;                                   
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE type_inclusion_cols_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT  sys_refcursor
+                                   ,po_cursor           OUT  sys_refcursor)
+  IS
+    --
+  BEGIN
+    --   
+    OPEN po_cursor FOR
+    SELECT column_name  code
+          ,column_name  code_descr
+      FROM all_tab_columns
+     WHERE owner = Sys_Context('NM3CORE','APPLICATION_OWNER')
+       AND table_name = 'NM_ELEMENTS'
+    ORDER BY column_name;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END type_inclusion_cols_lov;                                   
   --
   -----------------------------------------------------------------------------
   --Not sure if needed, doesn't bring anything to the party--
