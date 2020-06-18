@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.46   Jun 09 2020 14:22:50   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.47   Jun 18 2020 17:14:44   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 09 2020 14:22:50  $
-  --       Date fetched Out : $Modtime:   Jun 09 2020 13:08:48  $
-  --       Version          : $Revision:   1.46  $
+  --       Date into PVCS   : $Date:   Jun 18 2020 17:14:44  $
+  --       Date fetched Out : $Modtime:   Jun 18 2020 17:11:00  $
+  --       Version          : $Revision:   1.47  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.46  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.47  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -25,7 +25,7 @@ AS
   --
   gt_epsg  nm3type.tab_number;
   --
-  c_show_labels_alias CONSTANT VARCHAR2(30) := 'show$$labels$$';
+  c_show_labels_alias CONSTANT VARCHAR2(30) := 'show__labels__';
   --
   -----------------------------------------------------------------------------
   --
@@ -1828,7 +1828,7 @@ AS
           --                                       ,pi_field => 'fill-opacity:');
           --
           lv_retval := '      LABEL'
-            ||CHR(10)||'        EXPRESSION ("[SHOW$$LABELS$$]" = "Y")'
+            ||CHR(10)||'        EXPRESSION ("[SHOW__LABELS__]" = "Y")'
             ||CHR(10)||'        ANGLE '||CASE pi_layer_type WHEN 'POINT' THEN 'AUTO' ELSE 'FOLLOW' END
             ||CHR(10)||'        FONT "'||REPLACE(lv_font_family,' ','')||'"'
             ||CHR(10)||'        SIZE '||REGEXP_REPLACE(lv_font_size,'[^0-9]','')
