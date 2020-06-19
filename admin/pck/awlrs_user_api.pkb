@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.15   Jun 09 2020 15:46:18   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jun 09 2020 15:46:18  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.16   Jun 19 2020 16:18:22   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jun 19 2020 16:18:22  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Jun 09 2020 15:43:58  $
-  --       Version          : $Revision:   1.15  $
+  --       Date fetched Out : $Modtime:   Jun 19 2020 16:15:00  $
+  --       Version          : $Revision:   1.16  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.15  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.16  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -3535,7 +3535,8 @@ AS
                                                     ,admin_option   admin_option
                                                     ,default_role   default_role
                                                 FROM dba_role_privs               
-                                               WHERE grantee = :pi_username ';
+                                               WHERE grantee = :pi_username
+                                               AND granted_role <> ''PROXY_OWNER'' ';
       --
       lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  username'
                                                   ||',role_name'
