@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.4   Jun 01 2020 16:29:46   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jun 01 2020 16:29:46  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.5   Jun 22 2020 16:35:02   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jun 22 2020 16:35:02  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkb  $
-  --       Date fetched Out : $Modtime:   Jun 01 2020 16:26:20  $
-  --       Version          : $Revision:   1.4  $
+  --       Date fetched Out : $Modtime:   Jun 22 2020 16:30:30  $
+  --       Version          : $Revision:   1.5  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -1942,17 +1942,49 @@ AS
                                  ,po_cursor               OUT  sys_refcursor)
   IS
   --
-  lv_sql      varchar2(100);
-  lv_retval   varchar2(100);
+  lv_sql           varchar2(100);
+  lv_retval        varchar2(100);
+  lv_table_name    user_tab_cols.table_name%TYPE;
+  lv_geom_col_name user_tab_cols.column_name%TYPE;
   --
+  lt_messages awlrs_message_tab := awlrs_message_tab();
+  --
+  CURSOR chk_params(cp_table_name    IN user_tab_cols.table_name%TYPE
+                   ,cp_geom_col_name IN user_tab_cols.column_name%TYPE)
+      IS                
+  SELECT table_name
+        ,column_name
+    FROM user_tab_cols 
+   WHERE table_name = cp_table_name
+     AND column_name = cp_geom_col_name
+     AND table_name NOT LIKE 'BIN$%';
+  --   
   BEGIN
    --
     BEGIN
-       lv_sql := 'select DISTINCT(t.'||pi_geom_col_name ||'.sdo_gtype) from '|| pi_table_name ||' t';
-       lv_retval := hig.execute_autonomous_sql(lv_sql);
-    EXCEPTION
-     WHEN OTHERS THEN
-       lv_retval:= NULL;
+    --
+      OPEN  chk_params(pi_table_name, pi_geom_col_name);
+      FETCH chk_params
+      INTO  lv_table_name
+           ,lv_geom_col_name;
+      CLOSE chk_params;
+      --   
+      IF   lv_table_name IS NOT NULL
+       AND lv_geom_col_name IS NOT NULL
+       THEN
+         BEGIN
+            lv_sql := 'select DISTINCT(t.'||lv_geom_col_name ||'.sdo_gtype) from '|| lv_table_name ||' t';
+            lv_retval := hig.execute_autonomous_sql(lv_sql);
+         EXCEPTION
+           WHEN others THEN
+               lv_retval:= NULL;
+         END;
+      ELSE   
+         hig.raise_ner(pi_appl               => 'HIG'
+                      ,pi_id                 =>  110
+                      ,pi_supplementary_info => 'pi_table_name: '||pi_table_name||', pi_geom_col_name: '||pi_geom_col_name);
+      END IF;
+                
     END;
     --
     IF lv_retval IS NOT NULL
@@ -5192,6 +5224,52 @@ AS
                                     ,po_cursor           => po_message_cursor); 
     END;   
      --
+    /*
+    ||insert into nm_nw_themes.
+    */
+    BEGIN
+        INSERT
+          INTO nm_nw_themes
+              (nnth_nlt_id
+              ,nnth_nth_theme_id
+              )
+        SELECT nnth_nlt_id
+              ,lv_new_theme_id
+          FROM nm_nw_themes
+         WHERE nnth_nth_theme_id = pi_copy_from_theme_id;
+    EXCEPTION
+      WHEN NO_DATA_FOUND 
+       THEN
+           null;
+      WHEN OTHERS
+       THEN
+         awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                    ,po_cursor           => po_message_cursor); 
+    END;   
+    --
+    /*
+    ||insert into nm_area_themes.
+    */
+    BEGIN
+        INSERT
+          INTO nm_area_themes
+              (nath_nat_id
+              ,nath_nth_theme_id
+              )
+        SELECT nath_nat_id
+              ,lv_new_theme_id
+          FROM nm_area_themes
+         WHERE nath_nth_theme_id = pi_copy_from_theme_id;
+    EXCEPTION
+      WHEN NO_DATA_FOUND 
+       THEN
+           null;
+      WHEN OTHERS
+       THEN
+         awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                    ,po_cursor           => po_message_cursor); 
+    END;   
+    --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
