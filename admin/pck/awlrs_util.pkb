@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.37   Jan 14 2020 14:32:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.38   Jun 30 2020 11:50:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Jan 14 2020 14:32:30  $
-  --       Date fetched Out : $Modtime:   Jan 14 2020 14:22:42  $
-  --       Version          : $Revision:   1.37  $
+  --       Date into PVCS   : $Date:   Jun 30 2020 11:50:22  $
+  --       Date fetched Out : $Modtime:   Jun 30 2020 11:40:30  $
+  --       Version          : $Revision:   1.38  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.37  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.38  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -1022,12 +1022,12 @@ AS
               WHEN c_date_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_date_mask)||'''),'''||NVL(lv_mask,c_date_mask)||''')';
                   --
               WHEN c_datetime_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_datetime_mask)||'''),'''||NVL(lv_mask,c_datetime_mask)||''')';
                   --
               WHEN c_date_in_varchar2_col
                THEN
@@ -1055,12 +1055,12 @@ AS
               WHEN c_date_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_date_mask)||'''),'''||NVL(lv_mask,c_date_mask)||''')';
                   --
               WHEN c_datetime_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_datetime_mask)||'''),'''||NVL(lv_mask,c_datetime_mask)||''')';
                   --
               WHEN c_date_in_varchar2_col
                THEN
@@ -1091,12 +1091,12 @@ AS
               WHEN c_date_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_date_mask)||'''),'''||NVL(lv_mask,c_date_mask)||''')';
                   --
               WHEN c_datetime_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_datetime_mask)||'''),'''||NVL(lv_mask,c_datetime_mask)||''')';
                   --
               WHEN c_date_in_varchar2_col
                THEN
@@ -1127,12 +1127,12 @@ AS
               WHEN c_date_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_date_mask)||'''),'''||NVL(lv_mask,c_date_mask)||''')';
                   --
               WHEN c_datetime_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_datetime_mask)||'''),'''||NVL(lv_mask,c_datetime_mask)||''')';
                   --
               WHEN c_date_in_varchar2_col
                THEN
@@ -1163,12 +1163,12 @@ AS
               WHEN c_date_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_date_mask)||'''),'''||NVL(lv_mask,c_date_mask)||''')';
                   --
               WHEN c_datetime_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_datetime_mask)||'''),'''||NVL(lv_mask,c_datetime_mask)||''')';
                   --
               WHEN c_date_in_varchar2_col
                THEN
@@ -1199,12 +1199,12 @@ AS
               WHEN c_date_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_date_mask)||'''),'''||NVL(lv_mask,c_date_mask)||''')';
                   --
               WHEN c_datetime_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_datetime_mask)||'''),'''||NVL(lv_mask,c_datetime_mask)||''')';
                   --
               WHEN c_date_in_varchar2_col
                THEN
@@ -1243,12 +1243,12 @@ AS
               WHEN c_date_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_date_mask)||'''),'''||NVL(lv_mask,c_date_mask)||''')';
                   --
               WHEN c_datetime_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_datetime_mask)||'''),'''||NVL(lv_mask,c_datetime_mask)||''')';
                   --
               WHEN c_date_in_varchar2_col
                THEN
@@ -1290,12 +1290,12 @@ AS
               WHEN c_date_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TRUNC('||lv_query_col||')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_date_mask)||'''),'''||NVL(lv_mask,c_date_mask)||''')';
                   --
               WHEN c_datetime_col
                THEN
                   --
-                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||c_datetime_mask||'''),'''||c_datetime_mask||''')';
+                  po_where_clause := po_where_clause||' '||lv_operation||' TO_DATE(TO_CHAR('||lv_query_col||','''||NVL(lv_mask,c_datetime_mask)||'''),'''||NVL(lv_mask,c_datetime_mask)||''')';
                   --
               WHEN c_date_in_varchar2_col
                THEN
