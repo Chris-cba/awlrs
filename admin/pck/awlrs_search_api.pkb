@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.41   Mar 20 2020 14:15:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.42   Jun 30 2020 12:01:40   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 20 2020 14:15:44  $
-  --       Date fetched Out : $Modtime:   Mar 20 2020 14:14:26  $
-  --       Version          : $Revision:   1.41  $
+  --       Date into PVCS   : $Date:   Jun 30 2020 12:01:40  $
+  --       Date fetched Out : $Modtime:   Jun 30 2020 11:59:40  $
+  --       Version          : $Revision:   1.42  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.41  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.42  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -1875,22 +1875,11 @@ AS
                          ,pi_format_mask IN VARCHAR2)
     RETURN VARCHAR2 IS
     --
-    lv_retval  nm3type.max_varchar2;
-    --
   BEGIN
     --
-    IF pi_datatype = 'DATE'
-     THEN
-        lv_retval := ' TRUNC('||awlrs_util.get_assignment(pi_value       => UPPER(pi_value)
-                                                         ,pi_datatype    => pi_datatype
-                                                         ,pi_format_mask => pi_format_mask)||')';
-    ELSE
-        lv_retval := awlrs_util.get_assignment(pi_value       => UPPER(pi_value)
-                                              ,pi_datatype    => pi_datatype
-                                              ,pi_format_mask => pi_format_mask);
-    END IF;
-    --
-    RETURN lv_retval;
+    RETURN awlrs_util.get_assignment(pi_value       => UPPER(pi_value)
+                                    ,pi_datatype    => pi_datatype
+                                    ,pi_format_mask => pi_format_mask);
     --
   END get_assignment;
 
@@ -1973,7 +1962,7 @@ AS
             WHEN awlrs_util.c_date_col
              THEN
                 --
-                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                po_sql := po_sql||' '||pi_operation||' TO_DATE(TO_CHAR('||lv_expression.field_name||','''||NVL(pi_format_mask,awlrs_util.c_date_mask)||'''),'''||NVL(pi_format_mask,awlrs_util.c_date_mask)||''')';
                 --
             WHEN awlrs_util.c_date_in_varchar2_col
              THEN
@@ -2001,7 +1990,7 @@ AS
             WHEN awlrs_util.c_date_col
              THEN
                 --
-                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                po_sql := po_sql||' '||pi_operation||' TO_DATE(TO_CHAR('||lv_expression.field_name||','''||NVL(pi_format_mask,awlrs_util.c_date_mask)||'''),'''||NVL(pi_format_mask,awlrs_util.c_date_mask)||''')';
                 --
             WHEN awlrs_util.c_date_in_varchar2_col
              THEN
@@ -2033,7 +2022,7 @@ AS
             WHEN awlrs_util.c_date_col
              THEN
                 --
-                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                po_sql := po_sql||' '||pi_operation||' TO_DATE(TO_CHAR('||lv_expression.field_name||','''||NVL(pi_format_mask,awlrs_util.c_date_mask)||'''),'''||NVL(pi_format_mask,awlrs_util.c_date_mask)||''')';
                 --
             WHEN awlrs_util.c_date_in_varchar2_col
              THEN
@@ -2064,7 +2053,7 @@ AS
             WHEN awlrs_util.c_date_col
              THEN
                 --
-                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                po_sql := po_sql||' '||pi_operation||' TO_DATE(TO_CHAR('||lv_expression.field_name||','''||NVL(pi_format_mask,awlrs_util.c_date_mask)||'''),'''||NVL(pi_format_mask,awlrs_util.c_date_mask)||''')';
                 --
             WHEN awlrs_util.c_date_in_varchar2_col
              THEN
@@ -2095,7 +2084,7 @@ AS
             WHEN awlrs_util.c_date_col
              THEN
                 --
-                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                po_sql := po_sql||' '||pi_operation||' TO_DATE(TO_CHAR('||lv_expression.field_name||','''||NVL(pi_format_mask,awlrs_util.c_date_mask)||'''),'''||NVL(pi_format_mask,awlrs_util.c_date_mask)||''')';
                 --
             WHEN awlrs_util.c_date_in_varchar2_col
              THEN
@@ -2126,7 +2115,7 @@ AS
             WHEN awlrs_util.c_date_col
              THEN
                 --
-                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                po_sql := po_sql||' '||pi_operation||' TO_DATE(TO_CHAR('||lv_expression.field_name||','''||NVL(pi_format_mask,awlrs_util.c_date_mask)||'''),'''||NVL(pi_format_mask,awlrs_util.c_date_mask)||''')';
                 --
             WHEN awlrs_util.c_date_in_varchar2_col
              THEN
@@ -2165,7 +2154,7 @@ AS
             WHEN awlrs_util.c_date_col
              THEN
                 --
-                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                po_sql := po_sql||' '||pi_operation||' TO_DATE(TO_CHAR('||lv_expression.field_name||','''||NVL(pi_format_mask,awlrs_util.c_date_mask)||'''),'''||NVL(pi_format_mask,awlrs_util.c_date_mask)||''')';
                 --
             WHEN awlrs_util.c_date_in_varchar2_col
              THEN
@@ -2207,7 +2196,7 @@ AS
             WHEN awlrs_util.c_date_col
              THEN
                 --
-                po_sql := po_sql||' '||pi_operation||' TRUNC('||lv_expression.field_name||')';
+                po_sql := po_sql||' '||pi_operation||' TO_DATE(TO_CHAR('||lv_expression.field_name||','''||NVL(pi_format_mask,awlrs_util.c_date_mask)||'''),'''||NVL(pi_format_mask,awlrs_util.c_date_mask)||''')';
                 --
             WHEN awlrs_util.c_date_in_varchar2_col
              THEN
