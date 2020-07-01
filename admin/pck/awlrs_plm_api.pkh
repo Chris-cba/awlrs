@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.13   Jun 09 2020 16:41:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkh-arc   1.14   Jul 01 2020 11:54:24   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkh  $
-  --       Date into PVCS   : $Date:   Jun 09 2020 16:41:22  $
-  --       Date fetched Out : $Modtime:   Jun 02 2020 12:09:14  $
-  --       Version          : $Revision:   1.13  $
+  --       Date into PVCS   : $Date:   Jul 01 2020 11:54:24  $
+  --       Date fetched Out : $Modtime:   Jun 30 2020 12:07:32  $
+  --       Version          : $Revision:   1.14  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.14  $';
   --
   TYPE iit_tab IS TABLE OF nm_inv_items_all%ROWTYPE INDEX BY BINARY_INTEGER;
   gt_layers      iit_tab;
@@ -65,6 +65,12 @@ AS
   --
   FUNCTION get_cons_rec_type
     RETURN nm_inv_types_all.nit_inv_type%TYPE;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_cons_rec_admin_type
+    RETURN nm_au_types.nat_admin_type%TYPE;
 
   --
   ------------------------------------------------------------------------------
