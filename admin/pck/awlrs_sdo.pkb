@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.24   Jul 24 2019 14:25:42   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.25   Jul 01 2020 18:51:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Jul 24 2019 14:25:42  $
-  --       Date fetched Out : $Modtime:   Jul 24 2019 14:06:34  $
-  --       Version          : $Revision:   1.24  $
+  --       Date into PVCS   : $Date:   Jul 01 2020 18:51:04  $
+  --       Date fetched Out : $Modtime:   Jul 01 2020 16:48:28  $
+  --       Version          : $Revision:   1.25  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.24  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.25  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   --
@@ -247,22 +247,82 @@ AS
   --
   ------------------------------------------------------------------------------
   --
-  FUNCTION sdo_geom_to_wkt(pi_geom IN mdsys.sdo_geometry)
-    RETURN CLOB IS
+  FUNCTION get_std_geom(pi_geom IN mdsys.sdo_geometry)
+    RETURN mdsys.sdo_geometry IS
     --
-    lv_geom   mdsys.sdo_geometry;
-    lv_retval CLOB;
+    lv_retval  mdsys.sdo_geometry;
     --
   BEGIN
     --
-    lv_geom := pi_geom;
+    lv_retval := pi_geom;
     --
     IF SUBSTR(pi_geom.sdo_gtype,1,1) = '3'
      THEN
-        lv_geom := sdo_lrs.convert_to_std_geom(lrs_geom => lv_geom);
+        lv_retval := sdo_lrs.convert_to_std_geom(lrs_geom => lv_retval);
     END IF;
     --
-    RETURN sdo_util.to_wktgeometry(geometry => lv_geom);
+    RETURN lv_retval;
+    --
+  END get_std_geom;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE validate_geometry_type(pi_geometry_type IN VARCHAR2)
+    IS
+    --
+  BEGIN
+    --
+    IF pi_geometry_type NOT IN(c_geojson,c_gml,c_gml311,c_wkt)
+     THEN
+        /*
+        ||Raise Unsuported geometry type error.
+        */
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 8);
+    END IF;
+    --
+  END validate_geometry_type;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION sdo_geom_to(pi_geom          IN mdsys.sdo_geometry
+                      ,pi_geometry_type IN VARCHAR2)
+    RETURN CLOB IS
+    --
+  BEGIN
+    --
+    validate_geometry_type(pi_geometry_type => pi_geometry_type);
+    --
+    RETURN CASE pi_geometry_type
+             WHEN c_geojson
+              THEN
+                 sdo_util.to_geojson(geometry => pi_geom)
+             WHEN c_gml
+              THEN
+                 sdo_util.to_gmlgeometry(geometry => get_std_geom(pi_geom))
+             WHEN c_gml311
+              THEN
+                 sdo_util.to_gml311geometry(geometry => get_std_geom(pi_geom))
+             WHEN c_wkt
+              THEN
+                 sdo_util.to_wktgeometry(geometry => get_std_geom(pi_geom))
+             ELSE
+                 NULL
+           END;
+    --
+  END sdo_geom_to;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION sdo_geom_to_wkt(pi_geom IN mdsys.sdo_geometry)
+    RETURN CLOB IS
+    --
+  BEGIN
+    --
+    RETURN sdo_geom_to(pi_geom,c_wkt);
     --
   END sdo_geom_to_wkt;
 
@@ -1064,19 +1124,18 @@ AS
   END get_linear_elements_at_point;
 
   --
-  -----------------------------------------------------------------------------
+  ------------------------------------------------------------------------------
   --
-  PROCEDURE get_location_geometry_wkt(pi_element_id       IN  nm_elements_all.ne_id%TYPE
-                                     ,pi_from_offset      IN  NUMBER
-                                     ,pi_to_offset        IN  NUMBER
-                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                     ,po_message_cursor   OUT sys_refcursor
-                                     ,po_cursor           OUT sys_refcursor)
-    IS
+  FUNCTION get_location_geometry_as(pi_element_id    IN nm_elements_all.ne_id%TYPE
+                                   ,pi_from_offset   IN NUMBER
+                                   ,pi_to_offset     IN NUMBER
+                                   ,pi_geometry_type IN VARCHAR2)
+    RETURN CLOB IS
     --
     lr_ne  nm_elements_all%ROWTYPE;
     --
     lv_pl_array  nm_placement_array;
+    lv_retval    CLOB;
     --
   BEGIN
     --
@@ -1093,22 +1152,103 @@ AS
                                                             ,0));
     END IF;
     --
-    IF lv_pl_array.npa_placement_array.count > 1
+    IF lv_pl_array.npa_placement_array.COUNT > 1
      THEN
-        OPEN po_cursor FOR
-        SELECT awlrs_sdo.sdo_geom_to_wkt(sdo_aggr_union(mdsys.sdoaggrtype(
-                 nm3sdo.get_placement_geometry(nm3pla.get_sub_placement(nm_placement(pl_ne_id
-                                                                                    ,pl_start
-                                                                                    ,pl_end
-                                                                                    ,0))),0.005))) geom_wkt
+        SELECT awlrs_sdo.sdo_geom_to(pi_geom => sdo_aggr_union(mdsys.sdoaggrtype(
+                                                  nm3sdo.get_placement_geometry(nm3pla.get_sub_placement(nm_placement(pl_ne_id
+                                                                                                        ,pl_start
+                                                                                                        ,pl_end
+                                                                                                        ,0))),0.005))
+                                    ,pi_geometry_type => pi_geometry_type) geom_wkt
+          INTO lv_retval
           FROM TABLE(lv_pl_array.npa_placement_array)
              ;
     ELSE
-        OPEN po_cursor FOR
-        SELECT awlrs_sdo.sdo_geom_to_wkt(nm3sdo.get_placement_geometry(lv_pl_array)) geom_wkt
-          FROM dual
-             ;
+        lv_retval := sdo_geom_to(pi_geom => nm3sdo.get_placement_geometry(lv_pl_array)
+                                ,pi_geometry_type => pi_geometry_type);
     END IF;
+    --
+    RETURN lv_retval;
+    --
+  END get_location_geometry_as;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_location_geometry_wkt(pi_element_id  IN nm_elements_all.ne_id%TYPE
+                                    ,pi_from_offset IN NUMBER
+                                    ,pi_to_offset   IN NUMBER)
+    RETURN CLOB IS
+    --
+  BEGIN
+    --
+    RETURN get_location_geometry_as(pi_element_id    => pi_element_id
+                                   ,pi_from_offset   => pi_from_offset
+                                   ,pi_to_offset     => pi_to_offset
+                                   ,pi_geometry_type => c_wkt);
+    --
+  END get_location_geometry_wkt;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_location_geometry_as(pi_element_id       IN  nm_elements_all.ne_id%TYPE
+                                    ,pi_from_offset      IN  NUMBER
+                                    ,pi_to_offset        IN  NUMBER
+                                    ,pi_geometry_type    IN VARCHAR2
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_retval  CLOB;
+    --
+  BEGIN
+    --
+    lv_retval := get_location_geometry_as(pi_element_id    => pi_element_id
+                                         ,pi_from_offset   => pi_from_offset
+                                         ,pi_to_offset     => pi_to_offset
+                                         ,pi_geometry_type => pi_geometry_type);
+    --
+    OPEN po_cursor FOR
+    SELECT lv_retval geometry
+      FROM dual
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                       ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                 ,po_cursor           => po_message_cursor);
+  END get_location_geometry_as;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_location_geometry_wkt(pi_element_id       IN  nm_elements_all.ne_id%TYPE
+                                     ,pi_from_offset      IN  NUMBER
+                                     ,pi_to_offset        IN  NUMBER
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_retval  CLOB;
+    --
+  BEGIN
+    --
+    lv_retval := get_location_geometry_as(pi_element_id    => pi_element_id
+                                         ,pi_from_offset   => pi_from_offset
+                                         ,pi_to_offset     => pi_to_offset
+                                         ,pi_geometry_type => c_wkt);
+    --
+    OPEN po_cursor FOR
+    SELECT lv_retval geom_wkt
+      FROM dual
+         ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                        ,po_cursor           => po_message_cursor);
@@ -1119,6 +1259,7 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                  ,po_cursor           => po_message_cursor);
   END get_location_geometry_wkt;
+
   --
   ------------------------------------------------------------------------------
   --
@@ -1171,51 +1312,6 @@ AS
      THEN
         RAISE;
   END get_unit_id_from_srid;
-  --
-  ------------------------------------------------------------------------------
-  --
-  FUNCTION get_location_geometry_wkt(pi_element_id  IN nm_elements_all.ne_id%TYPE
-                                    ,pi_from_offset IN NUMBER
-                                    ,pi_to_offset   IN NUMBER)
-    RETURN CLOB IS
-    --
-    lr_ne  nm_elements_all%ROWTYPE;
-    --
-    lv_pl_array  nm_placement_array;
-    lv_retval    CLOB;
-    --
-  BEGIN
-    --
-    lr_ne := nm3get.get_ne_all(pi_ne_id => pi_element_id);
-    --
-    IF lr_ne.ne_gty_group_type IS NOT NULL
-     AND nm3net.is_gty_linear(p_gty => lr_ne.ne_gty_group_type) = 'N'
-     THEN
-        lv_pl_array := nm3pla.get_placement_from_ne(pi_element_id);
-    ELSE
-        lv_pl_array := nm3pla.get_sub_placement(nm_placement(pi_element_id
-                                                            ,NVL(pi_from_offset,0)
-                                                            ,NVL(pi_to_offset,nm3net.get_ne_length(pi_element_id))
-                                                            ,0));
-    END IF;
-    --
-    IF lv_pl_array.npa_placement_array.COUNT > 1
-     THEN
-        SELECT awlrs_sdo.sdo_geom_to_wkt(sdo_aggr_union(mdsys.sdoaggrtype(
-                 nm3sdo.get_placement_geometry(nm3pla.get_sub_placement(nm_placement(pl_ne_id
-                                                                                    ,pl_start
-                                                                                    ,pl_end
-                                                                                    ,0))),0.005))) geom_wkt
-          INTO lv_retval
-          FROM TABLE(lv_pl_array.npa_placement_array)
-             ;
-    ELSE
-        lv_retval := awlrs_sdo.sdo_geom_to_wkt(nm3sdo.get_placement_geometry(lv_pl_array));
-    END IF;
-    --
-    RETURN lv_retval;
-    --
-  END get_location_geometry_wkt;
 
   --
   ------------------------------------------------------------------------------
@@ -1577,7 +1673,8 @@ AS
               ,pl_end         to_offset
               ,nt_length_unit unit_id
               ,un_unit_name   unit_name
-              ,awlrs_sdo.sdo_geom_to_wkt(nm3sdo.get_placement_geometry(nm_placement_array(CAST(COLLECT(nm_placement(ne_id,pl_start,pl_end,0)) AS nm_placement_array_type)))) geom_wkt
+              ,awlrs_sdo.sdo_geom_to(nm3sdo.get_placement_geometry(nm_placement_array(CAST(COLLECT(nm_placement(ne_id,pl_start,pl_end,0)) AS nm_placement_array_type)))
+                                    ,c_wkt) geom_wkt
               ,nau_name ne_admin_unit
               ,GREATEST(pl_start,pl_end) - LEAST(pl_start,pl_end) path_segment_length
               ,nm3net.get_ne_length(ne_id) element_length
@@ -1654,9 +1751,10 @@ AS
              ,locs.to_offset
              ,nt.nt_length_unit unit_id
              ,nu.un_unit_name   unit_name
-             ,awlrs_sdo.get_location_geometry_wkt(pi_element_id  => ne.ne_id
-                                                 ,pi_from_offset => locs.from_offset
-                                                 ,pi_to_offset   => locs.to_offset) geom_wkt
+             ,awlrs_sdo.get_location_geometry_as(pi_element_id    => ne.ne_id
+                                                ,pi_from_offset   => locs.from_offset
+                                                ,pi_to_offset     => locs.to_offset
+                                                ,pi_geometry_type => c_wkt) geom_wkt
              ,nau.nau_name ne_admin_unit
          FROM nm_units nu
              ,nm_types nt
@@ -2858,10 +2956,11 @@ AS
     /*
     ||Return the result.
     */
-    RETURN sdo_geom_to_wkt(get_geom_by_pk(pi_table_name  => pi_table_name
-                                         ,pi_geom_column => pi_geom_column
-                                         ,pi_pk_column   => pi_pk_column
-                                         ,pi_pk_value    => pi_pk_value));
+    RETURN sdo_geom_to(pi_geom => get_geom_by_pk(pi_table_name  => pi_table_name
+                                                ,pi_geom_column => pi_geom_column
+                                                ,pi_pk_column   => pi_pk_column
+                                                ,pi_pk_value    => pi_pk_value)
+                      ,pi_geometry_type => c_wkt);
     --
   END get_wkt_by_pk;
 

@@ -3,20 +3,25 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.9   Dec 03 2018 16:56:56   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.10   Jul 01 2020 18:51:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkh  $
-  --       Date into PVCS   : $Date:   Dec 03 2018 16:56:56  $
-  --       Date fetched Out : $Modtime:   Nov 23 2018 12:08:14  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   Jul 01 2020 18:51:04  $
+  --       Date fetched Out : $Modtime:   Jul 01 2020 16:46:20  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
   --
   g_sdo_tolerance     NUMBER := 0.005;
   g_sdo_arc_tolerance NUMBER := 0.05;
+  --
+  c_geojson  CONSTANT VARCHAR2(10) := 'GEOJSON';
+  c_gml      CONSTANT VARCHAR2(10) := 'GML';
+  c_gml311   CONSTANT VARCHAR2(10) := 'GML311';
+  c_wkt      CONSTANT VARCHAR2(10) := 'WKT';
   --
   TYPE gtype_rec IS RECORD(theme_id  nm_theme_gtypes.ntg_theme_id%TYPE
                           ,gtype     nm_theme_gtypes.ntg_gtype%TYPE);
@@ -28,7 +33,7 @@ AS
                            ,max_y  NUMBER);
   /*
   ||The ne_unique column in the record below is based upon ne_name_1
-  ||because AWLRS has to work with the NGS Network Elements and the 
+  ||because AWLRS has to work with the NGS Network Elements and the
   ||column that stores the user recognisable identifier could therefore
   ||be ne_unique, ne_number or ne_name_1, ne_name_1 being the largest column.
   */
@@ -47,7 +52,7 @@ AS
   TYPE snap_to_network_results_tab IS TABLE OF snap_to_network_results_rec INDEX BY BINARY_INTEGER;
   /*
   ||The ne_unique column in the record below is based upon ne_name_1
-  ||because AWLRS has to work with the NGS Network Elements and the 
+  ||because AWLRS has to work with the NGS Network Elements and the
   ||column that stores the user recognisable identifier could therefore
   ||be ne_unique, ne_number or ne_name_1, ne_name_1 being the largest column.
   */
@@ -110,6 +115,18 @@ AS
   --
   FUNCTION get_gtypes(pi_theme_name IN nm_themes_all.nth_theme_name%TYPE)
     RETURN gtype_tab;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  PROCEDURE validate_geometry_type(pi_geometry_type IN VARCHAR2);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION sdo_geom_to(pi_geom          IN mdsys.sdo_geometry
+                      ,pi_geometry_type IN VARCHAR2)
+    RETURN CLOB;
 
   --
   ------------------------------------------------------------------------------
@@ -223,10 +240,30 @@ AS
   --
   ------------------------------------------------------------------------------
   --
+  FUNCTION get_location_geometry_as(pi_element_id    IN nm_elements_all.ne_id%TYPE
+                                   ,pi_from_offset   IN NUMBER
+                                   ,pi_to_offset     IN NUMBER
+                                   ,pi_geometry_type IN VARCHAR2)
+    RETURN CLOB;
+
+  --
+  ------------------------------------------------------------------------------
+  --
   FUNCTION get_location_geometry_wkt(pi_element_id  IN nm_elements_all.ne_id%TYPE
                                     ,pi_from_offset IN NUMBER
                                     ,pi_to_offset   IN NUMBER)
     RETURN CLOB;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_location_geometry_as(pi_element_id       IN  nm_elements_all.ne_id%TYPE
+                                    ,pi_from_offset      IN  NUMBER
+                                    ,pi_to_offset        IN  NUMBER
+                                    ,pi_geometry_type    IN  VARCHAR2
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
 
   --
   ------------------------------------------------------------------------------
