@@ -3,20 +3,20 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.20   Jun 09 2020 16:41:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_plm_api.pkb-arc   1.21   Jul 01 2020 11:54:26   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_plm_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 09 2020 16:41:22  $
-  --       Date fetched Out : $Modtime:   Jun 02 2020 17:54:54  $
-  --       Version          : $Revision:   1.20  $
+  --       Date into PVCS   : $Date:   Jul 01 2020 11:54:26  $
+  --       Date fetched Out : $Modtime:   Jul 01 2020 11:35:36  $
+  --       Version          : $Revision:   1.21  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.20  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.21  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_plm_api';
   --
-  g_max_layers      PLS_INTEGER;
+  g_max_layers        PLS_INTEGER;
   --
   -----------------------------------------------------------------------------
   --
@@ -46,6 +46,17 @@ AS
     RETURN NVL(hig.get_sysopt('AWPLMCRTY'),'PCR');
     --
   END get_cons_rec_type;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_cons_rec_admin_type
+    RETURN nm_au_types.nat_admin_type%TYPE IS
+  BEGIN
+    --
+    RETURN nm3get.get_nit(pi_nit_inv_type => get_cons_rec_type).nit_admin_type;
+    --
+  END get_cons_rec_admin_type;
 
   --
   ------------------------------------------------------------------------------
@@ -3201,7 +3212,7 @@ AS
     OPEN po_cursor FOR 'SELECT iit_foreign_key construction_record_id '
                            ||',iit_ne_id construction_layer_id '
                            ||','||c_layer_attrib_name||' layer_no'
-                      ||' FROM nm_inv_items_all'
+                      ||' FROM nm_inv_items'
                      ||' WHERE iit_inv_type =  :layer_type'
                        ||' AND iit_primary_key = :primary_key'
       USING get_layer_type,pi_primary_key
