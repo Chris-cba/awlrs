@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.47   Jun 18 2020 17:14:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.48   Jul 07 2020 13:27:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 18 2020 17:14:44  $
-  --       Date fetched Out : $Modtime:   Jun 18 2020 17:11:00  $
-  --       Version          : $Revision:   1.47  $
+  --       Date into PVCS   : $Date:   Jul 07 2020 13:27:20  $
+  --       Date fetched Out : $Modtime:   Jul 07 2020 13:05:38  $
+  --       Version          : $Revision:   1.48  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.47  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.48  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -1735,11 +1735,12 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_label_style(pi_style_name    IN VARCHAR2
-                          ,pi_text_column   IN VARCHAR2
-                          ,pi_min_scale     IN VARCHAR2
-                          ,pi_max_scale     IN VARCHAR2
-                          ,pi_layer_type    IN VARCHAR2)
+  FUNCTION get_label_style(pi_style_name  IN VARCHAR2
+                          ,pi_text_column IN VARCHAR2
+                          ,pi_min_scale   IN VARCHAR2
+                          ,pi_max_scale   IN VARCHAR2
+                          ,pi_layer_type  IN VARCHAR2
+                          ,pi_all_ft_cols IN VARCHAR2)
     RETURN VARCHAR2 IS
     --
     lv_retval  nm3type.max_varchar2;
@@ -1827,8 +1828,15 @@ AS
           --lv_font_fill_opacity := get_style_value(pi_style => lr_svg_data.g_style
           --                                       ,pi_field => 'fill-opacity:');
           --
-          lv_retval := '      LABEL'
-            ||CHR(10)||'        EXPRESSION ("[SHOW__LABELS__]" = "Y")'
+          lv_retval := '      LABEL';
+          --
+          IF pi_all_ft_cols != 'Y'
+           THEN
+              lv_retval := lv_retval
+                ||CHR(10)||'        EXPRESSION ("[SHOW__LABELS__]" = "Y")';
+          END IF;
+          --
+          lv_retval := lv_retval
             ||CHR(10)||'        ANGLE '||CASE pi_layer_type WHEN 'POINT' THEN 'AUTO' ELSE 'FOLLOW' END
             ||CHR(10)||'        FONT "'||REPLACE(lv_font_family,' ','')||'"'
             ||CHR(10)||'        SIZE '||REGEXP_REPLACE(lv_font_size,'[^0-9]','')
@@ -1892,6 +1900,7 @@ AS
   FUNCTION get_geom_style(pi_style_name      IN VARCHAR2
                          ,pi_geom_column     IN VARCHAR2
                          ,pi_layer_type      IN VARCHAR2
+                         ,pi_all_ft_cols     IN VARCHAR2
                          ,pi_rule_column     IN VARCHAR2 DEFAULT NULL
                          ,pi_label_column    IN VARCHAR2 DEFAULT NULL
                          ,pi_label_style     IN VARCHAR2 DEFAULT NULL
@@ -2175,9 +2184,10 @@ AS
             /*
             ||Get the Symbolizer data.
             */
-            lv_retval := lv_retval||CHR(10)||get_geom_style(pi_style_name    => lt_adv_style_data(i).bucket_style
-                                                           ,pi_geom_column   => pi_geom_column
-                                                           ,pi_layer_type    => pi_layer_type);
+            lv_retval := lv_retval||CHR(10)||get_geom_style(pi_style_name  => lt_adv_style_data(i).bucket_style
+                                                           ,pi_geom_column => pi_geom_column
+                                                           ,pi_layer_type  => pi_layer_type
+                                                           ,pi_all_ft_cols => pi_all_ft_cols);
             /*
             ||Write the label data if required.
             ||NB. Label Style can be specified on the advanced style
@@ -2186,11 +2196,12 @@ AS
             IF pi_label_column IS NOT NULL
              AND pi_label_style IS NOT NULL
              THEN
-                lv_retval := lv_retval||CHR(10)||get_label_style(pi_style_name    => NVL(lt_adv_style_data(i).bucket_label_style,pi_label_style)
-                                                                ,pi_text_column   => pi_label_column
-                                                                ,pi_min_scale     => pi_label_min_scale
-                                                                ,pi_max_scale     => pi_label_max_scale
-                                                                ,pi_layer_type    => pi_layer_type);
+                lv_retval := lv_retval||CHR(10)||get_label_style(pi_style_name  => NVL(lt_adv_style_data(i).bucket_label_style,pi_label_style)
+                                                                ,pi_text_column => pi_label_column
+                                                                ,pi_min_scale   => pi_label_min_scale
+                                                                ,pi_max_scale   => pi_label_max_scale
+                                                                ,pi_layer_type  => pi_layer_type
+                                                                ,pi_all_ft_cols => pi_all_ft_cols);
             END IF;
             /*
             ||Close the Class.
@@ -2212,8 +2223,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION generate_layer_class(pi_theme      IN themes_rec
-                               ,pi_layer_type IN VARCHAR2)
+  FUNCTION generate_layer_class(pi_theme       IN themes_rec
+                               ,pi_layer_type  IN VARCHAR2
+                               ,pi_all_ft_cols IN VARCHAR2)
     RETURN VARCHAR2 IS
     --
     lt_layer_class  nm3type.tab_varchar32767;
@@ -2268,6 +2280,7 @@ AS
           lv_layer_text := lv_layer_text||get_geom_style(pi_style_name      => lr_rule_data.feature_style
                                                         ,pi_geom_column     => pi_theme.geometry_column
                                                         ,pi_layer_type      => pi_layer_type
+                                                        ,pi_all_ft_cols     => pi_all_ft_cols
                                                         ,pi_rule_column     => lr_rule_data.rule_column
                                                         ,pi_label_column    => lr_rule_data.label_column
                                                         ,pi_label_style     => lr_rule_data.label_style
@@ -2285,7 +2298,8 @@ AS
           */
           lv_layer_text := lv_layer_text||CHR(10)||get_geom_style(pi_style_name  => lr_rule_data.feature_style
                                                                  ,pi_geom_column => pi_theme.geometry_column
-                                                                 ,pi_layer_type  => pi_layer_type);
+                                                                 ,pi_layer_type  => pi_layer_type
+                                                                 ,pi_all_ft_cols => pi_all_ft_cols);
           /*
           ||Write the label data if required.
           */
@@ -2295,7 +2309,8 @@ AS
                                                                       ,pi_text_column   => lr_rule_data.label_column
                                                                       ,pi_min_scale     => pi_theme.label_min_scale
                                                                       ,pi_max_scale     => pi_theme.label_max_scale
-                                                                      ,pi_layer_type    => pi_layer_type);
+                                                                      ,pi_layer_type    => pi_layer_type
+                                                                      ,pi_all_ft_cols   => pi_all_ft_cols);
           END IF;
           /*
           ||Close the Class.
@@ -2314,7 +2329,7 @@ AS
   -----------------------------------------------------------------------------
   --
   FUNCTION generate_layers(pi_definition         IN CLOB
-                          ,pi_all_ft_cols        IN VARCHAR2 DEFAULT 'N'
+                          ,pi_all_ft_cols        IN VARCHAR2
                           ,pi_effective_date     IN DATE DEFAULT NULL)
     RETURN clob_tab IS
     --
@@ -2988,8 +3003,9 @@ AS
         lv_tmp := CHR(10)||'    END';
         lv_layer_text := lv_layer_text||lv_tmp;
         --
-        lv_tmp := generate_layer_class(pi_theme      => lt_themes(i)
-                                      ,pi_layer_type => lv_layer_type);
+        lv_tmp := generate_layer_class(pi_theme       => lt_themes(i)
+                                      ,pi_layer_type  => lv_layer_type
+                                      ,pi_all_ft_cols => pi_all_ft_cols);
         lv_layer_text := lv_layer_text||lv_tmp;
         --
         IF lt_themes(i).max_scale IS NOT NULL
