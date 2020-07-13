@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.29   Jun 17 2020 15:44:02   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.30   Jul 13 2020 09:34:22   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Jun 17 2020 15:44:02  $
---       Date fetched Out : $Modtime:   Jun 17 2020 15:32:04  $
---       Version          : $Revision:   1.29  $
+--       Date into PVCS   : $Date:   Jul 13 2020 09:34:22  $
+--       Date fetched Out : $Modtime:   Jul 13 2020 09:31:42  $
+--       Version          : $Revision:   1.30  $
 --       Table Owner      : AWLRS_METADATA
 --       Generation Date  : 17-JUN-2020 15:32
 --
@@ -1608,6 +1608,24 @@ INSERT
       ,HSTF_DESCR
       ,HSTF_TYPE
       ,HSTF_ORDER)
+SELECT 'AWLRS_ADMIN_LAUNCHPAD'
+      ,'AWLRS_PROC_FWORK'
+      ,'Processes'
+      ,'F'
+      ,10
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_ADMIN_LAUNCHPAD'
+                     AND HSTF_CHILD = 'AWLRS_PROC_FWORK');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
 SELECT 'AWLRS_ASSET'
       ,'NM0301'
       ,'Asset Domains'
@@ -1834,6 +1852,96 @@ SELECT 'AWLRS_NETWORK'
                     FROM HIG_STANDARD_FAVOURITES
                    WHERE HSTF_PARENT = 'AWLRS_NETWORK'
                      AND HSTF_CHILD = 'NM0004');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_PROC_FWORK'
+      ,'HIG2500'
+      ,'Process Types'
+      ,'M'
+      ,30
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_PROC_FWORK'
+                     AND HSTF_CHILD = 'HIG2500');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_PROC_FWORK'
+      ,'HIG2510'
+      ,'Submit Process'
+      ,'M'
+      ,50
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_PROC_FWORK'
+                     AND HSTF_CHILD = 'HIG2510');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_PROC_FWORK'
+      ,'HIG2520'
+      ,'Process Monitor'
+      ,'M'
+      ,20
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_PROC_FWORK'
+                     AND HSTF_CHILD = 'HIG2520');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_PROC_FWORK'
+      ,'HIG2530'
+      ,'Scheduling Frequencies'
+      ,'M'
+      ,40
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_PROC_FWORK'
+                     AND HSTF_CHILD = 'HIG2530');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_PROC_FWORK'
+      ,'HIG2550'
+      ,'Process Framework Administration'
+      ,'M'
+      ,10
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_PROC_FWORK'
+                     AND HSTF_CHILD = 'HIG2550');
 --
 INSERT
   INTO HIG_STANDARD_FAVOURITES
