@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.28   Jan 14 2020 14:30:56   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.29   Jul 15 2020 15:08:52   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   Jan 14 2020 14:30:56  $
-  --       Date fetched Out : $Modtime:   Jan 14 2020 13:41:28  $
-  --       Version          : $Revision:   1.28  $
+  --       Date into PVCS   : $Date:   Jul 15 2020 15:08:52  $
+  --       Date fetched Out : $Modtime:   Jul 14 2020 13:48:12  $
+  --       Version          : $Revision:   1.29  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.28  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.29  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -39,6 +39,11 @@ AS
                                 ,field_length    NUMBER(4)
                                 ,decimal_places  NUMBER(1));
   TYPE column_data_tab IS TABLE OF column_data_rec INDEX BY BINARY_INTEGER;
+  /*
+  ||Global and Constant for dealing with decimal places.
+  */
+  g_decimal_point  VARCHAR2(1);
+  c_max_digits CONSTANT NUMBER := 28;
   /*
   ||Constants for datatype.
   */
@@ -416,8 +421,11 @@ AS
   --
   PROCEDURE validate_enddate_isnull(pi_enddate IN DATE);
 
-  g_decimal_point  VARCHAR2(1);
-  c_max_digits CONSTANT NUMBER := 28;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_simple_sql_name(pi_name               IN VARCHAR2
+                                    ,pi_supplementary_info IN VARCHAR2);
 
   --
   ------------------------------------------------------------------------------
