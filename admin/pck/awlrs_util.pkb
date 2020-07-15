@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.38   Jun 30 2020 11:50:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.39   Jul 15 2020 15:08:54   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Jun 30 2020 11:50:22  $
-  --       Date fetched Out : $Modtime:   Jun 30 2020 11:40:30  $
-  --       Version          : $Revision:   1.38  $
+  --       Date into PVCS   : $Date:   Jul 15 2020 15:08:54  $
+  --       Date fetched Out : $Modtime:   Jul 14 2020 13:48:12  $
+  --       Version          : $Revision:   1.39  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.38  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.39  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -2006,6 +2006,29 @@ AS
     END IF;
     --
   END validate_enddate_isnull;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_simple_sql_name(pi_name               IN VARCHAR2
+                                    ,pi_supplementary_info IN VARCHAR2)
+    IS
+    --
+    lv_check  nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    lv_check := dbms_assert.simple_sql_name(pi_name);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        --
+        hig.raise_ner(pi_appl               => 'HIG'
+                     ,pi_id                 =>  283
+                     ,pi_supplementary_info => pi_supplementary_info||': '||pi_name);
+        --
+  END validate_simple_sql_name;
 
   --
   ------------------------------------------------------------------------------
