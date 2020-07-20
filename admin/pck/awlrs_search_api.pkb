@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.42   Jun 30 2020 12:01:40   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.43   Jul 20 2020 13:17:52   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Jun 30 2020 12:01:40  $
-  --       Date fetched Out : $Modtime:   Jun 30 2020 11:59:40  $
-  --       Version          : $Revision:   1.42  $
+  --       Date into PVCS   : $Date:   Jul 20 2020 13:17:52  $
+  --       Date fetched Out : $Modtime:   Jul 20 2020 12:58:10  $
+  --       Version          : $Revision:   1.43  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.42  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.43  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -4544,7 +4544,7 @@ AS
     CURSOR get_attr(cp_table_name IN all_tab_columns.table_name%TYPE
                    ,cp_pk_col     IN all_tab_columns.column_name%TYPE)
         IS
-    SELECT column_name
+    SELECT LOWER(column_name) column_name
           ,data_type
           ,NVL(data_precision,data_length) data_length
           ,CASE WHEN data_scale = 0 THEN NULL ELSE data_scale END data_scale
