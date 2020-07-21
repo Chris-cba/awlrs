@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.43   Jul 20 2020 13:17:52   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.44   Jul 21 2020 12:31:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 20 2020 13:17:52  $
-  --       Date fetched Out : $Modtime:   Jul 20 2020 12:58:10  $
-  --       Version          : $Revision:   1.43  $
+  --       Date into PVCS   : $Date:   Jul 21 2020 12:31:30  $
+  --       Date fetched Out : $Modtime:   Jul 21 2020 12:07:12  $
+  --       Version          : $Revision:   1.44  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.43  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.44  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -756,6 +756,30 @@ AS
          ,g_default_datetime_format
          ,pi_feature_table
     ;
+  END get_table_attributes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_table_attributes(pi_feature_table    IN  nm_themes_all.nth_feature_table%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    get_table_attributes(pi_feature_table => pi_feature_table
+                        ,po_cursor        => po_cursor);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
   END get_table_attributes;
 
   --
