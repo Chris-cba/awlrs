@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.21   May 06 2020 16:44:52   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.22   Jul 23 2020 15:20:58   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   May 06 2020 16:44:52  $
---       Date fetched Out : $Modtime:   May 06 2020 16:37:50  $
---       Version          : $Revision:   1.21  $
+--       Date into PVCS   : $Date:   Jul 23 2020 15:20:58  $
+--       Date fetched Out : $Modtime:   Jul 23 2020 14:57:20  $
+--       Version          : $Revision:   1.22  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 06-MAY-2020 16:37
+--       Generation Date  : 23-JUL-2020 14:57
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -26,6 +26,8 @@
 --   HIG_SEQUENCE_ASSOCIATIONS
 --   HIG_MODULES
 --   NM_INV_CATEGORY_MODULES
+--   AWLRS_FAV_ENTITY_TYPES
+--   AWLRS_FAV_ENTITY_TYPE_LABELS
 --
 -----------------------------------------------------------------------------
 --
@@ -245,6 +247,31 @@ SELECT 'AWLMESUNIT'
 SET TERM ON
 PROMPT hig_option_list
 SET TERM OFF
+--
+INSERT
+  INTO HIG_OPTION_LIST
+      (HOL_ID
+      ,HOL_PRODUCT
+      ,HOL_NAME
+      ,HOL_REMARKS
+      ,HOL_DOMAIN
+      ,HOL_DATATYPE
+      ,HOL_MIXED_CASE
+      ,HOL_USER_OPTION
+      ,HOL_MAX_LENGTH)
+SELECT 'AWLFAVNAME'
+      ,'AWLRS'
+      ,'Favourites Root Folder'
+      ,'The name displayed for the Favourites root folder.'
+      ,''
+      ,'VARCHAR2'
+      ,'Y'
+      ,'Y'
+      ,100
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_LIST
+                   WHERE HOL_ID = 'AWLFAVNAME');
 --
 INSERT
   INTO HIG_OPTION_LIST
@@ -586,6 +613,17 @@ INSERT
   INTO HIG_OPTION_VALUES
       (HOV_ID
       ,HOV_VALUE)
+SELECT 'AWLFAVNAME'
+      ,'Favorites'
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_OPTION_VALUES
+                   WHERE HOV_ID = 'AWLFAVNAME');
+--
+INSERT
+  INTO HIG_OPTION_VALUES
+      (HOV_ID
+      ,HOV_VALUE)
 SELECT 'AWLMAPDBUG'
       ,'N'
   FROM DUAL
@@ -796,6 +834,38 @@ INSERT
       ,HSA_COLUMN_NAME
       ,HSA_SEQUENCE_NAME
       ,HSA_LAST_REBUILD_DATE)
+SELECT 'AWLRS_FAVOURITES_ENTITIES'
+      ,'AFE_AF_ID'
+      ,'AF_ID_SEQ'
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_SEQUENCE_ASSOCIATIONS
+                   WHERE HSA_TABLE_NAME = 'AWLRS_FAVOURITES_ENTITIES'
+                     AND HSA_COLUMN_NAME = 'AFE_AF_ID');
+--
+INSERT
+  INTO HIG_SEQUENCE_ASSOCIATIONS
+      (HSA_TABLE_NAME
+      ,HSA_COLUMN_NAME
+      ,HSA_SEQUENCE_NAME
+      ,HSA_LAST_REBUILD_DATE)
+SELECT 'AWLRS_FAVOURITES_FOLDERS'
+      ,'AFF_AF_ID'
+      ,'AF_ID_SEQ'
+      ,null
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_SEQUENCE_ASSOCIATIONS
+                   WHERE HSA_TABLE_NAME = 'AWLRS_FAVOURITES_FOLDERS'
+                     AND HSA_COLUMN_NAME = 'AFF_AF_ID');
+--
+INSERT
+  INTO HIG_SEQUENCE_ASSOCIATIONS
+      (HSA_TABLE_NAME
+      ,HSA_COLUMN_NAME
+      ,HSA_SEQUENCE_NAME
+      ,HSA_LAST_REBUILD_DATE)
 SELECT 'AWLRS_FILE_DATUM_ATTRIB_MAP'
       ,'AFDAM_ID'
       ,'AFDAM_ID_SEQ'
@@ -963,6 +1033,57 @@ SELECT 'I'
                     FROM NM_INV_CATEGORY_MODULES
                    WHERE ICM_NIC_CATEGORY = 'I'
                      AND ICM_HMO_MODULE = 'AWLRS0001');
+--
+----------------------------------------------------------------------------------------
+-- AWLRS_FAV_ENTITY_TYPES
+--
+-- select * from awlrs_metadata.awlrs_fav_entity_types
+-- order by afet_entity_type
+--
+----------------------------------------------------------------------------------------
+SET TERM ON
+PROMPT awlrs_fav_entity_types
+SET TERM OFF
+--
+INSERT
+  INTO AWLRS_FAV_ENTITY_TYPES
+      (AFET_ENTITY_TYPE
+      ,AFET_DISPLAY_NAME
+      ,AFET_TABLE_NAME
+      ,AFET_PK_COLUMN)
+SELECT 'ASSET'
+      ,'Asset'
+      ,''
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM AWLRS_FAV_ENTITY_TYPES
+                   WHERE AFET_ENTITY_TYPE = 'ASSET');
+--
+INSERT
+  INTO AWLRS_FAV_ENTITY_TYPES
+      (AFET_ENTITY_TYPE
+      ,AFET_DISPLAY_NAME
+      ,AFET_TABLE_NAME
+      ,AFET_PK_COLUMN)
+SELECT 'NETWORK'
+      ,'Network'
+      ,''
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM AWLRS_FAV_ENTITY_TYPES
+                   WHERE AFET_ENTITY_TYPE = 'NETWORK');
+--
+----------------------------------------------------------------------------------------
+-- AWLRS_FAV_ENTITY_TYPE_LABELS
+--
+-- WARNING - TABLE DOES NOT HAVE A UNIQUE KEY
+--
+----------------------------------------------------------------------------------------
+SET TERM ON
+PROMPT awlrs_fav_entity_type_labels
+SET TERM OFF
 --
 ----------------------------------------------------------------------------------------
 --
