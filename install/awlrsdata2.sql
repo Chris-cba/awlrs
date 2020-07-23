@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.30   Jul 13 2020 09:34:22   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.31   Jul 23 2020 15:35:08   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Jul 13 2020 09:34:22  $
---       Date fetched Out : $Modtime:   Jul 13 2020 09:31:42  $
---       Version          : $Revision:   1.30  $
+--       Date into PVCS   : $Date:   Jul 23 2020 15:35:08  $
+--       Date fetched Out : $Modtime:   Jul 23 2020 15:33:20  $
+--       Version          : $Revision:   1.31  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 17-JUN-2020 15:32
+--       Generation Date  : 23-JUL-2020 15:33
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -1588,6 +1588,60 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 86);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,87
+      ,null
+      ,'Unsupported Entity Type'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 87);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,88
+      ,null
+      ,'Cannot rename folder'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 88);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,89
+      ,null
+      ,'Parent folder already contains a folder with this name'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 89);
 --
 ----------------------------------------------------------------------------------------
 -- HIG_STANDARD_FAVOURITES
