@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.0   Jul 23 2020 11:50:40   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.1   Jul 23 2020 15:32:34   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_favourites_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 23 2020 11:50:40  $
-  --       Date fetched Out : $Modtime:   Jul 22 2020 19:16:14  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Jul 23 2020 15:32:34  $
+  --       Date fetched Out : $Modtime:   Jul 23 2020 15:30:46  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_favourites_api';
   --
   c_root_folder  CONSTANT VARCHAR2(10) := '_ROOT';
@@ -902,12 +902,11 @@ AS
     IF lv_parent_af_id IS NULL
      THEN
         /*
-        ||TODO - Cannot rename root folder
+        ||Cannot rename folder
         */
-        raise_application_error(-20001,'Cannot rename folder: '||NVL(hig.get_user_or_sys_opt('AWLFAVNAME'),'Favorites'));
-        --hig.raise_ner(pi_appl => 'NET'
-        --             ,pi_id   => 283
-        --             ,pi_supplementary_info => NVL(hig.get_user_or_sys_opt('AWLFAVNAME'),'Favorites'));
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 88
+                     ,pi_supplementary_info => NVL(hig.get_user_or_sys_opt('AWLFAVNAME'),'Favorites'));
     END IF;
     /*
     ||Check to see if a folder with the same name already exists in the parent folder.
@@ -930,11 +929,10 @@ AS
         --
     ELSE
         /*
-        ||TODO - Parent folder already contains a folder with this name.
+        ||Parent folder already contains a folder with this name.
         */
-        raise_application_error(-20001,'Parent folder already contains a folder with this name');
-        --hig.raise_ner(pi_appl => 'NET'
-        --             ,pi_id   => 283);
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 89);
     END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -1015,13 +1013,12 @@ AS
     --
     IF lr_afet.afet_entity_type IS NULL
      THEN
-        raise_application_error(-20001,'Unsupported Entity Type: '||pi_entity_type);
         /*
-        ||TODO - Create proper error.
+        ||Unsupported Entity Type.
         */
-        --hig.raise_ner(pi_appl => 'AWLRS'
-        --             ,pi_id   =>
-        --             ,pi_supplementary_info => pi_entity_type);
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 87
+                     ,pi_supplementary_info => pi_entity_type);
         --
     END IF;
     /*
@@ -1418,13 +1415,12 @@ AS
          --
          IF lr_afet.afet_entity_type IS NULL
           THEN
-             raise_application_error(-20001,'Unsupported Entity Type: '||pi_entity_type);
              /*
-             ||TODO - Create proper error.
+             ||Unsupported Entity Type.
              */
-             --hig.raise_ner(pi_appl => 'AWLRS'
-             --             ,pi_id   =>
-             --             ,pi_supplementary_info => pi_entity_type);
+             hig.raise_ner(pi_appl => 'AWLRS'
+                          ,pi_id   => 87
+                          ,pi_supplementary_info => pi_entity_type);
              --
          END IF;
          --
