@@ -1,0 +1,210 @@
+CREATE OR REPLACE PACKAGE awlrs_favourites_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkh-arc   1.0   Jul 23 2020 11:50:38   Mike.Huitson  $
+  --       Module Name      : $Workfile:   awlrs_favourites_api.pkh  $
+  --       Date into PVCS   : $Date:   Jul 23 2020 11:50:38  $
+  --       Date fetched Out : $Modtime:   Jul 22 2020 19:12:18  $
+  --       Version          : $Revision:   1.0  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  --
+  TYPE aff_tab IS TABLE OF awlrs_favourites_folders%ROWTYPE;
+  TYPE afe_tab IS TABLE OF awlrs_favourites_entities%ROWTYPE;
+  TYPE afetl_tab IS TABLE OF awlrs_fav_entity_type_labels%ROWTYPE INDEX BY BINARY_INTEGER;
+  TYPE column_list IS TABLE OF awlrs_fav_entity_type_labels.afetl_label_column%TYPE INDEX BY BINARY_INTEGER;
+  TYPE fav_item_rec IS RECORD(folder_or_entity VARCHAR2(6)
+                             ,parent_id        awlrs_favourites_folders.aff_parent_af_id%TYPE
+                             ,seq_no           awlrs_favourites_folders.aff_seq_no%TYPE
+                             ,folder_product   awlrs_favourites_folders.aff_product%TYPE);
+  --
+  TYPE item_data_rec IS RECORD(folder_or_entity         VARCHAR2(6)
+                              ,af_id                    awlrs_favourites_folders.aff_af_id%TYPE
+                              ,parent_af_id             awlrs_favourites_folders.aff_parent_af_id%TYPE
+                              ,label                    VARCHAR2(32767)
+                              ,seq_no                   awlrs_favourites_folders.aff_seq_no%TYPE
+                              ,entity_type              awlrs_favourites_entities.afe_entity_type%TYPE
+                              ,entity_type_display_name awlrs_fav_entity_types.afet_display_name%TYPE
+                              ,entity_sub_type          awlrs_favourites_entities.afe_entity_sub_type%TYPE
+                              ,entity_id                awlrs_favourites_entities.afe_entity_id%TYPE
+                              ,child_count              NUMBER(38));
+  TYPE item_data_tab IS TABLE OF item_data_rec INDEX BY BINARY_INTEGER;
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+  RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+  RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE set_item_seq_within_folder(pi_af_id            IN  awlrs_favourites_folders.aff_af_id%TYPE
+                                      ,pi_new_seq_no       IN  awlrs_favourites_folders.aff_seq_no%TYPE
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE set_item_seq_within_folder(pi_af_id             IN  awlrs_favourites_folders.aff_af_id%TYPE
+                                      ,pi_relative_position IN  awlrs_favourites_folders.aff_seq_no%TYPE
+                                      ,po_message_severity  OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor    OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE move_item_to_folder(pi_af_id            IN  awlrs_favourites_folders.aff_af_id%TYPE
+                               ,pi_new_parent_af_id IN  awlrs_favourites_folders.aff_parent_af_id%TYPE
+                               ,pi_new_seq_no       IN  awlrs_favourites_folders.aff_seq_no%TYPE DEFAULT 1
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_item(pi_af_id            IN  awlrs_favourites_folders.aff_af_id%TYPE
+                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE set_folder_default(pi_product          IN  awlrs_favourites_folders.aff_product%TYPE
+                              ,pi_aff_af_id        IN  awlrs_favourites_folders.aff_af_id%TYPE
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_folder(pi_product          IN     awlrs_favourites_folders.aff_product%TYPE
+                      ,pi_parent_af_id     IN     awlrs_favourites_folders.aff_parent_af_id%TYPE
+                      ,pi_name             IN     awlrs_favourites_folders.aff_name%TYPE
+                      ,pi_default          IN     awlrs_favourites_folders.aff_default%TYPE DEFAULT 'N'
+                      ,po_aff_af_id        IN OUT awlrs_favourites_folders.aff_af_id%TYPE
+                      ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                      ,po_message_cursor      OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE rename_folder(pi_aff_af_id        IN  awlrs_favourites_folders.aff_parent_af_id%TYPE
+                         ,pi_new_name         IN  awlrs_favourites_folders.aff_name%TYPE
+                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_entity(pi_product          IN     awlrs_favourites_folders.aff_product%TYPE
+                      ,pi_parent_af_id     IN     awlrs_favourites_folders.aff_af_id%TYPE
+                      ,pi_entity_type      IN     awlrs_favourites_entities.afe_entity_type%TYPE
+                      ,pi_entity_sub_type  IN     awlrs_favourites_entities.afe_entity_sub_type%TYPE
+                      ,pi_entity_id        IN     awlrs_favourites_entities.afe_entity_id%TYPE
+                      ,po_afe_af_id        IN OUT awlrs_favourites_entities.afe_af_id%TYPE
+                      ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                      ,po_message_cursor      OUT sys_refcursor);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_entity_label(pi_entity_type     IN awlrs_fav_entity_types.afet_entity_type%TYPE
+                           ,pi_entity_sub_type IN awlrs_favourites_entities.afe_entity_sub_type%TYPE
+                           ,pi_entity_id       IN awlrs_favourites_entities.afe_entity_id%TYPE)
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_element_member_count(pi_ne_id IN nm_elements_all.ne_id%TYPE)
+    RETURN PLS_INTEGER;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_asset_child_count(pi_inv_type  IN nm_inv_types_all.nit_inv_type%TYPE
+                                ,pi_iit_ne_id IN nm_inv_items_all.iit_ne_id%TYPE)
+    RETURN PLS_INTEGER;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_folder_child_count(pi_parent_af_id IN awlrs_favourites_folders.aff_af_id%TYPE)
+    RETURN PLS_INTEGER;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_network_element_data(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_data(pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                          ,pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor   OUT sys_refcursor
+                          ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_folder_data(pi_aff_af_id        IN  awlrs_favourites_folders.aff_af_id%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_root_data(pi_product          IN  awlrs_favourites_folders.aff_product%TYPE
+                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor   OUT sys_refcursor
+                         ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_root_folder(pi_product          IN  awlrs_favourites_folders.aff_product%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_folder_hierarchy(pi_product          IN  awlrs_favourites_folders.aff_product%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_data(pi_product               IN  awlrs_favourites_folders.aff_product%TYPE
+                    ,pi_filter                IN  VARCHAR2 DEFAULT NULL
+                    ,pi_check_entity_children IN  VARCHAR2 DEFAULT 'N'
+                    ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor        OUT sys_refcursor
+                    ,po_cursor                OUT sys_refcursor);
+
+END awlrs_favourites_api;
+/
