@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrspkh.sql-arc   1.16   May 04 2020 09:34:22   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrspkh.sql-arc   1.17   Jul 23 2020 11:53:40   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrspkh.sql  $
---       Date into PVCS   : $Date:   May 04 2020 09:34:22  $
---       Date fetched Out : $Modtime:   May 04 2020 09:30:34  $
---       Version          : $Revision:   1.16  $
+--       Date into PVCS   : $Date:   Jul 23 2020 11:53:40  $
+--       Date fetched Out : $Modtime:   Jul 23 2020 11:52:44  $
+--       Version          : $Revision:   1.17  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
@@ -486,6 +486,20 @@ SET TERM OFF
 SET define ON
 SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
        ||'&terminator'||'awlrs_theme_api.pkh' run_file
+  FROM dual
+     ;
+SET feedback ON
+START '&run_file'
+SET feedback OFF
+--
+-------------------------------------------------------------------------
+--
+SET TERM ON
+PROMPT awlrs_favourites_api
+SET TERM OFF
+SET define ON
+SELECT '&exor_base'||'awlrs'||'&terminator'||'admin'||'&terminator'||'pck'
+       ||'&terminator'||'awlrs_favourites_api.pkh' run_file
   FROM dual
      ;
 SET feedback ON
