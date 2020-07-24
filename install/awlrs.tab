@@ -1,15 +1,15 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.11   Jun 06 2019 18:04:20   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.tab-arc   1.12   Jul 24 2020 15:27:38   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.tab  $
---       Date into PVCS   : $Date:   Jun 06 2019 18:04:20  $
---       Date fetched Out : $Modtime:   Jun 06 2019 18:00:44  $
---       Version          : $Revision:   1.11  $
+--       Date into PVCS   : $Date:   Jul 24 2020 15:27:38  $
+--       Date fetched Out : $Modtime:   Jul 24 2020 15:16:54  $
+--       Version          : $Revision:   1.12  $
 -------------------------------------------------------------------------
---   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Thu Jun 06  17:54:05 2019 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Fri Jul 24  15:03:15 2020 by Server Generator 10.1.2.9.28
 
 PROMPT Creating Table 'AWLRS_ASSET_MAINT_RESULTS'
 CREATE TABLE AWLRS_ASSET_MAINT_RESULTS
@@ -41,6 +41,48 @@ CREATE TABLE AWLRS_EXTERNAL_LINK_PARAMS
  ,AELP_SOURCE_TYPE VARCHAR2(10) NOT NULL
  ,AELP_SOURCE VARCHAR2(1000) NOT NULL
  ,AELP_DEFAULT_VALUE VARCHAR2(1000)
+ )
+/
+
+PROMPT Creating Table 'AWLRS_FAVOURITES_ENTITIES'
+CREATE TABLE AWLRS_FAVOURITES_ENTITIES
+ (AFE_AF_ID NUMBER(38) NOT NULL
+ ,AFE_PARENT_AF_ID NUMBER(38) NOT NULL
+ ,AFE_SEQ_NO NUMBER(38) NOT NULL
+ ,AFE_ENTITY_TYPE VARCHAR2(100) NOT NULL
+ ,AFE_ENTITY_SUB_TYPE VARCHAR2(100)
+ ,AFE_ENTITY_ID NUMBER(38) NOT NULL
+ )
+/
+
+PROMPT Creating Table 'AWLRS_FAVOURITES_FOLDERS'
+CREATE TABLE AWLRS_FAVOURITES_FOLDERS
+ (AFF_AF_ID NUMBER(38) NOT NULL
+ ,AFF_PARENT_AF_ID NUMBER(38)
+ ,AFF_USER_ID NUMBER(38) NOT NULL
+ ,AFF_PRODUCT VARCHAR2(6) NOT NULL
+ ,AFF_NAME VARCHAR2(100) NOT NULL
+ ,AFF_SEQ_NO NUMBER(38) NOT NULL
+ ,AFF_DEFAULT VARCHAR2(1) NOT NULL
+ )
+/
+
+PROMPT Creating Table 'AWLRS_FAV_ENTITY_TYPES'
+CREATE TABLE AWLRS_FAV_ENTITY_TYPES
+ (AFET_ENTITY_TYPE VARCHAR2(100) NOT NULL
+ ,AFET_DISPLAY_NAME VARCHAR2(100) NOT NULL
+ ,AFET_TABLE_NAME VARCHAR2(30)
+ ,AFET_PK_COLUMN VARCHAR2(30)
+ )
+/
+
+PROMPT Creating Table 'AWLRS_FAV_ENTITY_TYPE_LABELS'
+CREATE TABLE AWLRS_FAV_ENTITY_TYPE_LABELS
+ (AFETL_ENTITY_TYPE VARCHAR2(100) NOT NULL
+ ,AFETL_ENTITY_SUB_TYPE VARCHAR2(100)
+ ,AFETL_SEQ_NO NUMBER(38) NOT NULL
+ ,AFETL_LABEL_COLUMN VARCHAR2(30) NOT NULL
+ ,AFETL_LABEL_SEPARATOR VARCHAR2(5) NOT NULL
  )
 /
 
