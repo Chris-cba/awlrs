@@ -1,15 +1,15 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.ind-arc   1.9   Jun 06 2019 18:02:44   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.ind-arc   1.10   Jul 24 2020 15:27:40   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.ind  $
---       Date into PVCS   : $Date:   Jun 06 2019 18:02:44  $
---       Date fetched Out : $Modtime:   Jun 06 2019 18:00:14  $
---       Version          : $Revision:   1.9  $
+--       Date into PVCS   : $Date:   Jul 24 2020 15:27:40  $
+--       Date fetched Out : $Modtime:   Jul 24 2020 15:16:54  $
+--       Version          : $Revision:   1.10  $
 -------------------------------------------------------------------------
---   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Thu Jun 06  17:54:05 2019 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Fri Jul 24  15:03:15 2020 by Server Generator 10.1.2.9.28
 
 PROMPT Creating Index 'AAMR_IND_1'
 CREATE INDEX AAMR_IND_1 ON AWLRS_ASSET_MAINT_RESULTS
@@ -33,6 +33,59 @@ CREATE UNIQUE INDEX AELP_UK ON AWLRS_EXTERNAL_LINK_PARAMS
  ,AELP_ENTITY_TYPE
  ,AELP_ENTITY_TYPE_TYPE
  ,AELP_SEQUENCE)
+/
+
+PROMPT Creating Index 'AFE_FK_AFET_IND'
+CREATE INDEX AFE_FK_AFET_IND ON AWLRS_FAVOURITES_ENTITIES
+ (AFE_ENTITY_TYPE)
+/
+
+PROMPT Creating Index 'AFE_FK_AFF_IND'
+CREATE INDEX AFE_FK_AFF_IND ON AWLRS_FAVOURITES_ENTITIES
+ (AFE_PARENT_AF_ID)
+/
+
+PROMPT Creating Index 'AFE_IND_UK'
+CREATE UNIQUE INDEX AFE_IND_UK ON AWLRS_FAVOURITES_ENTITIES
+ (AFE_PARENT_AF_ID
+ ,AFE_ENTITY_TYPE
+ ,AFE_ENTITY_SUB_TYPE
+ ,AFE_ENTITY_ID)
+/
+
+PROMPT Creating Index 'AFF_FK_AFF_IND'
+CREATE INDEX AFF_FK_AFF_IND ON AWLRS_FAVOURITES_FOLDERS
+ (AFF_PARENT_AF_ID)
+/
+
+PROMPT Creating Index 'AFF_FK_HUS_IND'
+CREATE INDEX AFF_FK_HUS_IND ON AWLRS_FAVOURITES_FOLDERS
+ (AFF_USER_ID)
+/
+
+PROMPT Creating Index 'AFF_IND_UK'
+CREATE UNIQUE INDEX AFF_IND_UK ON AWLRS_FAVOURITES_FOLDERS
+ (AFF_USER_ID
+ ,AFF_PRODUCT
+ ,AFF_PARENT_AF_ID
+ ,AFF_NAME)
+/
+
+PROMPT Creating Index 'AFET_IND_UK'
+CREATE UNIQUE INDEX AFET_IND_UK ON AWLRS_FAV_ENTITY_TYPES
+ (AFET_DISPLAY_NAME)
+/
+
+PROMPT Creating Index 'AFETL_FK_AFET_IND'
+CREATE INDEX AFETL_FK_AFET_IND ON AWLRS_FAV_ENTITY_TYPE_LABELS
+ (AFETL_ENTITY_TYPE)
+/
+
+PROMPT Creating Index 'AFETL_IND_UK'
+CREATE UNIQUE INDEX AFETL_IND_UK ON AWLRS_FAV_ENTITY_TYPE_LABELS
+ (AFETL_ENTITY_TYPE
+ ,AFETL_ENTITY_SUB_TYPE
+ ,AFETL_LABEL_COLUMN)
 /
 
 PROMPT Creating Index 'AFDAM_FK_AFFM_IND'
