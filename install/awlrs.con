@@ -1,15 +1,15 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.12   Jun 06 2019 18:01:56   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs.con-arc   1.13   Jul 24 2020 15:27:42   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrs.con  $
---       Date into PVCS   : $Date:   Jun 06 2019 18:01:56  $
---       Date fetched Out : $Modtime:   Jun 06 2019 17:59:58  $
---       Version          : $Revision:   1.12  $
+--       Date into PVCS   : $Date:   Jul 24 2020 15:27:42  $
+--       Date fetched Out : $Modtime:   Jul 24 2020 15:16:54  $
+--       Version          : $Revision:   1.13  $
 -------------------------------------------------------------------------
---   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
--- Generated for Oracle 10g on Thu Jun 06  17:54:05 2019 by Server Generator 10.1.2.9.28
+-- Generated for Oracle 10g on Fri Jul 24  15:03:15 2020 by Server Generator 10.1.2.9.28
   
 PROMPT Creating Primary Key on 'AWLRS_ASSET_MAINT_RESULTS'
 ALTER TABLE AWLRS_ASSET_MAINT_RESULTS
@@ -27,6 +27,24 @@ PROMPT Creating Primary Key on 'AWLRS_EXTERNAL_LINK_PARAMS'
 ALTER TABLE AWLRS_EXTERNAL_LINK_PARAMS
  ADD (CONSTRAINT AELP_PK PRIMARY KEY 
   (AELP_ID))
+/
+
+PROMPT Creating Primary Key on 'AWLRS_FAVOURITES_ENTITIES'
+ALTER TABLE AWLRS_FAVOURITES_ENTITIES
+ ADD (CONSTRAINT AFE_PK PRIMARY KEY 
+  (AFE_AF_ID))
+/
+
+PROMPT Creating Primary Key on 'AWLRS_FAVOURITES_FOLDERS'
+ALTER TABLE AWLRS_FAVOURITES_FOLDERS
+ ADD (CONSTRAINT AFF_PK PRIMARY KEY 
+  (AFF_AF_ID))
+/
+
+PROMPT Creating Primary Key on 'AWLRS_FAV_ENTITY_TYPES'
+ALTER TABLE AWLRS_FAV_ENTITY_TYPES
+ ADD (CONSTRAINT AFET_PK PRIMARY KEY 
+  (AFET_ENTITY_TYPE))
 /
 
 PROMPT Creating Primary Key on 'AWLRS_FILE_DATUM_ATTRIB_MAP'
@@ -128,7 +146,47 @@ ALTER TABLE AWLRS_SAVED_SEARCH_CRITERIA
   ,ASSC_NAME))
 /
 
-              
+     
+PROMPT Creating Check Constraint on 'AWLRS_FAVOURITES_FOLDERS'
+ALTER TABLE AWLRS_FAVOURITES_FOLDERS
+ ADD (CONSTRAINT AFF_DEFAULT_CHK CHECK (AFF_DEFAULT IN(''Y'',''N'')))
+/
+             
+
+PROMPT Creating Foreign Key on 'AWLRS_FAVOURITES_ENTITIES'
+ALTER TABLE AWLRS_FAVOURITES_ENTITIES ADD (CONSTRAINT
+ AFE_FK_AFET FOREIGN KEY 
+  (AFE_ENTITY_TYPE) REFERENCES AWLRS_FAV_ENTITY_TYPES
+  (AFET_ENTITY_TYPE) ON DELETE CASCADE)
+/
+
+PROMPT Creating Foreign Key on 'AWLRS_FAVOURITES_ENTITIES'
+ALTER TABLE AWLRS_FAVOURITES_ENTITIES ADD (CONSTRAINT
+ AFE_FK_AFF FOREIGN KEY 
+  (AFE_PARENT_AF_ID) REFERENCES AWLRS_FAVOURITES_FOLDERS
+  (AFF_AF_ID) ON DELETE CASCADE)
+/
+
+PROMPT Creating Foreign Key on 'AWLRS_FAVOURITES_FOLDERS'
+ALTER TABLE AWLRS_FAVOURITES_FOLDERS ADD (CONSTRAINT
+ AFF_FK_AFF FOREIGN KEY 
+  (AFF_PARENT_AF_ID) REFERENCES AWLRS_FAVOURITES_FOLDERS
+  (AFF_AF_ID) ON DELETE CASCADE)
+/
+
+PROMPT Creating Foreign Key on 'AWLRS_FAVOURITES_FOLDERS'
+ALTER TABLE AWLRS_FAVOURITES_FOLDERS ADD (CONSTRAINT
+ AFF_FK_HUS FOREIGN KEY 
+  (AFF_USER_ID) REFERENCES HIG_USERS
+  (HUS_USER_ID) ON DELETE CASCADE)
+/
+
+PROMPT Creating Foreign Key on 'AWLRS_FAV_ENTITY_TYPE_LABELS'
+ALTER TABLE AWLRS_FAV_ENTITY_TYPE_LABELS ADD (CONSTRAINT
+ AFETL_FK_AFET FOREIGN KEY 
+  (AFETL_ENTITY_TYPE) REFERENCES AWLRS_FAV_ENTITY_TYPES
+  (AFET_ENTITY_TYPE) ON DELETE CASCADE)
+/
 
 PROMPT Creating Foreign Key on 'AWLRS_FILE_DATUM_ATTRIB_MAP'
 ALTER TABLE AWLRS_FILE_DATUM_ATTRIB_MAP ADD (CONSTRAINT
