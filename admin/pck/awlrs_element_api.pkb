@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.41   May 13 2020 09:08:04   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.42   Jul 27 2020 16:42:08   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   May 13 2020 09:08:04  $
-  --       Date fetched Out : $Modtime:   May 13 2020 08:34:58  $
-  --       Version          : $Revision:   1.41  $
+  --       Date into PVCS   : $Date:   Jul 27 2020 16:42:08  $
+  --       Date fetched Out : $Modtime:   Jul 27 2020 14:55:14  $
+  --       Version          : $Revision:   1.42  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.41  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.42  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -648,6 +648,67 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_nt_flex_domain_ind(pi_nt_type          IN  nm_types.nt_type%TYPE
+                                  ,pi_group_type       IN  nm_group_types_all.ngt_group_type%TYPE
+                                  ,pi_column_name      IN  nm_type_columns.ntc_column_name%TYPE
+                                  ,pi_bind_value       IN  VARCHAR2 DEFAULT NULL
+                                  ,pi_value            IN  VARCHAR2
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor
+                                  ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_ind  PLS_INTEGER;
+    --
+    lt_domain_values  domain_values_tab;
+    --
+  BEGIN
+    --
+    lt_domain_values := get_nt_flex_domain(pi_nt_type     => pi_nt_type
+                                          ,pi_group_type  => pi_group_type
+                                          ,pi_column_name => pi_column_name
+                                          ,pi_bind_value  => pi_bind_value);
+    --
+    FOR i IN 1..lt_domain_values.COUNT LOOP
+      --
+      IF lt_domain_values(i).code = pi_value
+       THEN
+          lv_ind := i;
+          EXIT;
+      END IF;
+      --
+    END LOOP;
+    --
+    IF lv_ind IS NULL
+     THEN
+        --Record not found.
+        hig.raise_ner(pi_appl => nm3type.c_hig
+                     ,pi_id   => 67
+                     ,pi_supplementary_info => pi_value);
+        --
+    ELSE
+        --
+        OPEN po_cursor FOR
+        SELECT lv_ind ind
+          FROM dual
+             ;
+        --
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+     RAISE;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_nt_flex_domain_ind;
+
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_paged_nt_flex_domain(pi_nt_type     IN  nm_types.nt_type%TYPE
                                     ,pi_group_type  IN  nm_group_types_all.ngt_group_type%TYPE
                                     ,pi_column_name IN  nm_type_columns.ntc_column_name%TYPE
@@ -810,10 +871,10 @@ AS
                                    ,pi_filter      IN VARCHAR2
                                    ,pi_skip_n_rows IN PLS_INTEGER
                                    ,pi_pagesize    IN PLS_INTEGER)
-    RETURN domain_values_tab IS
+    RETURN paged_domain_values_tab IS
     --
     lv_cursor         sys_refcursor;
-    lt_domain_values  domain_values_tab;
+    lt_domain_values  paged_domain_values_tab;
     --
   BEGIN
     --
@@ -2132,7 +2193,7 @@ AS
           ,(SELECT nm_ne_id_of
               FROM nm_members
              WHERE nm_ne_id_in = ne_id
-               AND nm_seq_no = 1     
+               AND nm_seq_no = 1
                AND (SELECT COUNT(nm_ne_id_of) FROM nm_members where nm_ne_id_in = ne_id and nm_seq_no = 1 ) =1) circ_start_ne_id
       FROM nm_elements_all
      WHERE awlrs_group_api.is_circular_route(ne_id) = 'Y'
@@ -2474,9 +2535,9 @@ AS
                      --
                      lv_start_ne_id := null;
                      /*
-                     ||only need to worry about start ne id being set if it was circular before creating element.                     
+                     ||only need to worry about start ne id being set if it was circular before creating element.
                      */
-                     IF awlrs_group_api.is_circular_route(lt_parent_ids(i).ne_id) = 'Y' 
+                     IF awlrs_group_api.is_circular_route(lt_parent_ids(i).ne_id) = 'Y'
                       THEN
                          --
                          FOR j IN 1..pi_circular_group_ids.COUNT LOOP
