@@ -7,11 +7,11 @@
 --
 --  PVCS Identifiers :-
 --
---      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs13150_metadata_upg.sql-arc   1.0   Jul 23 2020 15:52:40   Mike.Huitson  $
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs13150_metadata_upg.sql-arc   1.1   Jul 27 2020 15:41:22   Barbara.Odriscoll  $
 --      Module Name      : $Workfile:   awlrs1010_awlrs13150_metadata_upg.sql  $
---      Date into PVCS   : $Date:   Jul 23 2020 15:52:40  $
---      Date fetched Out : $Modtime:   Jul 23 2020 15:38:16  $
---      Version          : $Revision:   1.0  $
+--      Date into PVCS   : $Date:   Jul 27 2020 15:41:22  $
+--      Date fetched Out : $Modtime:   Jul 27 2020 15:39:26  $
+--      Version          : $Revision:   1.1  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
@@ -1768,6 +1768,89 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 89)
+/
+
+------------------------------------------------------------------
+SET TERM ON
+PROMPT Launchpad metadata for Process Framework
+SET TERM OFF
+INSERT INTO HIG_STANDARD_FAVOURITES
+   (HSTF_PARENT, HSTF_CHILD, HSTF_DESCR, HSTF_TYPE, HSTF_ORDER)
+SELECT 'AWLRS_ADMIN_LAUNCHPAD'
+      ,'AWLRS_PROC_FWORK'
+      ,'Processes'
+      ,'F'
+      ,10
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_ADMIN_LAUNCHPAD'
+                     AND HSTF_CHILD = 'AWLRS_PROC_FWORK')
+/
+INSERT INTO HIG_STANDARD_FAVOURITES
+   (HSTF_PARENT, HSTF_CHILD, HSTF_DESCR, HSTF_TYPE, HSTF_ORDER)
+SELECT 'AWLRS_PROC_FWORK'
+      ,'HIG2550'
+      ,'Process Framework Administration'
+      ,'M'
+      ,10
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_PROC_FWORK'
+                     AND HSTF_CHILD = 'HIG2550')
+/
+INSERT INTO HIG_STANDARD_FAVOURITES
+   (HSTF_PARENT, HSTF_CHILD, HSTF_DESCR, HSTF_TYPE, HSTF_ORDER)
+SELECT 'AWLRS_PROC_FWORK'
+      ,'HIG2520'
+      ,'Process Monitor'
+      ,'M'
+      ,20
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_PROC_FWORK'
+                     AND HSTF_CHILD = 'HIG2520')
+/
+INSERT INTO HIG_STANDARD_FAVOURITES
+   (HSTF_PARENT, HSTF_CHILD, HSTF_DESCR, HSTF_TYPE, HSTF_ORDER)
+SELECT 'AWLRS_PROC_FWORK'
+      ,'HIG2500'
+      ,'Process Types'
+      ,'M'
+      ,30
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_PROC_FWORK'
+                     AND HSTF_CHILD = 'HIG2500')
+/
+INSERT INTO HIG_STANDARD_FAVOURITES
+   (HSTF_PARENT, HSTF_CHILD, HSTF_DESCR, HSTF_TYPE, HSTF_ORDER)
+SELECT 'AWLRS_PROC_FWORK'
+      ,'HIG2530'
+      ,'Scheduling Frequencies'
+      ,'M'
+      ,40
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_PROC_FWORK'
+                     AND HSTF_CHILD = 'HIG2530')
+/
+INSERT INTO HIG_STANDARD_FAVOURITES
+   (HSTF_PARENT, HSTF_CHILD, HSTF_DESCR, HSTF_TYPE, HSTF_ORDER)
+SELECT 'AWLRS_PROC_FWORK'
+      ,'HIG2510'
+      ,'Submit Process'
+      ,'M'
+      ,50
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_PROC_FWORK'
+                     AND HSTF_CHILD = 'HIG2510')
 /
 
 ------------------------------------------------------------------
