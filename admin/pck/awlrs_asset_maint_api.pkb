@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.10   May 15 2020 12:09:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.11   Jul 27 2020 16:48:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_maint_api.pkb  $
-  --       Date into PVCS   : $Date:   May 15 2020 12:09:32  $
-  --       Date fetched Out : $Modtime:   May 15 2020 11:43:06  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   Jul 27 2020 16:48:56  $
+  --       Date fetched Out : $Modtime:   Jul 16 2020 12:38:48  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.10  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_maint_api';
   --
   TYPE attr_name_tab IS TABLE OF nm_inv_type_attribs_all.ita_attrib_name%TYPE INDEX BY BINARY_INTEGER;
@@ -152,7 +152,7 @@ AS
                   ,awlrs_alim_doc_man_api.get_url_template(pi_table_name => CASE WHEN nit_table_name IS NOT NULL THEN nit_table_name ELSE 'NM_INV_ITEMS' END) alim_doc_man_url
                   ,it1.nit_pnt_or_cont asset_point_or_continuous
               FROM nm_inv_types it1
-             WHERE it1.nit_category = 'I' --IN ('I','F') will support FT when LB is fixed.
+             WHERE it1.nit_category IN('I','P') --IN ('I','P','F') will support FT when LB is fixed.
                AND it1.nit_use_xy = 'N'
                AND EXISTS (SELECT 1
                              FROM hig_users hus
@@ -891,7 +891,7 @@ AS
                   ,'I'
                   ,nit_inv_type
               FROM nm_inv_types
-             WHERE nit_category = 'I' --IN ('I','F') will support FT when LB is fixed.
+             WHERE nit_category IN('I','P') --IN ('I','P','F') will support FT when LB is fixed.
                AND nit_use_xy = 'N'
                AND EXISTS (SELECT 1
                              FROM hig_users hus
@@ -1283,7 +1283,7 @@ AS
               BULK COLLECT
               INTO lt_asset_types
               FROM nm_inv_types
-             WHERE nit_category = 'I' --IN ('I','F') will support FT when LB is fixed.
+             WHERE nit_category IN('I','P') --IN ('I','P','F') will support FT when LB is fixed.
                AND nit_use_xy = 'N'
                AND EXISTS (SELECT 1
                              FROM hig_users hus
@@ -1785,6 +1785,41 @@ AS
     lt_iit                iit_tab;
     lt_old_asset_attribs  awlrs_asset_api.flex_attr_tab;
     --
+    PROCEDURE add_asset(pi_iit_ne_id IN     nm_inv_items_all.iit_ne_id%TYPE
+                       ,pi_iit_tab   IN OUT NOCOPY iit_tab)
+      IS
+      --
+      lv_exists BOOLEAN := FALSE;
+      --
+    BEGIN
+      --
+      FOR i IN 1..pi_iit_tab.COUNT LOOP
+        --
+        IF pi_iit_tab(i).iit_ne_id = pi_iit_ne_id
+         THEN
+            lv_exists := TRUE;
+            EXIT;
+        END IF;
+        --
+      END LOOP;
+      --
+      IF NOT lv_exists
+       THEN
+          --
+          pi_iit_tab(pi_iit_tab.COUNT+1) := nm3get.get_iit(pi_iit_ne_id => pi_iit_ne_id);
+          --
+          IF pi_iit_tab.COUNT > 1
+           AND pi_iit_tab(pi_iit_tab.COUNT).iit_inv_type != pi_iit_tab(pi_iit_tab.COUNT-1).iit_inv_type
+           THEN
+              --All assets must be of the same type
+              hig.raise_ner(pi_appl => 'AWLRS'
+                           ,pi_id   => 67);
+          END IF;
+          --
+      END IF;
+      --
+    END add_asset;
+    --
   BEGIN
     /*
     ||Make sure we are not in historic mode.
@@ -1803,15 +1838,8 @@ AS
                        ,pi_id   => 285);
       END IF;
       --
-      lt_iit(i) := nm3get.get_iit(pi_iit_ne_id => pi_assets(i).asset_id);
-      --
-      IF i > 1
-       AND lt_iit(i).iit_inv_type != lt_iit(i-1).iit_inv_type
-       THEN
-          --All assets must be of the same type
-          hig.raise_ner(pi_appl => 'AWLRS'
-                       ,pi_id   => 67);
-      END IF;
+      add_asset(pi_iit_ne_id => pi_assets(i).asset_id
+               ,pi_iit_tab   => lt_iit);
       --
     END LOOP;
     --
