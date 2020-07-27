@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.20   Jun 12 2020 18:36:40   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.21   Jul 27 2020 16:57:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   Jun 12 2020 18:36:40  $
-  --       Date fetched Out : $Modtime:   May 27 2020 17:48:12  $
-  --       Version          : $Revision:   1.20  $
+  --       Date into PVCS   : $Date:   Jul 27 2020 16:57:14  $
+  --       Date fetched Out : $Modtime:   Jun 19 2020 13:37:24  $
+  --       Version          : $Revision:   1.21  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.20  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.21  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -35,7 +35,8 @@ AS
                               ,domain_bind_column  VARCHAR2(30)
                               ,char_value          VARCHAR2(500)
                               ,required            nm_inv_type_attribs_all.ita_mandatory_yn%TYPE
-                              ,updateable          VARCHAR2(1));
+                              ,updateable          VARCHAR2(1)
+                              ,display_sequence    nm_inv_type_attribs_all.ita_disp_seq_no%TYPE);
   TYPE flex_attr_tab IS TABLE OF flex_attr_rec INDEX BY BINARY_INTEGER;
   --
   TYPE attrib_name_tab IS TABLE OF nm_inv_type_attribs_all.ita_attrib_name%TYPE INDEX BY BINARY_INTEGER;
@@ -104,6 +105,16 @@ AS
                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
                                  ,po_message_cursor   OUT sys_refcursor
                                  ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_flex_attribs(pi_iit_ne_id      IN  nm_inv_items_all.iit_ne_id%TYPE
+                           ,pi_inv_type       IN  nm_inv_items_all.iit_inv_type%TYPE
+                           ,pi_disp_derived   IN  BOOLEAN DEFAULT TRUE
+                           ,pi_disp_inherited IN  BOOLEAN DEFAULT TRUE
+                           ,pi_exclude_cols   IN  view_col_names_tab DEFAULT CAST (null as view_col_names_tab))
+    RETURN flex_attr_tab;
 
   --
   -----------------------------------------------------------------------------

@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.41   Nov 21 2019 15:31:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.42   Jul 27 2020 16:57:14   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Nov 21 2019 15:31:46  $
-  --       Date fetched Out : $Modtime:   Nov 21 2019 11:08:54  $
-  --       Version          : $Revision:   1.41  $
+  --       Date into PVCS   : $Date:   Jul 27 2020 16:57:14  $
+  --       Date fetched Out : $Modtime:   Jun 19 2020 13:43:48  $
+  --       Version          : $Revision:   1.42  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.41  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.42  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -1028,31 +1028,23 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_flex_attribs(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
-                            ,pi_inv_type         IN  nm_inv_items_all.iit_inv_type%TYPE
-                            ,pi_disp_derived     IN  BOOLEAN DEFAULT TRUE
-                            ,pi_disp_inherited   IN  BOOLEAN DEFAULT TRUE
-                            ,pi_exclude_cols     IN  view_col_names_tab DEFAULT CAST (null as view_col_names_tab)
-                            ,po_message_severity OUT hig_codes.hco_code%TYPE
-                            ,po_message_cursor   OUT sys_refcursor
-                            ,po_cursor           OUT sys_refcursor)
-    IS
+  FUNCTION get_flex_attribs(pi_iit_ne_id      IN  nm_inv_items_all.iit_ne_id%TYPE
+                           ,pi_inv_type       IN  nm_inv_items_all.iit_inv_type%TYPE
+                           ,pi_disp_derived   IN  BOOLEAN DEFAULT TRUE
+                           ,pi_disp_inherited IN  BOOLEAN DEFAULT TRUE
+                           ,pi_exclude_cols   IN  view_col_names_tab DEFAULT CAST (null as view_col_names_tab))
+    RETURN flex_attr_tab IS
     --
-    lv_disp_derived VARCHAR2(1) := CASE WHEN pi_disp_derived THEN 'Y' ELSE 'N' END;
-    lv_disp_inherited VARCHAR2(1) := CASE WHEN pi_disp_inherited THEN 'Y' ELSE 'N' END;
-    lt_columns  nm3flx.tab_type_columns;
+    lv_disp_derived    VARCHAR2(1) := CASE WHEN pi_disp_derived THEN 'Y' ELSE 'N' END;
+    lv_disp_inherited  VARCHAR2(1) := CASE WHEN pi_disp_inherited THEN 'Y' ELSE 'N' END;
+    --
     lt_column_names  nm_max_varchar_tbl := nm_max_varchar_tbl();
+    lt_retval        flex_attr_tab;
     --
-  BEGIN
-    --
-    FOR i IN 1..pi_exclude_cols.COUNT LOOP
-      --
-      lt_column_names.extend;
-      lt_column_names(i) := pi_exclude_cols(i);
-      --
-    END LOOP;
-    --
-    OPEN po_cursor FOR
+    CURSOR get_attribs(cp_inv_type     IN nm_inv_items_all.iit_inv_type%TYPE
+                      ,cp_iit_ne_id    IN nm_inv_items_all.iit_ne_id%TYPE
+                      ,ct_column_names IN nm_max_varchar_tbl)
+        IS
     SELECT column_name
           ,prompt
           ,view_column_name
@@ -1065,9 +1057,10 @@ AS
           ,field_case
           ,CAST(domain_id AS VARCHAR2(40)) domain_id
           ,CAST(domain_bind_column AS VARCHAR2(30)) domain_bind_column
-          ,CAST(char_value AS VARCHAR2(240)) char_value
+          ,CAST(char_value AS VARCHAR2(500)) char_value
           ,required
           ,updateable
+          ,seq_no
       FROM (SELECT ita_attrib_name   column_name
                   ,ita_scrn_text     prompt
                   ,ita_view_col_name view_column_name
@@ -1092,22 +1085,92 @@ AS
                   ,ita_case          field_case
                   ,ita_id_domain     domain_id
                   ,NULL              domain_bind_column
-                  ,awlrs_asset_api.get_attrib_value(pi_inv_type    => pi_inv_type
-                                                   ,pi_ne_id       => pi_iit_ne_id
+                  ,awlrs_asset_api.get_attrib_value(pi_inv_type    => cp_inv_type
+                                                   ,pi_ne_id       => cp_iit_ne_id
                                                    ,pi_attrib_name => ita_attrib_name) char_value
                   ,ita_mandatory_yn  required
                   ,'Y'               updateable
                   ,ita_disp_seq_no   seq_no
               FROM nm_inv_type_attribs
-             WHERE ita_inv_type = pi_inv_type
-               AND ita_view_col_name NOT IN (SELECT * FROM TABLE(CAST(lt_column_names AS nm_max_varchar_tbl))))
+             WHERE ita_inv_type = cp_inv_type
+               AND ita_view_col_name NOT IN (SELECT * FROM TABLE(CAST(ct_column_names AS nm_max_varchar_tbl))))
      ORDER
         BY seq_no
           ,column_name
          ;
     --
+  BEGIN
+    --
+    FOR i IN 1..pi_exclude_cols.COUNT LOOP
+      --
+      lt_column_names.extend;
+      lt_column_names(i) := pi_exclude_cols(i);
+      --
+    END LOOP;
+    --
+    OPEN  get_attribs(pi_inv_type
+                     ,pi_iit_ne_id
+                     ,lt_column_names);
+    FETCH get_attribs
+     BULK COLLECT
+     INTO lt_retval;
+    CLOSE get_attribs;
+    --
+    RETURN lt_retval;
+    --
+  END get_flex_attribs;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_flex_attribs(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                            ,pi_inv_type         IN  nm_inv_items_all.iit_inv_type%TYPE
+                            ,pi_disp_derived     IN  BOOLEAN DEFAULT TRUE
+                            ,pi_disp_inherited   IN  BOOLEAN DEFAULT TRUE
+                            ,pi_exclude_cols     IN  view_col_names_tab DEFAULT CAST (null as view_col_names_tab)
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lt_attribs  flex_attr_tab;
+    --
+  BEGIN
+    --
+    lt_attribs := get_flex_attribs(pi_iit_ne_id      => pi_iit_ne_id
+                                  ,pi_inv_type       => pi_inv_type
+                                  ,pi_disp_derived   => pi_disp_derived
+                                  ,pi_disp_inherited => pi_disp_inherited
+                                  ,pi_exclude_cols   => pi_exclude_cols);
+    --
+    OPEN po_cursor FOR
+    SELECT t.attrib_name column_name
+          ,t.scrn_text prompt
+          ,t.view_col_name view_column_name
+          ,t.datatype
+          ,t.format_mask
+          ,t.field_length
+          ,t.decimal_places
+          ,t.min_value
+          ,t.max_value
+          ,t.field_case
+          ,t.domain_id
+          ,t.domain_bind_column
+          ,t.char_value
+          ,t.required
+          ,t.updateable
+          ,t.display_sequence
+      FROM TABLE(lt_attribs) t
+         ;
+    --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
     --
   END get_flex_attribs;
 
@@ -1149,6 +1212,12 @@ AS
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+    --
   END get_domain_values;
 
   --
@@ -1177,6 +1246,15 @@ AS
         hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 86);
     END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
     --
   END can_update_asset;
 
