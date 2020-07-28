@@ -3,22 +3,26 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.5   Jun 22 2020 16:35:02   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jun 22 2020 16:35:02  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.6   Jul 28 2020 11:48:10   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jul 28 2020 11:48:10  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkb  $
-  --       Date fetched Out : $Modtime:   Jun 22 2020 16:30:30  $
-  --       Version          : $Revision:   1.5  $
+  --       Date fetched Out : $Modtime:   Jul 28 2020 11:46:46  $
+  --       Version          : $Revision:   1.6  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.6  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
-  --roles constants
+  --constants
   cv_hig_admin      CONSTANT VARCHAR2(9) := 'HIG_ADMIN';
+  cv_network        CONSTANT VARCHAR2(7) := 'NETWORK';            
+  cv_node           CONSTANT VARCHAR2(4) := 'NODE';
+  cv_asset          CONSTANT VARCHAR2(5) := 'ASSET';
+  
   --
   -----------------------------------------------------------------------------
   --
@@ -90,6 +94,239 @@ AS
     --
   END get_last_analysed_date;
   
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_inv_type(pi_theme_id IN  nm_inv_themes.nith_nth_theme_id%TYPE) RETURN nm_inv_themes.nith_nit_id%TYPE
+  IS                       
+  --
+  lv_inv_type   nm_inv_themes.nith_nit_id%TYPE := NULL;
+  --
+  BEGIN
+    --
+    SELECT nith_nit_id
+      INTO lv_inv_type
+      FROM nm_inv_themes
+     WHERE nith_nth_theme_id  =  pi_theme_id;
+    --
+    RETURN lv_inv_type;
+    --
+  EXCEPTION
+    WHEN no_data_found
+      THEN
+         RETURN lv_inv_type;
+          
+  END get_inv_type;
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_custom_theme(pi_theme_id  IN  nm_themes_all.nth_theme_id%TYPE) RETURN VARCHAR2
+  IS                       
+  --
+  lv_exists   varchar2(1) := 'N';
+  --
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists
+      FROM nm_themes_all
+     WHERE nth_theme_id  =  pi_theme_id
+       AND nth_where IS NOT NULL;
+    --
+    RETURN lv_exists; 
+    --
+  EXCEPTION
+    WHEN no_data_found
+      THEN
+         RETURN lv_exists;
+          
+  END is_custom_theme; 
+ 
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_group_type(pi_theme_id    IN     nm_nw_themes.nnth_nth_theme_id%TYPE) RETURN nm_linear_types.nlt_gty_type%TYPE
+  IS                       
+  --
+  lv_group_type   nm_linear_types.nlt_gty_type%TYPE := Null;
+  --
+  BEGIN
+    --
+    SELECT group_type 
+      INTO lv_group_type
+      FROM (
+            SELECT nlt_gty_type   group_type
+              FROM nm_linear_types
+                  ,nm_nw_themes 
+             WHERE nnth_nth_theme_id = pi_theme_id  
+               AND nlt_id = nnth_nlt_id
+               AND nlt_g_i_d = 'G'
+            UNION   
+            SELECT nat_gty_group_type   group_type
+              FROM nm_area_types
+                  ,nm_area_themes
+             WHERE nath_nth_theme_id = pi_theme_id
+               AND nath_nat_id = nat_id
+            );
+    --
+    RETURN lv_group_type; 
+    --
+  EXCEPTION
+    WHEN no_data_found
+      THEN
+         RETURN lv_group_type;
+          
+  END get_group_type;
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_group_theme(pi_theme_id    IN     nm_nw_themes.nnth_nth_theme_id%TYPE) RETURN VARCHAR2
+  IS                       
+  --
+  lv_exists   varchar2(1) := 'N';
+  --
+  BEGIN
+    --
+    SELECT rec_exists 
+      INTO lv_exists
+      FROM (
+            SELECT 'Y'   rec_exists
+              FROM nm_linear_types
+                  ,nm_nw_themes 
+             WHERE nnth_nth_theme_id = pi_theme_id  
+               AND nlt_id = nnth_nlt_id
+               AND nlt_g_i_d = 'G'
+            UNION   
+            SELECT 'Y'   rec_exists
+              FROM nm_area_types
+                  ,nm_area_themes
+             WHERE nath_nth_theme_id = pi_theme_id
+               AND nath_nat_id = nat_id
+            );
+    --
+    RETURN lv_exists; 
+    --
+  EXCEPTION
+    WHEN no_data_found
+      THEN
+         RETURN lv_exists;
+          
+  END is_group_theme;
+   
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_datum_theme(pi_theme_id  IN   nm_inv_themes.nith_nth_theme_id%TYPE) RETURN VARCHAR2
+  IS                       
+  --
+  lv_exists   varchar2(1) := 'N';
+  --
+  BEGIN
+    --
+    SELECT NVL((SELECT 'Y'         
+                 FROM nm_nw_themes
+                     ,nm_linear_types
+                WHERE nnth_nth_theme_id = nth_theme_id
+                  AND nnth_nlt_id = nlt_id
+                  AND nlt_g_i_d = 'D'),'N') is_datum_theme
+     INTO lv_exists 
+     FROM nm_themes_all
+    WHERE nth_theme_id = pi_theme_id;
+    --
+    RETURN lv_exists; 
+    --
+  EXCEPTION
+    WHEN no_data_found
+      THEN
+         RETURN lv_exists;
+          
+  END is_datum_theme; 
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_node_type(pi_theme_id IN nm_themes_all.nth_theme_id%TYPE) RETURN nm_node_types.nnt_type%TYPE
+  IS                       
+  --
+  lv_node_type nm_node_types.nnt_type%TYPE := NULL;
+  --
+  BEGIN
+    --
+    SELECT nnt_type
+      INTO lv_node_type              
+      FROM nm_themes_all
+          ,nm_node_types
+     WHERE nth_theme_id = pi_theme_id
+       AND nnt_type = SUBSTR(nth_table_name,
+                       INSTR(nth_table_name, '_', 1, 3) + 1,
+                      (INSTR(nth_table_name, '_SDO', 1) - INSTR(nth_table_name, '_', 1, 3) - 1)); 
+    --
+    RETURN lv_node_type; 
+    --
+  EXCEPTION
+    WHEN no_data_found
+      THEN
+         RETURN lv_node_type;
+          
+  END get_node_type;  
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_node_theme(pi_theme_id   IN     nm_themes_all.nth_theme_id%TYPE) RETURN VARCHAR2
+  IS                       
+  --
+  lv_exists   VARCHAR2(1) := 'N';
+  --
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists              
+      FROM nm_themes_all
+          ,nm_node_types
+     WHERE nth_theme_id = pi_theme_id
+       AND nnt_type = SUBSTR(nth_table_name,
+                       INSTR(nth_table_name, '_', 1, 3) + 1,
+                      (INSTR(nth_table_name, '_SDO', 1) - INSTR(nth_table_name, '_', 1, 3) - 1)); 
+    --
+    RETURN lv_exists; 
+    --
+  EXCEPTION
+    WHEN no_data_found
+      THEN
+         RETURN lv_exists;
+          
+  END is_node_theme;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_table_theme(pi_theme_id   IN     nm_themes_all.nth_theme_id%TYPE) RETURN VARCHAR2
+  IS                       
+  --
+  lv_exists   VARCHAR2(1) := 'N';
+  --
+  BEGIN
+    --
+    SELECT 'Y'
+      INTO lv_exists              
+      FROM nm_themes_all
+          ,all_objects
+     WHERE nth_theme_id   = pi_theme_id
+       AND nth_table_name = object_name
+       AND owner          = UPPER(SYS_CONTEXT('NM3CORE','APPLICATION_OWNER'))
+       AND object_type    = 'TABLE'
+       AND is_group_theme(pi_theme_id => pi_theme_id) = 'N'     
+       AND is_custom_theme(pi_theme_id => pi_theme_id) = 'N';     
+    --
+    RETURN lv_exists;
+    --
+  EXCEPTION
+    WHEN no_data_found
+      THEN
+         RETURN lv_exists;
+          
+  END is_table_theme;
   --
   -----------------------------------------------------------------------------
   --
@@ -369,10 +606,7 @@ AS
           ,nta1.nth_update_on_edit           update_on_edit
           ,nta1.nth_snap_to_theme            snap_to_theme
           ,nta1.nth_location_updatable       is_updatable
-          ,CASE 
-             WHEN nta1.nth_where IS NOT NULL THEN 'Y'
-             WHEN nta1.nth_where IS NULL THEN 'N'
-           END                               is_custom
+          ,is_custom_theme(pi_theme_id => nta1.nth_theme_id) is_custom
       FROM nm_themes_all  nta1
           ,nm_themes_all  nta2
           ,nm_units un  
@@ -436,10 +670,7 @@ AS
           ,nta1.nth_update_on_edit           update_on_edit
           ,nta1.nth_snap_to_theme            snap_to_theme
           ,nta1.nth_location_updatable       is_updatable
-          ,CASE 
-             WHEN nta1.nth_where IS NOT NULL THEN 'Y'
-             WHEN nta1.nth_where IS NULL THEN 'N'
-           END                               is_custom
+          ,is_custom_theme(pi_theme_id => nta1.nth_theme_id) is_custom
       FROM nm_themes_all  nta1
           ,nm_themes_all  nta2
           ,nm_units un 
@@ -516,7 +747,7 @@ AS
                                                       ,CASE 
                                                          WHEN nta1.nth_where IS NOT NULL THEN ''Y''
                                                          WHEN nta1.nth_where IS NULL THEN ''N''
-                                                       END                               is_custom
+                                                        END                               is_custom    
                                                   FROM nm_themes_all  nta1
                                                       ,nm_themes_all  nta2
                                                       ,nm_units un 
@@ -1042,7 +1273,7 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION inv_themes_exist(pi_theme_id  IN  nm_inv_themes.nith_nth_theme_id%TYPE)
+  FUNCTION is_inv_theme(pi_theme_id  IN  nm_inv_themes.nith_nth_theme_id%TYPE)
     RETURN VARCHAR2
   IS
     lv_exists VARCHAR2(1):= 'N';
@@ -1051,7 +1282,10 @@ AS
     SELECT 'Y'
       INTO lv_exists
       FROM nm_inv_themes
-     WHERE nith_nth_theme_id = pi_theme_id;
+          ,nm_themes_all 
+     WHERE nith_nth_theme_id = pi_theme_id
+       AND nth_theme_id      = nith_nth_theme_id 
+       AND nth_where IS NULL;  -- added to ensure custom themes are excluded --
     --   
     RETURN lv_exists;
     -- 
@@ -1059,7 +1293,7 @@ AS
     WHEN NO_DATA_FOUND
      THEN
         RETURN lv_exists;
-  END inv_themes_exist;
+  END is_inv_theme;
   
   --
   -----------------------------------------------------------------------------
@@ -1073,7 +1307,6 @@ AS
     --
     OPEN po_cursor FOR
     SELECT nt_type
-          ,nt_unique
           ,nt_descr 
       FROM nm_types
      WHERE nt_datum = 'Y'
@@ -1102,8 +1335,6 @@ AS
     OPEN po_cursor FOR
     SELECT ngt_group_type
           ,ngt_descr
-          ,ngt_nt_type
-          ,ngt_linear_flag
       FROM nm_group_types
      WHERE ngt_nt_type not in ('NSGN')
      ORDER BY ngt_group_type;
@@ -1131,8 +1362,7 @@ AS
     OPEN po_cursor FOR
      SELECT nit_inv_type
            ,nit_descr
-           ,nit_category 
-       FROM nm_inv_types
+        FROM nm_inv_types
       WHERE nit_category != 'G'
       ORDER BY nit_inv_type;
     --
@@ -1177,30 +1407,28 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  
   PROCEDURE create_group_theme(pi_nt_type           IN      nm_group_types.ngt_nt_type%TYPE
                               ,pi_group_type        IN      nm_group_types.ngt_group_type%TYPE
                               ,pi_linear_flag       IN      nm_group_types.ngt_linear_flag%TYPE
                               ,pi_theme_name        IN      nm_themes_all.nth_theme_name%TYPE
                               ,pi_log_errors        IN      varchar2
-                              ,po_log_errors_id        OUT  nm3sdm_dyn_seg_ex.ndse_job_id%TYPE
-                              ,po_message_severity     OUT  hig_codes.hco_code%TYPE
-                              ,po_message_cursor       OUT  sys_refcursor)
+                              ,po_log_errors_id     IN OUT  nm3sdm_dyn_seg_ex.ndse_job_id%TYPE
+                              ,po_messages          IN OUT awlrs_message_tab)
   IS                              
   --
   lv_job_id   nm3sdm_dyn_seg_ex.ndse_job_id%TYPE;
   --
   BEGIN
     --
-    SAVEPOINT create_group_theme_sp;
-    --
     awlrs_util.check_historic_mode;  
     --
     --Firstly we need to check the caller has the correct roles to continue--
     IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
       THEN
-         hig.raise_ner(pi_appl => 'HIG'
-                      ,pi_id   => 86);
+         awlrs_util.add_ner_to_message_tab(pi_ner_appl      => 'HIG'
+                                          ,pi_ner_id        => 86
+                                          ,pi_category      => awlrs_util.c_msg_cat_error
+                                          ,po_message_tab   => po_messages);
     END IF;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Network Type'
@@ -1214,12 +1442,14 @@ AS
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Theme Name'
                                ,pi_parameter_value =>  pi_theme_name);
-    
+    --
     IF theme_exists(pi_theme_name  =>  pi_theme_name) = 'Y'
      THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 30
-                     ,pi_supplementary_info  => 'Theme with this name already exists, theme name: '||pi_theme_name);
+        awlrs_util.add_ner_to_message_tab(pi_ner_appl            => 'HIG'
+                                         ,pi_ner_id              => 30
+                                         ,pi_supplementary_info  => 'Theme with this name already exists, theme name: '||pi_theme_name
+                                         ,pi_category            => awlrs_util.c_msg_cat_error
+                                         ,po_message_tab         => po_messages);
     END IF;
     --
     IF pi_log_errors = 'Y'
@@ -1300,15 +1530,38 @@ AS
                                                    AND nat_gty_group_type = pi_group_type))                    
                                AND nth_feature_table LIKE '%_DT');  
     --                               
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --   
-  EXCEPTION
-    WHEN OTHERS
-     THEN
-        ROLLBACK TO create_group_theme_sp;
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
+  END create_group_theme;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_group_theme(pi_group_type        IN      nm_group_types.ngt_group_type%TYPE
+                              ,pi_theme_name        IN      nm_themes_all.nth_theme_name%TYPE
+                              ,pi_log_errors        IN      varchar2
+                              ,po_log_errors_id     IN OUT  nm3sdm_dyn_seg_ex.ndse_job_id%TYPE
+                              ,po_messages          IN OUT awlrs_message_tab)
+  IS                              
+  --
+  lv_ngt_nt_type      nm_group_types.ngt_nt_type%TYPE;
+  lv_ngt_linear_flag  nm_group_types.ngt_linear_flag%TYPE;
+  --
+  BEGIN
+    --
+    SELECT ngt_nt_type
+          ,ngt_linear_flag
+      INTO lv_ngt_nt_type
+          ,lv_ngt_linear_flag
+      FROM nm_group_types
+     WHERE ngt_group_type =  pi_group_type;
+    --
+    create_group_theme(pi_nt_type           =>  lv_ngt_nt_type
+                      ,pi_group_type        =>  pi_group_type
+                      ,pi_linear_flag       =>  lv_ngt_linear_flag
+                      ,pi_theme_name        =>  pi_theme_name
+                      ,pi_log_errors        =>  pi_log_errors
+                      ,po_log_errors_id     =>  po_log_errors_id
+                      ,po_messages          =>  po_messages);
+    --                                 
   END create_group_theme;
   
   --
@@ -1339,21 +1592,20 @@ AS
   --
   PROCEDURE create_node_theme(pi_node_type         IN      nm_node_types.nnt_type%TYPE
                              ,pi_theme_name        IN      nm_themes_all.nth_theme_name%TYPE
-                             ,po_message_severity     OUT  hig_codes.hco_code%TYPE
-                             ,po_message_cursor       OUT  sys_refcursor)
+                             ,po_messages          IN OUT awlrs_message_tab)
   IS                              
   --
   BEGIN
-    --
-    SAVEPOINT create_node_theme_sp;
     --
     awlrs_util.check_historic_mode;  
     --
     --Firstly we need to check the caller has the correct roles to continue--
     IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
       THEN
-         hig.raise_ner(pi_appl => 'HIG'
-                      ,pi_id   => 86);
+         awlrs_util.add_ner_to_message_tab(pi_ner_appl      => 'HIG'
+                                          ,pi_ner_id        => 86
+                                          ,pi_category      => awlrs_util.c_msg_cat_error
+                                          ,po_message_tab   => po_messages);
     END IF;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Node'
@@ -1364,9 +1616,11 @@ AS
     
     IF theme_exists(pi_theme_name  =>  pi_theme_name) = 'Y'
      THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 30
-                     ,pi_supplementary_info  => 'Theme with this name already exists, theme name: '||pi_theme_name);
+        awlrs_util.add_ner_to_message_tab(pi_ner_appl           => 'HIG'
+                                         ,pi_ner_id             => 30
+                                         ,pi_supplementary_info => 'Theme with this name already exists, theme name: '||pi_theme_name
+                                         ,pi_category           => awlrs_util.c_msg_cat_error
+                                         ,po_message_tab        => po_messages);
     END IF;
     --
     nm3layer_tool.create_node_layer(pi_node_type);
@@ -1378,15 +1632,6 @@ AS
        SET nth_theme_name = pi_theme_name
      WHERE nth_table_name LIKE 'V_NM_NO_'||UPPER(pi_node_type)||'_SDO';
     -- 
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --   
-  EXCEPTION
-    WHEN OTHERS
-     THEN
-        ROLLBACK TO create_node_theme_sp;
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
   END create_node_theme;        
   
   --
@@ -1416,13 +1661,9 @@ AS
                               --,pi_xsp_offset        IN      varchar2
                               ,pi_dynseg            IN      varchar2
                               ,pi_theme_name        IN      nm_themes_all.nth_theme_name%TYPE
-                              ,pi_use_history       IN      varchar2
-                              ,pi_start_date_col    IN      nm_themes_all.nth_start_date_column%TYPE 
-                              ,pi_end_date_col      IN      nm_themes_all.nth_end_date_column%TYPE
                               ,pi_log_errors        IN      varchar2
-                              ,po_log_errors_id        OUT  nm3sdm_dyn_seg_ex.ndse_job_id%TYPE         
-                              ,po_message_severity     OUT  hig_codes.hco_code%TYPE
-                              ,po_message_cursor       OUT  sys_refcursor)
+                              ,po_log_errors_id     IN OUT  nm3sdm_dyn_seg_ex.ndse_job_id%TYPE  
+                              ,po_messages          IN OUT awlrs_message_tab)       
   IS                              
   --
   lv_rec_nit  nm_inv_types%ROWTYPE;
@@ -1430,15 +1671,15 @@ AS
   --
   BEGIN
     --
-    SAVEPOINT create_asset_theme_sp;
-    --
     awlrs_util.check_historic_mode;  
     --
     --Firstly we need to check the caller has the correct roles to continue--
     IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
       THEN
-         hig.raise_ner(pi_appl => 'HIG'
-                      ,pi_id   => 86);
+         awlrs_util.add_ner_to_message_tab(pi_ner_appl      => 'HIG'
+                                          ,pi_ner_id        => 86
+                                          ,pi_category      => awlrs_util.c_msg_cat_error
+                                          ,po_message_tab   => po_messages);
     END IF;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Asset Type'
@@ -1453,26 +1694,17 @@ AS
     awlrs_util.validate_yn(pi_parameter_desc  => 'Log Errors'
                           ,pi_parameter_value => pi_log_errors);
     --
-    awlrs_util.validate_yn(pi_parameter_desc  => 'Use History'
-                          ,pi_parameter_value => pi_use_history);
-    --
-    IF pi_use_history = 'Y'
-      THEN
-        awlrs_util.validate_notnull(pi_parameter_desc  => 'Start Date Column'
-                                   ,pi_parameter_value =>  pi_start_date_col);
-      --
-        awlrs_util.validate_notnull(pi_parameter_desc  => 'End Date Column'
-                                   ,pi_parameter_value =>  pi_end_date_col);
-    END IF;                               
-    --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Theme Name'
                                ,pi_parameter_value =>  pi_theme_name);
     --
     IF theme_exists(pi_theme_name  =>  pi_theme_name) = 'Y'
      THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 30
-                     ,pi_supplementary_info  => 'Theme with this name already exists, theme name: '||pi_theme_name);
+        awlrs_util.add_ner_to_message_tab(pi_ner_appl            => 'HIG'
+                                         ,pi_ner_id              => 30
+                                         ,pi_supplementary_info  => 'Theme with this name already exists, theme name: '||pi_theme_name
+                                         ,pi_category            => awlrs_util.c_msg_cat_error
+                                         ,po_message_tab         => po_messages);
+        
     END IF;
     --
     /*
@@ -1487,11 +1719,26 @@ AS
        po_log_errors_id := lv_job_id;
     END IF;
     --
+    /* ORIG
     nm3sdm.make_inv_spatial_layer(pi_nit_inv_type => pi_asset_type
         	                     ,p_job_id        => CASE WHEN pi_log_errors = 'Y'
         	                                                THEN lv_job_id
         	                                              ELSE NULL
         	                                         END);
+    */    	                                         
+    IF pi_dynseg = 'Y'
+      THEN
+        nm3sdm.make_inv_spatial_layer(pi_nit_inv_type => pi_asset_type
+        	                         ,p_job_id        => CASE WHEN pi_log_errors = 'Y'
+        	                                                THEN lv_job_id
+        	                                                ELSE NULL
+        	                                             END);
+    ELSE    
+        nm3sdm.make_ona_inv_spatial_layer(pi_nit_inv_type => pi_asset_type
+                                         ,pi_nth_gtype    => null
+                                         ,pi_s_date_col   => null
+                                         ,pi_e_date_col   => null);
+    END IF;                                     	                                             
     --
     /*
     IF pi_xsp_offset = 'Y'
@@ -1548,36 +1795,25 @@ AS
                               WHERE nith_nit_id       = pi_asset_type
                                 AND nith_nth_theme_id = nth_theme_id
                                 AND nth_feature_table LIKE '%_DT');
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --   
-  EXCEPTION
-    WHEN OTHERS
-     THEN
-        ROLLBACK TO create_asset_theme_sp;
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
+  --
   END create_asset_theme;
                                                    
   --
   -----------------------------------------------------------------------------
   -- 
-  PROCEDURE get_custom_col_names_lov(pi_base_table_name   IN      nm_themes_all.nth_feature_table%TYPE
-                                    ,po_message_severity     OUT  hig_codes.hco_code%TYPE
-                                    ,po_message_cursor       OUT  sys_refcursor
-                                    ,po_cursor               OUT  sys_refcursor)
+  PROCEDURE get_table_attributes(pi_base_feature_table IN      nm_themes_all.nth_feature_table%TYPE
+                                ,po_message_severity      OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor        OUT  sys_refcursor
+                                ,po_cursor                OUT  sys_refcursor)
   IS
   --
   BEGIN
     --
-    OPEN po_cursor FOR
-     SELECT column_name
-           ,data_type
-       FROM all_tab_columns
-      WHERE table_name = pi_base_table_name
-        AND owner      = sys_context('NM3CORE','APPLICATION_OWNER')
-        AND data_type  NOT IN ('SDO_GEOMETRY', 'BLOB');
+    awlrs_search_api.get_table_attributes(pi_feature_table    => pi_base_feature_table 
+                                         ,po_message_severity => po_message_severity
+                                         ,po_message_cursor   => po_message_cursor
+                                         ,po_cursor           => po_cursor);    
+        
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1587,175 +1823,24 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END get_custom_col_names_lov;                              
-  
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE valid_custom_where_clause(pi_operator          IN      nm_themes_all.nth_theme_id%TYPE
-                                     ,pi_column_name       IN      nm_themes_all.nth_theme_name%TYPE
-                                     ,pi_condition         IN      nm_themes_all.nth_where%TYPE 
-                                     ,pi_value             IN      nm_themes_all.nth_where%TYPE
-                                     ,pi_value_datatype    IN      varchar2
-                                     ,pi_base_table_name   IN      nm_themes_all.nth_feature_table%TYPE
-                                     ,po_valid_yn             OUT  varchar2
-                                     ,po_message_severity     OUT  hig_codes.hco_code%TYPE
-                                     ,po_message_cursor       OUT  sys_refcursor)
-  IS
-  --
-  CURSOR check_value_func(p_value VARCHAR2) IS
-  SELECT DISTINCT 'Y' 
-    FROM all_objects 
-   WHERE p_value LIKE OBJECT_NAME || '(%' --functions with parameters
-      OR p_value = OBJECT_NAME -- functions without paras
-      OR p_value LIKE '%.' ||OBJECT_NAME -- functions with user
-      OR p_value LIKE '%.' ||OBJECT_NAME || '(%' -- functions with user and paras
-      OR p_value LIKE OBJECT_NAME || '.%'; -- packages with function in it.
-  -- 
-  lv_val_func     varchar2(100);
-  lv_temp_date    varchar2(60);
-  lv_dummy_date   date;
-  lv_dummy_number number;
-  lv_selectable   boolean;
-  --   
-  BEGIN
-    --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Operator'
-                               ,pi_parameter_value =>  pi_operator);
-    --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Column Name'
-                               ,pi_parameter_value =>  pi_column_name);
-    --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Condition'
-                               ,pi_parameter_value =>  pi_condition);
-    --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Value'
-                               ,pi_parameter_value =>  pi_value);
-    --
-    BEGIN
-      OPEN check_value_func(pi_value);
-        FETCH check_value_func 
-         INTO lv_val_func;
-      CLOSE check_value_func;
-      IF nvl(lv_val_func, 'N') <> 'Y' 
-        THEN  
-         IF pi_value_datatype = 'DATE' 
-          THEN
-            --	
-            IF pi_value = 'SYSDATE' 
-              THEN
-                NULL;
-            ELSIF pi_value LIKE '''%''' 
-              THEN
-                SELECT trim(rtrim(ltrim(pi_value, chr(39)), chr(39)))  
-                  INTO lv_temp_date
-                  FROM dual;
-            --        
-			    SELECT TO_DATE(lv_temp_date, NVL(hig.get_useopt('GRIDATE', USER), hig.get_sysopt('GRIDATE'))) 
-				  INTO lv_dummy_date
-				  FROM dual;
-			ELSE
-			    IF NOT nm3flx.can_string_be_select_from_tab(pi_string => pi_value
-                                                           ,pi_table  => pi_base_table_name
-                                                            )
-			     THEN
-                    hig.raise_ner(pi_appl               => 'NET'
-                                 ,pi_id                 => 121
-                                 ,pi_supplementary_info => pi_value);
-			    END IF;
-			END IF;
-			--
-	     ELSIF	pi_value_datatype = 'NUMBER' THEN
-			--	
-				SELECT pi_value
-		       	 INTO lv_dummy_number
-				 FROM dual;
-			--
-		 END IF;
-		--
-      END IF;
-	EXCEPTION
-	WHEN OTHERS THEN
-		hig.raise_ner(pi_appl               => 'NET'
-                     ,pi_id                 => 121
-	                 ,pi_supplementary_info => nm3flx.parse_error_message(SQLERRM));
-	END;	
-    --
-    IF nvl(lv_val_func, 'N') = 'Y' 
-      THEN
-	    lv_selectable := nm3flx.can_string_be_select_from_dual (p_string => pi_value);
-	  -- 
-	    IF NOT lv_selectable 
-	      THEN
-	        hig.raise_ner(pi_appl               => 'NET'
-		                 ,pi_id                 => 121
-		                 ,pi_supplementary_info => 'Object can not be used in this way.');
-		END IF;             	
-	END IF;
-  	--
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN OTHERS
-     THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);                                   
-  END valid_custom_where_clause;
-  
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE valid_custom_where_clause(pi_where_clause      IN      nm_themes_all.nth_where%TYPE
-                                     ,pi_base_theme_id     IN      nm_base_themes.nbth_theme_id%TYPE
-                                     ,po_valid_yn             OUT  varchar2
-                                     ,po_message_severity     OUT  hig_codes.hco_code%TYPE
-                                     ,po_message_cursor       OUT  sys_refcursor)
-  IS
-  --
-  BEGIN
-    --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Where Clause'
-                               ,pi_parameter_value =>  pi_where_clause);
-    --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Base Theme Id'
-                               ,pi_parameter_value =>  pi_base_theme_id);                               
-    --
-    IF NOT nm3layer_tool.parse_where_clause(pi_base_theme   => pi_base_theme_id 
-                                           ,pi_where_clause => pi_where_clause)
-      THEN
-        po_valid_yn := 'N';
-        hig.raise_ner(pi_appl => 'NET'
-                     ,pi_id   => 121);
-    ELSE
-        po_valid_yn := 'Y';                  
-    END IF;                                             
-  	--
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN OTHERS
-     THEN
-        po_valid_yn := 'N';
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);                                   
-  END valid_custom_where_clause;                                   
+  END get_table_attributes;                              
+                               
   --
   -----------------------------------------------------------------------------
   -- 
   PROCEDURE create_custom_theme(pi_base_theme_id        IN      nm_themes_all.nth_theme_id%TYPE
+                               ,pi_base_feature_table   IN      nm_themes_all.nth_feature_table%TYPE  
                                ,pi_custom_theme_name    IN      nm_themes_all.nth_theme_name%TYPE
-                               ,pi_where_clause         IN      nm_themes_all.nth_where%TYPE 
+                               ,pi_where_clause         IN      XMLTYPE
                                ,po_message_severity        OUT  hig_codes.hco_code%TYPE
                                ,po_message_cursor          OUT  sys_refcursor)
   IS                              
   --
-  lv_rec_nth   nm_themes_all%ROWTYPE;
+  lv_rec_nth      nm_themes_all%ROWTYPE;
+  lr_theme_types  awlrs_map_api.theme_types_rec;
+  lv_where_clause nm3type.max_varchar2;
   --
   BEGIN
-    --
-    SAVEPOINT create_custom_theme_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -1768,6 +1853,9 @@ AS
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Base Theme Id'
                                ,pi_parameter_value =>  pi_base_theme_id);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Base Feature Table'
+                               ,pi_parameter_value =>  pi_base_feature_table);
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Custom Theme Name'
                                ,pi_parameter_value =>  pi_custom_theme_name);
@@ -1793,19 +1881,33 @@ AS
                      ,pi_id   => 30
                      ,pi_supplementary_info  => 'Theme with this name already exists, theme name: '||pi_custom_theme_name);
     END IF;
-    --
+    --   
+    -- generate where clause from xml passed in --
     IF pi_where_clause IS NOT NULL 
-      AND NOT nm3layer_tool.parse_where_clause(pi_base_theme   => pi_base_theme_id
-                                              ,pi_where_clause => pi_where_clause)
-  	     THEN
- 	       hig.raise_ner(pi_appl => 'HIG'
-                        ,pi_id   => 83
-                        ,pi_supplementary_info => 'SQL is invalid');       
-  	END IF;  
+      THEN
+       --
+        lr_theme_types.feature_table := pi_base_feature_table; 
+        --
+        lv_where_clause := awlrs_search_api.generate_where_clause(pi_theme_types       => lr_theme_types
+                                                                 ,pi_criteria          => pi_where_clause);                                                                        
+        --
+        IF lv_where_clause IS NOT NULL 
+           AND NOT nm3layer_tool.parse_where_clause(pi_base_theme   => pi_base_theme_id
+                                                   ,pi_where_clause => lv_where_clause)
+             THEN
+               hig.raise_ner(pi_appl => 'HIG'
+                            ,pi_id   => 83
+                            ,pi_supplementary_info => 'SQL is invalid');        
+        END IF;
+    ELSE
+       -- default where clause -- 
+        lv_where_clause := '1 = 1';    
+       --
+    END IF; 
     --                               
     nm3layer_tool.make_layer_where(pi_base_theme    => pi_base_theme_id
-	                              ,pi_where_clause  => pi_where_clause
-	                              ,pi_view_name     => pi_custom_theme_name);                               
+	                              ,pi_where_clause  => lv_where_clause
+	                              ,pi_view_name     => pi_custom_theme_name);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1813,11 +1915,71 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
-        ROLLBACK TO create_custom_theme_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
+        
+        -- because of commit in nm3layer_tool.make_layer_where, need to delete the theme record just created --
+        BEGIN                                 
+         DELETE FROM nm_themes_all
+          WHERE nth_theme_name = pi_custom_theme_name;
+        EXCEPTION
+          WHEN NO_DATA_FOUND
+           THEN
+             NULL;
+        END; 
+        -- 
   END create_custom_theme;   
   
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_where_clause(pi_base_theme_id        IN      nm_themes_all.nth_theme_id%TYPE
+                                 ,pi_base_theme_name      IN      nm_themes_all.nth_theme_name%TYPE  
+                                 ,pi_where_clause         IN      XMLTYPE
+                                 ,po_message_severity        OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT  sys_refcursor)
+  IS                              
+  --
+  lt_theme_types  awlrs_map_api.theme_types_tab;
+  lv_where_clause nm3type.max_varchar2;
+  --
+  BEGIN
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Base Theme Id'
+                               ,pi_parameter_value =>  pi_base_theme_id);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Base Theme Name'
+                               ,pi_parameter_value =>  pi_base_theme_name);
+    --
+    lt_theme_types := awlrs_map_api.get_theme_types(pi_theme_name => pi_base_theme_name); 
+    --
+    IF lt_theme_types.COUNT > 0
+     THEN
+        --
+        --Generate the where clause from the given criteria.
+        lv_where_clause := awlrs_search_api.generate_where_clause(pi_theme_types       => lt_theme_types(1)
+                                                                 ,pi_criteria          => pi_where_clause);                                                                 
+        --                                                                 
+    END IF;    
+    --
+    IF lv_where_clause IS NOT NULL 
+      AND NOT nm3layer_tool.parse_where_clause(pi_base_theme   => pi_base_theme_id
+                                              ,pi_where_clause => lv_where_clause)
+  	     THEN
+ 	       hig.raise_ner(pi_appl => 'HIG'
+                        ,pi_id   => 83
+                        ,pi_supplementary_info => 'SQL is invalid');       
+  	END IF;  
+    --                               
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);                               
+  END validate_where_clause;                                    
   --
   -----------------------------------------------------------------------------
   -- 
@@ -1829,11 +1991,13 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-     SELECT DISTINCT(table_name)
+     SELECT table_name   table_name_code
+           ,table_name   table_name_descr
        FROM user_tab_cols 
       WHERE data_type  = 'SDO_GEOMETRY'
         AND table_name NOT LIKE 'BIN$%'
-     ORDER BY 1;
+     GROUP BY table_name   
+     ORDER BY 1;   
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1857,7 +2021,8 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-     SELECT column_name 
+     SELECT column_name  col_name_code
+           ,column_name  col_name_descr 
        FROM user_tab_cols 
       WHERE data_type IN ('NUMBER','CHAR','VARCHAR2')
         AND table_name = pi_table_name
@@ -1888,7 +2053,8 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-     SELECT column_name 
+     SELECT column_name  col_name_code
+           ,column_name  col_name_descr 
        FROM user_tab_cols 
       WHERE data_type   IN ('NUMBER','CHAR','VARCHAR2')
         AND table_name  = pi_table_name
@@ -1917,7 +2083,8 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-     SELECT column_name
+     SELECT column_name  col_name_code
+           ,column_name  col_name_descr 
        FROM user_tab_cols
       WHERE data_type in ('SDO_GEOMETRY')
         AND table_name = pi_table_name;
@@ -1942,8 +2109,8 @@ AS
                                  ,po_cursor               OUT  sys_refcursor)
   IS
   --
-  lv_sql           varchar2(100);
-  lv_retval        varchar2(100);
+  lv_sql           varchar2(200);
+  lv_retval        varchar2(200);
   lv_table_name    user_tab_cols.table_name%TYPE;
   lv_geom_col_name user_tab_cols.column_name%TYPE;
   --
@@ -1990,12 +2157,15 @@ AS
     IF lv_retval IS NOT NULL
       THEN
         OPEN po_cursor FOR
-         SELECT lv_retval
-           FROM dual;
+         SELECT lv_retval  geom_type_code
+               ,hco_meaning geom_type_descr
+           FROM hig_codes
+          WHERE hco_domain = 'GEOMETRY_TYPE'
+            AND hco_code   = lv_retval;
     ELSE
         OPEN po_cursor FOR
-         SELECT hco_code
-               ,hco_meaning
+         SELECT hco_code    geom_type_code 
+               ,hco_meaning geom_type_descr
            FROM   hig_codes
           WHERE hco_domain = 'GEOMETRY_TYPE'
          ORDER BY hco_code;
@@ -2009,7 +2179,37 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END get_reg_geom_type_lov;                                                                                          
+  END get_reg_geom_type_lov;  
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE user_sdo_geom_exists(pi_table_name        IN      user_tab_cols.table_name%TYPE
+                                ,pi_geom_col_name     IN      user_tab_cols.column_name%TYPE 
+                                ,po_override_metadata    OUT  varchar2
+                                ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor       OUT  sys_refcursor)
+  IS
+  --
+  BEGIN
+  
+    IF nm3sdo.is_table_regd(p_feature_table =>  pi_table_name
+                           ,p_col           =>  pi_geom_col_name)
+      THEN      
+        po_override_metadata := 'Y';
+    ELSE                    
+        po_override_metadata := 'N';
+    END IF;
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);    
+  END user_sdo_geom_exists;
+                                                                                                                     
   --
   -----------------------------------------------------------------------------
   -- 
@@ -2029,11 +2229,11 @@ AS
   lv_success boolean := TRUE;
   lv_error   varchar2(2000);
   --
+  lt_messages awlrs_message_tab := awlrs_message_tab();
+  --
   e_failed_reg exception;
   --
   BEGIN
-    --
-    SAVEPOINT reg_spatial_table_sp;
     --
     awlrs_util.check_historic_mode;  
     --
@@ -2067,14 +2267,18 @@ AS
 						                     ,p_shape_col         => pi_geom_col_name					                             						     
 						                     ,p_tol               => pi_tolerance
 						                     ,p_cre_idx           => pi_create_spidx
-						                     ,p_estimate_new_tol  => CASE WHEN pi_tolerance IS NULL THEN 'Y' ELSE 'N' END  -- Check this out with Pano --
-						                     ,p_override_sdo_meta => pi_override_metadata				                             
+						                     ,p_estimate_new_tol  => CASE WHEN pi_tolerance IS NULL THEN 'Y' ELSE 'N' END 
+						                     -- p_override_sdo_meta can take the values Y for complete override of existing registration
+                                             --                                         N to raise an error
+                                             --                                         I to ignore any override and use existing registration.
+						                     ,p_override_sdo_meta => CASE WHEN pi_override_metadata = 'N' then 'I' END 
 						                     ,p_asset_type        => NULL
 						                     ,p_asset_descr       => NULL
 						                     ,p_gtype             => pi_geom_type
 						                     ,p_error             => lv_error);
     IF NOT lv_success
       THEN
+        nm_debug.debug('raising e_failed_reg '||lv_error); 
         RAISE e_failed_reg;
     END IF;
     --
@@ -2084,12 +2288,29 @@ AS
   EXCEPTION
     WHEN e_failed_reg
       THEN
-        hig.raise_ner(pi_appl               => 'NET'
-                     ,pi_id                 => 288
-                     ,pi_supplementary_info => 'Error Message: '||lv_error);
+        awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'NET'
+                                         ,pi_ner_id      => 288
+                                         ,pi_supplementary_info => 'Error Message: '||lv_error
+                                         ,pi_category    => awlrs_util.c_msg_cat_error
+                                         ,po_message_tab => lt_messages);
+        --                                 
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        --                             
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+        -- because of commit in nm3layer_tool.register_table, need to delete the theme record just created --  
+        BEGIN                                 
+         DELETE FROM nm_themes_all
+          WHERE nth_theme_name = pi_theme_name;
+        EXCEPTION
+          WHEN NO_DATA_FOUND
+           THEN
+             NULL;
+        END;                               
+        --
     WHEN OTHERS
      THEN
-        ROLLBACK TO reg_spatial_table_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END register_spatial_table; 
@@ -2195,10 +2416,6 @@ AS
      OR (lr_db_rec.nth_location_updatable != pi_old_is_updatable)
      OR (lr_db_rec.nth_location_updatable IS NULL AND pi_old_is_updatable IS NOT NULL)
      OR (lr_db_rec.nth_location_updatable IS NOT NULL AND pi_old_is_updatable IS NULL)
-     --
-     --OR (lr_db_rec.nth_base_table_theme != pi_old_base_theme)
-     --OR (lr_db_rec.nth_base_table_theme IS NULL AND pi_old_base_theme IS NOT NULL)
-     --OR (lr_db_rec.nth_base_table_theme IS NOT NULL AND pi_old_base_theme IS NULL)
      --
      OR (lr_db_rec.nth_where != pi_old_where_clause)
      OR (lr_db_rec.nth_where IS NULL AND pi_old_where_clause IS NOT NULL)
@@ -2319,14 +2536,158 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_theme;                      
-                                                
+  
   --
   -----------------------------------------------------------------------------
-  --                                   
-  PROCEDURE delete_theme(pi_theme_id          IN      nm_themes_all.nth_theme_id%TYPE
-                        ,po_message_severity     OUT  hig_codes.hco_code%TYPE
-                        ,po_message_cursor       OUT  sys_refcursor)
+  --                            
+  PROCEDURE get_theme_type(pi_theme_id           IN     nm_themes_all.nth_theme_id%TYPE
+                          ,po_is_custom_theme       OUT VARCHAR2
+                          ,po_is_datum_theme        OUT VARCHAR2
+                          ,po_is_group_theme        OUT VARCHAR2
+                          ,po_is_inv_theme          OUT VARCHAR2
+                          ,po_is_node_theme         OUT VARCHAR2
+                          ,po_is_table_theme        OUT VARCHAR2)
+                      
   IS
+  --
+  BEGIN
+    --
+     po_is_custom_theme := is_custom_theme(pi_theme_id =>pi_theme_id);
+     po_is_datum_theme  := is_datum_theme(pi_theme_id => pi_theme_id);
+     po_is_group_theme  := is_group_theme(pi_theme_id => pi_theme_id);
+     po_is_inv_theme    := is_inv_theme(pi_theme_id => pi_theme_id);
+     po_is_node_theme   := is_node_theme(pi_theme_id => pi_theme_id);
+     po_is_table_theme  := is_table_theme(pi_theme_id => pi_theme_id);
+    --
+  END get_theme_type;
+  
+  --
+  -----------------------------------------------------------------------------
+  --                        
+  PROCEDURE ask_delete(pi_theme_id             IN     nm_themes_all.nth_theme_id%TYPE
+                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                      ,po_message_cursor          OUT sys_refcursor
+                      ,po_cursor                  OUT sys_refcursor)
+  IS
+  --
+    lv_inv_type    nm_inv_themes.nith_nit_id%TYPE;
+    lv_group_type  nm_linear_types.nlt_gty_type%TYPE;
+    lv_node_type   nm_node_types.nnt_type%TYPE;
+    --
+    lv_is_custom_theme   varchar2(1);
+    lv_is_datum_theme    varchar2(1);
+    lv_is_group_theme    varchar2(1);
+    lv_is_inv_theme      varchar2(1);
+    lv_is_node_theme     varchar2(1);
+    lv_is_table_theme    varchar2(1);
+  --
+  BEGIN
+    --
+    awlrs_util.check_historic_mode; 
+    --
+    --Firstly we need to check the caller has the correct roles to continue--
+    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
+      THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 86);
+    END IF;
+    --
+    IF theme_exists(pi_theme_id  =>  pi_theme_id) <> 'Y'
+     THEN
+        hig.raise_ner(pi_appl => 'HIG'
+                     ,pi_id   => 30
+                     ,pi_supplementary_info  => 'Theme does not exist, theme id: '||pi_theme_id);
+    END IF;
+    --
+    --now we need to derive theme type based of theme id passed in, i.e group, asset, datum etc...
+    get_theme_type(pi_theme_id         =>  pi_theme_id
+                  ,po_is_custom_theme  =>  lv_is_custom_theme
+                  ,po_is_datum_theme   =>  lv_is_datum_theme
+                  ,po_is_group_theme   =>  lv_is_group_theme
+                  ,po_is_inv_theme     =>  lv_is_inv_theme
+                  ,po_is_node_theme    =>  lv_is_node_theme
+                  ,po_is_table_theme   =>  lv_is_table_theme);
+                  
+    nm_debug.debug('lv_is_custom_theme: '||lv_is_custom_theme);
+    nm_debug.debug('lv_is_datum_theme: ' ||lv_is_datum_theme);
+    nm_debug.debug('lv_is_group_theme: ' ||lv_is_group_theme);
+    nm_debug.debug('lv_is_inv_theme: '   ||lv_is_inv_theme);
+    nm_debug.debug('lv_is_node_theme: '  ||lv_is_node_theme);
+    nm_debug.debug('lv_is_table_theme: ' ||lv_is_table_theme);                  
+    --                   
+    IF lv_is_inv_theme = 'Y'
+    
+      THEN   
+       lv_inv_type := get_inv_type(pi_theme_id => pi_theme_id);       
+       IF lv_inv_type IS NOT NULL 
+         THEN
+           OPEN po_cursor FOR
+              SELECT nta.nth_theme_name
+                FROM nm_inv_themes nit
+                    ,nm_themes_all nta
+               WHERE nit.nith_nit_id  = lv_inv_type
+                 AND nta.nth_theme_id = nit.nith_nth_theme_id
+              ORDER BY DECODE(nth_base_table_theme, null, 'B', 'A');
+       END IF;       
+    ELSIF lv_is_group_theme = 'Y'
+      THEN
+          lv_group_type := get_group_type(pi_theme_id => pi_theme_id);
+          IF lv_group_type IS NOT NULL
+            THEN
+              OPEN po_cursor FOR
+                 SELECT nta.nth_theme_name
+                   FROM nm_nw_themes nnt
+                       ,nm_linear_types nlt
+                       ,nm_themes_all nta
+                  WHERE nnt.nnth_nlt_id = nlt.nlt_id
+                    AND nlt.nlt_gty_type = lv_group_type
+                    AND nnt.nnth_nth_theme_id = nta.nth_theme_id
+                 UNION
+                 SELECT nta.nth_theme_name
+                   FROM nm_area_themes nat
+                       ,nm_area_types naty
+                       ,nm_themes_all nta
+                  WHERE nat.nath_nat_id = naty.nat_id
+                    AND naty.nat_gty_group_type = lv_group_type
+                    AND nat.nath_nth_theme_id = nta.nth_theme_id
+                 ORDER BY 1 asc;
+           END IF;
+    ELSE   
+        OPEN po_cursor FOR
+           SELECT null
+             FROM dual
+            WHERE 1=2;    
+    END IF;  
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END ask_delete;                                                                        
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_theme(pi_theme_id           IN    nm_themes_all.nth_theme_id%TYPE
+                        ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor       OUT sys_refcursor)
+  IS
+    --
+    lv_inv_type    nm_inv_themes.nith_nit_id%TYPE;
+    lv_group_type  nm_linear_types.nlt_gty_type%TYPE;
+    lv_node_type   nm_node_types.nnt_type%TYPE;
+    --
+    lv_is_custom_theme   varchar2(1);
+    lv_is_datum_theme    varchar2(1);
+    lv_is_group_theme    varchar2(1);
+    lv_is_inv_theme      varchar2(1);
+    lv_is_node_theme     varchar2(1);
+    lv_is_table_theme    varchar2(1);
+    --
+    lr_nth   nm_themes_all%ROWTYPE;
     --
   BEGIN
     --
@@ -2348,51 +2709,79 @@ AS
                      ,pi_supplementary_info  => 'Theme does not exist, theme id: '||pi_theme_id);
     END IF;
     --
-    -- now check for any child records --    
-    IF theme_gtypes_exist(pi_theme_id => pi_theme_id) = 'Y'
-     THEN
-        DELETE FROM nm_theme_gtypes
-         WHERE ntg_theme_id = pi_theme_id;        
---        hig.raise_ner(pi_appl => 'NET'
---                     ,pi_id   => 2
---                     ,pi_supplementary_info => 'Geometry Types');
+    --now we need to derive theme type based of theme id passed in, i.e group, asset, datum etc...
+    get_theme_type(pi_theme_id         =>  pi_theme_id
+                  ,po_is_custom_theme  =>  lv_is_custom_theme
+                  ,po_is_datum_theme   =>  lv_is_datum_theme
+                  ,po_is_group_theme   =>  lv_is_group_theme
+                  ,po_is_inv_theme     =>  lv_is_inv_theme
+                  ,po_is_node_theme    =>  lv_is_node_theme
+                  ,po_is_table_theme   =>  lv_is_table_theme);
+    --    
+    nm_debug.debug('lv_is_custom_theme: '||lv_is_custom_theme);
+    nm_debug.debug('lv_is_datum_theme: ' ||lv_is_datum_theme);
+    nm_debug.debug('lv_is_group_theme: ' ||lv_is_group_theme);
+    nm_debug.debug('lv_is_inv_theme: '   ||lv_is_inv_theme);
+    nm_debug.debug('lv_is_node_theme: '  ||lv_is_node_theme);
+    nm_debug.debug('lv_is_table_theme: ' ||lv_is_table_theme);
+    --
+    lr_nth := nm3get.get_nth(pi_nth_theme_id => pi_theme_id);
+    --
+    IF UPPER(lr_nth.nth_hpr_product) = 'NET'
+      THEN
+        --  
+        IF  lv_is_custom_theme = 'Y'
+          THEN
+            nm_debug.debug('custom theme'); 
+            nm3sdm.drop_layer(p_nth_id => pi_theme_id);
+        ELSIF lv_is_datum_theme = 'Y'
+          THEN
+            IF lr_nth.nth_base_table_theme IS NOT NULL
+              THEN
+                nm_debug.debug('datum theme'); 
+                --nm3sdm.drop_layer(p_nth_id => pi_theme_id);
+            ELSE
+                --If base theme is null this means that this is the datum spatial table and can’t be recreated, so no delete allowed --
+                hig.raise_ner(pi_appl => 'NET'
+                             ,pi_id   => 265
+                             ,pi_supplementary_info  => 'Unable to delete datum theme: '||pi_theme_id);
+            END IF;
+        ELSIF lv_is_inv_theme = 'Y'
+         THEN
+            nm_debug.debug('inv theme');
+            lv_inv_type := get_inv_type(pi_theme_id => pi_theme_id);
+            nm3sdm.drop_layers_by_inv_type(lv_inv_type);            
+        ELSIF lv_is_group_theme = 'Y'
+          THEN
+            nm_debug.debug('group theme');
+            lv_group_type := get_group_type(pi_theme_id => pi_theme_id);
+            nm3sdm.drop_layers_by_gty_type(p_gty => lv_group_type);
+        ELSIF lv_is_node_theme = 'Y'
+          THEN 
+            nm_debug.debug('node theme');
+            lv_node_type := get_node_type(pi_theme_id => pi_theme_id);
+            nm3layer_tool.drop_node_layer(pi_node_type => lv_node_type);  
+        ELSIF lv_is_table_theme = 'Y'
+          THEN
+            --nm3sdm.drop_layer(p_nth_id => pi_theme_id); 
+            nm_debug.debug('lr_nth.nth_feature_table: '||lr_nth.nth_feature_table);
+            nm_debug.debug('lr_nth.nth_feature_shape_column: '||lr_nth.nth_feature_shape_column);
+            --nm3sdo.drop_sub_layer_by_table(p_table  => lr_nth.nth_feature_table
+            --                              ,p_column => lr_nth.nth_feature_shape_column);
+--                                          
+--            DELETE FROM nm_themes_all
+--             WHERE nth_theme_id = pi_theme_id;    
+        ELSE     
+            -- To catch every thing else, we'll simply delete the theme --
+            nm_debug.debug('everything else');
+            DELETE FROM nm_themes_all
+             WHERE nth_theme_id = pi_theme_id;  
+        END IF; 
+    ELSE
+        hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 265
+                     ,pi_supplementary_info  => 'Unable to delete theme: '||pi_theme_id); 
     END IF;
-    --
-    IF theme_snappings_exist(pi_theme_id => pi_theme_id) = 'Y'
-     THEN
-        DELETE FROM nm_theme_snaps 
-         WHERE nts_theme_id = pi_theme_id;
---        hig.raise_ner(pi_appl => 'NET'
---                     ,pi_id   => 2
---                     ,pi_supplementary_info => 'Snappings');
-    END IF;
-    --
-    IF base_themes_exist(pi_theme_id => pi_theme_id) = 'Y'
-     THEN
-        DELETE FROM nm_base_themes
-         WHERE nbth_theme_id = pi_theme_id;
---        hig.raise_ner(pi_appl => 'NET'
---                     ,pi_id   => 2
---                     ,pi_supplementary_info => 'Base Themes');
-    END IF;
-    --
-    IF inv_themes_exist(pi_theme_id => pi_theme_id) = 'Y'
-     THEN
-        DELETE FROM nm_inv_themes
-         WHERE nith_nth_theme_id = pi_theme_id;
---        hig.raise_ner(pi_appl => 'NET'
---                     ,pi_id   => 2
---                     ,pi_supplementary_info => 'Inventory Themes');
-    END IF;
-    --
-    DELETE FROM nm_theme_roles
-     WHERE nthr_theme_id = pi_theme_id;
-    --
-    DELETE FROM nm_theme_functions_all
-     WHERE ntf_nth_theme_id = pi_theme_id;
-    --
-    DELETE FROM nm_themes_all
-     WHERE nth_theme_id = pi_theme_id;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -2403,8 +2792,8 @@ AS
         ROLLBACK TO delete_theme_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END delete_theme;                         
-                                                              
+  END delete_theme;
+                                                
   --
   -----------------------------------------------------------------------------
   --
@@ -4710,19 +5099,10 @@ AS
                               ,po_cursor                OUT sys_refcursor)    
   IS
   --
-  --lv_results           nm3layer_tool.tab_refresh_themes;
-  --
   cv_dep_tab           CONSTANT VARCHAR2(10) := 'TAB';
   cv_dep_all_data      CONSTANT VARCHAR2(10) := 'ALL_DATA';
   --
   BEGIN
-  --
---    BEGIN
---      nm3layer_tool.get_refresh_themes(pi_nth_theme_id      => pi_theme_id
---                                      ,pi_metadata_option   => pi_metadata_option
---                                      ,pi_dependency_option => pi_dependency_option
---                                      ,po_results           => lv_results);
---    END;   
     --
     OPEN po_cursor FOR
     SELECT 1 seq
@@ -4942,333 +5322,29 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_view_text;         
-  
+    
   --
   -----------------------------------------------------------------------------
-  -- 
-  PROCEDURE copy_theme(pi_copy_from_theme_id   IN     nm_themes_all.nth_theme_id%TYPE
-                      ,pi_new_theme_name       IN     nm_themes_all.nth_theme_name%TYPE  
-                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
-                      ,po_message_cursor          OUT sys_refcursor)                      
+  --
+  PROCEDURE system_theme_cat_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT  sys_refcursor
+                                ,po_cursor           OUT  sys_refcursor)
   IS
   --
-  lv_new_theme_id    nm_themes_all.nth_theme_id%TYPE;
-  --
   BEGIN
-    --                    
-  SAVEPOINT copy_theme_sp;
     --
-    awlrs_util.check_historic_mode;   
-    --
-    --Firstly we need to check the caller has the correct roles to continue--
-    IF privs_check(pi_role_name  => cv_hig_admin) = 'N'
-      THEN
-         hig.raise_ner(pi_appl => 'HIG'
-                      ,pi_id   => 86);
-    END IF;
-    --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Copy Theme Id'
-                               ,pi_parameter_value =>  pi_copy_from_theme_id);
-    --
-    awlrs_util.validate_notnull(pi_parameter_desc  => 'Theme Name'
-                               ,pi_parameter_value =>  pi_new_theme_name);    
-    --
-    IF theme_exists(pi_theme_name  =>  pi_new_theme_name) = 'Y'
-     THEN
-        hig.raise_ner(pi_appl => 'HIG'
-                     ,pi_id   => 30
-                     ,pi_supplementary_info  => 'Theme with this name already exists, theme name: '||pi_new_theme_name);
-    END IF;
-    --
-    -- get new theme id --
-    lv_new_theme_id := higgis.next_theme_id;
-    /*
-    ||insert into nm_themes_all.
-    */
-    BEGIN
-        INSERT 
-          INTO nm_themes_all
-              (nth_theme_id
-              ,nth_theme_name  
-              ,nth_table_name
-              ,nth_where
-              ,nth_pk_column
-              ,nth_label_column
-              ,nth_rse_table_name
-              ,nth_rse_fk_column
-              ,nth_st_chain_column
-              ,nth_end_chain_column
-              ,nth_x_column
-              ,nth_y_column
-              ,nth_offset_field
-              ,nth_feature_table
-              ,nth_feature_pk_column
-              ,nth_feature_fk_column
-              ,nth_xsp_column
-              ,nth_feature_shape_column
-              ,nth_hpr_product
-              ,nth_location_updatable
-              ,nth_theme_type
-              ,nth_dependency
-              ,nth_storage
-              ,nth_update_on_edit
-              ,nth_use_history
-              ,nth_start_date_column
-              ,nth_end_date_column
-              ,nth_base_table_theme
-              ,nth_sequence_name
-              ,nth_snap_to_theme
-              ,nth_lref_mandatory
-              ,nth_tolerance
-              ,nth_tol_units
-              ,nth_dynamic_theme
-              )
-        SELECT lv_new_theme_id
-              ,pi_new_theme_name
-              ,nth_table_name
-              ,nth_where
-              ,nth_pk_column
-              ,nth_label_column
-              ,nth_rse_table_name
-              ,nth_rse_fk_column
-              ,nth_st_chain_column
-              ,nth_end_chain_column
-              ,nth_x_column
-              ,nth_y_column
-              ,nth_offset_field
-              ,nth_feature_table
-              ,nth_feature_pk_column
-              ,nth_feature_fk_column
-              ,nth_xsp_column
-              ,nth_feature_shape_column
-              ,nth_hpr_product
-              ,nth_location_updatable
-              ,nth_theme_type
-              ,nth_dependency
-              ,nth_storage
-              ,nth_update_on_edit
-              ,nth_use_history
-              ,nth_start_date_column
-              ,nth_end_date_column
-              ,nth_base_table_theme
-              ,nth_sequence_name
-              ,nth_snap_to_theme
-              ,nth_lref_mandatory
-              ,nth_tolerance
-              ,nth_tol_units
-              ,nth_dynamic_theme          
-          FROM nm_themes_all
-         WHERE nth_theme_id = pi_copy_from_theme_id;
-    EXCEPTION
-      WHEN NO_DATA_FOUND 
-       THEN
-           hig.raise_ner(pi_appl => 'HIG'
-                        ,pi_id   => 67
-                        ,pi_supplementary_info  => 'Copy Theme Id: '||pi_copy_from_theme_id);
-      WHEN OTHERS
-       THEN
-         ROLLBACK TO copy_theme_sp;
-         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                    ,po_cursor           => po_message_cursor); 
-    END;         
-    --
-    /*
-    ||insert into nm_theme_functions_all.
-    */
-    BEGIN
-        INSERT
-          INTO nm_theme_functions_all
-              (ntf_nth_theme_id
-              ,ntf_hmo_module
-              ,ntf_parameter
-              ,ntf_menu_option 
-              ,ntf_seen_in_gis
-              )
-        SELECT lv_new_theme_id
-              ,ntf_hmo_module
-              ,ntf_parameter
-              ,ntf_menu_option 
-              ,ntf_seen_in_gis
-          FROM nm_theme_functions_all
-         WHERE ntf_nth_theme_id = pi_copy_from_theme_id;  
-    EXCEPTION
-      WHEN NO_DATA_FOUND 
-       THEN
-           null;
-      WHEN OTHERS
-       THEN
-         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                    ,po_cursor           => po_message_cursor); 
-    END;      
-    --
-    /*
-    ||insert into nm_theme_roles.
-    */
-    BEGIN
-        INSERT
-          INTO nm_theme_roles
-              (nthr_theme_id
-              ,nthr_role
-              ,nthr_mode
-              )
-        SELECT lv_new_theme_id
-               ,nthr_role
-               ,nthr_mode
-          FROM nm_theme_roles
-         WHERE nthr_theme_id = pi_copy_from_theme_id;  
-    EXCEPTION
-      WHEN NO_DATA_FOUND 
-       THEN
-           null;
-      WHEN OTHERS
-       THEN
-         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                    ,po_cursor           => po_message_cursor); 
-    END;      
-    --
-    /*
-    ||insert into nm_theme_gtypes.
-    */
-    BEGIN
-        INSERT
-          INTO nm_theme_gtypes
-              (ntg_theme_id
-              ,ntg_gtype
-              ,ntg_seq_no
-              ,ntg_xml_url
-              )
-        SELECT lv_new_theme_id
-              ,ntg_gtype
-              ,ntg_seq_no
-              ,ntg_xml_url
-          FROM nm_theme_gtypes
-         WHERE ntg_theme_id = pi_copy_from_theme_id;  
-    EXCEPTION
-      WHEN NO_DATA_FOUND 
-       THEN
-           null;
-      WHEN OTHERS
-       THEN
-         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                    ,po_cursor           => po_message_cursor); 
-    END; 
-    --
-    /*
-    ||insert into nm_theme_snaps.
-    */
-    BEGIN
-        INSERT
-          INTO nm_theme_snaps
-              (nts_theme_id
-              ,nts_snap_to
-              ,nts_priority
-              )
-        SELECT lv_new_theme_id
-              ,nts_snap_to
-              ,nts_priority
-          FROM nm_theme_snaps
-         WHERE nts_theme_id = pi_copy_from_theme_id; 
-    EXCEPTION
-      WHEN NO_DATA_FOUND 
-       THEN
-           null;
-      WHEN OTHERS
-       THEN
-         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                    ,po_cursor           => po_message_cursor); 
-    END;  
-    --
-    /*
-    ||insert into nm_base_themes.
-    */
-    BEGIN
-        INSERT
-          INTO nm_base_themes
-              (nbth_theme_id
-              ,nbth_base_theme
-              )
-        SELECT lv_new_theme_id
-              ,nbth_base_theme
-          FROM nm_base_themes
-         WHERE nbth_theme_id = pi_copy_from_theme_id;
-    EXCEPTION
-      WHEN NO_DATA_FOUND 
-       THEN
-           null;
-      WHEN OTHERS
-       THEN
-         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                    ,po_cursor           => po_message_cursor); 
-    END;   
-    --
-    /*
-    ||insert into nm_inv_themes.
-    */
-    BEGIN
-        INSERT
-          INTO nm_inv_themes
-              (nith_nit_id
-              ,nith_nth_theme_id
-              )
-        SELECT nith_nit_id
-              ,lv_new_theme_id
-          FROM nm_inv_themes
-         WHERE nith_nth_theme_id = pi_copy_from_theme_id;
-    EXCEPTION
-      WHEN NO_DATA_FOUND 
-       THEN
-           null;
-      WHEN OTHERS
-       THEN
-         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                    ,po_cursor           => po_message_cursor); 
-    END;   
-     --
-    /*
-    ||insert into nm_nw_themes.
-    */
-    BEGIN
-        INSERT
-          INTO nm_nw_themes
-              (nnth_nlt_id
-              ,nnth_nth_theme_id
-              )
-        SELECT nnth_nlt_id
-              ,lv_new_theme_id
-          FROM nm_nw_themes
-         WHERE nnth_nth_theme_id = pi_copy_from_theme_id;
-    EXCEPTION
-      WHEN NO_DATA_FOUND 
-       THEN
-           null;
-      WHEN OTHERS
-       THEN
-         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                    ,po_cursor           => po_message_cursor); 
-    END;   
-    --
-    /*
-    ||insert into nm_area_themes.
-    */
-    BEGIN
-        INSERT
-          INTO nm_area_themes
-              (nath_nat_id
-              ,nath_nth_theme_id
-              )
-        SELECT nath_nat_id
-              ,lv_new_theme_id
-          FROM nm_area_themes
-         WHERE nath_nth_theme_id = pi_copy_from_theme_id;
-    EXCEPTION
-      WHEN NO_DATA_FOUND 
-       THEN
-           null;
-      WHEN OTHERS
-       THEN
-         awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                    ,po_cursor           => po_message_cursor); 
-    END;   
+    OPEN po_cursor FOR
+    SELECT 'NETWORK' cat_type
+          ,'Network' cat_descr  
+      FROM dual
+    UNION  
+    SELECT 'NODE'    cat_type
+          ,'Node'    cat_descr
+      FROM dual
+    UNION
+    SELECT 'ASSET'   cat_type
+          ,'Asset'   cat_descr
+      FROM dual;  
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -5276,15 +5352,164 @@ AS
   EXCEPTION
     WHEN OTHERS
      THEN
-        ROLLBACK TO copy_theme_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END copy_theme;                                                                                                                                                        
+  END system_theme_cat_lov; 
+  
   --
   -----------------------------------------------------------------------------
   --
-                                
-  --                                  
+  PROCEDURE get_types_for_category(pi_category_type    IN      varchar2
+                                  ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                  ,po_message_cursor      OUT  sys_refcursor
+                                  ,po_cursor              OUT  sys_refcursor)
+  IS                                  
+  --
+  BEGIN
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Category Type'
+                               ,pi_parameter_value =>  pi_category_type);
+    --
+    IF pi_category_type = cv_network
+       THEN 
+         group_type_lov(po_message_severity  =>  po_message_severity
+                       ,po_message_cursor    =>  po_message_cursor
+                       ,po_cursor            =>  po_cursor);
+    ELSIF
+       pi_category_type = cv_node
+         THEN 
+         awlrs_metanet_api.get_node_types_lov(po_message_severity  =>  po_message_severity
+                                             ,po_message_cursor    =>  po_message_cursor
+                                             ,po_cursor            =>  po_cursor);
+    ELSIF     
+       pi_category_type = cv_asset
+         THEN 
+         asset_type_lov(po_message_severity  =>  po_message_severity
+                       ,po_message_cursor    =>  po_message_cursor
+                       ,po_cursor            =>  po_cursor);
+    END IF;     
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_types_for_category;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_theme_for_category(pi_category_type    IN      varchar2
+                                     ,pi_type             IN      varchar2
+                                     ,pi_theme_name       IN      nm_themes_all.nth_theme_name%TYPE
+                                     ,pi_dynseg           IN      varchar2 DEFAULT 'N'
+                                     ,pi_log_errors       IN      varchar2 DEFAULT 'N'
+                                     ,po_log_errors_id        OUT  nm3sdm_dyn_seg_ex.ndse_job_id%TYPE
+                                     ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                     ,po_message_cursor       OUT  sys_refcursor)  
+  IS                                  
+  --
+  lt_messages  awlrs_message_tab := awlrs_message_tab();
+  --
+  BEGIN
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Category Type'
+                               ,pi_parameter_value =>  pi_category_type);
+    --
+    IF pi_category_type = cv_network
+       THEN 
+         create_group_theme(pi_group_type        =>  pi_type
+                           ,pi_theme_name        =>  pi_theme_name
+                           ,pi_log_errors        =>  pi_log_errors
+                           ,po_log_errors_id     =>  po_log_errors_id
+                           ,po_messages          =>  lt_messages);
+    ELSIF
+       pi_category_type = cv_node
+       THEN 
+         create_node_theme(pi_node_type         =>  pi_type
+                          ,pi_theme_name        =>  pi_theme_name
+                          ,po_messages          =>  lt_messages);
+    ELSIF     
+       pi_category_type = cv_asset
+       THEN 
+         create_asset_theme(pi_asset_type        =>  pi_type 
+                           ,pi_dynseg            =>  pi_dynseg
+                           ,pi_theme_name        =>  pi_theme_name
+                           ,pi_log_errors        =>  pi_log_errors
+                           ,po_log_errors_id     =>  po_log_errors_id
+                           ,po_messages          =>  lt_messages);
+    END IF;     
+    --
+    IF lt_messages.COUNT > 0
+       THEN
+            awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                         ,po_cursor      => po_message_cursor);
+            awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                           ,po_message_severity => po_message_severity);
+    ELSE
+           awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                                ,po_cursor           => po_message_cursor);                                     
+    END IF;
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END create_theme_for_category;                                                                                            
+  
+  -- 
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_log_errors(pi_category_type     IN      varchar2
+                          ,pi_log_errors_id     IN      nm3sdm_dyn_seg_ex.ndse_job_id%TYPE
+                          ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                          ,po_message_cursor       OUT  sys_refcursor
+                          ,po_cursor               OUT  sys_refcursor) 
+  IS
+  --
+  BEGIN
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Category Type'
+                               ,pi_parameter_value =>  pi_category_type);
+    --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Log Errors Id'
+                               ,pi_parameter_value =>  pi_log_errors_id);
+    --
+    IF pi_category_type = cv_network
+       THEN
+        OPEN po_cursor FOR
+        SELECT ndse_ne_id_in   route_id
+              ,ndse_ne_id_of   datum_id  
+              ,ndse_sqlerrm    error_
+          FROM nm3sdm_dyn_seg_ex
+         WHERE ndse_job_id = pi_log_errors_id;
+    ELSIF
+       pi_category_type = cv_asset
+       THEN      
+        OPEN po_cursor FOR
+        SELECT ndse_ne_id_in   asset_id
+              ,ndse_ne_id_of   datum_id 
+              ,ndse_sqlerrm    error_
+          FROM nm3sdm_dyn_seg_ex
+         WHERE ndse_job_id = pi_log_errors_id;
+    END IF;  
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_log_errors;                                                                                         
+  -- 
+                                  
 
 END awlrs_theme_api;
 /
+
