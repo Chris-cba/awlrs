@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.1   Jul 23 2020 15:32:34   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.2   Jul 31 2020 12:52:46   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_favourites_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 23 2020 15:32:34  $
-  --       Date fetched Out : $Modtime:   Jul 23 2020 15:30:46  $
-  --       Version          : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Jul 31 2020 12:52:46  $
+  --       Date fetched Out : $Modtime:   Jul 31 2020 12:38:38  $
+  --       Version          : $Revision:   1.2  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_favourites_api';
   --
   c_root_folder  CONSTANT VARCHAR2(10) := '_ROOT';
@@ -1438,81 +1438,6 @@ AS
   --
   ------------------------------------------------------------------------------
   --
-  FUNCTION get_element_member_count(pi_ne_id IN nm_elements_all.ne_id%TYPE)
-    RETURN PLS_INTEGER IS
-    --
-    lr_ne      nm_elements_all%ROWTYPE;
-    lv_retval  PLS_INTEGER := 0;
-    --
-    CURSOR get_count(cp_ne_id IN nm_elements_all.ne_id%TYPE)
-        IS
-    SELECT COUNT(*)
-      FROM nm_members
-     WHERE nm_ne_id_in = cp_ne_id
-       AND nm_type = 'G'
-         ;
-    --
-  BEGIN
-    --
-    lr_ne := nm3get.get_ne_all(pi_ne_id => pi_ne_id);
-    --
-    IF lr_ne.ne_gty_group_type IS NOT NULL
-     THEN
-        --
-        OPEN  get_count(pi_ne_id);
-        FETCH get_count
-         INTO lv_retval;
-        CLOSE get_count;
-        --
-    END IF;
-    --
-    RETURN lv_retval;
-    --
-  END get_element_member_count;
-
-  --
-  ------------------------------------------------------------------------------
-  --
-  FUNCTION get_asset_child_count(pi_inv_type  IN nm_inv_types_all.nit_inv_type%TYPE
-                                ,pi_iit_ne_id IN nm_inv_items_all.iit_ne_id%TYPE)
-    RETURN PLS_INTEGER IS
-    --
-    lr_nit    nm_inv_types_all%ROWTYPE;
-    lv_retval PLS_INTEGER := 0;
-    --
-    CURSOR get_count(cp_inv_type  IN nm_inv_types_all.nit_inv_type%TYPE
-                    ,cp_iit_ne_id IN nm_inv_items_all.iit_ne_id%TYPE)
-        IS
-    SELECT COUNT(*)
-      FROM nm_inv_items
-          ,nm_inv_item_groupings
-     WHERE iit_ne_id = cp_iit_ne_id
-       AND iit_inv_type = cp_inv_type
-       AND iit_ne_id = iig_parent_id
-         ;
-    --
-  BEGIN
-    --
-    lr_nit := nm3get.get_nit_all(pi_nit_inv_type => pi_inv_type);
-    --
-    IF lr_nit.nit_table_name IS NULL
-     THEN
-        --
-        OPEN  get_count(pi_inv_type
-                       ,pi_iit_ne_id);
-        FETCH get_count
-         INTO lv_retval;
-        CLOSE get_count;
-        --
-    END IF;
-    --
-    RETURN lv_retval;
-    --
-  END get_asset_child_count;
-
-  --
-  ------------------------------------------------------------------------------
-  --
   FUNCTION get_folder_child_count(pi_parent_af_id IN awlrs_favourites_folders.aff_af_id%TYPE)
     RETURN PLS_INTEGER IS
     --
@@ -1566,29 +1491,32 @@ AS
                   ,CASE WHEN ngt_linear_flag = 'Y' THEN nm_seq_no ELSE NULL END seq_no
                   ,CAST('NETWORK' AS VARCHAR2(100)) entity_type
                   ,cne.ne_nt_type entity_sub_type
-                  ,nm_ne_id_of entity_id
+                  ,cne.ne_id entity_id
                   ,CASE
                      WHEN cne.ne_gty_group_type IS NOT NULL
                       THEN
-                         awlrs_favourites_api.get_element_member_count(nm_ne_id_of)
+                         (SELECT COUNT(*)
+                             FROM nm_members m2
+                            WHERE m2.nm_ne_id_in = cne.ne_id
+                              AND m2.nm_type = 'G')
                      ELSE
                          0
                    END child_count
               FROM nm_elements pne
                   ,nm_group_types_all
-                  ,nm_members
+                  ,nm_members m1
                   ,nm_elements cne
                   ,nm_types
                   ,nm_units
              WHERE pne.ne_id = pi_ne_id
                AND pne.ne_gty_group_type = ngt_group_type
-               AND pne.ne_id = nm_ne_id_in
-               AND nm_type = 'G'
-               AND nm_ne_id_of = cne.ne_id
+               AND pne.ne_id = m1.nm_ne_id_in
+               AND m1.nm_type = 'G'
+               AND m1.nm_ne_id_of = cne.ne_id
                AND cne.ne_nt_type = nt_type
                AND nt_length_unit = un_unit_id(+)
              ORDER
-                BY CASE WHEN ngt_linear_flag = 'Y' THEN nm_seq_no ELSE NULL END
+                BY CASE WHEN ngt_linear_flag = 'Y' THEN m1.nm_seq_no ELSE NULL END
                   ,CASE WHEN ngt_linear_flag = 'N' THEN CASE WHEN cne.ne_nt_type = 'NSGN' THEN cne.ne_number WHEN cne.ne_nt_type = 'ESU' THEN cne.ne_name_1 ELSE cne.ne_unique END ELSE NULL END)
          ;
     --
@@ -1601,6 +1529,189 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_network_element_data;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_element_data(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                  ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                  ,pi_skip_n_rows      IN  PLS_INTEGER
+                                  ,pi_pagesize         IN  PLS_INTEGER
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor
+                                  ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_order_by         nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    --
+    lv_driving_sql  nm3type.max_varchar2 := 'SELECT id'
+                                                ||',seq_no'
+                                                ||',type_'
+                                                ||',name_'
+                                                ||',from_offset'
+                                                ||',to_offset'
+                                                ||',child_count'
+                                          ||' FROM (SELECT cne.ne_id id'
+                                                       ||',NVL(cne.ne_gty_group_type,cne.ne_nt_type) type_'
+                                                       ||',CASE WHEN cne.ne_nt_type = ''NSGN'' THEN cne.ne_number WHEN cne.ne_nt_type = ''ESU'' THEN cne.ne_name_1 ELSE cne.ne_unique END name_'
+                                                       ||',m1.nm_begin_mp from_offset'
+                                                       ||',m1.nm_end_mp to_offset'
+                                                       ||',CASE WHEN ngt_linear_flag = ''Y'' THEN nm_seq_no ELSE NULL END seq_no'
+                                                       ||',CASE'
+                                                         ||' WHEN cne.ne_gty_group_type IS NOT NULL'
+                                                          ||' THEN'
+                                                             ||' (SELECT COUNT(*)'
+                                                                ||' FROM nm_members m2'
+                                                               ||' WHERE m2.nm_ne_id_in = cne.ne_id'
+                                                                 ||' AND m2.nm_type = ''G'')'
+                                                         ||' ELSE'
+                                                             ||' 0'
+                                                       ||' END child_count'
+                                                  ||' FROM nm_elements pne'
+                                                       ||',nm_group_types_all'
+                                                       ||',nm_members m1'
+                                                       ||',nm_elements cne'
+                                                 ||' WHERE pne.ne_id = :ne_id'
+                                                   ||' AND pne.ne_gty_group_type = ngt_group_type'
+                                                   ||' AND pne.ne_id = m1.nm_ne_id_in'
+                                                   ||' AND m1.nm_type = ''G'''
+                                                   ||' AND m1.nm_ne_id_of = cne.ne_id)'
+    ;
+    lv_cursor_sql  nm3type.max_varchar2 := 'SELECT id'
+                                                ||',seq_no'
+                                                ||',type_'
+                                                ||',name_'
+                                                ||',from_offset'
+                                                ||',to_offset'
+                                                ||',child_count'
+                                               ||' ,row_count'
+                                           ||' FROM (SELECT rownum ind'
+                                                       ||' ,a.*'
+                                                       ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                   ||' FROM ('||lv_driving_sql
+    ;
+    --
+    lt_column_data  awlrs_util.column_data_tab;
+    --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'id'
+                                ,pi_query_col    => 'id'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'seq_no'
+                                ,pi_query_col    => 'seq_no'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'type_'
+                                ,pi_query_col    => 'type_'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'name_'
+                                ,pi_query_col    => 'name_'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'from_offset'
+                                ,pi_query_col    => 'from_offset'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'to_offset'
+                                ,pi_query_col    => 'to_offset'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'child_count'
+                                ,pi_query_col    => 'child_count'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      --<Repeat for each column that should allow filtering>
+      --
+    END set_column_data;
+    --
+  BEGIN
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+      ||CHR(10)||lv_filter
+      ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'seq_no,name_')||') a)'
+      ||CHR(10)||lv_row_restriction
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_ne_id
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_ne_id
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_element_data;
 
   --
   -----------------------------------------------------------------------------
@@ -1646,7 +1757,9 @@ AS
                   ,CAST('ASSET' AS VARCHAR2(100)) entity_type
                   ,iitc.iit_inv_type entity_sub_type
                   ,iitc.iit_ne_id entity_id
-                  ,awlrs_favourites_api.get_asset_child_count(iitc.iit_inv_type,iitc.iit_ne_id) child_count
+                  ,(SELECT COUNT(*)
+                      FROM nm_inv_item_groupings
+                     WHERE iig_parent_id = iitc.iit_ne_id) child_count
               FROM nm_inv_items iitp
                   ,nm_inv_item_groupings
                   ,nm_inv_items iitc
@@ -1691,10 +1804,21 @@ AS
                   ,CASE
                      WHEN afe_entity_type = 'NETWORK'
                       THEN
-                         awlrs_favourites_api.get_element_member_count(afe_entity_id)
+                         (SELECT COUNT(*)
+                            FROM nm_members
+                           WHERE nm_ne_id_in = (SELECT ne_id
+                                                  FROM nm_elements
+                                                 WHERE ne_id = afe_entity_id
+                                                   AND ne_gty_group_type IS NOT NULL)
+                             AND nm_type = 'G')
                      WHEN afe_entity_type = 'ASSET'
                       THEN
-                         awlrs_favourites_api.get_asset_child_count(afe_entity_sub_type,afe_entity_id)
+                         (SELECT COUNT(*)
+                            FROM nm_inv_items
+                                ,nm_inv_item_groupings
+                           WHERE iit_ne_id = afe_entity_id
+                             AND iit_inv_type = afe_entity_sub_type
+                             AND iit_ne_id = iig_parent_id)
                      ELSE
                          0
                    END child_count
@@ -1890,10 +2014,21 @@ AS
                   ,CASE
                      WHEN afe_entity_type = 'NETWORK'
                       THEN
-                         awlrs_favourites_api.get_element_member_count(afe_entity_id)
+                         (SELECT COUNT(*)
+                            FROM nm_members
+                           WHERE nm_ne_id_in = (SELECT ne_id
+                                                  FROM nm_elements
+                                                 WHERE ne_id = afe_entity_id
+                                                   AND ne_gty_group_type IS NOT NULL)
+                             AND nm_type = 'G')
                      WHEN afe_entity_type = 'ASSET'
                       THEN
-                         awlrs_favourites_api.get_asset_child_count(afe_entity_sub_type,afe_entity_id)
+                         (SELECT COUNT(*)
+                            FROM nm_inv_items
+                                ,nm_inv_item_groupings
+                           WHERE iit_ne_id = afe_entity_id
+                             AND iit_inv_type = afe_entity_sub_type
+                             AND iit_ne_id = iig_parent_id)
                      ELSE
                          0
                    END child_count
@@ -1956,7 +2091,10 @@ AS
           ,CASE
              WHEN cne.ne_gty_group_type IS NOT NULL
               THEN
-                 awlrs_favourites_api.get_element_member_count(nm_ne_id_of)
+                 (SELECT COUNT(*)
+                     FROM nm_members m2
+                    WHERE m2.nm_ne_id_in = cne.ne_id
+                      AND m2.nm_type = 'G')
              ELSE
                  0
            END child_count
@@ -1973,7 +2111,9 @@ AS
     SELECT iitc.iit_ne_id id
           ,iitc.iit_inv_type sub_type
           ,awlrs_favourites_api.get_entity_label('ASSET',iitc.iit_inv_type,iitc.iit_ne_id) label
-          ,awlrs_favourites_api.get_asset_child_count(iitc.iit_inv_type,iitc.iit_ne_id) child_count
+          ,(SELECT COUNT(*)
+              FROM nm_inv_item_groupings
+             WHERE iig_parent_id = iitc.iit_ne_id) child_count
       FROM nm_inv_items iitp
           ,nm_inv_item_groupings
           ,nm_inv_items iitc
