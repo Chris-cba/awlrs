@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.6   Jul 28 2020 11:48:10   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jul 28 2020 11:48:10  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.7   Jul 31 2020 15:15:46   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jul 31 2020 15:15:46  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkb  $
-  --       Date fetched Out : $Modtime:   Jul 28 2020 11:46:46  $
-  --       Version          : $Revision:   1.6  $
+  --       Date fetched Out : $Modtime:   Jul 31 2020 15:13:06  $
+  --       Version          : $Revision:   1.7  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.6  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.7  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -94,6 +94,69 @@ AS
     --
   END get_last_analysed_date;
   
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION can_delete(pi_theme_id  IN  nm_themes_all.nth_theme_id%TYPE) RETURN VARCHAR2
+  IS                       
+  --
+  lv_can_delete   varchar2(1) := 'N';
+  lr_nth          nm_themes_all%ROWTYPE;
+  --
+  BEGIN
+    --
+    lr_nth := nm3get.get_nth(pi_nth_theme_id => pi_theme_id);
+    --
+    IF UPPER(lr_nth.nth_hpr_product) = 'NET'
+      THEN 
+        --
+        IF is_datum_theme(pi_theme_id => pi_theme_id) = 'Y'  --get_paged_lref_details returns data and the group type is populated (i.e. group of datums)
+           THEN
+            --
+            lv_can_delete := 'N';
+            --
+        ELSIF is_inv_theme(pi_theme_id => pi_theme_id) = 'Y'
+           THEN
+            --
+            lv_can_delete := 'Y';
+            --  
+        ELSIF is_custom_theme(pi_theme_id => pi_theme_id) = 'Y'
+           THEN
+            --
+            lv_can_delete := 'Y';
+            --              
+        ELSIF is_node_theme(pi_theme_id => pi_theme_id) = 'Y'
+           THEN  
+            --
+            lv_can_delete := 'Y';
+            -- 
+        ELSIF is_group_theme(pi_theme_id => pi_theme_id) = 'Y'
+           THEN  
+            --
+            lv_can_delete := 'Y';
+            -- 
+        ELSIF is_table_theme(pi_theme_id => pi_theme_id) = 'Y'
+           THEN  
+            --
+            lv_can_delete := 'N';
+            --     
+        END IF;    
+    ELSE
+      -- 
+      lv_can_delete := 'N';
+      --
+    END IF;   
+    --
+    RETURN lv_can_delete; 
+    --
+  EXCEPTION
+    WHEN no_data_found
+      THEN
+         RETURN lv_can_delete;
+    --      
+  END can_delete; 
+ 
   --
   -----------------------------------------------------------------------------
   --
@@ -261,7 +324,7 @@ AS
                        INSTR(nth_table_name, '_', 1, 3) + 1,
                       (INSTR(nth_table_name, '_SDO', 1) - INSTR(nth_table_name, '_', 1, 3) - 1)); 
     --
-    RETURN lv_node_type; 
+    RETURN lv_node_type;                      
     --
   EXCEPTION
     WHEN no_data_found
@@ -288,6 +351,14 @@ AS
        AND nnt_type = SUBSTR(nth_table_name,
                        INSTR(nth_table_name, '_', 1, 3) + 1,
                       (INSTR(nth_table_name, '_SDO', 1) - INSTR(nth_table_name, '_', 1, 3) - 1)); 
+    --
+    /*
+    SELECT 'Y'
+      INTO lv_exists              
+      FROM nm_themes_all
+     WHERE nth_theme_id = pi_theme_id
+       AND nth_feature_table like 'V_NM_NO_%_SDO';
+    */                          
     --
     RETURN lv_exists; 
     --
@@ -607,6 +678,7 @@ AS
           ,nta1.nth_snap_to_theme            snap_to_theme
           ,nta1.nth_location_updatable       is_updatable
           ,is_custom_theme(pi_theme_id => nta1.nth_theme_id) is_custom
+          ,can_delete(pi_theme_id => nta1.nth_theme_id) can_delete
       FROM nm_themes_all  nta1
           ,nm_themes_all  nta2
           ,nm_units un  
@@ -671,6 +743,7 @@ AS
           ,nta1.nth_snap_to_theme            snap_to_theme
           ,nta1.nth_location_updatable       is_updatable
           ,is_custom_theme(pi_theme_id => nta1.nth_theme_id) is_custom
+          ,can_delete(pi_theme_id => nta1.nth_theme_id) can_delete
       FROM nm_themes_all  nta1
           ,nm_themes_all  nta2
           ,nm_units un 
@@ -744,10 +817,8 @@ AS
                                                       ,nta1.nth_update_on_edit           update_on_edit
                                                       ,nta1.nth_snap_to_theme            snap_to_theme
                                                       ,nta1.nth_location_updatable       is_updatable
-                                                      ,CASE 
-                                                         WHEN nta1.nth_where IS NOT NULL THEN ''Y''
-                                                         WHEN nta1.nth_where IS NULL THEN ''N''
-                                                        END                               is_custom    
+                                                      ,awlrs_theme_api.is_custom_theme(nta1.nth_theme_id) is_custom
+                                                      ,awlrs_theme_api.can_delete(nta1.nth_theme_id) can_delete     
                                                   FROM nm_themes_all  nta1
                                                       ,nm_themes_all  nta2
                                                       ,nm_units un 
@@ -786,6 +857,7 @@ AS
                                                    ||',snap_to_theme'
                                                    ||',is_updatable'
                                                    ||',is_custom'
+                                                   ||',can_delete'
                                                    ||',row_count'
                                              ||' FROM (SELECT rownum ind'
                                                          ||' ,a.*'
@@ -957,15 +1029,21 @@ AS
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
-                                --
+      --
       awlrs_util.add_column_data(pi_cursor_col   => 'is_custom'
                                 ,pi_query_col    => 'CASE 
                                                          WHEN nta1.nth_where IS NOT NULL THEN ''Y''
                                                          WHEN nta1.nth_where IS NULL THEN ''N''
-                                                     END'
+                                                    END'                     
                                 ,pi_datatype     => awlrs_util.c_varchar2_col                     
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'can_delete'
+                                ,pi_query_col    => 'awlrs_theme_api.can_delete(nta1.nth_theme_id)'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col                     
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);                          
       --
     END set_column_data;
     --
@@ -2278,8 +2356,9 @@ AS
 						                     ,p_error             => lv_error);
     IF NOT lv_success
       THEN
-        nm_debug.debug('raising e_failed_reg '||lv_error); 
+        --
         RAISE e_failed_reg;
+        --
     END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -2318,7 +2397,6 @@ AS
   --
   -----------------------------------------------------------------------------
   --       
---need to check p_where_clause may now be read only--
   PROCEDURE update_theme(pi_old_theme_id           IN      nm_themes_all.nth_theme_id%TYPE
                         ,pi_old_theme_name         IN      nm_themes_all.nth_theme_name%TYPE
                         ,pi_old_pk_col             IN      nm_themes_all.nth_pk_column%TYPE
@@ -2334,12 +2412,16 @@ AS
                         ,pi_new_pk_label           IN      nm_themes_all.nth_label_column%TYPE
                         ,pi_new_is_updatable       IN      nm_themes_all.nth_location_updatable%TYPE
                         ,pi_new_base_theme         IN      nm_themes_all.nth_base_table_theme%TYPE
-                        ,pi_new_where_clause       IN      nm_themes_all.nth_where%TYPE
+                        ,pi_new_where_clause       IN      XMLTYPE
                         ,pi_new_start_chainage     IN      nm_themes_all.nth_st_chain_column%TYPE
                         ,pi_new_end_chainage       IN      nm_themes_all.nth_end_chain_column%TYPE
                         ,po_message_severity          OUT  hig_codes.hco_code%TYPE
                         ,po_message_cursor            OUT  sys_refcursor)
   IS
+    --
+    lr_theme_types  awlrs_map_api.theme_types_rec;
+    lv_where_clause nm3type.max_varchar2;
+    lv_base_feature_table  nm_themes_all.nth_feature_table%TYPE;
     --
     lr_db_rec        nm_themes_all%ROWTYPE;
     lv_upd           VARCHAR2(1) := 'N';
@@ -2391,6 +2473,34 @@ AS
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Location Updatable'
                                ,pi_parameter_value =>  pi_new_is_updatable);
+    -- 
+    IF pi_new_where_clause IS NOT NULL
+      THEN
+        --
+        -- generate where clause from xml passed in pi_new_where_clause --
+        SELECT nth_feature_table 
+          INTO lv_base_feature_table     
+          FROM nm_themes_all
+         WHERE nth_theme_id   = pi_old_theme_id;
+        -- 
+        lr_theme_types.feature_table := lv_base_feature_table;
+        --
+        lv_where_clause := awlrs_search_api.generate_where_clause(pi_theme_types       => lr_theme_types
+                                                                 ,pi_criteria          => pi_new_where_clause);
+        --
+        IF lv_where_clause IS NOT NULL
+           AND NOT nm3layer_tool.parse_where_clause(pi_base_theme   => pi_old_theme_id --pi_old_base_theme
+                                                   ,pi_where_clause => lv_where_clause)
+             THEN
+               hig.raise_ner(pi_appl => 'HIG'
+                            ,pi_id   => 83
+                            ,pi_supplementary_info => 'SQL is invalid');
+        END IF;
+    ELSE
+       -- if pi_new_where_clause is null, this means no changes are required to the original where clause, this is for all themes not just custom themes --
+        lv_where_clause := pi_old_where_clause;
+       --
+    END IF;
     --
     get_db_rec;
     --
@@ -2472,20 +2582,11 @@ AS
          lv_upd := 'Y';
       END IF;
       --
-      IF pi_old_where_clause != pi_new_where_clause
-       OR (pi_old_where_clause IS NULL AND pi_new_where_clause IS NOT NULL)
-       OR (pi_old_where_clause IS NOT NULL AND pi_new_where_clause IS NULL)
+      IF pi_old_where_clause != lv_where_clause
+       OR (pi_old_where_clause IS NULL AND lv_where_clause IS NOT NULL)
+       OR (pi_old_where_clause IS NOT NULL AND lv_where_clause IS NULL)
        THEN
-         --validate where clause--
-         IF nm3layer_tool.parse_where_clause(pi_base_theme     => pi_new_base_theme
-                                            ,pi_where_clause   => pi_new_where_clause)
-          THEN                          
-            lv_upd := 'Y';
-         ELSE
-            hig.raise_ner(pi_appl               => 'NET'
-                         ,pi_id                 => 121
-                         ,pi_supplementary_info => 'Please review the Where Clause');    
-         END IF;
+          lv_upd := 'Y';
       END IF;
       --
       IF pi_old_start_chainage != pi_new_start_chainage
@@ -2515,7 +2616,7 @@ AS
               ,nth_pk_column          =  pi_new_pk_col
               ,nth_label_column       =  pi_new_pk_label
               ,nth_location_updatable =  pi_new_is_updatable
-              ,nth_where              =  pi_new_where_clause 
+              ,nth_where              =  lv_where_clause 
               ,nth_st_chain_column    =  pi_new_start_chainage
               ,nth_end_chain_column   =  pi_new_end_chainage
          WHERE nth_theme_id =  pi_old_theme_id;
@@ -2535,8 +2636,7 @@ AS
         ROLLBACK TO update_theme_sp;
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END update_theme;                      
-  
+  END update_theme;
   --
   -----------------------------------------------------------------------------
   --                            
@@ -2606,21 +2706,16 @@ AS
                   ,po_is_group_theme   =>  lv_is_group_theme
                   ,po_is_inv_theme     =>  lv_is_inv_theme
                   ,po_is_node_theme    =>  lv_is_node_theme
-                  ,po_is_table_theme   =>  lv_is_table_theme);
-                  
-    nm_debug.debug('lv_is_custom_theme: '||lv_is_custom_theme);
-    nm_debug.debug('lv_is_datum_theme: ' ||lv_is_datum_theme);
-    nm_debug.debug('lv_is_group_theme: ' ||lv_is_group_theme);
-    nm_debug.debug('lv_is_inv_theme: '   ||lv_is_inv_theme);
-    nm_debug.debug('lv_is_node_theme: '  ||lv_is_node_theme);
-    nm_debug.debug('lv_is_table_theme: ' ||lv_is_table_theme);                  
+                  ,po_is_table_theme   =>  lv_is_table_theme);              
     --                   
     IF lv_is_inv_theme = 'Y'
-    
-      THEN   
-       lv_inv_type := get_inv_type(pi_theme_id => pi_theme_id);       
+      THEN
+       --   
+       lv_inv_type := get_inv_type(pi_theme_id => pi_theme_id);
+       --       
        IF lv_inv_type IS NOT NULL 
          THEN
+           --
            OPEN po_cursor FOR
               SELECT nta.nth_theme_name
                 FROM nm_inv_themes nit
@@ -2628,35 +2723,42 @@ AS
                WHERE nit.nith_nit_id  = lv_inv_type
                  AND nta.nth_theme_id = nit.nith_nth_theme_id
               ORDER BY DECODE(nth_base_table_theme, null, 'B', 'A');
-       END IF;       
+       END IF;
+       --       
     ELSIF lv_is_group_theme = 'Y'
       THEN
-          lv_group_type := get_group_type(pi_theme_id => pi_theme_id);
-          IF lv_group_type IS NOT NULL
-            THEN
-              OPEN po_cursor FOR
-                 SELECT nta.nth_theme_name
-                   FROM nm_nw_themes nnt
-                       ,nm_linear_types nlt
-                       ,nm_themes_all nta
-                  WHERE nnt.nnth_nlt_id = nlt.nlt_id
-                    AND nlt.nlt_gty_type = lv_group_type
-                    AND nnt.nnth_nth_theme_id = nta.nth_theme_id
-                 UNION
-                 SELECT nta.nth_theme_name
-                   FROM nm_area_themes nat
-                       ,nm_area_types naty
-                       ,nm_themes_all nta
-                  WHERE nat.nath_nat_id = naty.nat_id
-                    AND naty.nat_gty_group_type = lv_group_type
-                    AND nat.nath_nth_theme_id = nta.nth_theme_id
-                 ORDER BY 1 asc;
+       --
+        lv_group_type := get_group_type(pi_theme_id => pi_theme_id);
+        --
+        IF lv_group_type IS NOT NULL
+          THEN
+            --
+           OPEN po_cursor FOR
+              SELECT nta.nth_theme_name
+                FROM nm_nw_themes nnt
+                    ,nm_linear_types nlt
+                    ,nm_themes_all nta
+               WHERE nnt.nnth_nlt_id = nlt.nlt_id
+                 AND nlt.nlt_gty_type = lv_group_type
+                 AND nnt.nnth_nth_theme_id = nta.nth_theme_id
+              UNION
+              SELECT nta.nth_theme_name
+                FROM nm_area_themes nat
+                    ,nm_area_types naty
+                    ,nm_themes_all nta
+               WHERE nat.nath_nat_id = naty.nat_id
+                 AND naty.nat_gty_group_type = lv_group_type
+                 AND nat.nath_nth_theme_id = nta.nth_theme_id
+               ORDER BY 1 asc;
            END IF;
+           --
     ELSE   
+        --
         OPEN po_cursor FOR
            SELECT null
              FROM dual
-            WHERE 1=2;    
+            WHERE 1=2;  -- need to return an empty refcursor --
+        --        
     END IF;  
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -2718,64 +2820,56 @@ AS
                   ,po_is_node_theme    =>  lv_is_node_theme
                   ,po_is_table_theme   =>  lv_is_table_theme);
     --    
-    nm_debug.debug('lv_is_custom_theme: '||lv_is_custom_theme);
-    nm_debug.debug('lv_is_datum_theme: ' ||lv_is_datum_theme);
-    nm_debug.debug('lv_is_group_theme: ' ||lv_is_group_theme);
-    nm_debug.debug('lv_is_inv_theme: '   ||lv_is_inv_theme);
-    nm_debug.debug('lv_is_node_theme: '  ||lv_is_node_theme);
-    nm_debug.debug('lv_is_table_theme: ' ||lv_is_table_theme);
-    --
     lr_nth := nm3get.get_nth(pi_nth_theme_id => pi_theme_id);
     --
     IF UPPER(lr_nth.nth_hpr_product) = 'NET'
       THEN
         --  
-        IF  lv_is_custom_theme = 'Y'
+        IF  lv_is_datum_theme = 'Y'
           THEN
-            nm_debug.debug('custom theme'); 
+            -- 
+            hig.raise_ner(pi_appl => 'NET'
+                         ,pi_id   => 265
+                         ,pi_supplementary_info  => 'Unable to delete datum theme: '||pi_theme_id);      
+            --                                   
+        ELSIF  lv_is_custom_theme = 'Y'
+          THEN
+            -- 
             nm3sdm.drop_layer(p_nth_id => pi_theme_id);
-        ELSIF lv_is_datum_theme = 'Y'
-          THEN
-            IF lr_nth.nth_base_table_theme IS NOT NULL
-              THEN
-                nm_debug.debug('datum theme'); 
-                --nm3sdm.drop_layer(p_nth_id => pi_theme_id);
-            ELSE
-                --If base theme is null this means that this is the datum spatial table and can’t be recreated, so no delete allowed --
-                hig.raise_ner(pi_appl => 'NET'
-                             ,pi_id   => 265
-                             ,pi_supplementary_info  => 'Unable to delete datum theme: '||pi_theme_id);
-            END IF;
+            --            
         ELSIF lv_is_inv_theme = 'Y'
          THEN
-            nm_debug.debug('inv theme');
+            --
             lv_inv_type := get_inv_type(pi_theme_id => pi_theme_id);
-            nm3sdm.drop_layers_by_inv_type(lv_inv_type);            
+            --
+            nm3sdm.drop_layers_by_inv_type(lv_inv_type);
+            --            
         ELSIF lv_is_group_theme = 'Y'
           THEN
-            nm_debug.debug('group theme');
+            --
             lv_group_type := get_group_type(pi_theme_id => pi_theme_id);
+            --
             nm3sdm.drop_layers_by_gty_type(p_gty => lv_group_type);
+            --
         ELSIF lv_is_node_theme = 'Y'
           THEN 
-            nm_debug.debug('node theme');
+            --
             lv_node_type := get_node_type(pi_theme_id => pi_theme_id);
-            nm3layer_tool.drop_node_layer(pi_node_type => lv_node_type);  
+            --
+            nm3layer_tool.drop_node_layer(pi_node_type => lv_node_type);
+            --  
         ELSIF lv_is_table_theme = 'Y'
           THEN
-            --nm3sdm.drop_layer(p_nth_id => pi_theme_id); 
-            nm_debug.debug('lr_nth.nth_feature_table: '||lr_nth.nth_feature_table);
-            nm_debug.debug('lr_nth.nth_feature_shape_column: '||lr_nth.nth_feature_shape_column);
-            --nm3sdo.drop_sub_layer_by_table(p_table  => lr_nth.nth_feature_table
-            --                              ,p_column => lr_nth.nth_feature_shape_column);
---                                          
---            DELETE FROM nm_themes_all
---             WHERE nth_theme_id = pi_theme_id;    
-        ELSE     
-            -- To catch every thing else, we'll simply delete the theme --
-            nm_debug.debug('everything else');
-            DELETE FROM nm_themes_all
-             WHERE nth_theme_id = pi_theme_id;  
+            --
+            hig.raise_ner(pi_appl => 'NET'
+                         ,pi_id   => 265
+                         ,pi_supplementary_info  => 'Unable to delete Spatial Table theme: '||pi_theme_id);
+            --                
+            /* this works but requires thorough testing
+            nm3sdm.drop_layer(p_nth_id             => pi_theme_id
+                             ,p_Keep_Theme_Data    => 'N'
+                             ,p_Keep_Feature_Table => 'Y');
+            */ 
         END IF; 
     ELSE
         hig.raise_ner(pi_appl => 'NET'
