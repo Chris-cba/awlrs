@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkh-arc   1.0   Jul 23 2020 11:50:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkh-arc   1.1   Jul 31 2020 12:52:36   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_favourites_api.pkh  $
-  --       Date into PVCS   : $Date:   Jul 23 2020 11:50:38  $
-  --       Date fetched Out : $Modtime:   Jul 22 2020 19:12:18  $
-  --       Version          : $Revision:   1.0  $
+  --       Date into PVCS   : $Date:   Jul 31 2020 12:52:36  $
+  --       Date fetched Out : $Modtime:   Jul 31 2020 12:39:52  $
+  --       Version          : $Revision:   1.1  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.0  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
   --
   TYPE aff_tab IS TABLE OF awlrs_favourites_folders%ROWTYPE;
   TYPE afe_tab IS TABLE OF awlrs_favourites_entities%ROWTYPE;
@@ -131,19 +131,6 @@ AS
   --
   ------------------------------------------------------------------------------
   --
-  FUNCTION get_element_member_count(pi_ne_id IN nm_elements_all.ne_id%TYPE)
-    RETURN PLS_INTEGER;
-
-  --
-  ------------------------------------------------------------------------------
-  --
-  FUNCTION get_asset_child_count(pi_inv_type  IN nm_inv_types_all.nit_inv_type%TYPE
-                                ,pi_iit_ne_id IN nm_inv_items_all.iit_ne_id%TYPE)
-    RETURN PLS_INTEGER;
-
-  --
-  ------------------------------------------------------------------------------
-  --
   FUNCTION get_folder_child_count(pi_parent_af_id IN awlrs_favourites_folders.aff_af_id%TYPE)
     RETURN PLS_INTEGER;
 
@@ -154,6 +141,22 @@ AS
                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
                                     ,po_message_cursor   OUT sys_refcursor
                                     ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_element_data(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                  ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                  ,pi_skip_n_rows      IN  PLS_INTEGER
+                                  ,pi_pagesize         IN  PLS_INTEGER
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor
+                                  ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
