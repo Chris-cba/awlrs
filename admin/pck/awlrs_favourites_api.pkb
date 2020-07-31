@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.2   Jul 31 2020 12:52:46   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.3   Jul 31 2020 20:26:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_favourites_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 31 2020 12:52:46  $
-  --       Date fetched Out : $Modtime:   Jul 31 2020 12:38:38  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   Jul 31 2020 20:26:30  $
+  --       Date fetched Out : $Modtime:   Jul 31 2020 20:22:40  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_favourites_api';
   --
   c_root_folder  CONSTANT VARCHAR2(10) := '_ROOT';
@@ -1030,6 +1030,15 @@ AS
          --
          lr_ne := nm3get.get_ne_all(pi_ne_id => pi_entity_id);
          --
+         IF lr_ne.ne_nt_type != pi_entity_sub_type
+          THEN
+             --
+             hig.raise_ner(pi_appl               => nm3type.c_hig
+                          ,pi_id                 => 67
+                          ,pi_supplementary_info => 'nm_elements_all (NE_PK)'||CHR(10)||'ne_id => '||pi_entity_id||CHR(10)||'ne_nt_type => '||pi_entity_sub_type);
+             --
+         END IF;
+         --
      WHEN 'ASSET'
       THEN
          --
@@ -1230,14 +1239,13 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_entity_label(pi_table_name IN user_tab_cols.table_name%TYPE
-                           ,pi_pk_column  IN user_tab_cols.column_name%TYPE
-                           ,pi_pk_value   IN awlrs_favourites_entities.afe_entity_id%TYPE
-                           ,pi_label_cols IN afetl_tab)
+  FUNCTION get_entity_label_sql(pi_table_name IN user_tab_cols.table_name%TYPE
+                               ,pi_pk_column  IN user_tab_cols.column_name%TYPE
+                               ,pi_pk_val_col IN user_tab_cols.column_name%TYPE DEFAULT NULL
+                               ,pi_label_cols IN afetl_tab)
     RETURN VARCHAR2 IS
     --
     lv_sql         nm3type.max_varchar2;
-    lv_retval      nm3type.max_varchar2;
     --
   BEGIN
     /*
@@ -1254,6 +1262,11 @@ AS
     --
     lv_sql := 'SELECT ';
     --
+    IF pi_table_name = 'NE_ELEMENTS_ALL'
+     THEN
+        lv_sql := lv_sql||' NVL(ne_gty_group_type,ne_nt_type)||'' : ''';
+    END IF;
+    --
     FOR i IN 1..pi_label_cols.COUNT LOOP
       --
       awlrs_util.validate_simple_sql_name(pi_name               => pi_label_cols(i).afetl_label_column
@@ -1264,8 +1277,35 @@ AS
     END LOOP;
     --
     lv_sql := lv_sql||' FROM '||pi_table_name
-                   ||' WHERE '||pi_pk_column||' = :value'
+                   ||' WHERE '||pi_pk_column||' = '||NVL(pi_pk_val_col,':value')
     ;
+    --
+    RETURN lv_sql;
+    --
+  END get_entity_label_sql;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_entity_label(pi_table_name IN user_tab_cols.table_name%TYPE
+                           ,pi_pk_column  IN user_tab_cols.column_name%TYPE
+                           ,pi_pk_value   IN awlrs_favourites_entities.afe_entity_id%TYPE
+                           ,pi_label_cols IN afetl_tab)
+    RETURN VARCHAR2 IS
+    --
+    lv_sql         nm3type.max_varchar2;
+    lv_retval      nm3type.max_varchar2;
+    --
+  BEGIN
+    /*
+    ||Get the SQL to execute.
+    */
+    lv_sql := get_entity_label_sql(pi_table_name => pi_table_name
+                                  ,pi_pk_column  => pi_pk_column
+                                  ,pi_label_cols => pi_label_cols);
+    /*
+    ||Run the query.
+    */
     EXECUTE IMMEDIATE lv_sql
       INTO lv_retval
       USING pi_pk_value
@@ -1424,16 +1464,231 @@ AS
              --
          END IF;
          --
-         lv_retval := get_entity_label(pi_table_name => lr_afet.afet_table_name
-                                      ,pi_pk_column  => lr_afet.afet_pk_column
-                                      ,pi_pk_value   => pi_entity_id
-                                      ,pi_label_cols => lt_afetl);
+         lv_retval := pi_entity_type||' : '||get_entity_label(pi_table_name => lr_afet.afet_table_name
+                                                             ,pi_pk_column  => lr_afet.afet_pk_column
+                                                             ,pi_pk_value   => pi_entity_id
+                                                             ,pi_label_cols => lt_afetl);
          --
     END CASE;
     --
     RETURN lv_retval;
     --
   END get_entity_label;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION gen_entity_label_sql(pi_entity_type IN awlrs_fav_entity_types.afet_entity_type%TYPE DEFAULT NULL)
+    RETURN VARCHAR2 IS
+    --
+    lv_retval  nm3type.max_varchar2;
+    --
+    lr_ne    nm_elements_all%ROWTYPE;
+    lr_nit   nm_inv_types_all%ROWTYPE;
+    lr_iit   nm_inv_items_all%ROWTYPE;
+    --
+    TYPE afet_tab IS TABLE OF awlrs_fav_entity_types%ROWTYPE;
+    lt_afet  afet_tab;
+    --
+    lt_afetl  afetl_tab;
+    --
+    CURSOR get_afet
+        IS
+    SELECT *
+      FROM awlrs_fav_entity_types
+     WHERE afet_entity_type NOT IN('NETWORK','ASSET')
+         ;
+    --
+    CURSOR get_net_sub_types
+        IS
+    SELECT DISTINCT(afetl_entity_sub_type) sub_type
+      FROM awlrs_fav_entity_type_labels
+     WHERE afetl_entity_type = 'NETWORK'
+         ;
+    --
+    TYPE net_sub_type_tab IS TABLE OF get_net_sub_types%ROWTYPE;
+    lt_net_sub_types  net_sub_type_tab;
+    --
+    CURSOR get_nit_sub_types
+        IS
+    SELECT nit_inv_type
+          ,nit_table_name
+          ,nit_foreign_pk_column
+      FROM nm_inv_types
+     WHERE nit_inv_type IN(SELECT afe_entity_sub_type
+                             FROM awlrs_favourites_entities
+                            WHERE afe_entity_type = 'ASSET')
+         ;
+    --
+    TYPE nit_sub_types_tab IS TABLE OF get_nit_sub_types%ROWTYPE;
+    lt_nit  nit_sub_types_tab;
+    --
+    CURSOR get_afetl(cp_entity_type     IN awlrs_fav_entity_type_labels.afetl_entity_type%TYPE
+                    ,cp_entity_sub_type IN awlrs_fav_entity_type_labels.afetl_entity_sub_type%TYPE)
+        IS
+    SELECT *
+      FROM awlrs_fav_entity_type_labels
+     WHERE afetl_entity_type = cp_entity_type
+       AND NVL(afetl_entity_sub_type,'~~~~~') = NVL(cp_entity_sub_type,'~~~~~')
+     ORDER
+        BY afetl_seq_no
+         ;
+    --
+  BEGIN
+    --
+    lv_retval := 'CASE afe_entity_type ';
+    /*
+    ||Network.
+    */
+    IF pi_entity_type IS NULL
+     OR pi_entity_type = 'NETWORK'
+     THEN
+        --
+        lv_retval := lv_retval||'WHEN ''NETWORK'' THEN ';
+        --
+        OPEN  get_net_sub_types;
+        FETCH get_net_sub_types
+         BULK COLLECT
+         INTO lt_net_sub_types;
+        CLOSE get_net_sub_types;
+        --
+        IF lt_net_sub_types.COUNT > 0
+         THEN
+            lv_retval := lv_retval||'CASE afe_entity_sub_type ';
+        END IF;
+        --
+        FOR i IN 1..lt_net_sub_types.COUNT LOOP
+          --
+          OPEN  get_afetl('NETWORK'
+                         ,lt_net_sub_types(i).sub_type);
+          FETCH get_afetl
+           BULK COLLECT
+           INTO lt_afetl;
+          CLOSE get_afetl;
+          --
+          lv_retval := lv_retval||'WHEN '''||lt_net_sub_types(i).sub_type||''' THEN ('
+                                ||get_entity_label_sql(pi_table_name => 'NM_ELEMENTS_ALL'
+                                                      ,pi_pk_column  => 'NE_ID'
+                                                      ,pi_pk_val_col => 'AFE_ENTITY_ID'
+                                                      ,pi_label_cols => lt_afetl)
+                                ||') ';
+          --
+        END LOOP;
+        --
+        IF lt_net_sub_types.COUNT > 0
+         THEN
+            lv_retval := lv_retval||'ELSE ';
+        END IF;
+        --
+        lv_retval := lv_retval||'(SELECT NVL(ne_gty_group_type,ne_nt_type)||'' : ''||CASE ne_nt_type WHEN ''NSGN'' THEN ne_number WHEN ''ESU'' THEN ne_name_1 ELSE ne_unique END FROM nm_elements_all WHERE ne_id = afe_entity_id) ';
+        --
+        IF lt_net_sub_types.COUNT > 0
+         THEN
+            lv_retval := lv_retval||'END ';
+        END IF;
+        --
+    END IF;
+    /*
+    ||Assets.
+    */
+    IF pi_entity_type IS NULL
+     OR pi_entity_type = 'ASSET'
+     THEN
+        --
+        lv_retval := lv_retval||'WHEN ''ASSET'' THEN ';
+        --
+        OPEN  get_nit_sub_types;
+        FETCH get_nit_sub_types
+         BULK COLLECT
+         INTO lt_nit;
+        CLOSE get_nit_sub_types;
+        --
+        IF lt_nit.COUNT > 0
+         THEN
+            lv_retval := lv_retval||'CASE afe_entity_sub_type ';
+        END IF;
+        --
+        FOR i IN 1..lt_nit.COUNT LOOP
+          --
+          OPEN  get_afetl('ASSET'
+                         ,lt_nit(i).nit_inv_type);
+          FETCH get_afetl
+           BULK COLLECT
+           INTO lt_afetl;
+          CLOSE get_afetl;
+          --
+          IF lt_afetl.COUNT > 0
+           OR lt_nit(i).nit_table_name IS NOT NULL
+           THEN
+              --
+              IF lt_afetl.COUNT = 0
+               THEN
+                  --
+                  lt_afetl(1).afetl_label_column := lt_nit(i).nit_foreign_pk_column;
+                  --
+              END IF;
+              --
+              lv_retval := lv_retval||'WHEN '''||lt_nit(i).nit_inv_type||''' THEN afe_entity_sub_type||'' : ''||('
+                                    ||get_entity_label_sql(pi_table_name => NVL(lt_nit(i).nit_table_name,'NM_INV_ITEMS_ALL')
+                                                          ,pi_pk_column  => NVL(lt_nit(i).nit_foreign_pk_column,'IIT_NE_ID')
+                                                          ,pi_pk_val_col => 'AFE_ENTITY_ID'
+                                                          ,pi_label_cols => lt_afetl)
+                                    ||') ';
+              --
+          END IF;
+          --lv_retval := lr_nit.nit_inv_type||' : '||lv_retval;
+        END LOOP;
+        --
+        IF lt_nit.COUNT > 0
+         THEN
+            lv_retval := lv_retval||'ELSE ';
+        END IF;
+        --
+        lv_retval := lv_retval||'(SELECT iit_inv_type||'' : ''||iit_primary_key FROM nm_inv_items_all WHERE iit_ne_id = afe_entity_id) ';
+        --
+        IF lt_nit.COUNT > 0
+         THEN
+            lv_retval := lv_retval||'END ';
+        END IF;
+        --
+    END IF;
+    /*
+    ||Other Entity Types.
+    */
+    OPEN  get_afet;
+    FETCH get_afet
+     BULK COLLECT
+     INTO lt_afet;
+    CLOSE get_afet;
+    --
+    FOR i IN 1..lt_afet.COUNT LOOP
+      --
+      IF pi_entity_type IS NULL
+       OR pi_entity_type = lt_afet(i).afet_entity_type
+       THEN
+          OPEN  get_afetl(lt_afet(i).afet_entity_type
+                         ,NULL);
+          FETCH get_afetl
+           BULK COLLECT
+           INTO lt_afetl;
+          CLOSE get_afetl;
+          --
+          lv_retval := lv_retval||'WHEN '''||lt_afet(i).afet_entity_type||''' THEN '''||lt_afet(i).afet_display_name||'''||'' : ''||('
+                                ||get_entity_label_sql(pi_table_name => lt_afet(i).afet_table_name
+                                                      ,pi_pk_column  => lt_afet(i).afet_pk_column
+                                                      ,pi_pk_val_col => 'AFE_ENTITY_ID'
+                                                      ,pi_label_cols => lt_afetl)
+                                ||') ';
+          --
+      END IF;
+      --
+    END LOOP;
+    --
+    lv_retval := lv_retval||'END label';
+    --
+    RETURN lv_retval;
+    --
+  END gen_entity_label_sql;
 
   --
   ------------------------------------------------------------------------------
@@ -1555,13 +1810,15 @@ AS
     --
     lv_driving_sql  nm3type.max_varchar2 := 'SELECT id'
                                                 ||',seq_no'
-                                                ||',type_'
+                                                ||',network_type'
+                                                ||',group_type'
                                                 ||',name_'
                                                 ||',from_offset'
                                                 ||',to_offset'
                                                 ||',child_count'
                                           ||' FROM (SELECT cne.ne_id id'
-                                                       ||',NVL(cne.ne_gty_group_type,cne.ne_nt_type) type_'
+                                                       ||',cne.ne_nt_type network_type'
+                                                       ||',cne.ne_gty_group_type group_type'
                                                        ||',CASE WHEN cne.ne_nt_type = ''NSGN'' THEN cne.ne_number WHEN cne.ne_nt_type = ''ESU'' THEN cne.ne_name_1 ELSE cne.ne_unique END name_'
                                                        ||',m1.nm_begin_mp from_offset'
                                                        ||',m1.nm_end_mp to_offset'
@@ -1588,7 +1845,8 @@ AS
     ;
     lv_cursor_sql  nm3type.max_varchar2 := 'SELECT id'
                                                 ||',seq_no'
-                                                ||',type_'
+                                                ||',network_type'
+                                                ||',group_type'
                                                 ||',name_'
                                                 ||',from_offset'
                                                 ||',to_offset'
@@ -1618,8 +1876,14 @@ AS
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
-      awlrs_util.add_column_data(pi_cursor_col   => 'type_'
-                                ,pi_query_col    => 'type_'
+      awlrs_util.add_column_data(pi_cursor_col   => 'network_type'
+                                ,pi_query_col    => 'network_type'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'group_type'
+                                ,pi_query_col    => 'group_type'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
