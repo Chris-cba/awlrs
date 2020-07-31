@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkh-arc   1.3   Jul 28 2020 11:48:12   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jul 28 2020 11:48:12  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkh-arc   1.4   Jul 31 2020 15:15:48   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Jul 31 2020 15:15:48  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkh  $
-  --       Date fetched Out : $Modtime:   Jul 28 2020 11:13:14  $
-  --       Version          : $Revision:   1.3  $
+  --       Date fetched Out : $Modtime:   Jul 31 2020 13:53:50  $
+  --       Version          : $Revision:   1.4  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.3  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
   -- 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -32,6 +32,10 @@ AS
   FUNCTION get_last_analysed_date(pi_table_name IN user_tables.table_name%TYPE) 
     RETURN DATE;
   
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION can_delete(pi_theme_id  IN  nm_themes_all.nth_theme_id%TYPE) RETURN VARCHAR2;
   --
   -----------------------------------------------------------------------------
   --
@@ -295,12 +299,11 @@ AS
                         ,pi_new_pk_label           IN      nm_themes_all.nth_label_column%TYPE
                         ,pi_new_is_updatable       IN      nm_themes_all.nth_location_updatable%TYPE
                         ,pi_new_base_theme         IN      nm_themes_all.nth_base_table_theme%TYPE
-                        ,pi_new_where_clause       IN      nm_themes_all.nth_where%TYPE
+                        ,pi_new_where_clause       IN      XMLTYPE
                         ,pi_new_start_chainage     IN      nm_themes_all.nth_st_chain_column%TYPE
                         ,pi_new_end_chainage       IN      nm_themes_all.nth_end_chain_column%TYPE
                         ,po_message_severity          OUT  hig_codes.hco_code%TYPE
                         ,po_message_cursor            OUT  sys_refcursor);
-  
 
   --
   -----------------------------------------------------------------------------
