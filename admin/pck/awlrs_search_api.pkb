@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.44   Jul 21 2020 12:31:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.45   Jul 31 2020 15:26:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 21 2020 12:31:30  $
-  --       Date fetched Out : $Modtime:   Jul 21 2020 12:07:12  $
-  --       Version          : $Revision:   1.44  $
+  --       Date into PVCS   : $Date:   Jul 31 2020 15:26:58  $
+  --       Date fetched Out : $Modtime:   Jul 31 2020 15:16:10  $
+  --       Version          : $Revision:   1.45  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.44  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.45  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -2651,7 +2651,7 @@ AS
       IF lt_ita(i).ita_displayed = 'Y'
        THEN
           --
-          lv_scrn_text := prompt_to_column_name(pi_prompt => lt_ita(i).ita_scrn_text);
+          lv_scrn_text := prompt_to_column_name(pi_prompt => NVL(lt_ita(i).ita_scrn_text,lt_ita(i).ita_attrib_name));
           IF lv_scrn_text IN('result_id','primary_key','description','xsp','admin_unit'
                             ,'start_date','end_date','ind','row_count')
            THEN
@@ -2810,7 +2810,7 @@ AS
     --
     FOR i IN 1..lt_ntc.COUNT LOOP
       --
-      lv_prompt := prompt_to_column_name(pi_prompt => lt_ntc(i).ntc_prompt);
+      lv_prompt := prompt_to_column_name(pi_prompt => NVL(lt_ntc(i).ntc_prompt,lt_ntc(i).ntc_column_name));
       IF lv_prompt IN('result_id','network_type','group_type','unique_','USRN','ESU ID','Street Name'
                      ,'description','admin_unit','start_date','end_date','length','ind','row_count')
        THEN
@@ -3247,7 +3247,7 @@ AS
     --
     FOR i IN 1..lt_attr.COUNT LOOP
       --
-      lv_prompt := prompt_to_column_name(pi_prompt => lt_attr(i).ntc_prompt);
+      lv_prompt := prompt_to_column_name(pi_prompt => NVL(lt_attr(i).ntc_prompt,lt_attr(i).ntc_column_name));
       IF lv_prompt IN('result_id','network_type','group_type','unique_','USRN','ESU ID','Street Name'
                      ,'description','admin_unit','start_date','end_date','length','ind','row_count')
        THEN
@@ -3782,7 +3782,7 @@ AS
     --
     FOR i IN 1..lt_attr.COUNT LOOP
       --
-      lv_prompt := prompt_to_column_name(pi_prompt => lt_attr(i).ita_scrn_text);
+      lv_prompt := prompt_to_column_name(pi_prompt => NVL(lt_attr(i).ita_scrn_text,lt_attr(i).ita_attrib_name));
       IF lv_prompt IN('result_id','primary_key','description','xsp','admin_unit'
                      ,'start_date','end_date','ind','row_count')
        THEN
