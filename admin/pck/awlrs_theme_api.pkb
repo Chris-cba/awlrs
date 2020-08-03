@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.7   Jul 31 2020 15:15:46   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jul 31 2020 15:15:46  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.8   Aug 03 2020 15:19:28   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Aug 03 2020 15:19:28  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkb  $
-  --       Date fetched Out : $Modtime:   Jul 31 2020 15:13:06  $
-  --       Version          : $Revision:   1.7  $
+  --       Date fetched Out : $Modtime:   Aug 03 2020 15:11:42  $
+  --       Version          : $Revision:   1.8  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.7  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.8  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -928,7 +928,7 @@ AS
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
-      awlrs_util.add_column_data(pi_cursor_col   => 'base_table_theme'
+      awlrs_util.add_column_data(pi_cursor_col   => 'base_table_theme_name'
                                 ,pi_query_col    => 'nta2.nth_theme_name'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
@@ -1000,7 +1000,7 @@ AS
                                 ,pi_mask         => 'DD-MON-YYYY'
                                 ,pio_column_data => po_column_data);
       --
-      awlrs_util.add_column_data(pi_cursor_col   => 'tolerence'
+      awlrs_util.add_column_data(pi_cursor_col   => 'tolerance'
                                 ,pi_query_col    => 'nta1.nth_tolerance'
                                 ,pi_datatype     => awlrs_util.c_number_col
                                 ,pi_mask         => NULL
