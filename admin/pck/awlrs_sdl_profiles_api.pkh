@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkh-arc   1.1   Mar 13 2020 13:28:20   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkh-arc   1.2   Aug 07 2020 14:49:02   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkh  $
-  --       Date into PVCS   : $Date:   Mar 13 2020 13:28:20  $
-  --       Date fetched Out : $Modtime:   Mar 13 2020 12:10:06  $
-  --       PVCS Version     : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Aug 07 2020 14:49:02  $
+  --       Date fetched Out : $Modtime:   Jul 28 2020 21:24:10  $
+  --       PVCS Version     : $Revision:   1.2  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-    g_sccsid CONSTANT VARCHAR2(200) := '1.0';
+    g_sccsid CONSTANT VARCHAR2(200) := '$Revision:   1.2  $';
   --
   -- This function returns the current version of the package header
   FUNCTION get_version RETURN VARCHAR2;
