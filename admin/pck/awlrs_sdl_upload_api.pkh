@@ -1,0 +1,360 @@
+CREATE OR REPLACE PACKAGE awlrs_sdl_upload_api IS
+  --
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_upload_api.pkh-arc   1.1   Aug 07 2020 14:40:48   Vikas.Mhetre  $
+  --       Module Name      : $Workfile:   awlrs_sdl_upload_api.pkh  $
+  --       Date into PVCS   : $Date:   Aug 07 2020 14:40:48  $
+  --       Date fetched Out : $Modtime:   Jul 28 2020 21:22:30  $
+  --       PVCS Version     : $Revision:   1.1  $
+  --
+  --   Author : Vikas Mhetre
+  --
+  -----------------------------------------------------------------------------
+  -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
+  ----------------------------------------------------------------------------
+  --
+  g_sccsid CONSTANT VARCHAR2(200) := '$Revision:   1.1  $';
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current version of the package header
+  FUNCTION get_version RETURN VARCHAR2;
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current version of the package body
+  FUNCTION get_body_version RETURN VARCHAR2;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_file_submission(pi_submission_name  IN  sdl_file_submissions.sfs_name%TYPE
+                                  ,pi_profile_id       IN  sdl_file_submissions.sfs_sp_id%TYPE
+                                  ,pi_file_name        IN  sdl_file_submissions.sfs_file_name%TYPE
+                                  ,pi_layer_name       IN  sdl_file_submissions.sfs_layer_name%TYPE
+                                  ,pi_file_path        IN  sdl_file_submissions.sfs_file_path%TYPE
+                                  ,pi_file_attributes  IN  awlrs_sdl_util.sam_file_attribute_tab
+                                  ,po_batch_id         OUT sdl_file_submissions.sfs_id%TYPE
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE start_load_batch(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE post_file_submission(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_batch_file_path(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor
+                               ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_submissions_list(po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_submissions_list(pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                      ,pi_skip_n_rows      IN  PLS_INTEGER
+                                      ,pi_pagesize         IN  PLS_INTEGER
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor
+                                      ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_batch_attributes(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_attribute_validation_result(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                           ,pi_show_option      IN  VARCHAR2 DEFAULT 'ADJUSTED'
+                                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                           ,po_message_cursor   OUT sys_refcursor
+                                           ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_validation_results(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                        ,pi_show_option      IN  VARCHAR2 DEFAULT 'ADJUSTED'
+                                        ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                        ,pi_skip_n_rows      IN  PLS_INTEGER
+                                        ,pi_pagesize         IN  PLS_INTEGER
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_applied_adjustment_rules(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_applied_adjust_rules(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                          ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                          ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                          ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                          ,pi_skip_n_rows      IN  PLS_INTEGER
+                                          ,pi_pagesize         IN  PLS_INTEGER
+                                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor   OUT sys_refcursor
+                                          ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE reject_failed_attributes(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE complete_attribute_validation(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                         ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE perform_spatial_analysis(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_spatial_analysis_results(pi_batch_id          IN  sdl_file_submissions.sfs_id%TYPE
+                                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                         ,po_message_cursor   OUT sys_refcursor
+                                         ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE complete_spatial_analysis(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_batch_file_attributes(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_batch_file_attribs(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                        ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                        ,pi_skip_n_rows      IN  PLS_INTEGER
+                                        ,pi_pagesize         IN  PLS_INTEGER
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_selected_feature_attributes(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                           ,pi_sld_key          IN  sdl_load_data.sld_key%TYPE
+                                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                           ,po_message_cursor   OUT sys_refcursor
+                                           ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_selected_features_attributes(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                            ,pi_sld_keys         IN  awlrs_sdl_util.sld_key_tab
+                                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                            ,po_message_cursor   OUT sys_refcursor
+                                            ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_batch_input_data(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_batch_input_data(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                      ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                      ,pi_skip_n_rows      IN  PLS_INTEGER
+                                      ,pi_pagesize         IN  PLS_INTEGER
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor
+                                      ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_datum_detail(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                            ,pi_sld_key          IN  sdl_load_data.sld_key%TYPE
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_datum_detail(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                  ,pi_sld_key          IN  sdl_load_data.sld_key%TYPE
+                                  ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                  ,pi_skip_n_rows      IN  PLS_INTEGER
+                                  ,pi_pagesize         IN  PLS_INTEGER
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor
+                                  ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_datum_network_detail(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                    ,pi_swd_id           IN  sdl_wip_datums.swd_id%TYPE
+                                    ,pi_sld_key          IN  sdl_load_data.sld_key%TYPE
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_datum_network_detail(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                          ,pi_swd_id           IN  sdl_wip_datums.swd_id%TYPE
+                                          ,pi_sld_key          IN  sdl_load_data.sld_key%TYPE
+                                          ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                          ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                          ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                          ,pi_skip_n_rows      IN  PLS_INTEGER
+                                          ,pi_pagesize         IN  PLS_INTEGER
+                                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor   OUT sys_refcursor
+                                          ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_update_status_codes(po_message_severity OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor   OUT sys_refcursor
+                                   ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_load_record_status(pi_status           IN  sdl_load_data.sld_status%TYPE
+                                     ,pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                     ,pi_sld_keys         IN  awlrs_sdl_util.sld_key_tab
+                                     ,pi_select_all       IN  VARCHAR2 DEFAULT 'N'
+                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_datums_status(pi_status           IN  sdl_wip_datums.status%TYPE
+                                ,pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                ,pi_swd_ids          IN  awlrs_sdl_util.swd_id_tab
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE reverse_geometries(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                              ,pi_sld_keys         IN  awlrs_sdl_util.sld_key_tab
+                              ,pi_select_all       IN  VARCHAR2 DEFAULT 'N'
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE transfer_load_data(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                              ,pi_load_option      IN  VARCHAR2 DEFAULT 'AFTER'
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_ui_menu_status(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor
+                              ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_process_status(pi_batch_id          IN  sdl_file_submissions.sfs_id%TYPE
+                              ,pi_current_tab       IN  VARCHAR2
+                              ,po_process_completed OUT VARCHAR2
+                              ,po_message_severity  OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor    OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_batch_geom_coordinates(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor
+                                      ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_attrib_adjusted_for_batch(pi_sld_key  IN sdl_load_data.sld_key%TYPE
+                                       ,pi_batch_id IN sdl_file_submissions.sfs_id%TYPE
+                                       ,pi_sam_id   IN sdl_attribute_mapping.sam_id%TYPE)
+    RETURN VARCHAR2;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE reset_attribute_validation_flag(pi_batch_id  IN  sdl_file_submissions.sfs_id%TYPE);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE reset_spatial_analysis_flag(pi_batch_id  IN  sdl_file_submissions.sfs_id%TYPE);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE export_to_shapefile(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                               ,pi_status_option    IN  VARCHAR2 DEFAULT 'INVALID'
+                               ,po_query_string     OUT nm3type.max_varchar2
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+END awlrs_sdl_upload_api;
+/
