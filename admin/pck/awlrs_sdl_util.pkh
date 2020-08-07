@@ -1,0 +1,49 @@
+CREATE OR REPLACE PACKAGE awlrs_sdl_util IS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_util.pkh-arc   1.1   Aug 07 2020 14:38:48   Vikas.Mhetre  $
+  --       Module Name      : $Workfile:   awlrs_sdl_util.pkh  $
+  --       Date into PVCS   : $Date:   Aug 07 2020 14:38:48  $
+  --       Date fetched Out : $Modtime:   Jul 30 2020 10:48:22  $
+  --       PVCS Version     : $Revision:   1.1  $
+  --
+  --   Author : Vikas Mhetre
+  --
+  -----------------------------------------------------------------------------
+  -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
+  ----------------------------------------------------------------------------
+  --
+  g_sccsid CONSTANT VARCHAR2(200) := '$Revision:   1.1  $';
+  --
+  TYPE swd_id_tab IS TABLE OF sdl_wip_datums.swd_id%TYPE
+                  INDEX BY BINARY_INTEGER;
+  --
+  TYPE sld_key_tab IS TABLE OF sdl_load_data.sld_key%TYPE
+                   INDEX BY BINARY_INTEGER;
+  --
+  TYPE sam_file_attribute_tab IS TABLE OF sdl_attribute_mapping.sam_file_attribute_name%TYPE
+                             INDEX BY BINARY_INTEGER;
+  --
+  -- This function returns the current version of the package header
+  FUNCTION get_version RETURN VARCHAR2;
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current version of the package body
+  FUNCTION get_body_version RETURN VARCHAR2;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE can_user_run_module(pi_module           IN  hig_modules.hmo_module%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_user_role;
+  --
+  -----------------------------------------------------------------------------
+  --
+END awlrs_sdl_util;
+/
