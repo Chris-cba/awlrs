@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.6   Apr 22 2020 19:49:54   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.7   Aug 07 2020 14:50:44   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkb  $
-  --       Date into PVCS   : $Date:   Apr 22 2020 19:49:54  $
-  --       Date fetched Out : $Modtime:   Apr 22 2020 10:08:06  $
-  --       PVCS Version     : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   Aug 07 2020 14:50:44  $
+  --       Date fetched Out : $Modtime:   Jul 30 2020 13:04:02  $
+  --       PVCS Version     : $Revision:   1.7  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_body_sccsid CONSTANT VARCHAR2(2000) := '1.0';
+  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.7  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -64,6 +64,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     lv_ret_name sdl_profiles.sp_name%TYPE;
   --
   BEGIN
+  --
+  	awlrs_sdl_util.validate_user_role;
   --
     OPEN  c_profile;
     FETCH c_profile INTO lv_ret_name;
@@ -120,6 +122,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+	--
      OPEN chk_mapping(pi_profile_id);
     FETCH chk_mapping INTO lv_exists;
     CLOSE chk_mapping;
@@ -297,7 +301,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     lv_default_value sdl_datum_attribute_mapping.sdam_default_value%TYPE;
     lv_formula       sdl_datum_attribute_mapping.sdam_formula%TYPE;
     ln_max_seq       sdl_datum_attribute_mapping.sdam_seq_no%TYPE;
-    lv_insert        nm3type.max_varchar2;
     lv_exists        VARCHAR2(1) := 'N';
     --
     FUNCTION get_domain_default_value (pi_datum_type    sdl_datum_attribute_mapping.sdam_nw_type%TYPE,
@@ -324,6 +327,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+	--
     SELECT datum_nt_type
       INTO lv_datum_type
       FROM v_sdl_profile_nw_types
@@ -382,7 +387,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
       lv_formula := 'l.ne_owner';
     ELSE
       lv_formula := '';
-      lv_default_value := '00';
+      IF lv_default_value IS NULL THEN
+        lv_default_value := '00';
+      END IF;
     END IF;
     --
     INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
@@ -438,9 +445,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     -- See if there are any mandatory datum columns that are still missing
     FOR cur IN c_remaining_columns(pi_profile_id)
     LOOP
-      lv_insert := 'INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
-                    VALUES ('|| pi_profile_id ||', '''||cur.network_type ||''','|| TO_NUMBER(ln_max_seq + 1) ||', '''||cur.column_name||''', '''||cur.default_value||''', NULL)';
-      EXECUTE IMMEDIATE lv_insert;
+      INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
+      VALUES (pi_profile_id ,cur.network_type , TO_NUMBER(ln_max_seq + 1), cur.column_name,cur.default_value, NULL);
     END LOOP;
     --
   END default_datum_attribute_mapping;
@@ -452,6 +458,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+	--	
     IF active_batch_exists(pi_profile_id) THEN
       RAISE_APPLICATION_ERROR (-20034,
                                'Generation of profile views not allowed. Profile ' || get_profile_name(pi_profile_id) || ' already has an active file data exists in the system.');
@@ -480,6 +488,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     ln_count NUMBER;
     --
   BEGIN
+    --
+	awlrs_sdl_util.validate_user_role;
     --
     -- default_datum_attribute_mapping to be replaced with a new UI to insert datum attribute mappings
     -- in Manage Profiles screen in future release
@@ -543,6 +553,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+	--
       OPEN po_cursor FOR
     SELECT sp.sp_id profile_id
           ,sp.sp_name profile_name
@@ -574,6 +586,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+	--
       OPEN po_cursor FOR
     SELECT sp.sp_id profile_id
           ,sp.sp_name profile_name
@@ -642,6 +656,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
     BEGIN
       --
       SELECT 1
@@ -748,6 +764,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
     validate_notnull(pi_parameter_desc  => 'Profile Name'
                     ,pi_parameter_value => pi_new_name);
     --
@@ -980,6 +998,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
     IF active_batch_exists(pi_profile_id) THEN
       RAISE_APPLICATION_ERROR (-20025,
                                'Delete not allowed. Profile ' || get_profile_name(pi_profile_id) || ' has active file data exists in the system');
@@ -1011,9 +1031,10 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                  ,po_cursor           OUT sys_refcursor)
   IS
     --
-    --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
     OPEN po_cursor FOR
      SELECT sp_id profile_id
            ,sp_loading_view_name loading_view_name
@@ -1039,6 +1060,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
     OPEN po_cursor FOR
      SELECT nlt_id
            ,nlt_nt_type ||' - ' || nlt_descr network_type
@@ -1064,6 +1087,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
     OPEN po_cursor FOR
     SELECT n.un_unit_id
            ,n.un_unit_id ||' - ' || n.un_unit_name tolerance_search_unit
@@ -1090,6 +1115,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
       OPEN po_cursor FOR
     SELECT sp.sp_id profile_id
           ,sp.sp_name profile_name
@@ -1121,8 +1148,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
           ,nm_units nu
      WHERE sp.sp_nlt_id = nlt.nlt_id
        AND sp.sp_import_file_type = hv1.hco_code
+       AND hv1.hco_domain = 'SDL_FILE_TYPE'
        AND sp.sp_max_import_level = hv2.hco_code
+       AND hv2.hco_domain = 'SDL_MAX_IMPORT_LEVEL'
        AND sp.sp_topology_level = hv3.hco_code
+       AND hv3.hco_domain = 'SDL_TOPOLOGY_LEVEL'
        AND sp.sp_tol_search_unit = nu.un_unit_id
        AND nu.un_domain_id = 1
      ORDER BY sp.sp_id;
@@ -1188,8 +1218,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                                     nm_units nu
                                               WHERE sp.sp_nlt_id = nlt.nlt_id
                                                 AND sp.sp_import_file_type = hv1.hco_code
+                                                AND hv1.hco_domain = ''SDL_FILE_TYPE''
                                                 AND sp.sp_max_import_level = hv2.hco_code
+                                                AND hv2.hco_domain = ''SDL_MAX_IMPORT_LEVEL''
                                                 AND sp.sp_topology_level = hv3.hco_code
+                                                AND hv3.hco_domain = ''SDL_TOPOLOGY_LEVEL''
                                                 AND sp.sp_tol_search_unit = nu.un_unit_id
                                                 AND nu.un_domain_id = 1';
     --
@@ -1287,6 +1320,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     END set_column_data;
     --
   BEGIN
+    --
+	awlrs_sdl_util.validate_user_role;	
+	--  
     /*
     ||Get the page parameters.
     */
@@ -1353,6 +1389,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
     OPEN po_cursor FOR
     SELECT hu.hus_user_id user_id
           ,hu.hus_username username
@@ -1384,6 +1422,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
     OPEN po_cursor FOR
     SELECT sup.sup_id sup_id
           ,sup.sup_user_id user_id
@@ -1417,6 +1457,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
     BEGIN
       --
       SELECT 1
@@ -1489,6 +1531,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
     validate_notnull(pi_parameter_desc  => 'User'
                     ,pi_parameter_value => pi_new_user_id);
     --
@@ -1567,6 +1611,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
     SELECT sup.sup_user_id
           ,hus.hus_username
       INTO ln_user_id, lv_username
@@ -1605,6 +1651,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
     OPEN po_cursor FOR
     SELECT hc.hco_code
           ,hc.hco_code || ' - ' || hc.hco_meaning hco_meaning
@@ -1612,7 +1660,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
       FROM hig_codes hc
           ,hig_domains hd
      WHERE hc.hco_domain = hd.hdo_domain
-       AND hd.hdo_product = 'NET'
+     --  AND hd.hdo_product = 'NET'
        AND hd.hdo_domain = pi_domain
      ORDER BY hc.hco_seq;
     --
@@ -1636,6 +1684,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
     OPEN po_cursor FOR
     SELECT sam.sam_id sam_id
           ,sam.sam_sp_id profile_id
@@ -1733,6 +1783,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     END set_column_data;
     --
   BEGIN
+    --
+	awlrs_sdl_util.validate_user_role;
+    --  
     /*
     ||Get the page parameters.
     */
@@ -1807,6 +1860,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;	
+	--
     IF active_batch_exists(pi_profile_id) THEN
       RAISE_APPLICATION_ERROR (-20033,
                                'Insert not allowed. Profile ' || get_profile_name(pi_profile_id) || ' already has an active submission exists.');
@@ -1886,6 +1941,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+    --	
     validate_notnull(pi_parameter_desc  => 'File Attribute Name'
                     ,pi_parameter_value => pi_new_file_attribute_name);
     --
@@ -2002,6 +2059,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+    --	
     IF active_batch_exists(pi_profile_id) THEN
       RAISE_APPLICATION_ERROR (-20029,
                                'Delete not allowed. Attributes are already mapped to an active submission of the Profile '|| get_profile_name(pi_profile_id));
@@ -2040,6 +2099,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+	--
       OPEN po_cursor FOR
     SELECT vc.column_name
           ,vc.field_type
@@ -2052,7 +2113,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
       FROM v_nm_nw_columns vc,
            nm_linear_types nlt
      WHERE vc.network_type = nlt.nlt_nt_type
-       AND vc.group_type = nlt.nlt_gty_type
+       --AND vc.group_type = nlt.nlt_gty_type
+       AND ((nlt.nlt_g_i_d = 'G' AND vc.group_type = nlt.nlt_gty_type)
+            OR nlt.nlt_g_i_d = 'D')
        AND nlt.nlt_id = pi_nlt_id
     ORDER BY vc.rn ;
     --
@@ -2076,6 +2139,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+	--
       OPEN po_cursor FOR
     SELECT saar.saar_id saar_id
           ,saar.saar_sp_id profile_id
@@ -2180,6 +2245,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     END set_column_data;
     --
   BEGIN
+    --
+	awlrs_sdl_util.validate_user_role;
+	--
     /*
     ||Get the page parameters.
     */
@@ -2250,6 +2318,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   IS
     --
   BEGIN
+    --
+	awlrs_sdl_util.validate_user_role;
+	--
     -- probably not used anywhere in web api or UI.. verify and delete
     --
       OPEN po_cursor FOR
@@ -2302,6 +2373,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+	--
     OPEN  c_rule_exists(pi_profile_id, pi_target_attrib_name, pi_source_value);
     FETCH c_rule_exists INTO lv_exists;
     lv_retval := c_rule_exists%FOUND;
@@ -2372,6 +2445,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+	--
     validate_notnull(pi_parameter_desc  => 'Target Attribute Name'
                     ,pi_parameter_value => pi_new_target_attribute_name);
     --
@@ -2468,6 +2543,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+	--
     IF active_rule_exists(pi_profile_id, pi_saar_id) THEN
       RAISE_APPLICATION_ERROR (-20032,
                                'Delete not allowed. Adjustment Rule ' || pi_saar_id || ' is already applied to an active submission of the Profile '|| get_profile_name(pi_profile_id));
@@ -2497,6 +2574,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+	--
     OPEN po_cursor FOR
     SELECT sam_view_column_name attribute_name
           ,sam_col_id column_id
@@ -2525,6 +2604,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+	--
     OPEN po_cursor FOR
     SELECT hco_code domain_code
           ,hco_code || ' - ' || hco_meaning description
@@ -2540,7 +2621,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                             AND sp.sp_nlt_id = nlt.nlt_id
                             AND sam.sam_ne_column_name = vnc.column_name
                             AND vnc.network_type = nlt.nlt_nt_type
-                            AND vnc.group_type = nlt.nlt_gty_type
+                           -- AND vnc.group_type = nlt.nlt_gty_type
+                            AND ((nlt.nlt_g_i_d = 'G' AND vnc.group_type = nlt.nlt_gty_type) 
+                                 OR nlt.nlt_g_i_d = 'D')
                             AND sp.sp_id = pi_profile_id
                             AND sam.sam_view_column_name = pi_attribute_name
                             AND vnc.domain IS NOT NULL);
@@ -2565,6 +2648,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+	--
     OPEN po_cursor FOR
     SELECT ssrl_id
           ,ssrl_sp_id
@@ -2609,6 +2694,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     --
+	awlrs_sdl_util.validate_user_role;
+	--
     BEGIN
       --
       SELECT 1
