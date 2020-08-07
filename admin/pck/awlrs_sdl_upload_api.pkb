@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_upload_api.pkb-arc   1.2   Apr 22 2020 19:52:00   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_upload_api.pkb-arc   1.3   Aug 07 2020 14:44:18   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_upload_api.pkb  $
-  --       Date into PVCS   : $Date:   Apr 22 2020 19:52:00  $
-  --       Date fetched Out : $Modtime:   Apr 22 2020 18:58:28  $
-  --       PVCS Version     : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   Aug 07 2020 14:44:18  $
+  --       Date fetched Out : $Modtime:   Jul 30 2020 12:56:00  $
+  --       PVCS Version     : $Revision:   1.3  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_body_sccsid CONSTANT VARCHAR2(2000) := '1.0';
+  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.3  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -58,25 +58,28 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
      WHERE object_name = cp_view_name
        AND object_type = 'VIEW';
     --
-    CURSOR chk_mapping(cp_profile_id  sdl_profiles.sp_id%TYPE)
+    CURSOR chk_mapping(cp_profile_id     sdl_profiles.sp_id%TYPE
+                      ,cp_file_attribute sdl_attribute_mapping.sam_file_attribute_name%TYPE)
         IS
-    SELECT sam.sam_file_attribute_name
+    SELECT 1
       FROM sdl_attribute_mapping sam
-     WHERE sam.sam_sp_id = cp_profile_id      
-    ORDER BY sam_col_id;    
+     WHERE sam.sam_sp_id = cp_profile_id
+       AND sam.sam_file_attribute_name = cp_file_attribute
+    ORDER BY sam_col_id;
     --
-    lv_exists       NUMBER(1);
+    ln_exists       NUMBER(1);
     lv_retval       BOOLEAN := FALSE;
     lv_profile_name sdl_profiles.sp_name%TYPE;
     lv_view_name    sdl_profiles.sp_loading_view_name%TYPE;
     lv_match        VARCHAR2(1) := 'N';
+    lv_mapping      VARCHAR2(1) := 'N';
     --
   BEGIN
     --
     --SAVEPOINT update_datums_records_sp;
     --
      OPEN chk_submission_name(pi_submission_name);
-    FETCH chk_submission_name INTO lv_exists;
+    FETCH chk_submission_name INTO ln_exists;
         lv_retval := chk_submission_name%FOUND;
     CLOSE chk_submission_name;
     --
@@ -99,7 +102,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     END IF;
     --
      OPEN chk_view(lv_view_name);
-    FETCH chk_view INTO lv_exists;
+    FETCH chk_view INTO ln_exists;
         lv_retval := chk_view%FOUND;
     CLOSE chk_view;
     --
@@ -108,27 +111,30 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                'Profile views does not exists for the profile ' || lv_profile_name || '. Please contact the Administrator to generate Profile views before uploading a file.');
     END IF;
     --
-    FOR m IN chk_mapping(pi_profile_id)
+    --
+    FOR i IN 1..pi_file_attributes.COUNT
     LOOP
-
-      FOR i IN 1..pi_file_attributes.COUNT
-      LOOP
-        --
-        IF m.sam_file_attribute_name = UPPER(pi_file_attributes(i)) THEN
+      --
+       OPEN chk_mapping(pi_profile_id, UPPER(pi_file_attributes(i)));
+      FETCH chk_mapping INTO ln_exists;
+        IF chk_mapping%FOUND THEN
           lv_match := 'Y';
-          EXIT;
         ELSE
           lv_match := 'N';
         END IF;
-        --
-      END LOOP;
+      CLOSE chk_mapping;
       --
-      IF lv_match = 'N' THEN
-        RAISE_APPLICATION_ERROR (-20043,
-                                 'There is no matching attribute exists in file for the ' || lv_profile_name || ' profile file attribute ' || m.sam_file_attribute_name || '.');
+      IF lv_match = 'Y' THEN
+        lv_mapping := 'Y';
       END IF;
     --
     END LOOP;
+    --
+    IF lv_mapping = 'N' THEN
+      RAISE_APPLICATION_ERROR (-20043,
+                               'There is no match between file columns and ' || lv_profile_name || ' profile attribute mappings. File cannot be uploaded.');
+    END IF;
+
 	--
   END pre_file_submission;
   --
@@ -274,7 +280,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     ln_srid        NUMBER;
     lv_table_name  VARCHAR2(30);
     lv_column_name VARCHAR2(30) := 'GEOM';
-    lv_update      VARCHAR2(4000);
     --
     meta_row        V_SDL_PROFILE_NW_TYPES%ROWTYPE;
     l_unit_factor   NUMBER;
@@ -304,15 +309,14 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
        AND column_name = lv_column_name
        AND (srid IS NULL OR srid != ln_srid);
     -- Update the SRID of loaded geometry in the recently uploaded batch records
-    lv_update := 'UPDATE SDL_LOAD_DATA SL' || CHR(10) ||
-                 'SET SL.SLD_LOAD_GEOMETRY.SDO_SRID = hig.get_sysopt(''AWLMAPSRID'')' || CHR(10) ||
-              -- 'SET SL.SLD_LOAD_GEOMETRY = SDO_CS.TRANSFORM(SL.SLD_LOAD_GEOMETRY,'|| ln_srid || ')' || CHR(10) ||
-                 'WHERE SL.SLD_SFS_ID = ' || pi_batch_id || CHR(10) ||
-                 'AND ( SL.SLD_LOAD_GEOMETRY.SDO_SRID IS NULL' || CHR(10) ||
-                       'OR SL.SLD_LOAD_GEOMETRY.SDO_SRID != ' || ln_srid || ')';
-    EXECUTE IMMEDIATE lv_update;
+    UPDATE sdl_load_data sld
+       SET sld.sld_load_geometry.sdo_srid = hig.get_sysopt('AWLMAPSRID')
+     WHERE sld.sld_sfs_id = pi_batch_id
+       AND (sld.sld_load_geometry.sdo_srid IS NULL
+            OR sld.sld_load_geometry.sdo_srid != ln_srid);
     -- update batch records with the formula set for attributes at profile
-    update_attributes_formula(pi_batch_id);
+    -- update_attributes_formula(pi_batch_id); -- commented this time being because need to validate the incoming SQL statements 
+	                                           -- to avoid SQL injection until we find an approach to handle incoming formula. 
     -- set working geometry
     SELECT m.*
       INTO meta_row
@@ -1744,7 +1748,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
            || ' WHERE sld.sld_key = sga.slga_sld_key (+) '
            || ' AND sga.slga_datum_id IS NULL '
 --           || ' AND sld.sld_status = ''VALID'''
-           || ' AND sld.sld_status IN (''VALID'',''REVIEW'',''LOAD'',''SKIP'',''NO_ACTION'',''TRANSFERRED'')'
+           || ' AND sld.sld_status IN (''VALID'',''REVIEW'',''LOAD'',''SKIP'',''TRANSFERRED'')'
            || ' AND sld.sld_sfs_id = '
            || pi_batch_id
     INTO lv_retval
@@ -1795,7 +1799,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
            || ' FROM sdl_load_data sld, sdl_geom_accuracy sga'
            || ' WHERE sld.sld_key = sga.slga_sld_key (+) '
            || ' AND sga.slga_datum_id IS NULL '
-           || ' AND sld.sld_status IN (''VALID'',''REVIEW'',''LOAD'',''SKIP'',''NO_ACTION'',''TRANSFERRED'')'
+           || ' AND sld.sld_status IN (''VALID'',''REVIEW'',''LOAD'',''SKIP'',''TRANSFERRED'')'
            || ' AND sld.sld_sfs_id = '
            || pi_batch_id
            || ' ORDER BY sld.sld_key'
@@ -1982,7 +1986,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
               AND snu.end_node = en.hashcode)
     WHERE batch_id = pi_batch_id
       AND sld_key = pi_sld_key
-      AND status IN ('VALID','REVIEW','LOAD','SKIP','NO_ACTION','INVALID','TRANSFERRED')
+      AND status IN ('VALID','REVIEW','LOAD','SKIP','INVALID','TRANSFERRED')
   ORDER BY swd_id;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -2045,7 +2049,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                                        AND snu.end_node = en.hashcode)
                                              WHERE batch_id = :pi_batch_id
                                                AND sld_key = :pi_sld_key
-                                               AND status IN (''VALID'',''REVIEW'',''LOAD'',''SKIP'',''NO_ACTION'',''INVALID'',''TRANSFERRED'')';
+                                               AND status IN (''VALID'',''REVIEW'',''LOAD'',''SKIP'',''INVALID'',''TRANSFERRED'')';
     --
     lv_cursor_sql  nm3type.max_varchar2 := 'SELECT seq_id'
                                               ||' ,status'
@@ -2210,7 +2214,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                     ,SDO_GEOM.sdo_length (d.geom, 0.005) d_length
                                     ,SDO_GEOM.sdo_buffer (d.geom, 2) d_buffer
                                 FROM sdl_wip_datums d
-                               WHERE d.swd_id = pi_swd_id 
+                               WHERE d.swd_id = pi_swd_id
                                  AND d.sld_key = pi_sld_key) b
                       WHERE sdo_anyinteract (s.geoloc, b.d_buffer) = 'TRUE') t
                      ,nm_elements e
@@ -2307,7 +2311,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                      ,t.pct_match
                                      ,t.ne_id
                                      ,e.ne_descr
-                                     ,t.ne_pct                             
+                                     ,t.ne_pct
                                  FROM (SELECT s.ne_id
                                              ,b.swd_id
                                              ,b.sld_key
@@ -2325,7 +2329,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                                     ,SDO_GEOM.sdo_length (d.geom, 0.005) d_length
                                                     ,SDO_GEOM.sdo_buffer (d.geom, 2) d_buffer
                                                 FROM sdl_wip_datums d
-                                               WHERE d.swd_id = :pi_swd_id 
+                                               WHERE d.swd_id = :pi_swd_id
                                                  AND d.sld_key = :pi_sld_key) b
                                       WHERE sdo_anyinteract (s.geoloc, b.d_buffer) = ''TRUE'') t
                                      ,nm_elements e
@@ -2424,7 +2428,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
      WHERE hc.hco_domain = hd.hdo_domain
        AND hd.hdo_product = 'NET'
        AND hd.hdo_domain = 'SDL_REVIEW_ACTION'
-       AND hco_code != 'NO_ACTION'
      ORDER BY hc.hco_seq;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -2458,7 +2461,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
       SELECT sld_key
       BULK COLLECT INTO lt_sld_keys
       FROM sdl_load_data
-      WHERE sld_status IN ('VALID','REVIEW','LOAD','SKIP','NO_ACTION')
+      WHERE sld_status IN ('VALID','REVIEW','LOAD','SKIP')
       AND sld_sfs_id = pi_batch_id;
 
     ELSE
@@ -2494,8 +2497,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
          AND sld.sld_status IN ('VALID',   -- When the status of record is other than these
                                 'REVIEW',  -- do not update the status of the record i.e INVALID, REJECTED
                                 'SKIP',
-                                'LOAD',
-                                'NO_ACTION');
+                                'LOAD');
 
      -- Changing the Status value for the linear group/route/Input Data will change the Status value for all associated Datum rows
      UPDATE sdl_wip_datums swd
@@ -2505,8 +2507,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
         AND swd.status IN ('VALID',
                            'REVIEW',
                            'SKIP',
-                           'LOAD',
-                           'NO_ACTION'); -- INVALID status not to be changed
+                           'LOAD'); -- INVALID status not to be changed
       --
     END LOOP;
     --
@@ -2565,8 +2566,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
          AND swd.status IN ('VALID',
                             'REVIEW',
                             'SKIP',
-                            'LOAD',
-                            'NO_ACTION');
+                            'LOAD');
       --
       -- Update the status of associated Input Load data record
       -- If all Datum entries Status are changed to Skip, the associated Linear Group status is changed to Skip
@@ -2583,7 +2583,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                          FROM sdl_wip_datums
                                         WHERE sld_key IN (SELECT sld_key
                                                             FROM sdl_wip_datums
-                                                           WHERE swd_id = pi_swd_ids(i)))) --19363, 17566
+                                                           WHERE swd_id = pi_swd_ids(i))))
        WHERE sld.sld_sfs_id  = pi_batch_id
          AND sld.sld_key = (SELECT sld_key
                               FROM sdl_wip_datums
@@ -2601,6 +2601,52 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END update_datums_status;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE reverse_geometries(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                              ,pi_sld_keys         IN  awlrs_sdl_util.sld_key_tab
+                              ,pi_select_all       IN  VARCHAR2 DEFAULT 'N'
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor)
+  IS
+    --
+    lt_sld_keys_tab  awlrs_sdl_util.sld_key_tab;
+    lt_sld_keys      int_array_type := int_array_type();
+    --
+  BEGIN
+    --
+    IF pi_select_all = 'Y' THEN
+      --
+      SELECT sld_key
+      BULK COLLECT INTO lt_sld_keys_tab
+      FROM sdl_load_data
+      WHERE sld_status IN ('VALID','REVIEW','LOAD','SKIP')
+      AND sld_sfs_id = pi_batch_id;
+      --
+    ELSE
+      lt_sld_keys_tab := pi_sld_keys;
+    END IF;    
+    --
+    FOR i IN 1..lt_sld_keys_tab.COUNT
+    LOOP
+      --
+      lt_sld_keys.EXTEND;
+      lt_sld_keys(i) := lt_sld_keys_tab(i);
+      --
+    END LOOP;
+    --
+    sdl_edit.reverse_datum_geometries (lt_sld_keys);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+      THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END reverse_geometries;
   --
   -----------------------------------------------------------------------------
   --
@@ -2932,6 +2978,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     INVALID - validation failed
     REJECTED - Rejected*/
     --
+	IF pi_status_option NOT IN ('INVALID','REJECTED') THEN
+         RAISE_APPLICATION_ERROR (-20047,
+                                   'Only Validation failed or Rejected records allowed to export.');
+	END IF;
+	--
     SELECT 'SELECT sld.sld_load_geometry AS "SLD_GEOM",' ||
            LISTAGG('sld_col_' || sam.sam_col_id || ' AS "' ||
                     UPPER(sam.sam_file_attribute_name) || '"', ', ') WITHIN GROUP(ORDER BY sam_col_id, sam.sam_id)
