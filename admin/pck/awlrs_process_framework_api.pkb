@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkb-arc   1.5   Jun 03 2020 16:22:04   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jun 03 2020 16:22:04  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkb-arc   1.6   Aug 10 2020 13:41:52   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Aug 10 2020 13:41:52  $
   --       Module Name      : $Workfile:   awlrs_process_framework_api.pkb  $
-  --       Date fetched Out : $Modtime:   Jun 03 2020 16:16:36  $
-  --       Version          : $Revision:   1.5  $
+  --       Date fetched Out : $Modtime:   Aug 10 2020 13:40:18  $
+  --       Version          : $Revision:   1.6  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.6  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -4069,13 +4069,13 @@ AS
                                        ,pi_start_date               IN     DATE
                                        ,pi_frequency_id             IN     hig_processes.hp_frequency_id%TYPE
                                        ,pi_area_id                  IN     hig_processes.hp_area_id%TYPE DEFAULT NULL
+                                       ,po_process_id                  OUT hig_processes.hp_process_id%TYPE
+                                       ,po_scheduled_start_date        OUT date
                                        ,po_message_severity            OUT hig_codes.hco_code%TYPE
                                        ,po_message_cursor              OUT sys_refcursor)
   IS
   --
-  lv_process_id            hig_processes.hp_process_id%TYPE;
   lv_job_name              hig_processes.hp_job_name%TYPE;
-  lv_scheduled_start_date  date;
   --
   BEGIN
     --
@@ -4121,9 +4121,9 @@ AS
                                                ,pi_start_date              => pi_start_date
                                                ,pi_frequency_id            => pi_frequency_id
                                                ,pi_area_id                 => pi_area_id 
-                                               ,po_process_id              => lv_process_id 
+                                               ,po_process_id              => po_process_id 
                                                ,po_job_name                => lv_job_name
-                                               ,po_scheduled_start_date    => lv_scheduled_start_date); 
+                                               ,po_scheduled_start_date    => po_scheduled_start_date); 
     -- 
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
