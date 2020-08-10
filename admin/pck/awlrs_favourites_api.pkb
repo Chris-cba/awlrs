@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.3   Jul 31 2020 20:26:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.4   Aug 10 2020 17:53:48   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_favourites_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 31 2020 20:26:30  $
-  --       Date fetched Out : $Modtime:   Jul 31 2020 20:22:40  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   Aug 10 2020 17:53:48  $
+  --       Date fetched Out : $Modtime:   Aug 10 2020 17:34:36  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_favourites_api';
   --
   c_root_folder  CONSTANT VARCHAR2(10) := '_ROOT';
@@ -1737,6 +1737,7 @@ AS
           ,entity_type
           ,lv_entity_type_display_name entity_type_display_name
           ,entity_sub_type
+          ,entity_network_group_type
           ,entity_id
           ,child_count
       FROM (SELECT CAST('ENTITY' AS VARCHAR2(6)) folder_or_entity
@@ -1746,6 +1747,7 @@ AS
                   ,CASE WHEN ngt_linear_flag = 'Y' THEN nm_seq_no ELSE NULL END seq_no
                   ,CAST('NETWORK' AS VARCHAR2(100)) entity_type
                   ,cne.ne_nt_type entity_sub_type
+                  ,cne.ne_gty_group_type entity_network_group_type
                   ,cne.ne_id entity_id
                   ,CASE
                      WHEN cne.ne_gty_group_type IS NOT NULL
@@ -2012,6 +2014,7 @@ AS
           ,entity_type
           ,lv_entity_type_display_name entity_type_display_name
           ,entity_sub_type
+          ,NULL entity_network_group_type
           ,entity_id
           ,child_count
       FROM (SELECT CAST('ENTITY' AS VARCHAR2(6)) folder_or_entity
@@ -2064,6 +2067,15 @@ AS
                   ,afe_entity_type entity_type
                   ,afet_display_name entity_type_display_name
                   ,afe_entity_sub_type entity_sub_type
+                  ,CASE
+                     WHEN afe_entity_type = 'NETWORK'
+                      THEN
+                         (SELECT ne_gty_group_type
+                            FROM nm_elements_all
+                           WHERE ne_id = afe_entity_id)
+                     ELSE
+                         NULL
+                   END entity_network_group_type
                   ,afe_entity_id entity_id
                   ,CASE
                      WHEN afe_entity_type = 'NETWORK'
@@ -2099,6 +2111,7 @@ AS
                   ,NULL entity_type
                   ,NULL entity_type_display_name
                   ,NULL entity_sub_type
+                  ,NULL entity_network_group_type
                   ,NULL entity_id
                   ,awlrs_favourites_api.get_folder_child_count(aff_af_id) child_count
               FROM awlrs_favourites_folders
@@ -2155,10 +2168,11 @@ AS
           ,aff_parent_af_id parent_af_id
           ,NVL(hig.get_user_or_sys_opt('AWLFAVNAME'),'Favorites') label
           ,aff_seq_no seq_no
-          ,NULL entity_type
-          ,NULL entity_type_display_name
-          ,NULL entity_sub_type
-          ,NULL entity_id
+          ,CAST(NULL AS VARCHAR2(100)) entity_type
+          ,CAST(NULL AS VARCHAR2(100)) entity_type_display_name
+          ,CAST(NULL AS VARCHAR2(100)) entity_sub_type
+          ,CAST(NULL AS VARCHAR2(4)) entity_network_group_type
+          ,CAST(NULL AS NUMBER(38)) entity_id
           ,awlrs_favourites_api.get_folder_child_count(aff_af_id) child_count
       FROM awlrs_favourites_folders
      WHERE aff_af_id = cp_aff_af_id
@@ -2201,6 +2215,7 @@ AS
           ,CAST(NULL AS VARCHAR2(100)) entity_type
           ,CAST(NULL AS VARCHAR2(100)) entity_type_display_name
           ,CAST(NULL AS VARCHAR2(100)) entity_sub_type
+          ,CAST(NULL AS VARCHAR2(4)) entity_network_group_type
           ,CAST(NULL AS NUMBER(38)) entity_id
           ,awlrs_favourites_api.get_folder_child_count(aff_af_id) child_count
       FROM awlrs_favourites_folders
@@ -2274,6 +2289,15 @@ AS
                   ,afe_entity_type entity_type
                   ,afet_display_name entity_type_display_name
                   ,afe_entity_sub_type entity_sub_type
+                  ,CASE
+                     WHEN afe_entity_type = 'NETWORK'
+                      THEN
+                         (SELECT ne_gty_group_type
+                            FROM nm_elements_all
+                           WHERE ne_id = afe_entity_id)
+                     ELSE
+                         NULL
+                   END entity_network_group_type
                   ,afe_entity_id entity_id
                   ,CASE
                      WHEN afe_entity_type = 'NETWORK'
@@ -2306,10 +2330,11 @@ AS
                   ,aff_parent_af_id parent_af_id
                   ,aff_name label
                   ,aff_seq_no seq_no
-                  ,NULL entity_type
-                  ,NULL entity_type_display_name
-                  ,NULL entity_sub_type
-                  ,NULL entity_id
+                  ,CAST(NULL AS VARCHAR2(100)) entity_type
+                  ,CAST(NULL AS VARCHAR2(100)) entity_type_display_name
+                  ,CAST(NULL AS VARCHAR2(100)) entity_sub_type
+                  ,CAST(NULL AS VARCHAR2(4)) entity_network_group_type
+                  ,CAST(NULL AS NUMBER(38)) entity_id
                   ,awlrs_favourites_api.get_folder_child_count(aff_af_id) child_count
               FROM awlrs_favourites_folders
              WHERE aff_parent_af_id = cp_aff_af_id)
