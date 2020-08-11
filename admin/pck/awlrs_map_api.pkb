@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.48   Jul 07 2020 13:27:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_map_api.pkb-arc   1.49   Aug 11 2020 19:23:34   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_map_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 07 2020 13:27:20  $
-  --       Date fetched Out : $Modtime:   Jul 07 2020 13:05:38  $
-  --       Version          : $Revision:   1.48  $
+  --       Date into PVCS   : $Date:   Aug 11 2020 19:23:34  $
+  --       Date fetched Out : $Modtime:   Aug 11 2020 18:58:46  $
+  --       Version          : $Revision:   1.49  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.48  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.49  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_map_api';
   --
   g_min_x  NUMBER;
@@ -24,6 +24,15 @@ AS
   g_debug  hig_option_values.hov_value%TYPE;
   --
   gt_epsg  nm3type.tab_number;
+  --
+  TYPE epsg_conv_rec IS RECORD(epsg NUMBER
+                              ,srid NUMBER);
+  TYPE epsg_conv_tab IS TABLE OF epsg_conv_rec INDEX BY BINARY_INTEGER;
+  gt_epsg_conv epsg_conv_tab;
+  --
+  g_styling_rules CLOB;
+  TYPE custom_tag_tab IS TABLE OF nm3type.max_varchar2 INDEX BY nm3type.max_varchar2;
+  gt_custom_tag_values  custom_tag_tab;
   --
   c_show_labels_alias CONSTANT VARCHAR2(30) := 'show__labels__';
   --
@@ -93,10 +102,72 @@ AS
   END get_custom_tag_value;
 
   --
+  ---------------------------------------------------------------------------
+  --
+  FUNCTION get_custom_tag_value(pi_styling_rules IN CLOB
+                               ,pi_tag_name      IN VARCHAR2)
+    RETURN VARCHAR2 IS
+    --
+    lv_retval nm3type.max_varchar2;
+    --
+    CURSOR get_tag_values(cp_styling_rules IN XMLTYPE)
+        IS
+    SELECT LTRIM(RTRIM(EXTRACTVALUE(a.column_value,'/tag/name'))) tag_name
+          ,LTRIM(RTRIM(EXTRACTVALUE(a.column_value,'/tag/value'))) tag_value
+      FROM XMLTABLE('/styling_rules/custom_tags/tag'
+                    PASSING cp_styling_rules) a
+         ;
+    --
+    TYPE tag_tab IS TABLE OF get_tag_values%ROWTYPE;
+    lt_tags  tag_tab;
+    --
+  BEGIN
+    --
+    IF g_styling_rules IS NULL
+     OR g_styling_rules != pi_styling_rules
+     THEN
+        --
+        gt_custom_tag_values.DELETE;
+        --
+        OPEN  get_tag_values(XMLTYPE(pi_styling_rules));
+        FETCH get_tag_values
+         BULK COLLECT
+         INTO lt_tags;
+        CLOSE get_tag_values;
+        --
+        FOR i IN 1..lt_tags.COUNT LOOP
+          --
+          gt_custom_tag_values(lt_tags(i).tag_name) := lt_tags(i).tag_value;
+          --
+        END LOOP;
+        --
+        g_styling_rules := pi_styling_rules;
+        --
+    END IF;
+    --
+    BEGIN
+      --
+      lv_retval := gt_custom_tag_values(pi_tag_name);
+      --
+    EXCEPTION
+     WHEN no_data_found
+      THEN
+         lv_retval := NULL;
+    END;
+    --
+    RETURN lv_retval;
+    --
+  EXCEPTION
+   WHEN others
+    THEN
+       RETURN NULL;
+  END get_custom_tag_value;
+
+  --
   -----------------------------------------------------------------------------
   --
-  FUNCTION get_custom_tag_gtypes(pi_theme_id   IN nm_themes_all.nth_theme_id%TYPE
-                                ,pi_theme_name IN nm_themes_all.nth_theme_name%TYPE)
+  FUNCTION get_custom_tag_gtypes(pi_theme_id      IN nm_themes_all.nth_theme_id%TYPE
+                                ,pi_styling_rules IN CLOB)
     RETURN awlrs_sdo.gtype_tab IS
     --
     lv_tag_value  nm3type.max_varchar2;
@@ -112,8 +183,8 @@ AS
     --
   BEGIN
     --
-    lv_tag_value := get_custom_tag_value(pi_theme_name => pi_theme_name
-                                        ,pi_tag_name   => 'GeometryTypes');
+    lv_tag_value := get_custom_tag_value(pi_styling_rules => pi_styling_rules
+                                        ,pi_tag_name      => 'GeometryTypes');
     --
     lt_tag_types := awlrs_util.tokenise_string(pi_string => lv_tag_value);
     --
@@ -416,16 +487,12 @@ AS
     lr_nth  nm_themes_all%ROWTYPE;
     lt_ids  nm_ne_id_array := nm_ne_id_array();
     --
-    lv_tooltip_columns   nm3type.max_varchar2;
     lv_sql               nm3type.max_varchar2;
     lv_default_order_by  VARCHAR2(30);
     --
   BEGIN
     --
     lr_nth := nm3get.get_nth(pi_nth_theme_name => pi_theme_name);
-    --
-    lv_tooltip_columns := get_custom_tag_value(pi_theme_name => pi_theme_name
-                                              ,pi_tag_name   => 'TooltipColumns');
     --
     FOR i IN 1..pi_feature_ids.COUNT LOOP
       --
@@ -434,78 +501,66 @@ AS
       --
     END LOOP;
     --
-    IF lv_tooltip_columns IS NOT NULL
+    lr_theme_types := get_theme_types(pi_theme_name => pi_theme_name);
+    --
+    IF lr_theme_types(1).network_type IS NOT NULL
      THEN
-        lv_sql :=  'SELECT DISTINCT('||lr_nth.nth_feature_pk_column||') id'
-        ||CHR(10)||'      ,'||lv_tooltip_columns
-        ||CHR(10)||'  FROM '||lr_nth.nth_feature_table
-        ||CHR(10)||' WHERE '||lr_nth.nth_feature_pk_column||' IN(SELECT ne_id FROM TABLE(CAST(:id_tab AS nm_ne_id_array)))'
+        lv_sql :=  'SELECT ne_id         id'
+        ||CHR(10)||'      ,ne_nt_type    type'
+        ||CHR(10)||'      ,CASE ne_nt_type'
+        ||CHR(10)||'         WHEN ''ESU'' THEN ne_name_1'
+        ||CHR(10)||'         WHEN ''NSGN'' THEN ne_number'
+        ||CHR(10)||'         ELSE ne_unique'
+        ||CHR(10)||'       END           name'
+        ||CHR(10)||'      ,ne_descr      description'
+        ||CHR(10)||'      ,DECODE(nt_linear,''Y'', NVL(nm3net.get_ne_length(ne_id),0), NULL) length'
+        ||CHR(10)||'      ,un_unit_id    unit_id'
+        ||CHR(10)||'      ,un_unit_name  unit_name'
+        ||CHR(10)||'  FROM nm_elements_all'
+        ||CHR(10)||'      ,nm_types'
+        ||CHR(10)||'      ,nm_units'
+        ||CHR(10)||'      ,nm_unit_domains'
+        ||CHR(10)||' WHERE ud_domain_name(+) = ''LENGTH'''
+        ||CHR(10)||'   AND ud_domain_id(+) = un_domain_id'
+        ||CHR(10)||'   AND un_unit_id(+) = nt_length_unit'
+        ||CHR(10)||'   AND nt_type = ne_nt_type'
+        ||CHR(10)||'   AND ne_id IN(SELECT ne_id FROM TABLE(CAST(:id_tab AS nm_ne_id_array)))'
         ;
-    ELSE
-        /*
-        ||No tooltip defined so return a standard cursor depending on the asset/network type.
-        */
-        lr_theme_types := get_theme_types(pi_theme_name => pi_theme_name);
+    ELSIF lr_theme_types(1).asset_type IS NOT NULL
+     THEN
         --
-        IF lr_theme_types(1).network_type IS NOT NULL
+        lr_nit := nm3get.get_nit(pi_nit_inv_type => lr_theme_types(1).asset_type);
+        --
+        IF lr_nit.nit_table_name IS NULL
          THEN
-            lv_sql :=  'SELECT ne_id         id'
-            ||CHR(10)||'      ,ne_nt_type    type'
-            ||CHR(10)||'      ,CASE ne_nt_type'
-            ||CHR(10)||'         WHEN ''ESU'' THEN ne_name_1'
-            ||CHR(10)||'         WHEN ''NSGN'' THEN ne_number'
-            ||CHR(10)||'         ELSE ne_unique'
-            ||CHR(10)||'       END           name'
-            ||CHR(10)||'      ,ne_descr      description'
-            ||CHR(10)||'      ,DECODE(nt_linear,''Y'', NVL(nm3net.get_ne_length(ne_id),0), NULL) length'
-            ||CHR(10)||'      ,un_unit_id    unit_id'
-            ||CHR(10)||'      ,un_unit_name  unit_name'
-            ||CHR(10)||'  FROM nm_elements_all'
-            ||CHR(10)||'      ,nm_types'
-            ||CHR(10)||'      ,nm_units'
-            ||CHR(10)||'      ,nm_unit_domains'
-            ||CHR(10)||' WHERE ud_domain_name(+) = ''LENGTH'''
-            ||CHR(10)||'   AND ud_domain_id(+) = un_domain_id'
-            ||CHR(10)||'   AND un_unit_id(+) = nt_length_unit'
-            ||CHR(10)||'   AND nt_type = ne_nt_type'
-            ||CHR(10)||'   AND ne_id IN(SELECT ne_id FROM TABLE(CAST(:id_tab AS nm_ne_id_array)))'
+            lv_sql :=  'SELECT iit_ne_id       id'
+            ||CHR(10)||'      ,iit_inv_type    type'
+            ||CHR(10)||'      ,nit_descr       type_description'
+            ||CHR(10)||'      ,iit_primary_key name'
+            ||CHR(10)||'      ,iit_descr       description'
+            ||CHR(10)||'      ,nau_unit_code   admin_unit_code'
+            ||CHR(10)||'      ,nau_name        admin_unit_name'
+            ||CHR(10)||'  FROM nm_admin_units_all'
+            ||CHR(10)||'      ,nm_inv_types_all'
+            ||CHR(10)||'      ,nm_inv_items_all'
+            ||CHR(10)||' WHERE iit_ne_id IN(SELECT ne_id FROM TABLE(CAST(:id_tab AS nm_ne_id_array)))'
+            ||CHR(10)||'   AND iit_inv_type = nit_inv_type'
+            ||CHR(10)||'   AND iit_admin_unit = nau_admin_unit'
             ;
-        ELSIF lr_theme_types(1).asset_type IS NOT NULL
-         THEN
-            --
-            lr_nit := nm3get.get_nit(pi_nit_inv_type => lr_theme_types(1).asset_type);
-            --
-            IF lr_nit.nit_table_name IS NULL
-             THEN
-                lv_sql :=  'SELECT iit_ne_id       id'
-                ||CHR(10)||'      ,iit_inv_type    type'
-                ||CHR(10)||'      ,nit_descr       type_description'
-                ||CHR(10)||'      ,iit_primary_key name'
-                ||CHR(10)||'      ,iit_descr       description'
-                ||CHR(10)||'      ,nau_unit_code   admin_unit_code'
-                ||CHR(10)||'      ,nau_name        admin_unit_name'
-                ||CHR(10)||'  FROM nm_admin_units_all'
-                ||CHR(10)||'      ,nm_inv_types_all'
-                ||CHR(10)||'      ,nm_inv_items_all'
-                ||CHR(10)||' WHERE iit_ne_id IN(SELECT ne_id FROM TABLE(CAST(:id_tab AS nm_ne_id_array)))'
-                ||CHR(10)||'   AND iit_inv_type = nit_inv_type'
-                ||CHR(10)||'   AND iit_admin_unit = nau_admin_unit'
-                ;
-            ELSE
-                lv_sql :=  'SELECT '||lr_nit.nit_foreign_pk_column||' id'
-                ||CHR(10)||'      ,'||nm3flx.string(lr_nit.nit_inv_type)||' type'
-                ||CHR(10)||'      ,'||nm3flx.string(lr_nit.nit_descr)||' type_description'
-                ||CHR(10)||'      ,'||lr_nit.nit_foreign_pk_column||' name'
-                ||CHR(10)||'  FROM '||lr_nit.nit_table_name
-                ||CHR(10)||' WHERE '||lr_nit.nit_foreign_pk_column||' IN (SELECT ne_id FROM TABLE(CAST(:id_tab AS nm_ne_id_array)))'
-                ;
-            END IF;
         ELSE
-            --Layer does not represent an Asset Type or a Network Type
-            hig.raise_ner(pi_appl => 'AWLRS'
-                         ,pi_id   => 6);
-            --
+            lv_sql :=  'SELECT '||lr_nit.nit_foreign_pk_column||' id'
+            ||CHR(10)||'      ,'||nm3flx.string(lr_nit.nit_inv_type)||' type'
+            ||CHR(10)||'      ,'||nm3flx.string(lr_nit.nit_descr)||' type_description'
+            ||CHR(10)||'      ,'||lr_nit.nit_foreign_pk_column||' name'
+            ||CHR(10)||'  FROM '||lr_nit.nit_table_name
+            ||CHR(10)||' WHERE '||lr_nit.nit_foreign_pk_column||' IN (SELECT ne_id FROM TABLE(CAST(:id_tab AS nm_ne_id_array)))'
+            ;
         END IF;
+    ELSE
+        --Layer does not represent an Asset Type or a Network Type
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 6);
+        --
     END IF;
     --
     IF pi_order_column IS NOT NULL
@@ -742,7 +797,20 @@ AS
     /*
     ||Convert the SRID.
     */
-    lv_epsg := sdo_cs.map_oracle_srid_to_epsg(lv_srid);
+    FOR i IN 1..gt_epsg_conv.COUNT LOOP
+      IF gt_epsg_conv(i).srid = lv_srid
+       THEN
+          lv_epsg := gt_epsg_conv(i).epsg;
+          EXIT;
+      END IF;
+    END LOOP;
+    --
+    IF lv_epsg IS NULL
+     THEN
+        lv_epsg := sdo_cs.map_oracle_srid_to_epsg(lv_srid);
+        gt_epsg_conv(gt_epsg_conv.COUNT+1).epsg := lv_epsg;
+        gt_epsg_conv(gt_epsg_conv.COUNT).srid := lv_srid;
+    END IF;
     --
     IF lv_epsg IS NULL
      AND pi_raise_not_found
@@ -887,8 +955,8 @@ AS
       /*
       ||Get the Legend Group tag.
       */
-      lv_legend_group := get_custom_tag_value(pi_theme_name => lt_wms_themes(i).nwt_name
-                                             ,pi_tag_name   => 'LegendGroup');
+      lv_legend_group := get_custom_tag_value(pi_styling_rules => lt_wms_themes(i).nwt_name
+                                             ,pi_tag_name      => 'LegendGroup');
       /*
       ||Get the DisplayedAtStartup custom tag.
       ||If it is not specified use the value from nm_wms_themes.
@@ -2368,13 +2436,14 @@ AS
     lv_doc_man_url_template      nm3type.max_varchar2;
     lv_gtype_restriction         VARCHAR2(100);
     lv_where_and                 VARCHAR2(10) := ' WHERE ';
+    lv_newdocman                 hig_option_values.hov_value%TYPE := NVL(hig.get_sysopt('NEWDOCMAN'),'N');
     --
     TYPE nit_tab IS TABLE OF nm_inv_types_all.nit_inv_type%TYPE;
     --
     ---------------------------------------------------------------------------
     --
-    FUNCTION get_theme_label_col(pi_theme_name IN VARCHAR2
-                                ,pi_pk_column  IN VARCHAR2)
+    FUNCTION get_theme_label_col(pi_styling_rules IN CLOB
+                                ,pi_pk_column     IN VARCHAR2)
       RETURN VARCHAR2 IS
       --
       lv_retval VARCHAR2(100);
@@ -2383,12 +2452,10 @@ AS
       --
       SELECT theme_styles.label_column
         INTO lv_retval
-        FROM user_sdo_themes themes
-            ,XMLTABLE('/styling_rules/rule/label'
-                      PASSING XMLTYPE(themes.styling_rules)
+        FROM XMLTABLE('/styling_rules/rule/label'
+                      PASSING XMLTYPE(pi_styling_rules)
                       COLUMNS label_column VARCHAR2(32) path '@column') theme_styles
-       WHERE themes.name = pi_theme_name
-         AND UPPER(theme_styles.label_column) != UPPER(pi_pk_column)
+       WHERE UPPER(theme_styles.label_column) != UPPER(pi_pk_column)
          AND ROWNUM = 1
            ;
       --
@@ -2406,7 +2473,7 @@ AS
     --
     ---------------------------------------------------------------------------
     --
-    FUNCTION get_theme_extra_cols(pi_theme_name    IN VARCHAR2
+    FUNCTION get_theme_extra_cols(pi_styling_rules IN CLOB
                                  ,pi_pk_column     IN VARCHAR2
                                  ,pi_filter_column IN VARCHAR2
                                  ,pi_alias         IN VARCHAR2
@@ -2429,8 +2496,8 @@ AS
       /*
       ||Get the Label Column.
       */
-      lv_label_col := get_theme_label_col(pi_theme_name => pi_theme_name
-                                         ,pi_pk_column  => pi_pk_column);
+      lv_label_col := get_theme_label_col(pi_styling_rules => pi_styling_rules
+                                         ,pi_pk_column     => pi_pk_column);
       --
       IF lv_label_col IS NOT NULL
        THEN
@@ -2457,12 +2524,10 @@ AS
       SELECT DISTINCT pi_alias||theme_styles.rule_column
         BULK COLLECT
         INTO lt_columns
-        FROM user_sdo_themes themes
-            ,XMLTABLE('/styling_rules/rule'
-                      PASSING XMLTYPE(themes.styling_rules)
+        FROM XMLTABLE('/styling_rules/rule'
+                      PASSING XMLTYPE(pi_styling_rules)
                       COLUMNS rule_column VARCHAR2(30) path '@column') theme_styles
-       WHERE themes.name = pi_theme_name
-         AND UPPER(theme_styles.rule_column) NOT IN(UPPER(pi_pk_column),UPPER(NVL(lv_label_col,'~~~~~')),UPPER(NVL(pi_filter_column,'~~~~~')))
+       WHERE UPPER(theme_styles.rule_column) NOT IN(UPPER(pi_pk_column),UPPER(NVL(lv_label_col,'~~~~~')),UPPER(NVL(pi_filter_column,'~~~~~')))
            ;
       --
       FOR i IN 1..lt_columns.COUNT LOOP
@@ -2499,31 +2564,35 @@ AS
     --
     ---------------------------------------------------------------------------
     --
-    FUNCTION get_theme_wfs_key_col(pi_theme_name IN VARCHAR2
-                                  ,pi_pk_column  IN VARCHAR2)
+    FUNCTION get_theme_wfs_key_col(pi_styling_rules IN CLOB
+                                  ,pi_pk_column     IN VARCHAR2)
       RETURN VARCHAR2 IS
       --
-      lv_retval VARCHAR2(100);
+      lv_retval  nm3type.max_varchar2;
+      lv_value   XMLTYPE;
       --
     BEGIN
       --
-      SELECT key_column
-        INTO lv_retval
-        FROM (SELECT NVL(EXTRACTVALUE(XMLTYPE(styling_rules),'/styling_rules/@key_column'),'ROWID') key_column
-                FROM user_sdo_themes
-               WHERE name = pi_theme_name)
-       WHERE key_column != UPPER(pi_pk_column)
-           ;
+      IF pi_styling_rules IS NOT NULL
+       THEN
+          --
+          lv_value := XMLTYPE(pi_styling_rules).extract('/styling_rules/@key_column');
+          --
+          IF lv_value IS NOT NULL
+           THEN
+              lv_retval := lv_value.getclobval;
+          ELSE
+              lv_retval := 'ROWID';
+          END IF;
+          --
+      ELSE
+          --
+          lv_retval := pi_pk_column;
+          --
+      END IF;
       --
       RETURN lv_retval;
       --
-    EXCEPTION
-     WHEN no_data_found
-      THEN
-         RETURN NULL;
-     WHEN others
-      THEN
-         RAISE;
     END get_theme_wfs_key_col;
     --
   BEGIN
@@ -2539,6 +2608,7 @@ AS
       ||Get the types represented by the layer.
       */
       lt_theme_types := get_theme_types(pi_theme_name => lt_themes(i).name);
+      --
       IF lt_theme_types.COUNT > 0
        THEN
           --
@@ -2602,9 +2672,9 @@ AS
       /*
       ||Get additional columns required for the data statement.
       */
-      lv_filter_col := get_custom_tag_value(pi_theme_name => lt_themes(i).name
-                                           ,pi_tag_name   => 'FilterColumn');
-      lv_theme_extra_cols := get_theme_extra_cols(pi_theme_name    => lt_themes(i).name
+      lv_filter_col := get_custom_tag_value(pi_styling_rules => lt_themes(i).styling_rules
+                                           ,pi_tag_name      => 'FilterColumn');
+      lv_theme_extra_cols := get_theme_extra_cols(pi_styling_rules => lt_themes(i).styling_rules
                                                  ,pi_pk_column     => lt_themes(i).nth_feature_pk_column
                                                  ,pi_filter_column => lv_filter_col
                                                  ,pi_alias         => 'ft.'
@@ -2612,45 +2682,44 @@ AS
       /*
       ||Get the key_column for the wfs_featureid.
       */
-      lv_wfs_featureid := NVL(get_theme_wfs_key_col(pi_theme_name => lt_themes(i).name
-                                                   ,pi_pk_column  => lt_themes(i).nth_feature_pk_column)
-                             ,lt_themes(i).nth_feature_pk_column);
+      lv_wfs_featureid := get_theme_wfs_key_col(pi_styling_rules => lt_themes(i).styling_rules
+                                               ,pi_pk_column     => lt_themes(i).nth_feature_pk_column);
       /*
       ||Get the DisplayedAtStartup custom tag.
       */
-      lv_displayed_on_startup := UPPER(NVL(get_custom_tag_value(pi_theme_name => lt_themes(i).name
-                                                               ,pi_tag_name   => 'DisplayedAtStartup')
+      lv_displayed_on_startup := UPPER(NVL(get_custom_tag_value(pi_styling_rules => lt_themes(i).styling_rules
+                                                               ,pi_tag_name      => 'DisplayedAtStartup')
                                           ,'Y'));
       /*
       ||Get the DisplayInLegend custom tag.
       */
-      lv_displayed_in_legend := UPPER(NVL(get_custom_tag_value(pi_theme_name => lt_themes(i).name
-                                                              ,pi_tag_name   => 'DisplayInLegend')
+      lv_displayed_in_legend := UPPER(NVL(get_custom_tag_value(pi_styling_rules => lt_themes(i).styling_rules
+                                                              ,pi_tag_name      => 'DisplayInLegend')
                                          ,'Y'));
       /*
       ||Get the ShowInMap tag.
       */
-      lv_layer_show_in_map := UPPER(NVL(get_custom_tag_value(pi_theme_name => lt_themes(i).name
-                                                            ,pi_tag_name   => 'ShowInMap')
+      lv_layer_show_in_map := UPPER(NVL(get_custom_tag_value(pi_styling_rules => lt_themes(i).styling_rules
+                                                            ,pi_tag_name      => 'ShowInMap')
                                        ,'N'));
       /*
       ||Get the Legend Group tag.
       */
-      lv_legend_group := get_custom_tag_value(pi_theme_name => lt_themes(i).name
-                                             ,pi_tag_name   => 'LegendGroup');
+      lv_legend_group := get_custom_tag_value(pi_styling_rules => lt_themes(i).styling_rules
+                                             ,pi_tag_name      => 'LegendGroup');
       /*
       ||If ALIM Document Manager is in use then check for a gateway
       ||for the layer and generate a template URL to be used in the UI.
       */
-      IF NVL(hig.get_sysopt('NEWDOCMAN'),'N') = 'Y'
+      IF lv_newdocman = 'Y'
        THEN
           lv_doc_man_url_template := awlrs_alim_doc_man_api.get_url_template(pi_theme_name => lt_themes(i).name);
       END IF;
       /*
       ||Get the Geometry Types.
       */
-      lt_gtypes := get_custom_tag_gtypes(pi_theme_id   => lt_themes(i).nth_theme_id
-                                        ,pi_theme_name => lt_themes(i).name);
+      lt_gtypes := get_custom_tag_gtypes(pi_theme_id      => lt_themes(i).nth_theme_id
+                                        ,pi_styling_rules => lt_themes(i).styling_rules);
       --
       IF lt_gtypes.COUNT = 0
        THEN
@@ -3064,8 +3133,21 @@ AS
     lv_cnt        BINARY_INTEGER;
     lv_fill       nm3type.max_varchar2;
     --
-    CURSOR get_markers(cp_map_name IN VARCHAR2)
+    lt_theme_names  nm_code_tbl;
+    --
+    CURSOR get_map_themes(cp_map_name IN VARCHAR2)
         IS
+    SELECT map_themes.name
+      FROM user_sdo_maps maps
+          ,XMLTABLE('/map_definition/theme'
+                    PASSING XMLTYPE(maps.definition)
+                    COLUMNS name  VARCHAR2(100) path '@name') map_themes
+     WHERE maps.name = cp_map_name
+        ;
+    --
+    CURSOR get_markers(cp_theme_names IN nm_code_tbl)
+        IS
+    WITH map_themes AS (SELECT * FROM TABLE(cp_theme_names))
     SELECT uss.name
           ,uss.definition
       FROM user_sdo_styles uss
@@ -3075,12 +3157,7 @@ AS
                           ,(SELECT style_name
                               FROM (SELECT styling_rules
                                       FROM user_sdo_themes
-                                     WHERE name IN(SELECT map_themes.name
-                                                     FROM user_sdo_maps maps
-                                                         ,XMLTABLE('/map_definition/theme'
-                                                                   PASSING XMLTYPE(maps.definition)
-                                                                   COLUMNS name  VARCHAR2(100) path '@name') map_themes
-                                                    WHERE maps.name = cp_map_name)) theme_rules
+                                     WHERE name IN(SELECT * FROM map_themes)) theme_rules
                                   ,XMLTABLE('/styling_rules/rule'
                                             PASSING XMLTYPE(theme_rules.styling_rules)
                                             COLUMNS style_name VARCHAR2(100) path '/rule/features/@style')) styles1
@@ -3096,12 +3173,7 @@ AS
                                           ,(SELECT style_name
                                               FROM (SELECT styling_rules
                                                       FROM user_sdo_themes
-                                                     WHERE name IN(SELECT map_themes.name
-                                                                     FROM user_sdo_maps maps
-                                                                         ,XMLTABLE('/map_definition/theme'
-                                                                                   PASSING XMLTYPE(maps.definition)
-                                                                                   COLUMNS name  VARCHAR2(100) path '@name') map_themes
-                                                                    WHERE maps.name = cp_map_name)) theme_rules
+                                                     WHERE name IN(SELECT * FROM map_themes)) theme_rules
                                                   ,XMLTABLE('/styling_rules/rule'
                                                             PASSING XMLTYPE(theme_rules.styling_rules)
                                                             COLUMNS style_name VARCHAR2(100) path '/rule/features/@style')) styles2
@@ -3116,55 +3188,48 @@ AS
      WHERE map_styles.name = uss.name
     ;
     --
-    CURSOR get_line_markers(cp_map_name IN VARCHAR2)
+    CURSOR get_line_markers(cp_theme_names IN nm_code_tbl)
         IS
+    WITH map_themes AS (SELECT * FROM TABLE(cp_theme_names))
     SELECT uss.name
           ,uss.definition
       FROM user_sdo_styles uss
           ,(SELECT DISTINCT name
-              FROM (SELECT awlrs_map_api.get_style_value(EXTRACTVALUE(XMLTYPE(uss1.definition),'/svg/g/@style'),'marker-name:') name
+              FROM (SELECT name
+                      FROM (SELECT awlrs_map_api.get_style_value(EXTRACTVALUE(XMLTYPE(uss1.definition),'/svg/g/@style'),'marker-name:') name
                       FROM user_sdo_styles uss1
                           ,(SELECT style_name
                               FROM (SELECT styling_rules
                                       FROM user_sdo_themes
-                                     WHERE name IN(SELECT map_themes.name
-                                                     FROM user_sdo_maps maps
-                                                         ,XMLTABLE('/map_definition/theme'
-                                                                   PASSING XMLTYPE(maps.definition)
-                                                                   COLUMNS name  VARCHAR2(100) path '@name') map_themes
-                                                    WHERE maps.name = cp_map_name)) theme_rules
+                                     WHERE name IN(SELECT * FROM map_themes)) theme_rules
                                   ,XMLTABLE('/styling_rules/rule'
                                             PASSING XMLTYPE(theme_rules.styling_rules)
                                             COLUMNS style_name VARCHAR2(100) path '/rule/features/@style')) styles1
                      WHERE styles1.style_name = uss1.name
-                       AND uss1.type = 'LINE'
-                       AND awlrs_map_api.get_style_value(EXTRACTVALUE(XMLTYPE(uss1.definition),'/svg/g/@style'),'marker-name:') IS NOT NULL
+                       AND uss1.type = 'LINE')
+                     WHERE name IS NOT NULL
                      UNION ALL
-                    SELECT awlrs_map_api.get_style_value(EXTRACTVALUE(XMLTYPE(uss2.definition),'/svg/g/@style'),'marker-name:') name
-                      FROM user_sdo_styles uss2
-                          ,(SELECT bucket_style
-                              FROM (SELECT adv_uss.definition
-                                      FROM user_sdo_styles adv_uss
-                                          ,(SELECT style_name
-                                              FROM (SELECT styling_rules
-                                                      FROM user_sdo_themes
-                                                     WHERE name IN(SELECT map_themes.name
-                                                                     FROM user_sdo_maps maps
-                                                                         ,XMLTABLE('/map_definition/theme'
-                                                                                   PASSING XMLTYPE(maps.definition)
-                                                                                   COLUMNS name  VARCHAR2(100) path '@name') map_themes
-                                                                    WHERE maps.name = cp_map_name)) theme_rules
-                                                  ,XMLTABLE('/styling_rules/rule'
-                                                            PASSING XMLTYPE(theme_rules.styling_rules)
-                                                            COLUMNS style_name VARCHAR2(100) path '/rule/features/@style')) styles2
-                                     WHERE styles2.style_name = adv_uss.name
-                                       AND adv_uss.type = 'ADVANCED') adv_defs
-                                  ,XMLTABLE('/AdvancedStyle/BucketStyle/Buckets/CollectionBucket'
-                                            PASSING XMLTYPE(adv_defs.definition)
-                                            COLUMNS bucket_style VARCHAR2(100) path '@style') collection_buckets) adv_styles
-                     WHERE adv_styles.bucket_style = uss2.name
-                       AND uss2.type = 'LINE'
-                       AND awlrs_map_api.get_style_value(EXTRACTVALUE(XMLTYPE(uss2.definition),'/svg/g/@style'),'marker-name:') IS NOT NULL)) map_styles
+                    SELECT name
+                      FROM (SELECT awlrs_map_api.get_style_value(EXTRACTVALUE(XMLTYPE(uss2.definition),'/svg/g/@style'),'marker-name:') name
+                              FROM user_sdo_styles uss2
+                                  ,(SELECT bucket_style
+                                      FROM (SELECT adv_uss.definition
+                                              FROM user_sdo_styles adv_uss
+                                                  ,(SELECT style_name
+                                                      FROM (SELECT styling_rules
+                                                              FROM user_sdo_themes
+                                                             WHERE name IN(SELECT * FROM map_themes)) theme_rules
+                                                          ,XMLTABLE('/styling_rules/rule'
+                                                                    PASSING XMLTYPE(theme_rules.styling_rules)
+                                                                    COLUMNS style_name VARCHAR2(100) path '/rule/features/@style')) styles2
+                                             WHERE styles2.style_name = adv_uss.name
+                                               AND adv_uss.type = 'ADVANCED') adv_defs
+                                          ,XMLTABLE('/AdvancedStyle/BucketStyle/Buckets/CollectionBucket'
+                                                    PASSING XMLTYPE(adv_defs.definition)
+                                                    COLUMNS bucket_style VARCHAR2(100) path '@style') collection_buckets) adv_styles
+                             WHERE adv_styles.bucket_style = uss2.name
+                               AND uss2.type = 'LINE')
+                     WHERE name IS NOT NULL)) map_styles
      WHERE map_styles.name = uss.name
     ;
     --
@@ -3244,9 +3309,17 @@ AS
       ||CHR(10)||'  END'
     ;
     /*
+    ||Get the map themes.
+    */
+    OPEN  get_map_themes(pi_map_name);
+    FETCH get_map_themes
+     BULK COLLECT
+     INTO lt_theme_names;
+    CLOSE get_map_themes;
+    /*
     ||Get markers used by themes in the given map.
     */
-    OPEN  get_markers(pi_map_name);
+    OPEN  get_markers(lt_theme_names);
     FETCH get_markers
      BULK COLLECT
      INTO lt_markers;
@@ -3312,7 +3385,7 @@ AS
     /*
     ||Get line markers used by themes in the given map.
     */
-    OPEN  get_line_markers(pi_map_name);
+    OPEN  get_line_markers(lt_theme_names);
     FETCH get_line_markers
      BULK COLLECT
      INTO lt_line_markers;
