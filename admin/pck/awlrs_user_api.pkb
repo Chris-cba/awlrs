@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.16   Jun 19 2020 16:18:22   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jun 19 2020 16:18:22  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.17   Aug 11 2020 14:33:58   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Aug 11 2020 14:33:58  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Jun 19 2020 16:15:00  $
-  --       Version          : $Revision:   1.16  $
+  --       Date fetched Out : $Modtime:   Aug 11 2020 14:03:46  $
+  --       Version          : $Revision:   1.17  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.16  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.17  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -1039,6 +1039,35 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE validate_email(pi_email IN nm_mail_users.nmu_email_address%TYPE)
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    IF pi_email IS NOT NULL 
+      THEN
+        SELECT 'Y'
+          INTO lv_exists
+          FROM nm_mail_users
+         WHERE UPPER(nmu_email_address) = UPPER(pi_email);
+         
+         IF lv_exists = 'Y' 
+          THEN
+            hig.raise_ner(pi_appl => 'HIG'
+                         ,pi_id   => 64
+                         ,pi_supplementary_info  => 'Email: '|| pi_email);
+         END IF;
+    END IF;                     
+    --
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        null;
+        
+  END validate_email;
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE create_user_contact_details(pi_user_id                IN  hig_user_contacts_all.huc_hus_user_id%TYPE
                                        ,pi_address1               IN  hig_user_contacts_all.huc_address1%TYPE
                                        ,pi_address2               IN  hig_user_contacts_all.huc_address2%TYPE
@@ -1543,9 +1572,9 @@ AS
     --
     validate_username(pi_username => pi_username);
     --
-    --validate_quota();
-    --
     validate_profile(pi_profile => pi_profile);
+    --
+    validate_email(pi_email => pi_email);
     --
     --End Date cannot be earlier than the Start Date--
     IF NVL(pi_end_date, pi_start_date) < pi_start_date
