@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.4   Aug 10 2020 17:53:48   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.5   Aug 12 2020 17:11:18   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_favourites_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 10 2020 17:53:48  $
-  --       Date fetched Out : $Modtime:   Aug 10 2020 17:34:36  $
-  --       Version          : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   Aug 12 2020 17:11:18  $
+  --       Date fetched Out : $Modtime:   Aug 12 2020 15:03:22  $
+  --       Version          : $Revision:   1.5  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.4  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_favourites_api';
   --
   c_root_folder  CONSTANT VARCHAR2(10) := '_ROOT';
@@ -1262,9 +1262,9 @@ AS
     --
     lv_sql := 'SELECT ';
     --
-    IF pi_table_name = 'NE_ELEMENTS_ALL'
+    IF pi_table_name = 'NM_ELEMENTS_ALL'
      THEN
-        lv_sql := lv_sql||' NVL(ne_gty_group_type,ne_nt_type)||'' : ''';
+        lv_sql := lv_sql||' NVL(ne_gty_group_type,ne_nt_type)||'' : ''||';
     END IF;
     --
     FOR i IN 1..pi_label_cols.COUNT LOOP
@@ -1704,6 +1704,90 @@ AS
   END get_folder_child_count;
 
   --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION gen_network_label_sql
+    RETURN VARCHAR2 IS
+    --
+    lv_retval  nm3type.max_varchar2;
+    --
+    lt_afetl  afetl_tab;
+    --
+    CURSOR get_net_sub_types
+        IS
+    SELECT DISTINCT(afetl_entity_sub_type) sub_type
+      FROM awlrs_fav_entity_type_labels
+     WHERE afetl_entity_type = 'NETWORK'
+         ;
+    --
+    TYPE net_sub_type_tab IS TABLE OF get_net_sub_types%ROWTYPE;
+    lt_net_sub_types  net_sub_type_tab;
+    --
+    CURSOR get_afetl(cp_entity_type     IN awlrs_fav_entity_type_labels.afetl_entity_type%TYPE
+                    ,cp_entity_sub_type IN awlrs_fav_entity_type_labels.afetl_entity_sub_type%TYPE)
+        IS
+    SELECT *
+      FROM awlrs_fav_entity_type_labels
+     WHERE afetl_entity_type = cp_entity_type
+       AND NVL(afetl_entity_sub_type,'~~~~~') = NVL(cp_entity_sub_type,'~~~~~')
+     ORDER
+        BY afetl_seq_no
+         ;
+    --
+  BEGIN
+    --
+    lv_retval := lv_retval||'NVL(cne.ne_gty_group_type,cne.ne_nt_type)||'' : ''||';
+    --
+    OPEN  get_net_sub_types;
+    FETCH get_net_sub_types
+     BULK COLLECT
+     INTO lt_net_sub_types;
+    CLOSE get_net_sub_types;
+    --
+    IF lt_net_sub_types.COUNT > 0
+     THEN
+        lv_retval := lv_retval||'CASE cne.ne_nt_type ';
+    END IF;
+    --
+    FOR i IN 1..lt_net_sub_types.COUNT LOOP
+      --
+      OPEN  get_afetl('NETWORK'
+                     ,lt_net_sub_types(i).sub_type);
+      FETCH get_afetl
+       BULK COLLECT
+       INTO lt_afetl;
+      CLOSE get_afetl;
+      --
+      lv_retval := lv_retval||'WHEN '''||lt_net_sub_types(i).sub_type||''' THEN ';
+      --
+      FOR i IN 1..lt_afetl.COUNT LOOP
+        --
+        awlrs_util.validate_simple_sql_name(pi_name               => lt_afetl(i).afetl_label_column
+                                           ,pi_supplementary_info => 'label column');
+        --
+        lv_retval := lv_retval||'cne.'||lt_afetl(i).afetl_label_column||CASE WHEN i = lt_afetl.COUNT THEN NULL ELSE '||'' '||lt_afetl(i).afetl_label_separator||' ''||' END;
+        --
+      END LOOP;
+      --
+    END LOOP;
+    --
+    IF lt_net_sub_types.COUNT > 0
+     THEN
+        lv_retval := lv_retval||' ELSE ';
+    END IF;
+    --
+    lv_retval := lv_retval||'CASE cne.ne_nt_type WHEN ''NSGN'' THEN cne.ne_number WHEN ''ESU'' THEN cne.ne_name_1 ELSE cne.ne_unique END ';
+    --
+    IF lt_net_sub_types.COUNT > 0
+     THEN
+        lv_retval := lv_retval||'END ';
+    END IF;
+    --
+    RETURN lv_retval;
+    --
+  END gen_network_label_sql;
+
+  --
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_network_element_data(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
@@ -1728,54 +1812,55 @@ AS
      INTO lv_entity_type_display_name;
     CLOSE get_display_name;
     --
-    OPEN po_cursor FOR
-    SELECT folder_or_entity
-          ,af_id
-          ,parent_af_id
-          ,label
-          ,NVL(seq_no,rownum) seq_no
-          ,entity_type
-          ,lv_entity_type_display_name entity_type_display_name
-          ,entity_sub_type
-          ,entity_network_group_type
-          ,entity_id
-          ,child_count
-      FROM (SELECT CAST('ENTITY' AS VARCHAR2(6)) folder_or_entity
-                  ,CAST(NULL AS NUMBER(38)) af_id
-                  ,CAST(NULL AS NUMBER(38)) parent_af_id
-                  ,awlrs_favourites_api.get_entity_label('NETWORK',cne.ne_nt_type,cne.ne_id)||CASE WHEN cne.ne_gty_group_type IS NULL THEN ' : From '||nm_begin_mp||' To '||nm_end_mp||' ('||un_unit_name||')' ELSE NULL END label
-                  ,CASE WHEN ngt_linear_flag = 'Y' THEN nm_seq_no ELSE NULL END seq_no
-                  ,CAST('NETWORK' AS VARCHAR2(100)) entity_type
-                  ,cne.ne_nt_type entity_sub_type
-                  ,cne.ne_gty_group_type entity_network_group_type
-                  ,cne.ne_id entity_id
-                  ,CASE
-                     WHEN cne.ne_gty_group_type IS NOT NULL
-                      THEN
-                         (SELECT COUNT(*)
-                             FROM nm_members m2
-                            WHERE m2.nm_ne_id_in = cne.ne_id
-                              AND m2.nm_type = 'G')
-                     ELSE
-                         0
-                   END child_count
-              FROM nm_elements pne
-                  ,nm_group_types_all
-                  ,nm_members m1
-                  ,nm_elements cne
-                  ,nm_types
-                  ,nm_units
-             WHERE pne.ne_id = pi_ne_id
-               AND pne.ne_gty_group_type = ngt_group_type
-               AND pne.ne_id = m1.nm_ne_id_in
-               AND m1.nm_type = 'G'
-               AND m1.nm_ne_id_of = cne.ne_id
-               AND cne.ne_nt_type = nt_type
-               AND nt_length_unit = un_unit_id(+)
-             ORDER
-                BY CASE WHEN ngt_linear_flag = 'Y' THEN m1.nm_seq_no ELSE NULL END
-                  ,CASE WHEN ngt_linear_flag = 'N' THEN CASE WHEN cne.ne_nt_type = 'NSGN' THEN cne.ne_number WHEN cne.ne_nt_type = 'ESU' THEN cne.ne_name_1 ELSE cne.ne_unique END ELSE NULL END)
-         ;
+    OPEN po_cursor FOR 'SELECT folder_or_entity'
+                           ||',af_id'
+                           ||',parent_af_id'
+                           ||',label'
+                           ||',NVL(seq_no,rownum) seq_no'
+                           ||',entity_type'
+                           ||',:display_name entity_type_display_name'
+                           ||',entity_sub_type'
+                           ||',entity_network_group_type'
+                           ||',entity_id'
+                           ||',child_count'
+                      ||' FROM (SELECT CAST(''ENTITY'' AS VARCHAR2(6)) folder_or_entity'
+                                   ||',CAST(NULL AS NUMBER(38)) af_id'
+                                   ||',CAST(NULL AS NUMBER(38)) parent_af_id'
+                                   ||','||gen_network_label_sql||'||CASE WHEN cne.ne_gty_group_type IS NULL THEN '' : From ''||nm_begin_mp||'' To ''||nm_end_mp||'' (''||un_unit_name||'')'' ELSE NULL END label'
+                                   ||',CASE WHEN ngt_linear_flag = ''Y'' THEN nm_seq_no ELSE NULL END seq_no'
+                                   ||',CAST(''NETWORK'' AS VARCHAR2(100)) entity_type'
+                                   ||',cne.ne_nt_type entity_sub_type'
+                                   ||',cne.ne_gty_group_type entity_network_group_type'
+                                   ||',cne.ne_id entity_id'
+                                   ||',CASE'
+                                     ||' WHEN cne.ne_gty_group_type IS NOT NULL'
+                                      ||' THEN'
+                                         ||' (SELECT COUNT(*)'
+                                            ||' FROM nm_members m2'
+                                           ||' WHERE m2.nm_ne_id_in = cne.ne_id'
+                                             ||' AND m2.nm_type = ''G'')'
+                                     ||' ELSE'
+                                         ||' 0'
+                                   ||' END child_count'
+                                  ||' FROM nm_elements pne'
+                                       ||',nm_group_types_all'
+                                       ||',nm_members m1'
+                                       ||',nm_elements cne'
+                                       ||',nm_types'
+                                       ||',nm_units'
+                                 ||' WHERE pne.ne_id = :ne_id'
+                                   ||' AND pne.ne_gty_group_type = ngt_group_type'
+                                   ||' AND pne.ne_id = m1.nm_ne_id_in'
+                                   ||' AND m1.nm_type = ''G'''
+                                   ||' AND m1.nm_ne_id_of = cne.ne_id'
+                                   ||' AND cne.ne_nt_type = nt_type'
+                                   ||' AND nt_length_unit = un_unit_id(+)'
+                                 ||' ORDER'
+                                    ||' BY CASE WHEN ngt_linear_flag = ''Y'' THEN m1.nm_seq_no ELSE NULL END'
+                                       ||',CASE WHEN ngt_linear_flag = ''N'' THEN CASE WHEN cne.ne_nt_type = ''NSGN'' THEN cne.ne_number WHEN cne.ne_nt_type = ''ESU'' THEN cne.ne_name_1 ELSE cne.ne_unique END ELSE NULL END)'
+      USING lv_entity_type_display_name
+           ,pi_ne_id
+    ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1786,6 +1871,138 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_network_element_data;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_network_element_data(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                          ,pi_skip_n_rows      IN  PLS_INTEGER
+                                          ,pi_pagesize         IN  PLS_INTEGER
+                                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor   OUT sys_refcursor
+                                          ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_lower_index               PLS_INTEGER;
+    lv_upper_index               PLS_INTEGER;
+    lv_row_restriction           nm3type.max_varchar2;
+    lv_entity_type_display_name  awlrs_fav_entity_types.afet_display_name%TYPE;
+    --
+    CURSOR get_display_name
+        IS
+    SELECT afet_display_name
+      FROM awlrs_fav_entity_types
+     WHERE afet_entity_type = 'NETWORK'
+         ;
+    --
+    lv_driving_sql  nm3type.max_varchar2 := 'SELECT folder_or_entity'
+                                                ||',af_id'
+                                                ||',parent_af_id'
+                                                ||',label'
+                                                ||',NVL(seq_no,rownum) seq_no'
+                                                ||',entity_type'
+                                                ||',:display_name entity_type_display_name'
+                                                ||',entity_sub_type'
+                                                ||',entity_network_group_type'
+                                                ||',entity_id'
+                                                ||',child_count'
+                                           ||' FROM (SELECT CAST(''ENTITY'' AS VARCHAR2(6)) folder_or_entity'
+                                                        ||',CAST(NULL AS NUMBER(38)) af_id'
+                                                        ||',CAST(NULL AS NUMBER(38)) parent_af_id'
+                                                        ||',awlrs_favourites_api.get_entity_label(''NETWORK'',cne.ne_nt_type,cne.ne_id)||CASE WHEN cne.ne_gty_group_type IS NULL THEN '' : From ''||nm_begin_mp||'' To ''||nm_end_mp||'' (''||un_unit_name||'')'' ELSE NULL END label'
+                                                        ||',CASE WHEN ngt_linear_flag = ''Y'' THEN nm_seq_no ELSE NULL END seq_no'
+                                                        ||',CAST(''NETWORK'' AS VARCHAR2(100)) entity_type'
+                                                        ||',cne.ne_nt_type entity_sub_type'
+                                                        ||',cne.ne_gty_group_type entity_network_group_type'
+                                                        ||',cne.ne_id entity_id'
+                                                        ||',CASE'
+                                                          ||' WHEN cne.ne_gty_group_type IS NOT NULL'
+                                                           ||' THEN'
+                                                              ||' (SELECT COUNT(*)'
+                                                                 ||' FROM nm_members m2'
+                                                                ||' WHERE m2.nm_ne_id_in = cne.ne_id'
+                                                                  ||' AND m2.nm_type = ''G'')'
+                                                          ||' ELSE'
+                                                              ||' 0'
+                                                        ||' END child_count'
+                                                   ||' FROM nm_elements pne'
+                                                        ||',nm_group_types_all'
+                                                        ||',nm_members m1'
+                                                        ||',nm_elements cne'
+                                                        ||',nm_types'
+                                                        ||',nm_units'
+                                                  ||' WHERE pne.ne_id = :ne_id'
+                                                    ||' AND pne.ne_gty_group_type = ngt_group_type'
+                                                    ||' AND pne.ne_id = m1.nm_ne_id_in'
+                                                    ||' AND m1.nm_type = ''G'''
+                                                    ||' AND m1.nm_ne_id_of = cne.ne_id'
+                                                    ||' AND cne.ne_nt_type = nt_type'
+                                                    ||' AND nt_length_unit = un_unit_id(+)'
+                                                  ||' ORDER'
+                                                  ||' BY CASE WHEN ngt_linear_flag = ''Y'' THEN m1.nm_seq_no ELSE NULL END'
+                                                  ||',CASE WHEN ngt_linear_flag = ''N'' THEN CASE WHEN cne.ne_nt_type = ''NSGN'' THEN cne.ne_number WHEN cne.ne_nt_type = ''ESU'' THEN cne.ne_name_1 ELSE cne.ne_unique END ELSE NULL END)'
+    ;
+    lv_cursor_sql  nm3type.max_varchar2 := 'SELECT folder_or_entity'
+                                               ||',af_id'
+                                               ||',parent_af_id'
+                                               ||',label'
+                                               ||',seq_no'
+                                               ||',entity_type'
+                                               ||',entity_type_display_name'
+                                               ||',entity_sub_type'
+                                               ||',entity_network_group_type'
+                                               ||',entity_id'
+                                               ||',child_count'
+                                               ||',row_count'
+                                          ||' FROM (SELECT rownum ind'
+                                                      ||' ,a.*'
+                                                      ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                  ||' FROM ('||lv_driving_sql||') a)'
+    ;
+    --
+  BEGIN
+    --
+    OPEN  get_display_name;
+    FETCH get_display_name
+     INTO lv_entity_type_display_name;
+    CLOSE get_display_name;
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    --
+    lv_cursor_sql := lv_cursor_sql
+      ||CHR(10)||lv_row_restriction
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING lv_entity_type_display_name
+             ,pi_ne_id
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING lv_entity_type_display_name
+             ,pi_ne_id
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_network_element_data;
 
   --
   -----------------------------------------------------------------------------
@@ -1846,18 +2063,18 @@ AS
                                                    ||' AND m1.nm_ne_id_of = cne.ne_id)'
     ;
     lv_cursor_sql  nm3type.max_varchar2 := 'SELECT id'
-                                                ||',seq_no'
-                                                ||',network_type'
-                                                ||',group_type'
-                                                ||',name_'
-                                                ||',from_offset'
-                                                ||',to_offset'
-                                                ||',child_count'
-                                               ||' ,row_count'
-                                           ||' FROM (SELECT rownum ind'
-                                                       ||' ,a.*'
-                                                       ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                                                   ||' FROM ('||lv_driving_sql
+                                               ||',seq_no'
+                                               ||',network_type'
+                                               ||',group_type'
+                                               ||',name_'
+                                               ||',from_offset'
+                                               ||',to_offset'
+                                               ||',child_count'
+                                               ||',row_count'
+                                          ||' FROM (SELECT rownum ind'
+                                                      ||' ,a.*'
+                                                      ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                  ||' FROM ('||lv_driving_sql
     ;
     --
     lt_column_data  awlrs_util.column_data_tab;
