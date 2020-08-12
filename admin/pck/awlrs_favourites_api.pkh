@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkh-arc   1.2   Aug 10 2020 17:53:48   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkh-arc   1.3   Aug 12 2020 17:11:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_favourites_api.pkh  $
-  --       Date into PVCS   : $Date:   Aug 10 2020 17:53:48  $
-  --       Date fetched Out : $Modtime:   Aug 10 2020 17:33:30  $
-  --       Version          : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   Aug 12 2020 17:11:16  $
+  --       Date fetched Out : $Modtime:   Aug 12 2020 17:07:38  $
+  --       Version          : $Revision:   1.3  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.3  $';
   --
   TYPE aff_tab IS TABLE OF awlrs_favourites_folders%ROWTYPE;
   TYPE afe_tab IS TABLE OF awlrs_favourites_entities%ROWTYPE;
@@ -142,6 +142,16 @@ AS
                                     ,po_message_severity OUT hig_codes.hco_code%TYPE
                                     ,po_message_cursor   OUT sys_refcursor
                                     ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_network_element_data(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                                          ,pi_skip_n_rows      IN  PLS_INTEGER
+                                          ,pi_pagesize         IN  PLS_INTEGER
+                                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor   OUT sys_refcursor
+                                          ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
