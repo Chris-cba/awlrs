@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.5   Aug 12 2020 17:11:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.6   Aug 13 2020 14:49:28   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_favourites_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 12 2020 17:11:18  $
-  --       Date fetched Out : $Modtime:   Aug 12 2020 15:03:22  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   Aug 13 2020 14:49:28  $
+  --       Date fetched Out : $Modtime:   Aug 13 2020 14:40:46  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_favourites_api';
   --
   c_root_folder  CONSTANT VARCHAR2(10) := '_ROOT';
@@ -286,10 +286,10 @@ AS
                   ,aff_af_id af_id
                   ,aff_seq_no seq_no
               FROM awlrs_favourites_folders
-             WHERE aff_parent_af_id = cp_parent_id)
+             WHERE aff_parent_af_id = cp_parent_id
+             ORDER
+                BY seq_no)
     WHERE af_id != cp_af_id
-     ORDER
-        BY seq_no
          ;
     --
     TYPE other_items_tab IS TABLE OF get_other_items%ROWTYPE;
@@ -496,9 +496,9 @@ AS
                   ,aff_af_id af_id
                   ,aff_seq_no seq_no
               FROM awlrs_favourites_folders
-             WHERE aff_parent_af_id = cp_parent_id)
-     ORDER
-        BY seq_no
+             WHERE aff_parent_af_id = cp_parent_id
+             ORDER
+                BY seq_no)
          ;
     --
     TYPE get_items_tab IS TABLE OF get_items%ROWTYPE;
