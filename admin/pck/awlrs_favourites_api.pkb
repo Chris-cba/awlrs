@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.6   Aug 13 2020 14:49:28   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.7   Aug 13 2020 17:32:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_favourites_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 13 2020 14:49:28  $
-  --       Date fetched Out : $Modtime:   Aug 13 2020 14:40:46  $
-  --       Version          : $Revision:   1.6  $
+  --       Date into PVCS   : $Date:   Aug 13 2020 17:32:30  $
+  --       Date fetched Out : $Modtime:   Aug 13 2020 17:01:22  $
+  --       Version          : $Revision:   1.7  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_favourites_api';
   --
   c_root_folder  CONSTANT VARCHAR2(10) := '_ROOT';
@@ -557,21 +557,21 @@ AS
                                ,pi_new_seq_no       IN awlrs_favourites_folders.aff_seq_no%TYPE)
     IS
     --
-    lr_item  fav_item_rec;
+    lr_item        fav_item_rec;
+    lr_old_parent  fav_item_rec;
+    lr_new_parent  fav_item_rec;
     --
   BEGIN
-    /*
-    ||Get the details of the folder or entity.
-    */
     /*
     ||Get the item details.
     */
     lr_item := get_item(pi_af_id => pi_af_id);
+    lr_old_parent := get_item(pi_af_id => lr_item.parent_id);
     /*
-    ||Check the new parent id.
+    ||Check the new parent id exists and belongs to the same product.
     */
-    check_parent_folder(pi_product      => lr_item.folder_product
-                       ,pi_parent_af_id => lr_item.parent_id);
+    check_parent_folder(pi_product      => lr_old_parent.folder_product
+                       ,pi_parent_af_id => pi_new_parent_af_id);
     /*
     ||Move the item to the new folder.
     */
