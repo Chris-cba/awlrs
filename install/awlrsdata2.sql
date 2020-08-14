@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.31   Jul 23 2020 15:35:08   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.32   Aug 14 2020 14:17:00   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Jul 23 2020 15:35:08  $
---       Date fetched Out : $Modtime:   Jul 23 2020 15:33:20  $
---       Version          : $Revision:   1.31  $
+--       Date into PVCS   : $Date:   Aug 14 2020 14:17:00  $
+--       Date fetched Out : $Modtime:   Aug 14 2020 13:59:58  $
+--       Version          : $Revision:   1.32  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 23-JUL-2020 15:33
+--       Generation Date  : 14-AUG-2020 13:59
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -1642,6 +1642,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 89);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,90
+      ,null
+      ,'Cannot move folder to a child of itself'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 90);
 --
 ----------------------------------------------------------------------------------------
 -- HIG_STANDARD_FAVOURITES
