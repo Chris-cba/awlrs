@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.7   Aug 13 2020 17:32:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.8   Aug 14 2020 14:27:52   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_favourites_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 13 2020 17:32:30  $
-  --       Date fetched Out : $Modtime:   Aug 13 2020 17:01:22  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   Aug 14 2020 14:27:52  $
+  --       Date fetched Out : $Modtime:   Aug 14 2020 14:22:30  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_favourites_api';
   --
   c_root_folder  CONSTANT VARCHAR2(10) := '_ROOT';
@@ -214,10 +214,12 @@ AS
     CURSOR get_item(cp_af_id IN awlrs_favourites_folders.aff_af_id%TYPE)
         IS
     SELECT folder_or_entity
+          ,id
           ,parent_id
           ,seq_no
           ,product
       FROM (SELECT 'FOLDER' folder_or_entity
+                  ,aff_af_id id
                   ,aff_parent_af_id parent_id
                   ,aff_seq_no seq_no
                   ,aff_product product
@@ -225,6 +227,7 @@ AS
              WHERE aff_af_id = cp_af_id
             UNION ALL
             SELECT 'ENTITY' folder_or_entity
+                  ,afe_af_id id
                   ,afe_parent_af_id parent_id
                   ,afe_seq_no seq_no
                   ,NULL product
@@ -566,7 +569,17 @@ AS
     ||Get the item details.
     */
     lr_item := get_item(pi_af_id => pi_af_id);
+    /*
+    ||Check the old and new parents.
+    */
     lr_old_parent := get_item(pi_af_id => lr_item.parent_id);
+    lr_new_parent := get_item(pi_af_id => pi_new_parent_af_id);
+    IF lr_new_parent.parent_id = pi_af_id
+     THEN
+        --Cannot move folder to a child of itself.
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 90);
+    END IF;
     /*
     ||Check the new parent id exists and belongs to the same product.
     */
