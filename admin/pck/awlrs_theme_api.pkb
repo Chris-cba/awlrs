@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.8   Aug 03 2020 15:19:28   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Aug 03 2020 15:19:28  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.9   Aug 14 2020 15:24:34   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Aug 14 2020 15:24:34  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkb  $
-  --       Date fetched Out : $Modtime:   Aug 03 2020 15:11:42  $
-  --       Version          : $Revision:   1.8  $
+  --       Date fetched Out : $Modtime:   Aug 14 2020 15:22:04  $
+  --       Version          : $Revision:   1.9  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.8  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.9  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -1411,10 +1411,30 @@ AS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT ngt_group_type
-          ,ngt_descr
-      FROM nm_group_types
-     WHERE ngt_nt_type not in ('NSGN')
+     SELECT ngt_group_type
+           ,ngt_descr
+       FROM nm_group_types
+      WHERE ngt_nt_type not in ('NSGN')
+      AND NOT EXISTS (SELECT null
+                        FROM nm_themes_all
+                      WHERE EXISTS 
+                           (SELECT 1
+                              FROM nm_nw_themes
+                             WHERE nnth_nth_theme_id = nth_theme_id
+                               AND nnth_nlt_id IN (SELECT nlt_id
+                                                     FROM nm_linear_types
+                                                    WHERE nlt_gty_type = ngt_group_type
+                                                      AND nlt_g_i_d = 'G')
+                            )     
+                      OR EXISTS
+                        (SELECT 1
+                           FROM nm_area_themes
+                          WHERE nath_nth_theme_id = nth_theme_id
+                            AND nath_nat_id IN (SELECT nat_id
+                                                  FROM nm_area_types
+                                                 WHERE nat_gty_group_type = ngt_group_type)
+                        )
+                     )
      ORDER BY ngt_group_type;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -1437,11 +1457,15 @@ AS
   --
   BEGIN
     --
+    --Only used when creating a new asset theme, so only return assets where no themes currently exist. --
     OPEN po_cursor FOR
      SELECT nit_inv_type
            ,nit_descr
         FROM nm_inv_types
       WHERE nit_category != 'G'
+        AND NOT EXISTS(SELECT null 
+                         FROM nm_inv_themes
+                        WHERE nith_nit_id IN nit_inv_type)
       ORDER BY nit_inv_type;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -1652,9 +1676,15 @@ AS
   --
   BEGIN
     --
-    awlrs_metanet_api.get_node_types_lov(po_message_severity  =>  po_message_severity
-                                        ,po_message_cursor    =>  po_message_cursor
-                                        ,po_cursor            =>  po_cursor);
+    --Only used when creating a new node theme, so only return assets where no themes currently exist. --
+    OPEN po_cursor FOR
+      SELECT nnt_type            node_type
+            ,nnt_descr           description
+        FROM nm_node_types
+      WHERE NOT EXISTS(SELECT null 
+                         FROM nm_themes_all
+                        WHERE nth_table_name like 'V_NM_NO_'||upper(nnt_type)||'_SDO') 
+      ORDER BY nnt_type;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
