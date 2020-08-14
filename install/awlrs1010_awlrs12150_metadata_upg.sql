@@ -7,11 +7,11 @@
 --
 --  PVCS Identifiers :-
 --
---      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12150_metadata_upg.sql-arc   1.1   Jul 27 2020 15:41:22   Barbara.Odriscoll  $
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12150_metadata_upg.sql-arc   1.2   Aug 14 2020 14:19:50   Mike.Huitson  $
 --      Module Name      : $Workfile:   awlrs1010_awlrs12150_metadata_upg.sql  $
---      Date into PVCS   : $Date:   Jul 27 2020 15:41:22  $
---      Date fetched Out : $Modtime:   Jul 27 2020 15:39:24  $
---      Version          : $Revision:   1.1  $
+--      Date into PVCS   : $Date:   Aug 14 2020 14:19:50  $
+--      Date fetched Out : $Modtime:   Aug 14 2020 14:15:48  $
+--      Version          : $Revision:   1.2  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
@@ -1768,6 +1768,25 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 89)
+/
+
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,90
+      ,null
+      ,'Cannot move folder to a child of itself'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 90)
 /
 
 ------------------------------------------------------------------
