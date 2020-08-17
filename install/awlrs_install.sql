@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_install.sql-arc   1.44.1.0   Jul 03 2020 15:45:32   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_install.sql-arc   1.44.1.1   Aug 17 2020 12:43:06   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrs_install.sql  $
---       Date into PVCS   : $Date:   Jul 03 2020 15:45:32  $
---       Date fetched Out : $Modtime:   Jul 03 2020 15:44:46  $
---       Version          : $Revision:   1.44.1.0  $
+--       Date into PVCS   : $Date:   Aug 17 2020 12:43:06  $
+--       Date fetched Out : $Modtime:   Aug 17 2020 11:51:36  $
+--       Version          : $Revision:   1.44.1.1  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
@@ -275,7 +275,7 @@ SET TERM ON
 Prompt Setting The Version Number...
 SET TERM OFF
 BEGIN
-  hig2.upgrade('AWLRS','awlrs_install.sql','Installed','1.2.14.1');
+  hig2.upgrade('AWLRS','awlrs_install.sql','Installed','1.2.15.1');
 END;
 /
 COMMIT;
