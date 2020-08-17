@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.22   Jul 23 2020 15:20:58   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.23   Aug 17 2020 13:00:12   Peter.Bibby  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   Jul 23 2020 15:20:58  $
---       Date fetched Out : $Modtime:   Jul 23 2020 14:57:20  $
---       Version          : $Revision:   1.22  $
+--       Date into PVCS   : $Date:   Aug 17 2020 13:00:12  $
+--       Date fetched Out : $Modtime:   Aug 17 2020 11:27:06  $
+--       Version          : $Revision:   1.23  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 23-JUL-2020 14:57
+--       Generation Date  : 17-AUG-2020 11:27
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -1078,7 +1078,9 @@ SELECT 'NETWORK'
 ----------------------------------------------------------------------------------------
 -- AWLRS_FAV_ENTITY_TYPE_LABELS
 --
--- WARNING - TABLE DOES NOT HAVE A UNIQUE KEY
+-- select * from awlrs_metadata.awlrs_fav_entity_type_labels
+-- order by afetl_entity_type
+--         ,afetl_label_column
 --
 ----------------------------------------------------------------------------------------
 SET TERM ON
