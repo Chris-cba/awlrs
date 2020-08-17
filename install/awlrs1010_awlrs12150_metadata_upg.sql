@@ -7,11 +7,11 @@
 --
 --  PVCS Identifiers :-
 --
---      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12150_metadata_upg.sql-arc   1.2   Aug 14 2020 14:19:50   Mike.Huitson  $
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12150_metadata_upg.sql-arc   1.3   Aug 17 2020 17:00:48   Barbara.Odriscoll  $
 --      Module Name      : $Workfile:   awlrs1010_awlrs12150_metadata_upg.sql  $
---      Date into PVCS   : $Date:   Aug 14 2020 14:19:50  $
---      Date fetched Out : $Modtime:   Aug 14 2020 14:15:48  $
---      Version          : $Revision:   1.2  $
+--      Date into PVCS   : $Date:   Aug 17 2020 17:00:48  $
+--      Date fetched Out : $Modtime:   Aug 17 2020 16:43:58  $
+--      Version          : $Revision:   1.3  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
@@ -1871,7 +1871,14 @@ SELECT 'AWLRS_PROC_FWORK'
                    WHERE HSTF_PARENT = 'AWLRS_PROC_FWORK'
                      AND HSTF_CHILD = 'HIG2510')
 /
-
+------------------------------------------------------------------
+SET TERM ON
+PROMPT hig_standard_favourites amendment
+SET TERM OFF
+DELETE FROM HIG_STANDARD_FAVOURITES
+WHERE HSTF_PARENT = 'AWLRS_REFERENCE'
+AND HSTF_CHILD = 'HIG1832'
+/
 ------------------------------------------------------------------
 Commit;
 
