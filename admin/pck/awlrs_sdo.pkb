@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.25   Jul 01 2020 18:51:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.26   Aug 18 2020 15:15:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Jul 01 2020 18:51:04  $
-  --       Date fetched Out : $Modtime:   Jul 01 2020 16:48:28  $
-  --       Version          : $Revision:   1.25  $
+  --       Date into PVCS   : $Date:   Aug 18 2020 15:15:04  $
+  --       Date fetched Out : $Modtime:   Aug 18 2020 15:13:20  $
+  --       Version          : $Revision:   1.26  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.25  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.26  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   --
@@ -1126,16 +1126,15 @@ AS
   --
   ------------------------------------------------------------------------------
   --
-  FUNCTION get_location_geometry_as(pi_element_id    IN nm_elements_all.ne_id%TYPE
-                                   ,pi_from_offset   IN NUMBER
-                                   ,pi_to_offset     IN NUMBER
-                                   ,pi_geometry_type IN VARCHAR2)
-    RETURN CLOB IS
+  FUNCTION get_location_geometry(pi_element_id  IN nm_elements_all.ne_id%TYPE
+                                ,pi_from_offset IN NUMBER
+                                ,pi_to_offset   IN NUMBER)
+    RETURN mdsys.sdo_geometry IS
     --
     lr_ne  nm_elements_all%ROWTYPE;
     --
     lv_pl_array  nm_placement_array;
-    lv_retval    CLOB;
+    lv_retval    mdsys.sdo_geometry;
     --
   BEGIN
     --
@@ -1154,21 +1153,111 @@ AS
     --
     IF lv_pl_array.npa_placement_array.COUNT > 1
      THEN
-        SELECT awlrs_sdo.sdo_geom_to(pi_geom => sdo_aggr_union(mdsys.sdoaggrtype(
-                                                  nm3sdo.get_placement_geometry(nm3pla.get_sub_placement(nm_placement(pl_ne_id
-                                                                                                        ,pl_start
-                                                                                                        ,pl_end
-                                                                                                        ,0))),0.005))
-                                    ,pi_geometry_type => pi_geometry_type) geom_wkt
+        SELECT sdo_aggr_union(mdsys.sdoaggrtype(nm3sdo.get_placement_geometry(nm3pla.get_sub_placement(nm_placement(pl_ne_id
+                                                                                                                   ,pl_start
+                                                                                                                   ,pl_end
+                                                                                                                   ,0)))
+                                               ,0.005))
           INTO lv_retval
           FROM TABLE(lv_pl_array.npa_placement_array)
              ;
     ELSE
-        lv_retval := sdo_geom_to(pi_geom => nm3sdo.get_placement_geometry(lv_pl_array)
-                                ,pi_geometry_type => pi_geometry_type);
+        lv_retval := nm3sdo.get_placement_geometry(lv_pl_array);
     END IF;
     --
     RETURN lv_retval;
+    --
+  END get_location_geometry;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_element_geometry_length(pi_element_id   IN nm_elements_all.ne_id%TYPE
+                                      ,pi_element_type IN nm_elements_all.ne_type%TYPE
+                                      ,pi_unit         IN nm_units.un_unit_name%TYPE)
+    RETURN NUMBER IS
+    --
+    lv_retval  NUMBER;
+    --
+  BEGIN
+    --
+    CASE pi_element_type
+      WHEN 'S'
+       THEN
+          --
+          lv_retval := sdo_geom.sdo_length(nm3sdo.get_layer_element_geometry(p_ne_id => pi_element_id),0.05,'unit='||pi_unit);
+          --
+      WHEN 'G'
+       THEN
+          --
+          lv_retval := sdo_geom.sdo_length(nm3sdo.get_shape_from_ne(p_ne_id => pi_element_id),0.05,'unit='||pi_unit);
+          --
+      ELSE
+          --
+          lv_retval := NULL;
+          --
+    END CASE;
+    --
+    RETURN lv_retval;
+    --
+  END get_element_geometry_length;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_linear_element_geom_length(pi_element_id IN nm_elements_all.ne_id%TYPE)
+    RETURN NUMBER IS
+    --
+    lv_retval  NUMBER;
+    lv_format  nm_units.un_format_mask%TYPE;
+    --
+  BEGIN
+    /*
+    ||If the given element is linear then return the geometry length
+    ||otherwise the processing will fall into the exception handler and
+    ||return NULL.
+    ||
+    ||Note: this code is reliant on exor unit names matching oracle spatial
+    ||unit names which at the time of writing is the case, if this changes
+    ||an alternative approach will need to be employed to convert the units
+    ||of the co-ordinate system used by the geometry to the units associated
+    ||with the Network Type of the Element.
+    */
+    SELECT awlrs_sdo.get_element_geometry_length(ne_id,ne_type,un_unit_name) geometry_length
+          ,un_format_mask
+      INTO lv_retval
+          ,lv_format
+      FROM nm_elements
+          ,nm_types
+          ,nm_units
+     WHERE ne_id = pi_element_id
+       AND ne_nt_type = nt_type
+       AND nt_linear = 'Y'
+       AND nt_length_unit = un_unit_id;
+    --
+    RETURN CASE WHEN lv_format IS NOT NULL THEN TO_NUMBER(TO_CHAR(lv_retval,lv_format)) ELSE lv_retval END;
+    --
+  EXCEPTION
+    WHEN no_data_found
+     THEN
+        RETURN NULL;
+  END get_linear_element_geom_length;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_location_geometry_as(pi_element_id    IN nm_elements_all.ne_id%TYPE
+                                   ,pi_from_offset   IN NUMBER
+                                   ,pi_to_offset     IN NUMBER
+                                   ,pi_geometry_type IN VARCHAR2)
+    RETURN CLOB IS
+    --
+  BEGIN
+    --
+    RETURN sdo_geom_to(pi_geom          => get_location_geometry(pi_element_id  => pi_element_id
+                                                                ,pi_from_offset => pi_from_offset
+                                                                ,pi_to_offset   => pi_to_offset)
+                      ,pi_geometry_type => pi_geometry_type);
     --
   END get_location_geometry_as;
 

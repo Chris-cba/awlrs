@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.10   Jul 01 2020 18:51:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.11   Aug 18 2020 15:15:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkh  $
-  --       Date into PVCS   : $Date:   Jul 01 2020 18:51:04  $
-  --       Date fetched Out : $Modtime:   Jul 01 2020 16:46:20  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   Aug 18 2020 15:15:04  $
+  --       Date fetched Out : $Modtime:   Aug 18 2020 15:09:28  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
   --
   g_sdo_tolerance     NUMBER := 0.005;
   g_sdo_arc_tolerance NUMBER := 0.05;
@@ -236,6 +236,20 @@ AS
                                         ,po_message_severity OUT hig_codes.hco_code%TYPE
                                         ,po_message_cursor   OUT sys_refcursor
                                         ,po_cursor           OUT sys_refcursor);
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_element_geometry_length(pi_element_id   IN nm_elements_all.ne_id%TYPE
+                                      ,pi_element_type IN nm_elements_all.ne_type%TYPE
+                                      ,pi_unit         IN nm_units.un_unit_name%TYPE)
+    RETURN NUMBER;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_linear_element_geom_length(pi_element_id IN nm_elements_all.ne_id%TYPE)
+    RETURN NUMBER;
 
   --
   ------------------------------------------------------------------------------
