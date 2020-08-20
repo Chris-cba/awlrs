@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.46   Aug 20 2020 17:41:08   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.47   Aug 20 2020 18:01:16   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 20 2020 17:41:08  $
-  --       Date fetched Out : $Modtime:   Aug 20 2020 17:38:30  $
-  --       Version          : $Revision:   1.46  $
+  --       Date into PVCS   : $Date:   Aug 20 2020 18:01:16  $
+  --       Date fetched Out : $Modtime:   Aug 20 2020 17:53:48  $
+  --       Version          : $Revision:   1.47  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.46  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.47  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -7622,7 +7622,10 @@ AS
     IF pi_include_wkt = 'Y'
      THEN
         lv_title := lv_title||',"WKT"';
-        lv_sql := lv_sql||',awlrs_sdo.get_wkt_by_pk('''||pi_theme_types.feature_table||''','''||pi_theme_types.feature_shape_column||''','''||pi_theme_types.feature_pk_column||''','||pi_theme_types.feature_pk_column||') shape_wkt';
+        lv_sql := lv_sql||',awlrs_sdo.get_wkt_by_pk('''||pi_theme_types.feature_table
+                                              ||''','''||pi_theme_types.feature_shape_column
+                                              ||''','''||pi_theme_types.feature_pk_column
+                                              ||''','||pi_theme_types.feature_pk_column||','''||NVL(pi_theme_types.network_is_linear,'N')||''') shape_wkt';
         lv_concat := lv_concat||'||'',"''||lt_results(i).shape_wkt||''"''';
     END IF;
     --
