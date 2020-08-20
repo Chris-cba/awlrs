@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.7   Oct 14 2019 10:07:50   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metaast_api.pkb-arc   1.8   Aug 20 2020 14:28:22   Barbara.Odriscoll  $
   --       Module Name      : $Workfile:   awlrs_metaast_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 14 2019 10:07:50  $
-  --       Date fetched Out : $Modtime:   Oct 14 2019 08:23:08  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   Aug 20 2020 14:28:22  $
+  --       Date fetched Out : $Modtime:   Aug 20 2020 14:24:08  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.7  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.8  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metaref_api';
   --
@@ -1800,7 +1800,7 @@ AS
                                 ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
       --
-      awlrs_util.add_column_data(pi_cursor_col => 'inv_p_or_c'
+      awlrs_util.add_column_data(pi_cursor_col => 'nsc_descr'
                                 ,pi_query_col  => 'nm3net.get_nsc_descr(xsr_nw_type, xsr_scl_class)'
                                 ,pi_datatype   => awlrs_util.c_varchar2_col
                                 ,pi_mask       => NULL
@@ -1818,7 +1818,7 @@ AS
                                 ,pi_mask       => NULL
                                 ,pio_column_data => po_column_data);
       --
-      awlrs_util.add_column_data(pi_cursor_col => 'description'
+      awlrs_util.add_column_data(pi_cursor_col => 'inv_p_or_c'
                                 ,pi_query_col  => 'nm3inv.get_nit_pnt_or_cont(xsr_ity_inv_code)'
                                 ,pi_datatype   => awlrs_util.c_varchar2_col
                                 ,pi_mask       => NULL
