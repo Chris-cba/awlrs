@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.45   Jul 31 2020 15:26:58   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.46   Aug 20 2020 17:41:08   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 31 2020 15:26:58  $
-  --       Date fetched Out : $Modtime:   Jul 31 2020 15:16:10  $
-  --       Version          : $Revision:   1.45  $
+  --       Date into PVCS   : $Date:   Aug 20 2020 17:41:08  $
+  --       Date fetched Out : $Modtime:   Aug 20 2020 17:38:30  $
+  --       Version          : $Revision:   1.46  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.45  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.46  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -5443,7 +5443,10 @@ AS
     IF pi_include_wkt = 'Y'
      THEN
         lv_title := lv_title||',"WKT"';
-        lv_sql := lv_sql||',awlrs_sdo.get_wkt_by_pk('''||pi_theme_types.feature_table||''','''||pi_theme_types.feature_shape_column||''','''||pi_theme_types.feature_pk_column||''',ne_id) shape_wkt';
+        lv_sql := lv_sql||',awlrs_sdo.get_wkt_by_pk('''||pi_theme_types.feature_table
+                                              ||''','''||pi_theme_types.feature_shape_column
+                                              ||''','''||pi_theme_types.feature_pk_column
+                                              ||''',ne_id,'''||NVL(pi_theme_types.network_is_linear,'N')||''') shape_wkt';
         lv_concat := lv_concat||'||'',"''||lt_results(i).shape_wkt||''"''';
     END IF;
     --
@@ -5470,7 +5473,6 @@ AS
     ||' END;'
     ;
     --
-dbms_output.put_line(lv_sql);
     EXECUTE IMMEDIATE lv_sql USING pi_ids, OUT lv_tmp_clob;
     --
     lv_retval := lv_title||lv_tmp_clob;
@@ -6241,7 +6243,7 @@ dbms_output.put_line(lv_sql);
         lv_concat := 'lt_results(i).iit_ne_id||'',"''||lt_results(i).iit_primary_key||''","''||lt_results(i).iit_descr||''","''||lt_results(i).nau_name||''"'
           ||CASE
               WHEN lr_nit.nit_x_sect_allow_flag = 'Y'
-               THEN ',"''||lt_results(i).iit_x_sect||''"'''
+               THEN ',"''||lt_results(i).iit_x_sect||''"'
             END
           ||',''||TO_CHAR(lt_results(i).iit_start_date,''DD-MON-YYYY'')||'',''||TO_CHAR(lt_results(i).iit_end_date,''DD-MON-YYYY'')'
         ;
@@ -6291,7 +6293,15 @@ dbms_output.put_line(lv_sql);
     IF pi_include_wkt = 'Y'
      THEN
         lv_title := lv_title||',"WKT"';
-        lv_sql := lv_sql||',awlrs_sdo.get_wkt_by_pk('''||pi_theme_types.feature_table||''','''||pi_theme_types.feature_shape_column||''','''||pi_theme_types.feature_pk_column||''',ne_id) shape_wkt';
+        lv_sql := lv_sql||',awlrs_sdo.get_wkt_by_pk('''||pi_theme_types.feature_table
+                                              ||''','''||pi_theme_types.feature_shape_column
+                                              ||''','''||pi_theme_types.feature_pk_column
+                                              ||''','||CASE
+                                                         WHEN lr_nit.nit_table_name IS NOT NULL
+                                                          THEN
+                                                             lr_nit.nit_foreign_pk_column
+                                                         ELSE 'iit_ne_id'
+                                                       END||') shape_wkt';
         lv_concat := lv_concat||'||'',"''||lt_results(i).shape_wkt||''"''';
     END IF;
     --
