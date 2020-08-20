@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.26   Aug 18 2020 15:15:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.27   Aug 20 2020 17:35:54   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Aug 18 2020 15:15:04  $
-  --       Date fetched Out : $Modtime:   Aug 18 2020 15:13:20  $
-  --       Version          : $Revision:   1.26  $
+  --       Date into PVCS   : $Date:   Aug 20 2020 17:35:54  $
+  --       Date fetched Out : $Modtime:   Aug 20 2020 16:11:16  $
+  --       Version          : $Revision:   1.27  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.26  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.27  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   --
@@ -287,27 +287,37 @@ AS
   --
   ------------------------------------------------------------------------------
   --
-  FUNCTION sdo_geom_to(pi_geom          IN mdsys.sdo_geometry
-                      ,pi_geometry_type IN VARCHAR2)
+  FUNCTION sdo_geom_to(pi_geom            IN mdsys.sdo_geometry
+                      ,pi_geometry_type   IN VARCHAR2
+                      ,pi_include_measure IN VARCHAR2 DEFAULT 'N')
     RETURN CLOB IS
     --
+    lv_geom  mdsys.sdo_geometry;
   BEGIN
     --
     validate_geometry_type(pi_geometry_type => pi_geometry_type);
     --
+    IF pi_include_measure = 'Y'
+     AND pi_geometry_type IN(c_geojson,c_wkt)
+     THEN
+        lv_geom := pi_geom;
+    ELSE
+        lv_geom := get_std_geom(pi_geom);
+    END IF;
+    --
     RETURN CASE pi_geometry_type
              WHEN c_geojson
               THEN
-                 sdo_util.to_geojson(geometry => pi_geom)
+                 sdo_util.to_geojson(geometry => lv_geom)
              WHEN c_gml
               THEN
-                 sdo_util.to_gmlgeometry(geometry => get_std_geom(pi_geom))
+                 sdo_util.to_gmlgeometry(geometry => lv_geom)
              WHEN c_gml311
               THEN
-                 sdo_util.to_gml311geometry(geometry => get_std_geom(pi_geom))
+                 sdo_util.to_gml311geometry(geometry => lv_geom)
              WHEN c_wkt
               THEN
-                 sdo_util.to_wktgeometry(geometry => get_std_geom(pi_geom))
+                 sdo_util.to_wktgeometry(geometry => lv_geom)
              ELSE
                  NULL
            END;
@@ -3035,10 +3045,11 @@ AS
   --
   ------------------------------------------------------------------------------
   --
-  FUNCTION get_wkt_by_pk(pi_table_name  IN VARCHAR2
-                        ,pi_geom_column IN VARCHAR2
-                        ,pi_pk_column   IN VARCHAR2
-                        ,pi_pk_value    IN NUMBER)
+  FUNCTION get_wkt_by_pk(pi_table_name      IN VARCHAR2
+                        ,pi_geom_column     IN VARCHAR2
+                        ,pi_pk_column       IN VARCHAR2
+                        ,pi_pk_value        IN NUMBER
+                        ,pi_include_measure IN VARCHAR2 DEFAULT 'N')
     RETURN CLOB IS
     --
   BEGIN
@@ -3049,7 +3060,8 @@ AS
                                                 ,pi_geom_column => pi_geom_column
                                                 ,pi_pk_column   => pi_pk_column
                                                 ,pi_pk_value    => pi_pk_value)
-                      ,pi_geometry_type => c_wkt);
+                      ,pi_geometry_type   => c_wkt
+                      ,pi_include_measure => pi_include_measure);
     --
   END get_wkt_by_pk;
 

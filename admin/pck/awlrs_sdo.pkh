@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.11   Aug 18 2020 15:15:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.12   Aug 20 2020 17:35:54   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkh  $
-  --       Date into PVCS   : $Date:   Aug 18 2020 15:15:04  $
-  --       Date fetched Out : $Modtime:   Aug 18 2020 15:09:28  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   Aug 20 2020 17:35:54  $
+  --       Date fetched Out : $Modtime:   Aug 20 2020 16:07:56  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
   --
   g_sdo_tolerance     NUMBER := 0.005;
   g_sdo_arc_tolerance NUMBER := 0.05;
@@ -124,8 +124,9 @@ AS
   --
   ------------------------------------------------------------------------------
   --
-  FUNCTION sdo_geom_to(pi_geom          IN mdsys.sdo_geometry
-                      ,pi_geometry_type IN VARCHAR2)
+  FUNCTION sdo_geom_to(pi_geom            IN mdsys.sdo_geometry
+                      ,pi_geometry_type   IN VARCHAR2
+                      ,pi_include_measure IN VARCHAR2 DEFAULT 'N')
     RETURN CLOB;
 
   --
@@ -380,10 +381,11 @@ AS
   --
   ------------------------------------------------------------------------------
   --
-  FUNCTION get_wkt_by_pk(pi_table_name  IN VARCHAR2
-                        ,pi_geom_column IN VARCHAR2
-                        ,pi_pk_column   IN VARCHAR2
-                        ,pi_pk_value    IN NUMBER)
+  FUNCTION get_wkt_by_pk(pi_table_name      IN VARCHAR2
+                        ,pi_geom_column     IN VARCHAR2
+                        ,pi_pk_column       IN VARCHAR2
+                        ,pi_pk_value        IN NUMBER
+                        ,pi_include_measure IN VARCHAR2 DEFAULT 'N')
     RETURN CLOB;
 
   --
