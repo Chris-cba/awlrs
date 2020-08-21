@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.9   Aug 14 2020 15:24:34   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Aug 14 2020 15:24:34  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.10   Aug 21 2020 15:30:10   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Aug 21 2020 15:30:10  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkb  $
-  --       Date fetched Out : $Modtime:   Aug 14 2020 15:22:04  $
-  --       Version          : $Revision:   1.9  $
+  --       Date fetched Out : $Modtime:   Aug 21 2020 15:19:50  $
+  --       Version          : $Revision:   1.10  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.9  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.10  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -1569,7 +1569,7 @@ AS
 	                           ,p_Job_Id             => lv_job_id);                    
 	ELSE 
 	    -- Create non linear layer
-	    nm3sdm.make_group_layer(p_nt_type            => pi_nt_type
+        nm3sdm.make_group_layer(p_nt_type            => pi_nt_type
 	                           ,p_gty_type           => pi_group_type
 	                           ,linear_flag_override => 'Y'
 	                           ,p_Job_Id             => lv_job_id); 
@@ -1581,7 +1581,8 @@ AS
     */
     UPDATE nm_themes_all
        SET nth_theme_name = SUBSTR(nth_theme_name,1,28)||'_V'
-     WHERE nth_theme_id  IN(SELECT nth_theme_id
+     WHERE nth_theme_name = pi_theme_name
+       AND nth_theme_id  IN(SELECT nth_theme_id
                               FROM nm_themes_all
                              WHERE EXISTS (
                                       SELECT 1
@@ -1602,14 +1603,15 @@ AS
                                                   FROM nm_area_types
                                                  WHERE nat_id = nath_nat_id
                                                    AND nat_gty_group_type = pi_group_type))                    
-                               AND nth_theme_name = pi_theme_name);  
+                            );                                                                                                                   
     --
     /*
     || Update the date tracked theme name.
     */
     UPDATE nm_themes_all
        SET nth_theme_name = pi_theme_name
-     WHERE nth_theme_id  IN(SELECT nth_theme_id
+     WHERE nth_feature_table LIKE '%_DT'  
+       AND nth_theme_id  IN(SELECT nth_theme_id
                               FROM nm_themes_all
                              WHERE EXISTS (
                                       SELECT 1
@@ -1630,7 +1632,7 @@ AS
                                                   FROM nm_area_types
                                                  WHERE nat_id = nath_nat_id
                                                    AND nat_gty_group_type = pi_group_type))                    
-                               AND nth_feature_table LIKE '%_DT');  
+                            );                           
     --                               
   END create_group_theme;
   
@@ -1827,46 +1829,11 @@ AS
        po_log_errors_id := lv_job_id;
     END IF;
     --
-    /* ORIG
     nm3sdm.make_inv_spatial_layer(pi_nit_inv_type => pi_asset_type
         	                     ,p_job_id        => CASE WHEN pi_log_errors = 'Y'
         	                                                THEN lv_job_id
         	                                              ELSE NULL
         	                                         END);
-    */    	                                         
-    IF pi_dynseg = 'Y'
-      THEN
-        nm3sdm.make_inv_spatial_layer(pi_nit_inv_type => pi_asset_type
-        	                         ,p_job_id        => CASE WHEN pi_log_errors = 'Y'
-        	                                                THEN lv_job_id
-        	                                                ELSE NULL
-        	                                             END);
-    ELSE    
-        nm3sdm.make_ona_inv_spatial_layer(pi_nit_inv_type => pi_asset_type
-                                         ,pi_nth_gtype    => null
-                                         ,pi_s_date_col   => null
-                                         ,pi_e_date_col   => null);
-    END IF;                                     	                                             
-    --
-    /*
-    IF pi_xsp_offset = 'Y'
-      THEN
-        nm3sdo_dynseg.set_offset_flag_on;
-        --
-        nm3sdm.make_inv_spatial_layer(pi_nit_inv_type => pi_asset_type
-        	                         ,p_job_id        => CASE WHEN pi_log_errors = 'Y'
-        	                                                THEN Nm3job.get_next_njc_job_id
-        	                                                ELSE NULL
-        	                                             END);   
-    ELSE  
-        nm3sdo_dynseg.set_offset_flag_off;
-        --
-        nm3sdm.make_ona_inv_spatial_layer(pi_nit_inv_type => pi_asset_type
-                                         ,pi_nth_gtype    => pi_geom_type
-                                         ,pi_s_date_col   => pi_start_date_col
-                                         ,pi_e_date_col   => pi_end_date_col);
-    END IF;
-    */
     --
     --check to see if this is needed--
     lv_rec_nit := nm3get.get_nit(pi_asset_type);
@@ -2899,7 +2866,11 @@ AS
             nm3sdm.drop_layer(p_nth_id             => pi_theme_id
                              ,p_Keep_Theme_Data    => 'N'
                              ,p_Keep_Feature_Table => 'Y');
-            */ 
+            */
+        ELSE
+            hig.raise_ner(pi_appl => 'NET'
+                     ,pi_id   => 265
+                     ,pi_supplementary_info  => 'Unable to delete theme: '||pi_theme_id); 
         END IF; 
     ELSE
         hig.raise_ner(pi_appl => 'NET'
@@ -5535,7 +5506,7 @@ AS
                                      ,po_message_severity     OUT  hig_codes.hco_code%TYPE
                                      ,po_message_cursor       OUT  sys_refcursor)  
   IS                                  
-  --
+  -- 
   lt_messages  awlrs_message_tab := awlrs_message_tab();
   --
   BEGIN
@@ -5636,4 +5607,5 @@ AS
 
 END awlrs_theme_api;
 /
+
 
