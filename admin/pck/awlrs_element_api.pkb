@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.42   Jul 27 2020 16:42:08   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.43   Aug 21 2020 16:56:18   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 27 2020 16:42:08  $
-  --       Date fetched Out : $Modtime:   Jul 27 2020 14:55:14  $
-  --       Version          : $Revision:   1.42  $
+  --       Date into PVCS   : $Date:   Aug 21 2020 16:56:18  $
+  --       Date fetched Out : $Modtime:   Aug 21 2020 16:26:20  $
+  --       Version          : $Revision:   1.43  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.42  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.43  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1433,8 +1433,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_elements(pi_ne_ids IN  awlrs_util.ne_id_tab
-                        ,po_cursor OUT sys_refcursor)
+  PROCEDURE get_elements(pi_ne_ids              IN  awlrs_util.ne_id_tab
+                        ,pi_include_geom_length IN  VARCHAR2 DEFAULT 'N'
+                        ,po_cursor              OUT sys_refcursor)
     IS
     --
     lt_ids  nm_ne_id_array := nm_ne_id_array();
@@ -1511,6 +1512,20 @@ AS
              ELSE
                  NULL
            END               element_max_offset
+          ,CASE
+             WHEN pi_include_geom_length = 'Y'
+              AND nt_linear = 'Y'
+              THEN
+                 CASE
+                   WHEN un_format_mask IS NOT NULL
+                    THEN
+                       TO_NUMBER(TO_CHAR(awlrs_sdo.get_element_geometry_length(ne_id,ne_type,un_unit_name),un_format_mask))
+                   ELSE
+                       awlrs_sdo.get_element_geometry_length(ne_id,ne_type,un_unit_name)
+                 END
+             ELSE
+                 CAST(NULL AS NUMBER)
+           END geometry_length
       FROM nm_elements_all
           ,nm_types
           ,nm_units
@@ -1520,15 +1535,15 @@ AS
           ,nm_points nps
           ,nm_nodes_all noe
           ,nm_points npe
-     WHERE ne_nt_type = nt_type
-       AND nt_length_unit = un_unit_id(+)
+     WHERE ne_id IN(SELECT ne_id FROM TABLE(CAST(lt_ids AS nm_ne_id_array)))
        AND ne_admin_unit = nau_admin_unit
+       AND ne_nt_type = nt_type
+       AND nt_length_unit = un_unit_id(+)
        AND ne_gty_group_type = ngt_group_type(+)
        AND ne_no_start = nos.no_node_id(+)
        AND nos.no_np_id = nps.np_id(+)
        AND ne_no_end = noe.no_node_id(+)
        AND noe.no_np_id = npe.np_id(+)
-       AND ne_id IN(SELECT ne_id FROM TABLE(CAST(lt_ids AS nm_ne_id_array)))
          ;
     --
   END get_elements;
@@ -1536,15 +1551,17 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_elements(pi_ne_ids           IN  awlrs_util.ne_id_tab
-                        ,po_message_severity OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor   OUT sys_refcursor
-                        ,po_cursor           OUT sys_refcursor)
+  PROCEDURE get_elements(pi_ne_ids              IN  awlrs_util.ne_id_tab
+                        ,pi_include_geom_length IN  VARCHAR2 DEFAULT 'N'
+                        ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor      OUT sys_refcursor
+                        ,po_cursor              OUT sys_refcursor)
     IS
   BEGIN
     --
-    get_elements(pi_ne_ids => pi_ne_ids
-                ,po_cursor => po_cursor);
+    get_elements(pi_ne_ids              => pi_ne_ids
+                ,pi_include_geom_length => pi_include_geom_length
+                ,po_cursor              => po_cursor);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1559,10 +1576,11 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_element(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
-                       ,po_message_severity OUT hig_codes.hco_code%TYPE
-                       ,po_message_cursor   OUT sys_refcursor
-                       ,po_cursor           OUT sys_refcursor)
+  PROCEDURE get_element(pi_ne_id               IN  nm_elements_all.ne_id%TYPE
+                       ,pi_include_geom_length IN  VARCHAR2 DEFAULT 'N'
+                       ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor      OUT sys_refcursor
+                       ,po_cursor              OUT sys_refcursor)
     IS
     --
     lt_ids     awlrs_util.ne_id_tab;
@@ -1572,8 +1590,9 @@ AS
     --
     lt_ids(1) := pi_ne_id;
     --
-    get_elements(pi_ne_ids => lt_ids
-                ,po_cursor => lv_cursor);
+    get_elements(pi_ne_ids              => lt_ids
+                ,pi_include_geom_length => pi_include_geom_length
+                ,po_cursor              => lv_cursor);
     --
     po_cursor := lv_cursor;
     --
