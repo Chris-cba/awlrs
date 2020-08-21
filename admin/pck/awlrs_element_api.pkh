@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.21   Jul 27 2020 16:42:10   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.22   Aug 21 2020 16:56:20   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   Jul 27 2020 16:42:10  $
-  --       Date fetched Out : $Modtime:   Jul 27 2020 14:11:46  $
-  --       Version          : $Revision:   1.21  $
+  --       Date into PVCS   : $Date:   Aug 21 2020 16:56:20  $
+  --       Date fetched Out : $Modtime:   Aug 21 2020 16:29:44  $
+  --       Version          : $Revision:   1.22  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.21  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
   --
   g_db_element   nm_elements_all%ROWTYPE;
   g_old_element  nm_elements_all%ROWTYPE;
@@ -55,7 +55,8 @@ AS
                             ,end_node_y                  nm_points.np_grid_north%TYPE
                             ,element_has_shape           VARCHAR2(1)
                             ,element_min_offset          NUMBER
-                            ,element_max_offset          NUMBER);
+                            ,element_max_offset          NUMBER
+                            ,geometry_length             NUMBER);
   --
   TYPE element_tab IS TABLE OF element_rec INDEX BY BINARY_INTEGER;
   --
@@ -287,24 +288,27 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_elements(pi_ne_ids IN  awlrs_util.ne_id_tab
-                        ,po_cursor OUT sys_refcursor);
+  PROCEDURE get_elements(pi_ne_ids              IN  awlrs_util.ne_id_tab
+                        ,pi_include_geom_length IN  VARCHAR2 DEFAULT 'N'
+                        ,po_cursor              OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_elements(pi_ne_ids           IN  awlrs_util.ne_id_tab
-                        ,po_message_severity OUT hig_codes.hco_code%TYPE
-                        ,po_message_cursor   OUT sys_refcursor
-                        ,po_cursor           OUT sys_refcursor);
+  PROCEDURE get_elements(pi_ne_ids              IN  awlrs_util.ne_id_tab
+                        ,pi_include_geom_length IN  VARCHAR2 DEFAULT 'N'
+                        ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor      OUT sys_refcursor
+                        ,po_cursor              OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_element(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
-                       ,po_message_severity OUT hig_codes.hco_code%TYPE
-                       ,po_message_cursor   OUT sys_refcursor
-                       ,po_cursor           OUT sys_refcursor);
+  PROCEDURE get_element(pi_ne_id               IN  nm_elements_all.ne_id%TYPE
+                       ,pi_include_geom_length IN  VARCHAR2 DEFAULT 'N'
+                       ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor      OUT sys_refcursor
+                       ,po_cursor              OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
