@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.22   Aug 21 2020 16:56:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.23   Aug 28 2020 11:17:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   Aug 21 2020 16:56:20  $
-  --       Date fetched Out : $Modtime:   Aug 21 2020 16:29:44  $
-  --       Version          : $Revision:   1.22  $
+  --       Date into PVCS   : $Date:   Aug 28 2020 11:17:56  $
+  --       Date fetched Out : $Modtime:   Aug 28 2020 10:31:34  $
+  --       Version          : $Revision:   1.23  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.22  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.23  $';
   --
   g_db_element   nm_elements_all%ROWTYPE;
   g_old_element  nm_elements_all%ROWTYPE;
@@ -82,19 +82,19 @@ AS
   --
   TYPE attrib_column_name_tab IS TABLE OF nm_type_columns.ntc_column_name%TYPE INDEX BY BINARY_INTEGER;
   TYPE attrib_prompt_tab IS TABLE OF nm_type_columns.ntc_prompt%TYPE INDEX BY BINARY_INTEGER;
-  TYPE attrib_char_value_tab IS TABLE OF VARCHAR2(240) INDEX BY BINARY_INTEGER;
+  TYPE attrib_char_value_tab IS TABLE OF VARCHAR2(500) INDEX BY BINARY_INTEGER;
   --
-  TYPE domain_values_rec IS RECORD(code      VARCHAR2(240)
+  TYPE domain_values_rec IS RECORD(code      VARCHAR2(500)
                                   ,meaning   nm3type.max_varchar2);
   TYPE domain_values_tab IS TABLE OF domain_values_rec INDEX BY BINARY_INTEGER;
   --
-  TYPE paged_domain_values_rec IS RECORD(code      VARCHAR2(240)
+  TYPE paged_domain_values_rec IS RECORD(code      VARCHAR2(500)
                                         ,meaning   nm3type.max_varchar2
                                         ,row_count NUMBER);
   TYPE paged_domain_values_tab IS TABLE OF paged_domain_values_rec INDEX BY BINARY_INTEGER;
   --
   TYPE domain_name_and_values_rec IS RECORD(domain_id VARCHAR2(40)
-                                           ,code      VARCHAR2(240)
+                                           ,code      VARCHAR2(500)
                                            ,meaning   nm3type.max_varchar2);
   TYPE domain_name_and_values_tab IS TABLE OF domain_name_and_values_rec INDEX BY BINARY_INTEGER;
   --
@@ -317,6 +317,43 @@ AS
                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
                                  ,po_message_cursor   OUT sys_refcursor
                                  ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_np_ad_types(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_np_ad_assets(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                            ,pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_np_ad_asset(pi_ne_id               IN  nm_elements_all.ne_id%TYPE
+                           ,pi_inv_type            IN  nm_inv_types_all.nit_inv_type%TYPE
+                           ,pi_attrib_column_names IN  attrib_column_name_tab
+                           ,pi_attrib_prompts      IN  attrib_prompt_tab
+                           ,pi_attrib_char_values  IN  attrib_char_value_tab
+                           ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor      OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE enddate_np_ad_asset(pi_ne_id            IN  nm_nw_ad_link.nad_ne_id%TYPE
+                               ,pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                               ,pi_iit_ne_id        IN  nm_nw_ad_link.nad_iit_ne_id%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
