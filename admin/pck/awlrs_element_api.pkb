@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.43   Aug 21 2020 16:56:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.44   Aug 28 2020 11:17:58   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 21 2020 16:56:18  $
-  --       Date fetched Out : $Modtime:   Aug 21 2020 16:26:20  $
-  --       Version          : $Revision:   1.43  $
+  --       Date into PVCS   : $Date:   Aug 28 2020 11:17:58  $
+  --       Date fetched Out : $Modtime:   Aug 28 2020 10:36:48  $
+  --       Version          : $Revision:   1.44  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.43  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.44  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1691,6 +1691,310 @@ AS
     END IF;
     --
   END create_primary_ad_asset;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_np_ad_types(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lr_ne  nm_elements_all%ROWTYPE;
+    --
+  BEGIN
+    --
+    lr_ne := nm3net.get_ne(pi_ne_id => pi_ne_id);
+    --
+    IF lr_ne.ne_gty_group_type IS NULL
+     THEN
+        --
+        OPEN po_cursor FOR
+        SELECT nad_inv_type ad_asset_type
+              ,nit_descr ad_asset_type_descr
+              ,CAST(CASE nad_single_row WHEN 'Y' THEN 'N' ELSE 'Y' END AS VARCHAR2(1)) multiple_allowed
+              ,NVL((SELECT 'Y' editable
+                      FROM dual
+                     WHERE nit_update_allowed = 'Y'
+                       AND nit_table_name IS NULL
+                       AND EXISTS(SELECT 1
+                                    FROM hig_user_roles
+                                        ,nm_inv_type_roles
+                                   WHERE itr_inv_type = nit_inv_type
+                                     AND itr_mode = 'NORMAL'
+                                     AND itr_hro_role = hur_role
+                                     AND hur_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME'))
+                       AND EXISTS (SELECT 1
+                                     FROM nm_user_aus
+                                         ,nm_admin_groups
+                                    WHERE nua_user_id = Sys_Context('NM3CORE','USER_ID')
+                                      AND nua_mode = 'NORMAL'
+                                      AND nua_admin_unit = nag_parent_admin_unit
+                                      AND nag_child_admin_unit = lr_ne.ne_admin_unit))
+                   ,'N') is_editable
+          FROM nm_nw_ad_types
+              ,nm_inv_types
+         WHERE nad_nt_type = lr_ne.ne_nt_type
+           AND nad_gty_type IS NULL
+           AND nad_primary_ad = 'N'
+           AND nad_inv_type = nit_inv_type
+         ORDER
+            BY nad_display_order
+             ;
+        --
+    ELSE
+        --
+        OPEN po_cursor FOR
+        SELECT nad_inv_type ad_asset_type
+              ,nit_descr ad_asset_type_descr
+              ,CAST(CASE nad_single_row WHEN 'Y' THEN 'N' ELSE 'Y' END AS VARCHAR2(1)) multiple_allowed
+              ,NVL((SELECT 'Y' editable
+                      FROM dual
+                     WHERE nit_update_allowed = 'Y'
+                       AND nit_table_name IS NULL
+                       AND EXISTS(SELECT 1
+                                    FROM hig_user_roles
+                                        ,nm_inv_type_roles
+                                   WHERE itr_inv_type = nit_inv_type
+                                     AND itr_mode = 'NORMAL'
+                                     AND itr_hro_role = hur_role
+                                     AND hur_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME'))
+                       AND EXISTS (SELECT 1
+                                     FROM nm_user_aus
+                                         ,nm_admin_groups
+                                    WHERE nua_user_id = Sys_Context('NM3CORE','USER_ID')
+                                      AND nua_mode = 'NORMAL'
+                                      AND nua_admin_unit = nag_parent_admin_unit
+                                      AND nag_child_admin_unit = lr_ne.ne_admin_unit))
+                   ,'N') is_editable
+          FROM nm_nw_ad_types
+              ,nm_inv_types
+         WHERE nad_nt_type = lr_ne.ne_nt_type
+           AND nad_gty_type = lr_ne.ne_gty_group_type
+           AND nad_primary_ad = 'N'
+           AND nad_inv_type = nit_inv_type
+         ORDER
+            BY nad_display_order
+             ;
+        --
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_np_ad_types;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_np_ad_assets(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                            ,pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT nadl.nad_ne_id element_id
+          ,nadl.nad_iit_ne_id ad_asset_id
+          ,nadl.nad_inv_type ad_asset_type
+      FROM nm_nw_ad_link nadl
+          ,nm_nw_ad_types nadt
+          ,nm_inv_types
+     WHERE nadl.nad_ne_id = pi_ne_id
+       AND nadl.nad_inv_type = pi_inv_type
+       AND nadl.nad_id = nadt.nad_id
+       AND nadt.nad_primary_ad = 'N'
+       AND nadt.nad_inv_type = nit_inv_type
+     ORDER
+        BY nadt.nad_display_order
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_np_ad_assets;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_np_ad_asset(pi_ne_id      IN nm_elements_all.ne_id%TYPE
+                           ,pi_inv_type   IN nm_inv_types_all.nit_inv_type%TYPE
+                           ,pi_ad_attribs IN flex_attr_tab)
+    IS
+    --
+    lr_ad  nm_inv_items_all%ROWTYPE;
+    --
+  BEGIN
+    --
+    init_ad_globals;
+    --
+    build_ad_rec(pi_inv_type   => pi_inv_type
+                ,pi_global     => 'awlrs_element_api.g_new_prim_ad_asset'
+                ,pi_attributes => pi_ad_attribs);
+    --
+    lr_ad := g_new_prim_ad_asset;
+    --
+    lr_ad.iit_inv_type := pi_inv_type;
+    lr_ad.iit_admin_unit := nm3net.get_ne(pi_ne_id => pi_ne_id).ne_admin_unit;
+    --
+    nm3nwad.add_inv_ad_to_ne(pi_ne_id   => pi_ne_id
+                            ,pi_rec_iit => lr_ad);
+    --
+  END add_np_ad_asset;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_np_ad_asset(pi_ne_id               IN  nm_elements_all.ne_id%TYPE
+                           ,pi_inv_type            IN  nm_inv_types_all.nit_inv_type%TYPE
+                           ,pi_attrib_column_names IN  attrib_column_name_tab
+                           ,pi_attrib_prompts      IN  attrib_prompt_tab
+                           ,pi_attrib_char_values  IN  attrib_char_value_tab
+                           ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor      OUT sys_refcursor)
+    IS
+    --
+    lt_attribs  flex_attr_tab;
+    --
+  BEGIN
+    --
+    IF pi_attrib_column_names.COUNT != pi_attrib_prompts.COUNT
+     OR pi_attrib_column_names.COUNT != pi_attrib_char_values.COUNT
+     THEN
+        --The attribute tables passed in must have matching row counts
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_element_api.create_element');
+    END IF;
+    --
+    FOR i IN 1..pi_attrib_column_names.COUNT LOOP
+      --
+      lt_attribs(i).column_name := pi_attrib_column_names(i);
+      lt_attribs(i).prompt      := pi_attrib_prompts(i);
+      lt_attribs(i).char_value  := pi_attrib_char_values(i);
+      --
+    END LOOP;
+    --
+    add_np_ad_asset(pi_ne_id      => pi_ne_id
+                   ,pi_inv_type   => pi_inv_type
+                   ,pi_ad_attribs => lt_attribs);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END add_np_ad_asset;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_nad_id(pi_ne_id    IN nm_nw_ad_link.nad_ne_id%TYPE
+                     ,pi_inv_type IN nm_inv_types_all.nit_inv_type%TYPE)
+    RETURN nm_nw_ad_types.nad_id%TYPE IS
+    --
+    lv_retval nm_nw_ad_types.nad_id%TYPE;
+    --
+    lr_ne  nm_elements_all%ROWTYPE;
+    --
+  BEGIN
+    --
+    lr_ne := nm3get.get_ne_all(pi_ne_id => pi_ne_id);
+    --
+    IF lr_ne.ne_gty_group_type IS NULL
+     THEN
+        --
+        SELECT nad_id
+          INTO lv_retval
+          FROM nm_nw_ad_types
+         WHERE nad_nt_type  = lr_ne.ne_nt_type
+           AND nad_gty_type IS NULL
+	         AND nad_inv_type = pi_inv_type
+             ;
+        --
+    ELSE
+        --
+        SELECT nad_id
+          INTO lv_retval
+          FROM nm_nw_ad_types
+         WHERE nad_nt_type  = lr_ne.ne_nt_type
+           AND nad_gty_type = lr_ne.ne_gty_group_type
+	         AND nad_inv_type = pi_inv_type
+             ;
+        --
+    END IF;
+    --
+    RETURN lv_retval;
+    --
+  EXCEPTION
+    WHEN no_data_found
+     THEN
+        RETURN NULL;
+  END get_nad_id;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE enddate_np_ad_asset(pi_ne_id     IN nm_nw_ad_link.nad_ne_id%TYPE
+                               ,pi_inv_type  IN nm_inv_types_all.nit_inv_type%TYPE
+                               ,pi_iit_ne_id IN nm_nw_ad_link.nad_iit_ne_id%TYPE)
+    IS
+    --
+    lr_nadl nm_nw_ad_link%ROWTYPE;
+    --
+  BEGIN
+    --
+    lr_nadl.nad_id := get_nad_id(pi_ne_id    => pi_ne_id
+                                ,pi_inv_type => pi_inv_type);
+    lr_nadl.nad_iit_ne_id := pi_iit_ne_id;
+    lr_nadl.nad_ne_id := pi_ne_id;
+    --
+    nm3nwad.end_date_nadl (pi_rec_nadl => lr_nadl);
+    --
+  END enddate_np_ad_asset;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE enddate_np_ad_asset(pi_ne_id            IN  nm_nw_ad_link.nad_ne_id%TYPE
+                               ,pi_inv_type         IN  nm_inv_types_all.nit_inv_type%TYPE
+                               ,pi_iit_ne_id        IN  nm_nw_ad_link.nad_iit_ne_id%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    enddate_np_ad_asset(pi_ne_id     => pi_ne_id
+                       ,pi_inv_type  => pi_inv_type
+                       ,pi_iit_ne_id => pi_iit_ne_id);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END enddate_np_ad_asset;
 
   --
   -----------------------------------------------------------------------------
