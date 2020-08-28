@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.10   Aug 21 2020 15:30:10   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Aug 21 2020 15:30:10  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.11   Aug 28 2020 13:34:42   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Aug 28 2020 13:34:42  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkb  $
-  --       Date fetched Out : $Modtime:   Aug 21 2020 15:19:50  $
-  --       Version          : $Revision:   1.10  $
+  --       Date fetched Out : $Modtime:   Aug 28 2020 13:23:44  $
+  --       Version          : $Revision:   1.11  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.10  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.11  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -22,7 +22,8 @@ AS
   cv_network        CONSTANT VARCHAR2(7) := 'NETWORK';            
   cv_node           CONSTANT VARCHAR2(4) := 'NODE';
   cv_asset          CONSTANT VARCHAR2(5) := 'ASSET';
-  
+  --
+  lf                VARCHAR2(5) := CHR (10);
   --
   -----------------------------------------------------------------------------
   --
@@ -1982,7 +1983,7 @@ AS
     --                               
     nm3layer_tool.make_layer_where(pi_base_theme    => pi_base_theme_id
 	                              ,pi_where_clause  => lv_where_clause
-	                              ,pi_view_name     => pi_custom_theme_name);
+                                  ,pi_view_name     => pi_custom_theme_name);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -2419,9 +2420,14 @@ AS
     lr_theme_types  awlrs_map_api.theme_types_rec;
     lv_where_clause nm3type.max_varchar2;
     lv_base_feature_table  nm_themes_all.nth_feature_table%TYPE;
+    lv_upd          varchar2(1) := 'N';
+    lv_rebuild_view BOOLEAN := FALSE;
+    lv_view_sql     varchar2(1000);
+    lv_where        varchar2(5000);
+    
     --
-    lr_db_rec        nm_themes_all%ROWTYPE;
-    lv_upd           VARCHAR2(1) := 'N';
+    lr_db_rec        nm_themes_all%ROWTYPE;    
+    lr_rec_nth_base   nm_themes_all%ROWTYPE;
     --
     PROCEDURE get_db_rec
       IS
@@ -2493,9 +2499,13 @@ AS
                             ,pi_id   => 83
                             ,pi_supplementary_info => 'SQL is invalid');
         END IF;
+        --
+        lv_rebuild_view := TRUE;
+        --
     ELSE
        -- if pi_new_where_clause is null, this means no changes are required to the original where clause, this is for all themes not just custom themes --
         lv_where_clause := pi_old_where_clause;
+        lv_rebuild_view := FALSE;
        --
     END IF;
     --
@@ -2617,6 +2627,33 @@ AS
               ,nth_st_chain_column    =  pi_new_start_chainage
               ,nth_end_chain_column   =  pi_new_end_chainage
          WHERE nth_theme_id =  pi_old_theme_id;
+        --
+        --
+        --If the where clause has been updated, we now need to rebuild the view
+        IF lv_rebuild_view
+          THEN
+            --
+            lv_where := LTRIM(lv_where_clause);
+            --
+            lr_rec_nth_base := nm3get.get_nth (pi_nth_theme_id => pi_new_base_theme);
+            --
+            lv_view_sql :=
+                        'CREATE OR REPLACE FORCE VIEW '
+                      || pi_new_theme_name
+                      || lf
+                      || ' AS '
+                      || lf
+                      || ' SELECT a.* '
+                      || lf
+                      || '   FROM '
+                      || lr_rec_nth_base.nth_feature_table
+                      || ' a '
+                      || lf
+                      || ' WHERE '||lv_where;
+            --
+            EXECUTE IMMEDIATE lv_view_sql;
+            --
+        END IF;
         --
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                              ,po_cursor           => po_message_cursor);
