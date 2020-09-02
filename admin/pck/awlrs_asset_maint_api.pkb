@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.11   Jul 27 2020 16:48:56   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.12   Sep 02 2020 14:23:04   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_maint_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 27 2020 16:48:56  $
-  --       Date fetched Out : $Modtime:   Jul 16 2020 12:38:48  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   Sep 02 2020 14:23:04  $
+  --       Date fetched Out : $Modtime:   Sep 01 2020 17:22:12  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.11  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_maint_api';
   --
   TYPE attr_name_tab IS TABLE OF nm_inv_type_attribs_all.ita_attrib_name%TYPE INDEX BY BINARY_INTEGER;
@@ -223,30 +223,33 @@ AS
     lv_filter           nm3type.max_varchar2;
     --
     lv_cursor_sql  nm3type.max_varchar2;
-    lv_datum_sql   nm3type.max_varchar2 := 'WITH filter_tab AS (SELECT UPPER(:filter) filter_value FROM dual)'
-                                ||CHR(10)||'SELECT id'
-                                ||CHR(10)||'      ,name'
-                                ||CHR(10)||'      ,min_offset'
-                                ||CHR(10)||'      ,max_offset'
-                                ||CHR(10)||'      ,row_count'
-                                ||CHR(10)||'  FROM (SELECT rownum ind'
-                                ||CHR(10)||'              ,results.*'
-                                ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                                ||CHR(10)||'          FROM (SELECT ne_id id'
-                                ||CHR(10)||'                      ,ne_unique||'' - ''||ne_descr name'
-                                ||CHR(10)||'                      ,0 min_offset'
-                                ||CHR(10)||'                      ,ne_length max_offset'
-                                ||CHR(10)||'                      ,CASE'
-                                ||CHR(10)||'                         WHEN f.filter_value IS NULL THEN 0'
-                                ||CHR(10)||'                         WHEN UPPER(ne_unique) = f.filter_value THEN 1'
-                                ||CHR(10)||'                         WHEN UPPER(ne_descr) = f.filter_value THEN 2'
-                                ||CHR(10)||'                         WHEN UPPER(ne_unique) LIKE f.filter_value||''%'' THEN 3'
-                                ||CHR(10)||'                         WHEN UPPER(ne_descr) LIKE f.filter_value||''%'' THEN 4'
-                                ||CHR(10)||'                         ELSE 5'
-                                ||CHR(10)||'                       END match_quality'
-                                ||CHR(10)||'                  FROM nm_elements'
-                                ||CHR(10)||'                      ,filter_tab f'
-                                ||CHR(10)||'                 WHERE ne_type = ''S'''
+    lv_alllrms_sql   nm3type.max_varchar2 := 'WITH filter_tab AS (SELECT UPPER(:filter) filter_value FROM dual)'
+                                  ||CHR(10)||'SELECT id'
+                                  ||CHR(10)||'      ,name'
+                                  ||CHR(10)||'      ,min_offset'
+                                  ||CHR(10)||'      ,max_offset'
+                                  ||CHR(10)||'      ,row_count'
+                                  ||CHR(10)||'  FROM (SELECT rownum ind'
+                                  ||CHR(10)||'              ,results.*'
+                                  ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                  ||CHR(10)||'          FROM (SELECT ne_id id'
+                                  ||CHR(10)||'                      ,ne_unique||'' - ''||ne_descr name'
+                                  ||CHR(10)||'                      ,0 min_offset'
+                                  ||CHR(10)||'                      ,ne_length max_offset'
+                                  ||CHR(10)||'                      ,CASE'
+                                  ||CHR(10)||'                         WHEN f.filter_value IS NULL THEN 0'
+                                  ||CHR(10)||'                         WHEN UPPER(ne_unique) = f.filter_value THEN 1'
+                                  ||CHR(10)||'                         WHEN UPPER(ne_descr) = f.filter_value THEN 2'
+                                  ||CHR(10)||'                         WHEN UPPER(ne_unique) LIKE f.filter_value||''%'' THEN 3'
+                                  ||CHR(10)||'                         WHEN UPPER(ne_descr) LIKE f.filter_value||''%'' THEN 4'
+                                  ||CHR(10)||'                         ELSE 5'
+                                  ||CHR(10)||'                       END match_quality'
+                                  ||CHR(10)||'                  FROM nm_elements'
+                                  ||CHR(10)||'                      ,filter_tab f'
+                                  ||CHR(10)||'                 WHERE ne_type = ''S'''
+                                  ||CHR(10)||'                    OR ne_gty_group_type IN(SELECT ngt.ngt_group_type'
+                                  ||CHR(10)||'                                              FROM nm_group_types ngt'
+                                  ||CHR(10)||'                                             WHERE ngt.ngt_linear_flag = ''Y'')'
     ;
     --
     lv_group_sql  nm3type.max_varchar2 := 'WITH filter_tab AS (SELECT UPPER(:filter) filter_value FROM dual)'
@@ -286,7 +289,7 @@ AS
         lv_group_type := lv_plrm;
         lv_cursor_sql := lv_group_sql;
     ELSE
-        lv_cursor_sql := lv_datum_sql;
+        lv_cursor_sql := lv_alllrms_sql;
     END IF;
     /*
     ||Set the filter.
@@ -1220,6 +1223,11 @@ AS
         --
         IF lr_nt.nt_datum = 'Y'
          THEN
+            /*
+            ||Override the PLRM
+            */
+            lv_location_out_type := 'DATUM';
+            --
             lt_d_rpt := lb_rpt_tab(lb_rpt(pi_net_filter_ne_id
                                          ,lr_nlt.nlt_id
                                          ,NULL
@@ -1231,6 +1239,11 @@ AS
                                          ,pi_net_filter_to
                                          ,lr_nt.nt_length_unit));
         ELSE
+            /*
+            ||Override the PLRM
+            */
+            lv_location_out_type := lr_ne.ne_gty_group_type;
+            --
             lt_d_rpt := lb_get.get_lb_rpt_d_tab(p_lb_RPt_tab => lb_rpt_tab(lb_rpt(pi_net_filter_ne_id
                                                                                  ,lr_nlt.nlt_id
                                                                                  ,NULL
