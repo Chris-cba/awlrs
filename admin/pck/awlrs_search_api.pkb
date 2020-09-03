@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.47   Aug 20 2020 18:01:16   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.48   Sep 03 2020 16:16:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 20 2020 18:01:16  $
-  --       Date fetched Out : $Modtime:   Aug 20 2020 17:53:48  $
-  --       Version          : $Revision:   1.47  $
+  --       Date into PVCS   : $Date:   Sep 03 2020 16:16:30  $
+  --       Date fetched Out : $Modtime:   Sep 03 2020 15:45:00  $
+  --       Version          : $Revision:   1.48  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.47  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.48  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -1213,13 +1213,13 @@ AS
   BEGIN
     --
     RETURN   'SELECT ial_value code'
-  ||CHR(10)||'      ,ial_meaning meaning'
-  ||CHR(10)||'      ,ial_seq seq'
-  ||CHR(10)||'  FROM nm_inv_attri_lookup_all'
-  ||CHR(10)||' WHERE ial_domain = (SELECT ita_id_domain'
-  ||CHR(10)||'                       FROM nm_inv_type_attribs'
-  ||CHR(10)||'                      WHERE ita_inv_type = :pi_asset_type'
-  ||CHR(10)||'                        AND ita_attrib_name = :pi_column_name)'
+                 ||',ial_value||'' - ''||ial_meaning meaning'
+                 ||',ial_seq seq'
+            ||' FROM nm_inv_attri_lookup_all'
+           ||' WHERE ial_domain = (SELECT ita_id_domain'
+                                 ||' FROM nm_inv_type_attribs'
+                                ||' WHERE ita_inv_type = :pi_asset_type'
+                                  ||' AND ita_attrib_name = :pi_column_name)'
     ;
     --
   END get_asset_domain_sql;
@@ -1256,18 +1256,18 @@ AS
     lv_row_restriction  nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     lv_cursor_sql       nm3type.max_varchar2 := 'SELECT code'
-                                     ||CHR(10)||'      ,meaning'
-                                     ||CHR(10)||'      ,row_count'
-                                     ||CHR(10)||'  FROM (SELECT rownum ind'
-                                     ||CHR(10)||'              ,code'
-                                     ||CHR(10)||'              ,meaning'
-                                     ||CHR(10)||'              ,CASE'
-                                     ||CHR(10)||'                 WHEN UPPER(meaning) = UPPER(:filter) THEN 1'
-                                     ||CHR(10)||'                 WHEN UPPER(meaning) LIKE UPPER(:filter)||''%'' THEN 2'
-                                     ||CHR(10)||'                 ELSE 3'
-                                     ||CHR(10)||'               END match_quality'
-                                     ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                                     ||CHR(10)||'          FROM ('
+                                                    ||',meaning'
+                                                    ||',row_count'
+                                               ||' FROM (SELECT rownum ind'
+                                                            ||',code'
+                                                            ||',meaning'
+                                                            ||',CASE'
+                                                              ||' WHEN UPPER(meaning) = UPPER(:filter) THEN 1'
+                                                              ||' WHEN UPPER(meaning) LIKE UPPER(:filter)||''%'' THEN 2'
+                                                              ||' ELSE 3'
+                                                            ||' END match_quality'
+                                                            ||',COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                       ||' FROM ('
     ;
     --
   BEGIN
