@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.12   Sep 02 2020 14:23:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_maint_api.pkb-arc   1.13   Sep 03 2020 16:18:42   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_maint_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 02 2020 14:23:04  $
-  --       Date fetched Out : $Modtime:   Sep 01 2020 17:22:12  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   Sep 03 2020 16:18:42  $
+  --       Date fetched Out : $Modtime:   Sep 03 2020 14:53:18  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2018 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.12  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.13  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_maint_api';
   --
   TYPE attr_name_tab IS TABLE OF nm_inv_type_attribs_all.ita_attrib_name%TYPE INDEX BY BINARY_INTEGER;
@@ -233,7 +233,10 @@ AS
                                   ||CHR(10)||'              ,results.*'
                                   ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
                                   ||CHR(10)||'          FROM (SELECT ne_id id'
-                                  ||CHR(10)||'                      ,ne_unique||'' - ''||ne_descr name'
+                                  ||CHR(10)||'                      ,CASE '
+                                  ||CHR(10)||'                         WHEN ne_gty_group_type IS NULL THEN nt_unique'
+                                  ||CHR(10)||'                         ELSE ngt_descr'
+                                  ||CHR(10)||'                       END||'' - ''||ne_unique||'' - ''||ne_descr name'
                                   ||CHR(10)||'                      ,0 min_offset'
                                   ||CHR(10)||'                      ,ne_length max_offset'
                                   ||CHR(10)||'                      ,CASE'
@@ -245,11 +248,13 @@ AS
                                   ||CHR(10)||'                         ELSE 5'
                                   ||CHR(10)||'                       END match_quality'
                                   ||CHR(10)||'                  FROM nm_elements'
+                                  ||CHR(10)||'                      ,nm_group_types'
+                                  ||CHR(10)||'                      ,nm_types'
                                   ||CHR(10)||'                      ,filter_tab f'
-                                  ||CHR(10)||'                 WHERE ne_type = ''S'''
-                                  ||CHR(10)||'                    OR ne_gty_group_type IN(SELECT ngt.ngt_group_type'
-                                  ||CHR(10)||'                                              FROM nm_group_types ngt'
-                                  ||CHR(10)||'                                             WHERE ngt.ngt_linear_flag = ''Y'')'
+                                  ||CHR(10)||'                 WHERE ne_nt_type = nt_type'
+                                  ||CHR(10)||'                   AND ne_gty_group_type = ngt_group_type(+)'
+                                  ||CHR(10)||'                   AND (ne_type = ''S'''
+                                  ||CHR(10)||'                        OR ngt_linear_flag = ''Y'')'
     ;
     --
     lv_group_sql  nm3type.max_varchar2 := 'WITH filter_tab AS (SELECT UPPER(:filter) filter_value FROM dual)'
