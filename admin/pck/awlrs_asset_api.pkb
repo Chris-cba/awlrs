@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.42   Jul 27 2020 16:57:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.43   Sep 03 2020 16:20:06   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Jul 27 2020 16:57:14  $
-  --       Date fetched Out : $Modtime:   Jun 19 2020 13:43:48  $
-  --       Version          : $Revision:   1.42  $
+  --       Date into PVCS   : $Date:   Sep 03 2020 16:20:06  $
+  --       Date fetched Out : $Modtime:   Sep 03 2020 16:03:54  $
+  --       Version          : $Revision:   1.43  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.42  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.43  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -1197,7 +1197,7 @@ AS
     OPEN po_cursor FOR
     SELECT ial_domain
           ,ial_value
-          ,ial_meaning
+          ,ial_value||' - '||ial_meaning ial_meaning
       FROM nm_inv_attri_lookup_all
      WHERE ial_domain IN(SELECT * FROM TABLE(CAST(lt_names AS nm_code_tbl)))
        AND TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
@@ -2918,52 +2918,58 @@ AS
     lv_row_restriction  nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     lv_cursor_sql       nm3type.max_varchar2 := 'WITH filter_tab AS (SELECT UPPER(:filter) filter_value FROM dual)'
-                                     ||CHR(10)||'SELECT id'
-                                     ||CHR(10)||'      ,name'
-                                     ||CHR(10)||'      ,min_offset'
-                                     ||CHR(10)||'      ,max_offset'
-                                     ||CHR(10)||'      ,row_count'
-                                     ||CHR(10)||'  FROM (SELECT rownum ind'
-                                     ||CHR(10)||'              ,ne_id id'
-                                     ||CHR(10)||'              ,ne_unique||'' - ''||ne_descr name'
-                                     ||CHR(10)||'              ,CASE'
-                                     ||CHR(10)||'                 WHEN ne_gty_group_type IS NULL THEN 0'
-                                     ||CHR(10)||'                 WHEN ne_gty_group_type IS NOT NULL AND ngt_linear_flag = ''Y'' THEN (SELECT MIN(nm_slk) FROM nm_members WHERE nm_ne_id_in = ne_id)'
-                                     ||CHR(10)||'                 ELSE NULL'
-                                     ||CHR(10)||'               END min_offset'
-                                     ||CHR(10)||'              ,CASE'
-                                     ||CHR(10)||'                 WHEN ne_gty_group_type IS NULL THEN ne_length'
-                                     ||CHR(10)||'                 WHEN ne_gty_group_type IS NOT NULL AND ngt_linear_flag = ''Y'' THEN (SELECT MAX(nm_end_slk) FROM nm_members WHERE nm_ne_id_in = ne_id)'
-                                     ||CHR(10)||'                 ELSE NULL'
-                                     ||CHR(10)||'               END max_offset'
-                                     ||CHR(10)||'              ,CASE'
-                                     ||CHR(10)||'                 WHEN f.filter_value IS NULL THEN 0'
-                                     ||CHR(10)||'                 WHEN UPPER(ne_unique) = f.filter_value THEN 1'
-                                     ||CHR(10)||'                 WHEN UPPER(ne_descr) = f.filter_value THEN 2'
-                                     ||CHR(10)||'                 WHEN UPPER(ne_unique) LIKE f.filter_value||''%'' THEN 3'
-                                     ||CHR(10)||'                 WHEN UPPER(ne_descr) LIKE f.filter_value||''%'' THEN 4'
-                                     ||CHR(10)||'                 ELSE 5'
-                                     ||CHR(10)||'               END match_quality'
-                                     ||CHR(10)||'              ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                                     ||CHR(10)||'          FROM nm_group_types'
-                                     ||CHR(10)||'              ,nm_elements'
-                                     ||CHR(10)||'              ,filter_tab f'
-                                     ||CHR(10)||'         WHERE (ne_nt_type, NVL(ne_gty_group_type,''~~~~~'')) IN(WITH datum_types AS(SELECT nin_nw_type network_type'
-                                     ||CHR(10)||'                                                                                       FROM nm_inv_nw'
-                                     ||CHR(10)||'                                                                                      WHERE nin_nit_inv_code = :pi_inv_type)'
-                                     ||CHR(10)||'                                                                 SELECT ngt_nt_type     network_type'
-                                     ||CHR(10)||'                                                                       ,ngt_group_type  group_type'
-                                     ||CHR(10)||'                                                                   FROM nm_group_types_all'
-                                     ||CHR(10)||'                                                                  WHERE ngt_linear_flag = ''Y'''
-                                     ||CHR(10)||'                                                                    AND ngt_group_type IN(SELECT nng_group_type'
-                                     ||CHR(10)||'                                                                                            FROM nm_nt_groupings'
-                                     ||CHR(10)||'                                                                                           WHERE nng_nt_type IN(SELECT network_type'
-                                     ||CHR(10)||'                                                                                                                  FROM datum_types))'
-                                     ||CHR(10)||'                                                                 UNION ALL'
-                                     ||CHR(10)||'                                                                 SELECT network_type'
-                                     ||CHR(10)||'                                                                       ,''~~~~~'' group_type'
-                                     ||CHR(10)||'                                                                   FROM datum_types)'
-                                     ||CHR(10)||'           AND ne_gty_group_type = ngt_group_type(+)'
+                                            ||' SELECT id'
+                                                   ||',name'
+                                                   ||',min_offset'
+                                                   ||',max_offset'
+                                                   ||',row_count'
+                                              ||' FROM (SELECT rownum ind'
+                                                           ||',results.*'
+                                                           ||',COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                      ||' FROM (SELECT ne_id id'
+                                                                   ||',CASE '
+                                                                     ||' WHEN ne_gty_group_type IS NULL THEN nt_unique'
+                                                                     ||' ELSE ngt_descr'
+                                                                   ||' END||'' - ''||ne_unique||'' - ''||ne_descr name'
+                                                                   ||',CASE'
+                                                                     ||' WHEN ne_gty_group_type IS NULL THEN 0'
+                                                                     ||' WHEN ne_gty_group_type IS NOT NULL AND ngt_linear_flag = ''Y'' THEN (SELECT MIN(nm_slk) FROM nm_members WHERE nm_ne_id_in = ne_id)'
+                                                                     ||' ELSE NULL'
+                                                                   ||' END min_offset'
+                                                                   ||',CASE'
+                                                                     ||' WHEN ne_gty_group_type IS NULL THEN ne_length'
+                                                                     ||' WHEN ne_gty_group_type IS NOT NULL AND ngt_linear_flag = ''Y'' THEN (SELECT MAX(nm_end_slk) FROM nm_members WHERE nm_ne_id_in = ne_id)'
+                                                                     ||' ELSE NULL'
+                                                                   ||' END max_offset'
+                                                                   ||',CASE'
+                                                                     ||' WHEN f.filter_value IS NULL THEN 0'
+                                                                     ||' WHEN UPPER(ne_unique) = f.filter_value THEN 1'
+                                                                     ||' WHEN UPPER(ne_descr) = f.filter_value THEN 2'
+                                                                     ||' WHEN UPPER(ne_unique) LIKE f.filter_value||''%'' THEN 3'
+                                                                     ||' WHEN UPPER(ne_descr) LIKE f.filter_value||''%'' THEN 4'
+                                                                     ||' ELSE 5'
+                                                                   ||' END match_quality'
+                                                              ||' FROM nm_group_types'
+                                                                   ||',nm_types'
+                                                                   ||',nm_elements'
+                                                                   ||',filter_tab f'
+                                                             ||' WHERE (ne_nt_type, NVL(ne_gty_group_type,''~~~~~'')) IN(WITH datum_types AS(SELECT nin_nw_type network_type'
+                                                                                                                                           ||' FROM nm_inv_nw'
+                                                                                                                                          ||' WHERE nin_nit_inv_code = :pi_inv_type)'
+                                                                                                                     ||' SELECT ngt_nt_type     network_type'
+                                                                                                                            ||',ngt_group_type  group_type'
+                                                                                                                       ||' FROM nm_group_types_all'
+                                                                                                                      ||' WHERE ngt_linear_flag = ''Y'''
+                                                                                                                        ||' AND ngt_group_type IN(SELECT nng_group_type'
+                                                                                                                                                ||' FROM nm_nt_groupings'
+                                                                                                                                               ||' WHERE nng_nt_type IN(SELECT network_type'
+                                                                                                                                                                      ||' FROM datum_types))'
+                                                                                                                     ||' UNION ALL'
+                                                                                                                     ||' SELECT network_type'
+                                                                                                                            ||',''~~~~~'' group_type'
+                                                                                                                       ||' FROM datum_types)'
+                                                               ||' AND ne_nt_type = nt_type'
+                                                               ||' AND ne_gty_group_type = ngt_group_type(+)'
     ;
     --
   BEGIN
@@ -2973,7 +2979,7 @@ AS
     IF pi_filter IS NOT NULL
      THEN
         --
-        lv_filter := CHR(10)||'           AND UPPER(ne_unique||'' - ''||ne_descr) LIKE ''%''||f.filter_value||''%''';
+        lv_filter := ' AND UPPER(ne_unique||'' - ''||ne_descr) LIKE ''%''||f.filter_value||''%''';
         --
     END IF;
     /*
@@ -2988,8 +2994,8 @@ AS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||lv_filter
-                     ||CHR(10)||'         ORDER BY match_quality,ne_unique)'
-                     ||CHR(10)||lv_row_restriction;
+                     ||' ORDER BY match_quality,ne_unique) results)'
+                     ||lv_row_restriction;
     --
     IF pi_pagesize IS NOT NULL
      THEN
