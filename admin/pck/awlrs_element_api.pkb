@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.44   Aug 28 2020 11:17:58   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.45   Sep 03 2020 16:17:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 28 2020 11:17:58  $
-  --       Date fetched Out : $Modtime:   Aug 28 2020 10:36:48  $
-  --       Version          : $Revision:   1.44  $
+  --       Date into PVCS   : $Date:   Sep 03 2020 16:17:22  $
+  --       Date fetched Out : $Modtime:   Sep 03 2020 15:32:54  $
+  --       Version          : $Revision:   1.45  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.44  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.45  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -280,7 +280,7 @@ AS
     IS
     --
     lv_retval    nm3type.max_varchar2 := 'SELECT NVL(lov_value,lov_code) code'
-                                 ||CHR(10)||'      ,lov_meaning meaning'
+                                 ||CHR(10)||'      ,NVL(lov_value,lov_code)||'' - ''||lov_meaning meaning'
                                  ||CHR(10)||'      ,lov_seq seq'
                                  ||CHR(10)||'  FROM (SELECT NULL lov_code, NULL lov_meaning, NULL lov_value, 1 lov_seq FROM DUAL WHERE 1=2';
     lv_lov_sql   nm3type.max_varchar2;
@@ -289,20 +289,6 @@ AS
     --
     IF SUBSTR(pi_column_name,1,3) = 'NE_'
      THEN
-        /*
-        ||If the column is a child involved in type inclusion
-        ||then concatenate the code and the meaning so that
-        ||both the NE_UNIQUE and NE_DESCR are visible to the User.
-        */
-        IF is_inclusion_child(pi_nt_type     => pi_nt_type
-                             ,pi_column_name => pi_column_name)
-         THEN
-            lv_retval := 'SELECT NVL(lov_value,lov_code) code'
-              ||CHR(10)||'      ,NVL(lov_value,lov_code)||'' - ''||lov_meaning meaning'
-              ||CHR(10)||'      ,lov_seq seq'
-              ||CHR(10)||'  FROM (SELECT NULL lov_code, NULL lov_meaning, NULL lov_value, 1 lov_seq FROM DUAL WHERE 1=2'
-            ;
-        END IF;
         --
         lv_lov_sql := get_domain_sql_with_bind(pi_nt_type     => pi_nt_type
                                               ,pi_column_name => pi_column_name);
