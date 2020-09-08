@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.48   Sep 03 2020 16:16:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.49   Sep 08 2020 12:55:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 03 2020 16:16:30  $
-  --       Date fetched Out : $Modtime:   Sep 03 2020 15:45:00  $
-  --       Version          : $Revision:   1.48  $
+  --       Date into PVCS   : $Date:   Sep 08 2020 12:55:38  $
+  --       Date fetched Out : $Modtime:   Sep 08 2020 12:41:38  $
+  --       Version          : $Revision:   1.49  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.48  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.49  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -7561,6 +7561,7 @@ AS
                                      ,pi_use_tab_ids IN     VARCHAR2 DEFAULT 'Y'
                                      ,pi_max_rows    IN     NUMBER DEFAULT NULL
                                      ,pi_include_wkt IN     VARCHAR2 DEFAULT 'N'
+                                     ,pi_conv_titles IN     VARCHAR2 DEFAULT 'Y'
                                      ,po_sql         IN OUT VARCHAR2
                                      ,po_title       IN OUT CLOB)
     IS
@@ -7608,11 +7609,11 @@ AS
       --
       IF i > 1
        THEN
-          lv_title := lv_title||',"'||prompt_to_title(pi_prompt => lt_attr(i).column_name)||'"';
+          lv_title := lv_title||',"'||CASE WHEN pi_conv_titles = 'Y' THEN prompt_to_title(pi_prompt => lt_attr(i).column_name) ELSE lt_attr(i).column_name END||'"';
           lv_sql := lv_sql||','||lt_attr(i).column_name;
           lv_concat := lv_concat||'||'',''||'||lv_field;
       ELSE
-          lv_title := lv_title||'"'||prompt_to_title(pi_prompt => lt_attr(i).column_name)||'"';
+          lv_title := lv_title||'"'||CASE WHEN pi_conv_titles = 'Y' THEN prompt_to_title(pi_prompt => lt_attr(i).column_name) ELSE lt_attr(i).column_name END||'"';
           lv_sql := lv_sql||lt_attr(i).column_name;
           lv_concat := lv_concat||lv_field;
       END IF;
@@ -7680,6 +7681,7 @@ AS
   PROCEDURE get_table_results_csv(pi_theme_types IN  awlrs_map_api.theme_types_rec
                                  ,pi_ids         IN  nm_ne_id_array
                                  ,pi_include_wkt IN  VARCHAR2 DEFAULT 'N'
+                                 ,pi_conv_titles IN  VARCHAR2 DEFAULT 'Y'
                                  ,po_cursor      OUT sys_refcursor)
     IS
     --
@@ -7693,6 +7695,7 @@ AS
     get_table_results_csv_sql(pi_theme_types => pi_theme_types
                              ,pi_use_tab_ids => 'Y'
                              ,pi_include_wkt => pi_include_wkt
+                             ,pi_conv_titles => pi_conv_titles
                              ,po_sql         => lv_sql
                              ,po_title       => lv_title);
     --
@@ -8586,6 +8589,57 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_results_by_id_csv;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_results_by_id_geocsv(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                    ,pi_ids              IN  id_tab
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lt_theme_types  awlrs_map_api.theme_types_tab;
+    lt_ids          nm_ne_id_array := nm_ne_id_array();
+    --
+  BEGIN
+    --
+    lt_theme_types := awlrs_map_api.get_theme_types(pi_theme_name => pi_theme_name);
+    --
+    IF lt_theme_types.COUNT > 0
+     THEN
+        --
+        FOR i IN 1..pi_ids.COUNT LOOP
+          --
+          lt_ids.extend;
+          lt_ids(i) := nm_ne_id_type(pi_ids(i));
+          --
+        END LOOP;
+        --
+        get_table_results_csv(pi_theme_types => lt_theme_types(1)
+                             ,pi_ids         => lt_ids
+                             ,pi_include_wkt => 'Y'
+                             ,pi_conv_titles => 'N'
+                             ,po_cursor      => po_cursor);
+        --
+    ELSE
+        --
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 6
+                     ,pi_supplementary_info => pi_theme_name);
+        --
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_results_by_id_geocsv;
 
   --
   -----------------------------------------------------------------------------
