@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.16   Jul 21 2020 12:31:32   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkh-arc   1.17   Sep 08 2020 12:55:40   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkh  $
-  --       Date into PVCS   : $Date:   Jul 21 2020 12:31:32  $
-  --       Date fetched Out : $Modtime:   Jul 21 2020 12:05:58  $
-  --       Version          : $Revision:   1.16  $
+  --       Date into PVCS   : $Date:   Sep 08 2020 12:55:40  $
+  --       Date fetched Out : $Modtime:   Sep 08 2020 12:32:30  $
+  --       Version          : $Revision:   1.17  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.16  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.17  $';
   --
   TYPE group_expression_rec IS RECORD(group_operation        VARCHAR2(100)
                                      ,group_expressions_xml  XMLTYPE
@@ -252,6 +252,15 @@ AS
                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
                                  ,po_message_cursor   OUT sys_refcursor
                                  ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_results_by_id_geocsv(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                    ,pi_ids              IN  id_tab
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
