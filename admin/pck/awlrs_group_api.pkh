@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkh-arc   1.11   Aug 26 2020 20:03:42   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkh-arc   1.12   Sep 08 2020 15:42:08   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkh  $
-  --       Date into PVCS   : $Date:   Aug 26 2020 20:03:42  $
-  --       Date fetched Out : $Modtime:   Aug 26 2020 19:36:12  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   Sep 08 2020 15:42:08  $
+  --       Date fetched Out : $Modtime:   Sep 08 2020 15:29:20  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -97,6 +97,17 @@ AS
                                 ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
                                 ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                 ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                ,pi_skip_n_rows      IN  PLS_INTEGER
+                                ,pi_pagesize         IN  PLS_INTEGER
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_list_of_elements(pi_group_type       IN  nm_group_types_all.ngt_group_type%TYPE
+                                ,pi_filter           IN  VARCHAR2
                                 ,pi_skip_n_rows      IN  PLS_INTEGER
                                 ,pi_pagesize         IN  PLS_INTEGER
                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
