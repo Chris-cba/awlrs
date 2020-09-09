@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.27   Aug 20 2020 17:35:54   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.28   Sep 09 2020 11:21:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Aug 20 2020 17:35:54  $
-  --       Date fetched Out : $Modtime:   Aug 20 2020 16:11:16  $
-  --       Version          : $Revision:   1.27  $
+  --       Date into PVCS   : $Date:   Sep 09 2020 11:21:22  $
+  --       Date fetched Out : $Modtime:   Sep 09 2020 10:43:22  $
+  --       Version          : $Revision:   1.28  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.27  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.28  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   --
@@ -317,7 +317,13 @@ AS
                  sdo_util.to_gml311geometry(geometry => lv_geom)
              WHEN c_wkt
               THEN
-                 sdo_util.to_wktgeometry(geometry => lv_geom)
+                 CASE
+                   WHEN SUBSTR(lv_geom.sdo_gtype,1,1) = '3'
+                    THEN
+                       REPLACE(sdo_util.to_wktgeometry(geometry => lv_geom),'LINESTRING','LINESTRING M')
+                   ELSE
+                       sdo_util.to_wktgeometry(geometry => lv_geom)
+                 END
              ELSE
                  NULL
            END;
