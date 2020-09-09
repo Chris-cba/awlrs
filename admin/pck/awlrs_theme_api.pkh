@@ -1,0 +1,726 @@
+CREATE OR REPLACE PACKAGE awlrs_theme_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkh-arc   1.5   Sep 09 2020 10:37:44   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Sep 09 2020 10:37:44  $
+  --       Module Name      : $Workfile:   awlrs_theme_api.pkh  $
+  --       Date fetched Out : $Modtime:   Sep 04 2020 16:11:18  $
+  --       Version          : $Revision:   1.5  $
+  --
+  -----------------------------------------------------------------------------------
+  -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
+  -----------------------------------------------------------------------------------
+  --
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
+  -- 
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+    
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_last_analysed_date(pi_table_name IN user_tables.table_name%TYPE) 
+    RETURN DATE;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION can_delete(pi_theme_id  IN  nm_themes_all.nth_theme_id%TYPE) RETURN VARCHAR2;
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_custom_theme(pi_theme_id  IN  nm_themes_all.nth_theme_id%TYPE) RETURN VARCHAR2;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_datum_theme(pi_theme_id  IN   nm_inv_themes.nith_nth_theme_id%TYPE) RETURN VARCHAR2;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_group_theme(pi_theme_id    IN     nm_nw_themes.nnth_nth_theme_id%TYPE) RETURN VARCHAR2;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_inv_theme(pi_theme_id  IN  nm_inv_themes.nith_nth_theme_id%TYPE) RETURN VARCHAR2;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_node_theme(pi_theme_id   IN     nm_themes_all.nth_theme_id%TYPE) RETURN VARCHAR2;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION is_table_theme(pi_theme_id   IN     nm_themes_all.nth_theme_id%TYPE) RETURN VARCHAR2;                       
+
+  --
+  -----------------------------------------------------------------------------
+  --  
+  PROCEDURE get_theme_types_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT  sys_refcursor
+                               ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_products_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                            ,po_message_cursor      OUT  sys_refcursor
+                            ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_storage_types_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor      OUT  sys_refcursor
+                                 ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_dependency_types_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                    ,po_message_cursor      OUT  sys_refcursor
+                                    ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_update_on_edit_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                  ,po_message_cursor      OUT  sys_refcursor
+                                  ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_snap_to_theme_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor      OUT  sys_refcursor
+                                 ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_theme_tab_cols_lov(pi_theme_table_name  IN     nm_themes_all.nth_table_name%TYPE
+                                  ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                  ,po_message_cursor      OUT  sys_refcursor
+                                  ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_theme_ft_cols_lov(pi_theme_ft_table_name  IN     nm_themes_all.nth_feature_table%TYPE
+                                 ,po_message_severity       OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor         OUT  sys_refcursor
+                                 ,po_cursor                 OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_themes(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                      ,po_message_cursor      OUT  sys_refcursor
+                      ,po_cursor              OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_theme(pi_theme_id             IN     nm_themes_all.nth_theme_id%TYPE
+                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                     ,po_message_cursor          OUT sys_refcursor
+                     ,po_cursor                  OUT sys_refcursor);
+
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_themes(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                            ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                            ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                            ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                            ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                            ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                            ,pi_skip_n_rows          IN     PLS_INTEGER
+                            ,pi_pagesize             IN     PLS_INTEGER
+                            ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor          OUT sys_refcursor
+                            ,po_cursor                  OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE datum_nw_type_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor      OUT  sys_refcursor
+                             ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE group_type_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                          ,po_message_cursor      OUT  sys_refcursor
+                          ,po_cursor              OUT  sys_refcursor);
+   
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE asset_type_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                          ,po_message_cursor      OUT  sys_refcursor
+                          ,po_cursor              OUT  sys_refcursor);    
+                          
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_base_themes_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT  sys_refcursor
+                               ,po_cursor              OUT  sys_refcursor);  
+                               
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_node_types_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT  sys_refcursor
+                              ,po_cursor           OUT  sys_refcursor);
+   
+  --
+  -----------------------------------------------------------------------------
+  --  
+  PROCEDURE get_table_attributes(pi_base_feature_table IN      nm_themes_all.nth_feature_table%TYPE
+                                ,po_message_severity      OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor        OUT  sys_refcursor
+                                ,po_cursor                OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_custom_theme(pi_base_theme_id        IN      nm_themes_all.nth_theme_id%TYPE
+                               ,pi_base_feature_table   IN      nm_themes_all.nth_feature_table%TYPE  
+                               ,pi_custom_theme_name    IN      nm_themes_all.nth_theme_name%TYPE
+                               ,pi_where_clause         IN      XMLTYPE
+                               ,po_message_severity        OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE validate_where_clause(pi_base_theme_id        IN      nm_themes_all.nth_theme_id%TYPE
+                                 ,pi_base_theme_name      IN      nm_themes_all.nth_theme_name%TYPE  
+                                 ,pi_where_clause         IN      XMLTYPE
+                                 ,po_message_severity        OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT  sys_refcursor);
+                                                              
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_reg_base_table_lov(po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                  ,po_message_cursor       OUT  sys_refcursor
+                                  ,po_cursor               OUT  sys_refcursor);
+                                  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_reg_pk_col_lov(pi_table_name        IN      user_tab_cols.table_name%TYPE
+                              ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor       OUT  sys_refcursor
+                              ,po_cursor               OUT  sys_refcursor);  
+                              
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_reg_fk_col_lov(pi_table_name        IN      user_tab_cols.table_name%TYPE
+                              ,pi_pk_column         IN      user_tab_cols.column_name%TYPE
+                              ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor       OUT  sys_refcursor
+                              ,po_cursor               OUT  sys_refcursor); 
+                              
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_reg_geom_col_lov(pi_table_name        IN      user_tab_cols.table_name%TYPE
+                                ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor       OUT  sys_refcursor
+                                ,po_cursor               OUT  sys_refcursor); 
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_reg_geom_type_lov(pi_table_name        IN      user_tab_cols.table_name%TYPE
+                                 ,pi_geom_col_name     IN      user_tab_cols.column_name%TYPE 
+                                 ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor       OUT  sys_refcursor
+                                 ,po_cursor               OUT  sys_refcursor);                                                                                               
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE user_sdo_geom_exists(pi_table_name        IN      user_tab_cols.table_name%TYPE
+                                ,pi_geom_col_name     IN      user_tab_cols.column_name%TYPE 
+                                ,po_override_metadata    OUT  varchar2
+                                ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor       OUT  sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --                              
+  PROCEDURE register_spatial_table(pi_table_name        IN      user_tab_cols.table_name%TYPE
+                                  ,pi_theme_name        IN      nm_themes_all.nth_theme_name%TYPE
+                                  ,pi_pk_column         IN      user_tab_cols.column_name%TYPE
+                                  ,pi_fk_column         IN      user_tab_cols.column_name%TYPE   
+                                  ,pi_geom_col_name     IN      user_tab_cols.column_name%TYPE
+                                  ,pi_geom_type         IN      hig_codes.hco_code%TYPE
+                                  ,pi_tolerance         IN      number
+                                  ,pi_override_metadata IN      varchar2
+                                  ,pi_create_spidx      IN      varchar2                               
+                                  ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                  ,po_message_cursor       OUT  sys_refcursor);     
+  
+  --
+  -----------------------------------------------------------------------------
+  --    
+  PROCEDURE update_theme(pi_old_theme_id           IN      nm_themes_all.nth_theme_id%TYPE
+                        ,pi_old_theme_name         IN      nm_themes_all.nth_theme_name%TYPE
+                        ,pi_old_pk_col             IN      nm_themes_all.nth_pk_column%TYPE
+                        ,pi_old_pk_label           IN      nm_themes_all.nth_label_column%TYPE
+                        ,pi_old_is_updatable       IN      nm_themes_all.nth_location_updatable%TYPE
+                        ,pi_old_base_theme         IN      nm_themes_all.nth_base_table_theme%TYPE
+                        ,pi_old_where_clause       IN      nm_themes_all.nth_where%TYPE
+                        ,pi_old_start_chainage     IN      nm_themes_all.nth_st_chain_column%TYPE
+                        ,pi_old_end_chainage       IN      nm_themes_all.nth_end_chain_column%TYPE
+                        ,pi_new_theme_id           IN      nm_themes_all.nth_theme_id%TYPE
+                        ,pi_new_theme_name         IN      nm_themes_all.nth_theme_name%TYPE
+                        ,pi_new_pk_col             IN      nm_themes_all.nth_pk_column%TYPE
+                        ,pi_new_pk_label           IN      nm_themes_all.nth_label_column%TYPE
+                        ,pi_new_is_updatable       IN      nm_themes_all.nth_location_updatable%TYPE
+                        ,pi_new_base_theme         IN      nm_themes_all.nth_base_table_theme%TYPE
+                        ,pi_new_where_clause       IN      XMLTYPE
+                        ,pi_new_start_chainage     IN      nm_themes_all.nth_st_chain_column%TYPE
+                        ,pi_new_end_chainage       IN      nm_themes_all.nth_end_chain_column%TYPE
+                        ,po_message_severity          OUT  hig_codes.hco_code%TYPE
+                        ,po_message_cursor            OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --                            
+  PROCEDURE ask_delete(pi_theme_id             IN     nm_themes_all.nth_theme_id%TYPE
+                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                      ,po_message_cursor          OUT sys_refcursor
+                      ,po_cursor                  OUT sys_refcursor);                                                   
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_theme(pi_theme_id          IN     nm_themes_all.nth_theme_id%TYPE
+                        ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                        ,po_message_cursor      OUT  sys_refcursor);                          
+                                                                                                 
+  --
+  -----------------------------------------------------------------------------
+  --                            
+  PROCEDURE get_spatial_details(pi_theme_id             IN     nm_themes_all.nth_theme_id%TYPE
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --                            
+  PROCEDURE get_theme_functions(pi_theme_id          IN      nm_theme_functions_all.ntf_nth_theme_id%TYPE
+                               ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor       OUT  sys_refcursor
+                               ,po_cursor               OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_theme_function(pi_theme_id           IN     nm_theme_functions_all.ntf_nth_theme_id%TYPE
+                              ,pi_module             IN     nm_theme_functions_all.ntf_hmo_module%TYPE
+                              ,pi_parameter          IN     nm_theme_functions_all.ntf_parameter%TYPE
+                              ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor        OUT sys_refcursor
+                              ,po_cursor                OUT sys_refcursor);
+
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_theme_functions(pi_theme_id             IN     nm_theme_functions_all.ntf_nth_theme_id%TYPE
+                                     ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                     ,pi_skip_n_rows          IN     PLS_INTEGER
+                                     ,pi_pagesize             IN     PLS_INTEGER
+                                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor          OUT sys_refcursor
+                                     ,po_cursor                  OUT sys_refcursor);      
+  
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_theme_modules_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor      OUT  sys_refcursor
+                                 ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE create_theme_function(pi_theme_id          IN      nm_theme_functions_all.ntf_nth_theme_id%TYPE
+                                 ,pi_module            IN      nm_theme_functions_all.ntf_hmo_module%TYPE
+                                 ,pi_parameter         IN      nm_theme_functions_all.ntf_parameter%TYPE 
+                                 ,pi_screen_text       IN      nm_theme_functions_all.ntf_menu_option%TYPE
+                                 ,pi_seen_in_gis       IN      nm_theme_functions_all.ntf_seen_in_gis%TYPE
+                                 ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor       OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --       
+  PROCEDURE update_theme_function(pi_old_theme_id          IN      nm_theme_functions_all.ntf_nth_theme_id%TYPE
+                                 ,pi_old_module            IN      nm_theme_functions_all.ntf_hmo_module%TYPE
+                                 ,pi_old_parameter         IN      nm_theme_functions_all.ntf_parameter%TYPE 
+                                 ,pi_old_screen_text       IN      nm_theme_functions_all.ntf_menu_option%TYPE
+                                 ,pi_old_seen_in_gis       IN      nm_theme_functions_all.ntf_seen_in_gis%TYPE
+                                 ,pi_new_theme_id          IN      nm_theme_functions_all.ntf_nth_theme_id%TYPE
+                                 ,pi_new_module            IN      nm_theme_functions_all.ntf_hmo_module%TYPE
+                                 ,pi_new_parameter         IN      nm_theme_functions_all.ntf_parameter%TYPE 
+                                 ,pi_new_screen_text       IN      nm_theme_functions_all.ntf_menu_option%TYPE
+                                 ,pi_new_seen_in_gis       IN      nm_theme_functions_all.ntf_seen_in_gis%TYPE
+                                 ,po_message_severity         OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor           OUT  sys_refcursor);                             
+  --
+  -----------------------------------------------------------------------------
+  --
+                              
+  PROCEDURE delete_theme_function(pi_theme_id          IN      nm_theme_functions_all.ntf_nth_theme_id%TYPE
+                                 ,pi_module            IN      nm_theme_functions_all.ntf_hmo_module%TYPE
+                                 ,pi_parameter         IN      nm_theme_functions_all.ntf_parameter%TYPE 
+                                 ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor       OUT  sys_refcursor); 
+  
+  --
+  -----------------------------------------------------------------------------
+  --                            
+  PROCEDURE get_theme_roles(pi_theme_id          IN      nm_theme_roles.nthr_theme_id%TYPE
+                           ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                           ,po_message_cursor       OUT  sys_refcursor
+                           ,po_cursor               OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_theme_role(pi_theme_id           IN     nm_theme_roles.nthr_theme_id%TYPE
+                          ,pi_role               IN     nm_theme_roles.nthr_role%TYPE
+                          ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor        OUT sys_refcursor
+                          ,po_cursor                OUT sys_refcursor);
+
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_theme_roles(pi_theme_id             IN     nm_theme_roles.nthr_theme_id%TYPE
+                                 ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                 ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                 ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                 ,pi_skip_n_rows          IN     PLS_INTEGER
+                                 ,pi_pagesize             IN     PLS_INTEGER
+                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT sys_refcursor
+                                 ,po_cursor                  OUT sys_refcursor);
+                                 
+  --
+  -----------------------------------------------------------------------------
+  --  
+  PROCEDURE get_theme_roles_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT  sys_refcursor
+                               ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_roles_mode_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor      OUT  sys_refcursor
+                              ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE create_theme_role(pi_theme_id          IN      nm_theme_roles.nthr_theme_id%TYPE
+                             ,pi_role              IN      nm_theme_roles.nthr_role%TYPE
+                             ,pi_mode              IN      nm_theme_roles.nthr_mode%TYPE 
+                             ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor       OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --       
+  PROCEDURE update_theme_role(pi_old_theme_id          IN      nm_theme_roles.nthr_theme_id%TYPE
+                             ,pi_old_role              IN      nm_theme_roles.nthr_role%TYPE
+                             ,pi_old_mode              IN      nm_theme_roles.nthr_mode%TYPE
+                             ,pi_new_theme_id          IN      nm_theme_roles.nthr_theme_id%TYPE
+                             ,pi_new_role              IN      nm_theme_roles.nthr_role%TYPE
+                             ,pi_new_mode              IN      nm_theme_roles.nthr_mode%TYPE 
+                             ,po_message_severity         OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor           OUT  sys_refcursor);                             
+  --
+  -----------------------------------------------------------------------------
+  --                             
+  PROCEDURE delete_theme_role(pi_theme_id          IN      nm_theme_roles.nthr_theme_id%TYPE
+                             ,pi_role              IN      nm_theme_roles.nthr_role%TYPE 
+                             ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor       OUT  sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --                         
+  PROCEDURE get_theme_gtypes(pi_theme_id          IN      nm_theme_gtypes.ntg_theme_id%TYPE
+                            ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                            ,po_message_cursor       OUT  sys_refcursor
+                            ,po_cursor               OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --     
+  PROCEDURE get_theme_gtypes_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor      OUT  sys_refcursor
+                                ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --                       
+  PROCEDURE get_base_themes(pi_theme_id          IN      nm_base_themes.nbth_theme_id%TYPE
+                           ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                           ,po_message_cursor       OUT  sys_refcursor
+                           ,po_cursor               OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_base_theme(pi_theme_id           IN     nm_base_themes.nbth_theme_id%TYPE
+                          ,pi_base_theme         IN     nm_base_themes.nbth_base_theme%TYPE
+                          ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor        OUT sys_refcursor
+                          ,po_cursor                OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --                             
+  PROCEDURE get_theme_snappings(pi_theme_id          IN      nm_theme_snaps.nts_theme_id%TYPE
+                               ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor       OUT  sys_refcursor
+                               ,po_cursor               OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_theme_snapping(pi_theme_id           IN     nm_theme_snaps.nts_theme_id%TYPE
+                              ,pi_snap_to            IN     nm_theme_snaps.nts_snap_to%TYPE
+                              ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor        OUT sys_refcursor
+                              ,po_cursor                OUT sys_refcursor); 
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_theme_snappings(pi_theme_id             IN     nm_theme_snaps.nts_theme_id%TYPE
+                                     ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                     ,pi_skip_n_rows          IN     PLS_INTEGER
+                                     ,pi_pagesize             IN     PLS_INTEGER
+                                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor          OUT sys_refcursor
+                                     ,po_cursor                  OUT sys_refcursor);
+                                 
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE create_theme_snapping(pi_theme_id          IN      nm_theme_snaps.nts_theme_id%TYPE
+                                 ,pi_snap_to           IN      nm_theme_snaps.nts_snap_to%TYPE
+                                 ,pi_priority          IN      nm_theme_snaps.nts_priority%TYPE
+                                 ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor       OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --       
+  PROCEDURE update_theme_snapping(pi_old_theme_id          IN      nm_theme_snaps.nts_theme_id%TYPE
+                                 ,pi_old_snap_to           IN      nm_theme_snaps.nts_snap_to%TYPE
+                                 ,pi_old_priority          IN      nm_theme_snaps.nts_priority%TYPE
+                                 ,pi_new_theme_id          IN      nm_theme_snaps.nts_theme_id%TYPE
+                                 ,pi_new_snap_to           IN      nm_theme_snaps.nts_snap_to%TYPE
+                                 ,pi_new_priority          IN      nm_theme_snaps.nts_priority%TYPE
+                                 ,po_message_severity         OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor           OUT  sys_refcursor);
+                                                          
+  --
+  -----------------------------------------------------------------------------
+  --                             
+  PROCEDURE delete_theme_snapping(pi_theme_id          IN      nm_theme_snaps.nts_theme_id%TYPE
+                                 ,pi_snap_to           IN      nm_theme_snaps.nts_snap_to%TYPE
+                                 ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor       OUT  sys_refcursor);                                 
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_theme_snappings_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                   ,po_message_cursor      OUT  sys_refcursor
+                                   ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_lref_details(pi_theme_id             IN     nm_nw_themes.nnth_nth_theme_id%TYPE
+                                  ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                  ,pi_skip_n_rows          IN     PLS_INTEGER
+                                  ,pi_pagesize             IN     PLS_INTEGER
+                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor          OUT sys_refcursor
+                                  ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_area_details(pi_theme_id             IN     nm_area_themes.nath_nth_theme_id%TYPE
+                                  ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                  ,pi_skip_n_rows          IN     PLS_INTEGER
+                                  ,pi_pagesize             IN     PLS_INTEGER
+                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor          OUT sys_refcursor
+                                  ,po_cursor                  OUT sys_refcursor); 
+                                  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_asset_details(pi_theme_id             IN     nm_inv_themes.nith_nth_theme_id%TYPE
+                                   ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                   ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                   ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                   ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                   ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                   ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                   ,pi_skip_n_rows          IN     PLS_INTEGER
+                                   ,pi_pagesize             IN     PLS_INTEGER
+                                   ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor          OUT sys_refcursor
+                                   ,po_cursor                  OUT sys_refcursor);                                                                    
+                                 
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE analyse_table(pi_ft_table_name        IN     nm_themes_all.nth_feature_table%TYPE
+                         ,po_last_analysed_date      OUT DATE
+                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor          OUT sys_refcursor);
+                                                                                             
+                                 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE rebuild_index(pi_index_name       IN    user_indexes.index_name%TYPE
+                         ,pi_table_name       IN    user_tables.table_name%TYPE
+                         ,pi_column_name      IN    user_tab_columns.column_name%TYPE
+                         ,pi_index_type       IN    VARCHAR2 DEFAULT 'RTREE'
+                         ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor      OUT sys_refcursor);
+                         
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_refresh_themes(pi_theme_id           IN     nm_themes_all.nth_theme_id%TYPE
+                              ,pi_dependency_option  IN     VARCHAR2
+                              ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor        OUT sys_refcursor
+                              ,po_cursor                OUT sys_refcursor); 
+                            
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE refresh_metadata(pi_theme_id            IN     nm_themes_all.nth_theme_id%TYPE
+                            ,pi_sdo_metadata_option IN     VARCHAR2  DEFAULT 'Y'
+                            ,pi_sde_metadata_option IN     VARCHAR2  DEFAULT 'Y'
+                            ,pi_dependency_option   IN     VARCHAR2  DEFAULT 'ALL_DATA'
+                            ,po_message_severity       OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor         OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_theme_log_errors(pi_job_id               IN     nm3sdm_dyn_seg_ex.ndse_job_id%TYPE
+                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor 
+                                ,po_cursor                  OUT sys_refcursor);   
+                                
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_view_text(pi_view_name            IN     user_views.view_name%TYPE
+                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor          OUT sys_refcursor 
+                         ,po_cursor                  OUT sys_refcursor);   
+                         
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE system_theme_cat_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT  sys_refcursor
+                                ,po_cursor           OUT  sys_refcursor); 
+                                    
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_types_for_category(pi_category_type    IN      varchar2
+                                  ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                  ,po_message_cursor      OUT  sys_refcursor
+                                  ,po_cursor              OUT  sys_refcursor);                                                                                                          
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_theme_for_category(pi_category_type    IN      varchar2
+                                     ,pi_type             IN      varchar2
+                                     ,pi_theme_name       IN      nm_themes_all.nth_theme_name%TYPE
+                                     ,pi_dynseg           IN      varchar2 DEFAULT 'N'
+                                     ,pi_log_errors       IN      varchar2 DEFAULT 'N'
+                                     ,po_log_errors_id        OUT  nm3sdm_dyn_seg_ex.ndse_job_id%TYPE
+                                     ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                                     ,po_message_cursor       OUT  sys_refcursor);  
+
+  -- 
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_log_errors(pi_category_type     IN      varchar2
+                          ,pi_log_errors_id     IN      nm3sdm_dyn_seg_ex.ndse_job_id%TYPE
+                          ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                          ,po_message_cursor       OUT  sys_refcursor
+                          ,po_cursor               OUT  sys_refcursor);                                       
+                                                                                              
+  --
+  
+END awlrs_theme_api;
+/
