@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkh-arc   1.4   Jul 31 2020 15:15:48   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jul 31 2020 15:15:48  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkh-arc   1.5   Sep 09 2020 10:37:44   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Sep 09 2020 10:37:44  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkh  $
-  --       Date fetched Out : $Modtime:   Jul 31 2020 13:53:50  $
-  --       Version          : $Revision:   1.4  $
+  --       Date fetched Out : $Modtime:   Sep 04 2020 16:11:18  $
+  --       Version          : $Revision:   1.5  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
   -- 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -275,7 +275,7 @@ AS
                                   ,pi_fk_column         IN      user_tab_cols.column_name%TYPE   
                                   ,pi_geom_col_name     IN      user_tab_cols.column_name%TYPE
                                   ,pi_geom_type         IN      hig_codes.hco_code%TYPE
-                                  ,pi_tolerance         IN      nm_themes_all.nth_tolerance%TYPE
+                                  ,pi_tolerance         IN      number
                                   ,pi_override_metadata IN      varchar2
                                   ,pi_create_spidx      IN      varchar2                               
                                   ,po_message_severity     OUT  hig_codes.hco_code%TYPE
