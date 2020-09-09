@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.11   Aug 28 2020 13:34:42   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Aug 28 2020 13:34:42  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.12   Sep 09 2020 10:37:42   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Sep 09 2020 10:37:42  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkb  $
-  --       Date fetched Out : $Modtime:   Aug 28 2020 13:23:44  $
-  --       Version          : $Revision:   1.11  $
+  --       Date fetched Out : $Modtime:   Sep 09 2020 10:29:06  $
+  --       Version          : $Revision:   1.12  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.11  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.12  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -1778,7 +1778,9 @@ AS
   IS                              
   --
   lv_rec_nit  nm_inv_types%ROWTYPE;
-  lv_job_id   nm3sdm_dyn_seg_ex.ndse_job_id%TYPE;       
+  lv_job_id   nm3sdm_dyn_seg_ex.ndse_job_id%TYPE;    
+  --
+  lr_nit      nm_inv_types%ROWTYPE;
   --
   BEGIN
     --
@@ -1818,24 +1820,32 @@ AS
         
     END IF;
     --
-    /*
-    || Create the spatial views.
-    */
-    nm3inv_view.create_view(pi_asset_type,FALSE);
-    nm3inv_view.create_view(pi_asset_type,TRUE);
-    --
     IF pi_log_errors = 'Y'
       THEN
        lv_job_id        := nm3job.get_next_njc_job_id;
        po_log_errors_id := lv_job_id;
     END IF;
     --
-    nm3sdm.make_inv_spatial_layer(pi_nit_inv_type => pi_asset_type
-        	                     ,p_job_id        => CASE WHEN pi_log_errors = 'Y'
-        	                                                THEN lv_job_id
-        	                                              ELSE NULL
-        	                                         END);
-    --
+    IF pi_dynseg = 'Y'
+      THEN
+        nm3sdm.make_inv_spatial_layer(pi_nit_inv_type => pi_asset_type
+        	                         ,p_job_id        => CASE 
+        	                                               WHEN pi_log_errors = 'Y' THEN lv_job_id
+        	                                               ELSE NULL
+        	                                             END);
+    ELSE    
+        --
+        lr_nit := nm3get.get_nit(pi_asset_type);
+        --
+        nm3sdm.make_ona_inv_spatial_layer(pi_nit_inv_type => pi_asset_type
+                                         ,pi_nth_gtype    => CASE 
+                                                               WHEN lr_nit.nit_pnt_or_cont = 'P' THEN 2001
+         	                                                   ELSE 2002
+        	                                                 END
+                                         ,pi_s_date_col   => null
+                                         ,pi_e_date_col   => null);
+    END IF;  
+    --                                   	                                             
     --check to see if this is needed--
     lv_rec_nit := nm3get.get_nit(pi_asset_type);
 	--
@@ -2295,7 +2305,7 @@ AS
                                   ,pi_fk_column         IN      user_tab_cols.column_name%TYPE   
                                   ,pi_geom_col_name     IN      user_tab_cols.column_name%TYPE
                                   ,pi_geom_type         IN      hig_codes.hco_code%TYPE
-                                  ,pi_tolerance         IN      nm_themes_all.nth_tolerance%TYPE
+                                  ,pi_tolerance         IN      number
                                   ,pi_override_metadata IN      varchar2
                                   ,pi_create_spidx      IN      varchar2                               
                                   ,po_message_severity     OUT  hig_codes.hco_code%TYPE
@@ -2304,6 +2314,9 @@ AS
   --
   lv_success boolean := TRUE;
   lv_error   varchar2(2000);
+  lv_new_theme_id   nm_themes_all.nth_theme_id%TYPE;
+  --
+  lr_ntg nm_theme_gtypes%rowtype;
   --
   lt_messages awlrs_message_tab := awlrs_message_tab();
   --
@@ -2357,6 +2370,20 @@ AS
         --
         RAISE e_failed_reg;
         --
+    ELSE
+      -- need to populate nm_theme_gtypes
+      IF pi_geom_type IS NOT NULL
+        THEN
+        --
+          lv_new_theme_id:= nm3get.get_nth(pi_nth_theme_name  => pi_theme_name
+                                          ,pi_raise_not_found => FALSE).nth_theme_id;
+          lr_ntg.ntg_theme_id := lv_new_theme_id;
+          lr_ntg.ntg_gtype    := pi_geom_type;
+          lr_ntg.ntg_seq_no   := 1;
+      --
+          nm3ins.ins_ntg(lr_ntg);  
+      END IF;
+      --   
     END IF;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -5585,7 +5612,7 @@ AS
            awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                                 ,po_cursor           => po_message_cursor);                                     
     END IF;
-    --
+    --   
   EXCEPTION
     WHEN OTHERS
      THEN
