@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.39   Jul 15 2020 15:08:54   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.40   Sep 10 2020 16:09:44   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Jul 15 2020 15:08:54  $
-  --       Date fetched Out : $Modtime:   Jul 14 2020 13:48:12  $
-  --       Version          : $Revision:   1.39  $
+  --       Date into PVCS   : $Date:   Sep 10 2020 16:09:44  $
+  --       Date fetched Out : $Modtime:   Sep 10 2020 16:06:20  $
+  --       Version          : $Revision:   1.40  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.39  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.40  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -1811,7 +1811,7 @@ AS
              dbms_sql.define_column(c        => lv_cursor_id
                                    ,position => i
                                    ,column   => lv_date);
-        WHEN lt_desc(i).col_type IN(c_varchar,c_varchar2)
+        WHEN lt_desc(i).col_type IN(c_varchar,c_varchar2,c_char)
           THEN
              dbms_sql.define_column(c           => lv_cursor_id
                                    ,position    => i
@@ -1865,7 +1865,7 @@ AS
                --
                lv_tmp := lv_tmp||TO_CHAR(lv_date,'DD-MON-YYYY HH24:MI');
                --
-          WHEN lt_desc(i).col_type IN(c_varchar,c_varchar2)
+          WHEN lt_desc(i).col_type IN(c_varchar,c_varchar2,c_char)
             THEN
                dbms_sql.column_value(c        => lv_cursor_id
                                     ,position => i
