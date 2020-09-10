@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.49   Sep 08 2020 12:55:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.50   Sep 10 2020 11:28:12   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 08 2020 12:55:38  $
-  --       Date fetched Out : $Modtime:   Sep 08 2020 12:41:38  $
-  --       Version          : $Revision:   1.49  $
+  --       Date into PVCS   : $Date:   Sep 10 2020 11:28:12  $
+  --       Date fetched Out : $Modtime:   Sep 10 2020 11:13:20  $
+  --       Version          : $Revision:   1.50  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.49  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.50  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -7077,7 +7077,7 @@ AS
     --
     EXECUTE IMMEDIATE lv_sql USING pi_ids, OUT lv_tmp_clob;
     --
-    lv_retval := lv_title||lv_tmp_clob;
+    lv_retval := lv_title||CHR(10)||lv_tmp_clob;
     --
     OPEN po_cursor FOR
     SELECT lv_retval
