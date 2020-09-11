@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.12   Aug 20 2020 17:35:54   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkh-arc   1.13   Sep 11 2020 17:24:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkh  $
-  --       Date into PVCS   : $Date:   Aug 20 2020 17:35:54  $
-  --       Date fetched Out : $Modtime:   Aug 20 2020 16:07:56  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   Sep 11 2020 17:24:22  $
+  --       Date fetched Out : $Modtime:   Sep 10 2020 18:42:08  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
   --
   g_sdo_tolerance     NUMBER := 0.005;
   g_sdo_arc_tolerance NUMBER := 0.05;
@@ -289,6 +289,16 @@ AS
                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
                                      ,po_message_cursor   OUT sys_refcursor
                                      ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_location_geometry_as(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                                          ,pi_iit_inv_type     IN  nm_inv_items_all.iit_inv_type%TYPE
+                                          ,pi_geometry_type    IN  VARCHAR2
+                                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor   OUT sys_refcursor
+                                          ,po_cursor           OUT sys_refcursor);
 
   --
   ------------------------------------------------------------------------------
