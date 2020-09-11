@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.45   Sep 03 2020 16:17:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.46   Sep 11 2020 17:22:42   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 03 2020 16:17:22  $
-  --       Date fetched Out : $Modtime:   Sep 03 2020 15:32:54  $
-  --       Version          : $Revision:   1.45  $
+  --       Date into PVCS   : $Date:   Sep 11 2020 17:22:42  $
+  --       Date fetched Out : $Modtime:   Sep 10 2020 15:44:36  $
+  --       Version          : $Revision:   1.46  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.45  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.46  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1415,6 +1415,42 @@ AS
      THEN
         RETURN NULL;
   END get_max_slk;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_linear_types(po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+  BEGIN
+    --
+    OPEN po_cursor FOR
+    SELECT nlt_id linear_type_id
+          ,nlt_nt_type network_type
+          ,nlt_gty_type group_type
+          ,nlt_descr linear_type_descr
+          ,nlt_admin_type admin_type
+          ,nlt_g_i_d datum_or_group
+      FROM nm_linear_types
+          ,nm_types
+          ,nm_group_types
+     WHERE nlt_start_date <= TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+       AND NVL(nlt_end_date,TO_DATE('99991231','YYYYMMDD')) > TO_DATE(SYS_CONTEXT('NM3CORE','EFFECTIVE_DATE'),'DD-MON-YYYY')
+       AND nlt_nt_type = nt_type
+       AND nlt_gty_type = ngt_group_type(+)
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_linear_types;
 
   --
   -----------------------------------------------------------------------------

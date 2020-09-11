@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.23   Aug 28 2020 11:17:56   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkh-arc   1.24   Sep 11 2020 17:22:42   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkh  $
-  --       Date into PVCS   : $Date:   Aug 28 2020 11:17:56  $
-  --       Date fetched Out : $Modtime:   Aug 28 2020 10:31:34  $
-  --       Version          : $Revision:   1.23  $
+  --       Date into PVCS   : $Date:   Sep 11 2020 17:22:42  $
+  --       Date fetched Out : $Modtime:   Sep 10 2020 15:44:36  $
+  --       Version          : $Revision:   1.24  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.23  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.24  $';
   --
   g_db_element   nm_elements_all%ROWTYPE;
   g_old_element  nm_elements_all%ROWTYPE;
@@ -284,6 +284,13 @@ AS
   --
   FUNCTION get_max_slk(pi_ne_id IN nm_elements_all.ne_id%TYPE)
     RETURN NUMBER;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_linear_types(po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------
