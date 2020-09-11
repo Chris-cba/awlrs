@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.21   Jul 27 2020 16:57:14   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.22   Sep 11 2020 17:20:54   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   Jul 27 2020 16:57:14  $
-  --       Date fetched Out : $Modtime:   Jun 19 2020 13:37:24  $
-  --       Version          : $Revision:   1.21  $
+  --       Date into PVCS   : $Date:   Sep 11 2020 17:20:54  $
+  --       Date fetched Out : $Modtime:   Sep 11 2020 16:14:42  $
+  --       Version          : $Revision:   1.22  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.21  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.22  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -92,12 +92,22 @@ AS
                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor   OUT sys_refcursor
                                   ,po_cursor           OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_asset_types(po_message_severity OUT hig_codes.hco_code%TYPE
                            ,po_message_cursor   OUT sys_refcursor
                            ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_types(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor);
+
   --
   -----------------------------------------------------------------------------
   --
@@ -163,17 +173,6 @@ AS
                             ,po_located          OUT VARCHAR2
                             ,po_message_severity OUT hig_codes.hco_code%TYPE
                             ,po_message_cursor   OUT sys_refcursor);
-
-  --
-  -----------------------------------------------------------------------------
-  --
-  /*FUNCTION get_network_location(pi_iit_ne_id    IN nm_inv_items_all.iit_ne_id%TYPE
-                               ,pi_nit_inv_type IN nm_inv_types_all.nit_inv_type%TYPE
-                               ,pi_ne_id        IN nm_elements_all.ne_id%TYPE
-                               ,pi_begin_mp     IN nm_members_all.nm_begin_mp%TYPE
-                               ,pi_end_mp       IN nm_members_all.nm_end_mp%TYPE
-                               ,pi_startdate    IN nm_members_all.nm_start_date%TYPE)
-    RETURN nm_nw_temp_extents.nte_job_id%TYPE;*/
 
   FUNCTION get_network_location(pi_iit_ne_id                IN nm_inv_items_all.iit_ne_id%TYPE
                                ,pi_nit_inv_type             IN nm_inv_types_all.nit_inv_type%TYPE
@@ -336,6 +335,7 @@ AS
                         ,pi_nwtype       IN nm_elements.ne_nt_type%TYPE
                         ,pi_grouptype    IN nm_elements.ne_gty_group_type%TYPE)
     RETURN nm_placement_array;
+
   --
   -----------------------------------------------------------------------------
   --
