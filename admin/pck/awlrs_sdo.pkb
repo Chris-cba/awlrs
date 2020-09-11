@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.28   Sep 09 2020 11:21:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdo.pkb-arc   1.29   Sep 11 2020 17:24:24   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_sdo.pkb  $
-  --       Date into PVCS   : $Date:   Sep 09 2020 11:21:22  $
-  --       Date fetched Out : $Modtime:   Sep 09 2020 10:43:22  $
-  --       Version          : $Revision:   1.28  $
+  --       Date into PVCS   : $Date:   Sep 11 2020 17:24:24  $
+  --       Date fetched Out : $Modtime:   Sep 10 2020 18:50:22  $
+  --       Version          : $Revision:   1.29  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.28  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.29  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdo';
   --
   --
@@ -1364,6 +1364,103 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                  ,po_cursor           => po_message_cursor);
   END get_location_geometry_wkt;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_asset_location_geometry(pi_iit_ne_id    IN nm_inv_items_all.iit_ne_id%TYPE
+                                      ,pi_iit_inv_type IN nm_inv_items_all.iit_inv_type%TYPE)
+    RETURN mdsys.sdo_geometry IS
+    --
+    lv_retval    mdsys.sdo_geometry;
+    --
+    lt_datum_locs   nm3asset.tab_rec_datum_loc_dets;
+    lt_pla          nm_placement_array := nm3pla.initialise_placement_array;
+    --
+  BEGIN
+    /*
+    ||Get Datums.
+    */
+    nm3asset.get_inv_datum_location_details(pi_iit_ne_id          => pi_iit_ne_id
+                                           ,pi_nit_inv_type       => pi_iit_inv_type
+                                           ,po_tab_datum_loc_dets => lt_datum_locs);
+    --
+    FOR i IN 1..lt_datum_locs.COUNT LOOP
+      --
+      nm3pla.add_element_to_pl_arr(pio_pl_arr => lt_pla
+                                  ,pi_ne_id   => lt_datum_locs(i).datum_ne_id
+                                  ,pi_start   => lt_datum_locs(i).nm_begin_mp
+                                  ,pi_end     => lt_datum_locs(i).nm_end_mp);
+      --
+    END LOOP;
+    --
+    IF lt_pla.npa_placement_array.COUNT > 1
+     THEN
+        SELECT sdo_aggr_union(mdsys.sdoaggrtype(nm3sdo.get_placement_geometry(nm3pla.get_sub_placement(nm_placement(pl_ne_id
+                                                                                                                   ,pl_start
+                                                                                                                   ,pl_end
+                                                                                                                   ,0)))
+                                               ,0.005))
+          INTO lv_retval
+          FROM TABLE(lt_pla.npa_placement_array)
+             ;
+    ELSE
+        lv_retval := nm3sdo.get_placement_geometry(lt_pla);
+    END IF;
+    --
+    RETURN lv_retval;
+    --
+  END get_asset_location_geometry;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION get_asset_location_geometry_as(pi_iit_ne_id     IN nm_inv_items_all.iit_ne_id%TYPE
+                                         ,pi_iit_inv_type  IN nm_inv_items_all.iit_inv_type%TYPE
+                                         ,pi_geometry_type IN VARCHAR2)
+    RETURN CLOB IS
+    --
+  BEGIN
+    --
+    RETURN awlrs_sdo.sdo_geom_to(pi_geom          => get_asset_location_geometry(pi_iit_ne_id    => pi_iit_ne_id
+                                                                                ,pi_iit_inv_type => pi_iit_inv_type)
+                                ,pi_geometry_type => pi_geometry_type);
+    --
+  END get_asset_location_geometry_as;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_location_geometry_as(pi_iit_ne_id        IN  nm_inv_items_all.iit_ne_id%TYPE
+                                          ,pi_iit_inv_type     IN  nm_inv_items_all.iit_inv_type%TYPE
+                                          ,pi_geometry_type    IN  VARCHAR2
+                                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor   OUT sys_refcursor
+                                          ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lv_retval  CLOB;
+    --
+  BEGIN
+    --
+    lv_retval := get_asset_location_geometry_as(pi_iit_ne_id    => pi_iit_ne_id
+                                               ,pi_iit_inv_type => pi_iit_inv_type
+                                               ,pi_geometry_type => pi_geometry_type);
+    --
+    OPEN po_cursor FOR
+    SELECT lv_retval geometry
+      FROM dual
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                       ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                 ,po_cursor           => po_message_cursor);
+  END get_asset_location_geometry_as;
 
   --
   ------------------------------------------------------------------------------
