@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.43   Sep 03 2020 16:20:06   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkb-arc   1.44   Sep 11 2020 17:20:56   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 03 2020 16:20:06  $
-  --       Date fetched Out : $Modtime:   Sep 03 2020 16:03:54  $
-  --       Version          : $Revision:   1.43  $
+  --       Date into PVCS   : $Date:   Sep 11 2020 17:20:56  $
+  --       Date fetched Out : $Modtime:   Sep 11 2020 17:12:22  $
+  --       Version          : $Revision:   1.44  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.43  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.44  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_asset_api';
   --
@@ -622,7 +622,7 @@ AS
           ,nit_top
           ,nit_category
       FROM nm_inv_types
-     WHERE nit_table_name IS NULL
+     WHERE nit_category = 'I'--IN('I','F')
        AND EXISTS (SELECT 1
                      FROM hig_user_roles ur
                          ,nm_inv_type_roles ir
@@ -639,6 +639,87 @@ AS
                       AND au.nau_admin_type = nit_admin_type
                       AND usr.nua_admin_unit = nag_parent_admin_unit
                       AND usr.nua_user_id = hus.hus_user_id)
+     ORDER
+        BY nit_inv_type
+         ;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  END get_asset_types;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_types(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor)
+    IS
+  BEGIN
+    /*
+    ||Get the Asset Types that the user has access to and
+    ||can be located on the given Network Element.
+    */
+    OPEN po_cursor FOR
+    SELECT nit_inv_type
+          ,nit_descr
+          ,nit_x_sect_allow_flag
+          ,nit_admin_type
+          ,nit_contiguous
+          ,nit_update_allowed
+          ,nit_top
+          ,nit_category
+      FROM nm_inv_types
+     WHERE nit_category = 'I'--IN('I','F')
+       AND EXISTS(SELECT 1
+                    FROM hig_user_roles ur
+                        ,nm_inv_type_roles ir
+                        ,nm_user_aus usr
+                        ,nm_admin_units au
+                        ,nm_admin_groups nag
+                        ,hig_users hus
+                   WHERE hus.hus_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME')
+                     AND ur.hur_role = ir.itr_hro_role
+                     AND ur.hur_username = hus.hus_username
+                     AND ir.itr_inv_type = nit_inv_type
+                     AND usr.nua_admin_unit = au.nau_admin_unit
+                     AND au.nau_admin_unit = nag_child_admin_unit
+                     AND au.nau_admin_type = nit_admin_type
+                     AND usr.nua_admin_unit = nag_parent_admin_unit
+                     AND usr.nua_user_id = hus.hus_user_id)
+       AND nit_inv_type IN(SELECT nin_nit_inv_code
+                             FROM nm_inv_nw_all
+                            WHERE nin_nw_type IN(WITH element AS(SELECT ne_type
+                                                                       ,ne_nt_type
+                                                                       ,ne_gty_group_type
+                                                                   FROM nm_elements
+                                                                  WHERE ne_id = pi_ne_id)
+                                                 SELECT ne_nt_type
+                                                   FROM element
+                                                  WHERE ne_type = 'S'
+                                                     OR ne_gty_group_type IS NOT NULL
+                                                 UNION ALL
+                                                 SELECT nng_nt_type
+                                                   FROM nm_nt_groupings
+                                                       ,element
+                                                  WHERE ne_gty_group_type = nng_group_type
+                                                 UNION ALL
+                                                 SELECT nng_nt_type
+                                                   FROM nm_nt_groupings
+                                                  WHERE nng_group_type IN(SELECT ngr_child_group_type
+                                                                            FROM nm_group_relations
+                                                                                ,element
+                                                                         CONNECT BY PRIOR ngr_child_group_type = ngr_parent_group_type
+                                                                           START WITH ngr_parent_group_type = ne_gty_group_type)
+                                                 UNION ALL
+                                                 SELECT ngt_nt_type
+                                                   FROM nm_group_types
+                                                       ,nm_group_relations
+                                                       ,element
+                                                  WHERE ngr_child_group_type = ngt_group_type
+                                                CONNECT BY PRIOR ngr_child_group_type = ngr_parent_group_type
+                                                   START WITH ngr_parent_group_type = ne_gty_group_type))
      ORDER
         BY nit_inv_type
          ;
