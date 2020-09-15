@@ -1,20 +1,20 @@
 CREATE OR REPLACE PACKAGE awlrs_user_api
-AS
+AS 
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkh-arc   1.3   Apr 09 2020 15:40:50   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Apr 09 2020 15:40:50  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkh-arc   1.4   Sep 15 2020 13:55:12   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Sep 15 2020 13:55:12  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkh  $
-  --       Date fetched Out : $Modtime:   Mar 13 2020 15:08:38  $
-  --       Version          : $Revision:   1.3  $
+  --       Date fetched Out : $Modtime:   Sep 15 2020 13:52:54  $
+  --       Version          : $Revision:   1.4  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
 
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.3  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -581,7 +581,15 @@ AS
                            ,pi_new_password2      IN     varchar2
                            ,po_message_severity     OUT  hig_codes.hco_code%TYPE
                            ,po_message_cursor       OUT  sys_refcursor);                                                                                                                                                               
-  --
   
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_email(pi_username           IN     hig_users.hus_username%TYPE
+                     ,pi_email              IN     nm_mail_users.nmu_email_address%TYPE
+                     ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                     ,po_message_cursor        OUT sys_refcursor);   
+                       
+  --                                                                   
 END awlrs_user_api;
 /
