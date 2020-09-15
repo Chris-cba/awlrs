@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.17   Aug 11 2020 14:33:58   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Aug 11 2020 14:33:58  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.18   Sep 15 2020 13:55:10   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Sep 15 2020 13:55:10  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Aug 11 2020 14:03:46  $
-  --       Version          : $Revision:   1.17  $
+  --       Date fetched Out : $Modtime:   Sep 15 2020 13:53:00  $
+  --       Version          : $Revision:   1.18  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.17  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.18  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -5378,7 +5378,69 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END change_password;     
-                                                     
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_email(pi_username           IN     hig_users.hus_username%TYPE
+                     ,pi_email              IN     nm_mail_users.nmu_email_address%TYPE
+                     ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                     ,po_message_cursor        OUT sys_refcursor)
+  IS
+  --
+  lr_hus   hig_users%ROWTYPE;
+  --
+  BEGIN
+    --
+    awlrs_util.check_historic_mode;  
+    --
+    --Firstly we need to check the caller has the HIG_USER role to continue-- 
+    IF privs_check(pi_role_name => cv_hig_user_role) = 'N'
+       THEN
+         hig.raise_ner(pi_appl => 'HIG'
+                      ,pi_id   => 146);
+    END IF;
+    --
+    IF pi_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME') 
+      THEN
+         lr_hus := nm3user.get_hus(pi_hus_username => pi_username);
+         --
+         IF user_email_exists(pi_user_id => lr_hus.hus_user_id) = 'Y' 
+            THEN
+              hig.raise_ner(pi_appl                => 'HIG'
+                           ,pi_id                  => 64
+                           ,pi_supplementary_info  => 'Email address already registered for '|| pi_username);
+         END IF;
+         --   
+         validate_email(pi_email => pi_email);
+         --
+         INSERT
+           INTO nm_mail_users
+                   (nmu_id
+                   ,nmu_hus_user_id
+                   ,nmu_name
+                   ,nmu_email_address)
+           VALUES ( Nm3seq.Next_Nmu_Id_Seq
+                   ,lr_hus.hus_user_id
+                   ,lr_hus.hus_name 
+                   ,pi_email);  
+         --
+    ELSE  
+        hig.raise_ner(pi_appl                => 'HIG'
+                     ,pi_id                  => 556   
+                     ,pi_supplementary_info  => 'You are unable to add an Email address for another User via this process.');
+    END IF;
+    --     
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END add_email;
+                                                                                                  
   --                                  
 
 END awlrs_user_api;
