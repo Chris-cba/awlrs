@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.18   Sep 15 2020 13:55:10   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Sep 15 2020 13:55:10  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.19   Sep 16 2020 14:09:54   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Sep 16 2020 14:09:54  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Sep 15 2020 13:53:00  $
-  --       Version          : $Revision:   1.18  $
+  --       Date fetched Out : $Modtime:   Sep 16 2020 13:18:48  $
+  --       Version          : $Revision:   1.19  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.18  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.19  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -1065,6 +1065,31 @@ AS
         null;
         
   END validate_email;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION email_exists(pi_email IN nm_mail_users.nmu_email_address%TYPE) RETURN BOOLEAN
+  IS
+    lv_exists VARCHAR2(1):= 'N';
+  BEGIN
+    --
+    IF pi_email IS NOT NULL 
+      THEN
+        SELECT 'Y'
+          INTO lv_exists
+          FROM nm_mail_users
+         WHERE UPPER(nmu_email_address) = UPPER(pi_email);
+    END IF;
+    --
+    RETURN (lv_exists = 'Y');
+    --
+  EXCEPTION
+    WHEN NO_DATA_FOUND
+     THEN
+        null;
+        
+  END email_exists;
   --
   -----------------------------------------------------------------------------
   --
@@ -5411,8 +5436,12 @@ AS
                            ,pi_id                  => 64
                            ,pi_supplementary_info  => 'Email address already registered for '|| pi_username);
          END IF;
-         --   
-         validate_email(pi_email => pi_email);
+         -- 
+         IF email_exists(pi_email => pi_email)
+            THEN
+              hig.raise_ner(pi_appl                => 'AWLRS'
+                           ,pi_id                  => 91);
+         END IF;
          --
          INSERT
            INTO nm_mail_users
