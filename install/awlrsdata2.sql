@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.32   Aug 14 2020 14:17:00   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.33   Sep 16 2020 13:58:40   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Aug 14 2020 14:17:00  $
---       Date fetched Out : $Modtime:   Aug 14 2020 13:59:58  $
---       Version          : $Revision:   1.32  $
+--       Date into PVCS   : $Date:   Sep 16 2020 13:58:40  $
+--       Date fetched Out : $Modtime:   Sep 16 2020 13:57:16  $
+--       Version          : $Revision:   1.33  $
 --       Table Owner      : AWLRS_METADATA
 --       Generation Date  : 14-AUG-2020 13:59
 --
@@ -1660,6 +1660,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 90);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,91
+      ,null
+      ,'The proposed email cannot be set as it is already in use'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 91);                     
 --
 ----------------------------------------------------------------------------------------
 -- HIG_STANDARD_FAVOURITES
