@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkb-arc   1.6   Aug 10 2020 13:41:52   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Aug 10 2020 13:41:52  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_process_framework_api.pkb-arc   1.7   Sep 17 2020 14:00:54   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Sep 17 2020 14:00:54  $
   --       Module Name      : $Workfile:   awlrs_process_framework_api.pkb  $
-  --       Date fetched Out : $Modtime:   Aug 10 2020 13:40:18  $
-  --       Version          : $Revision:   1.6  $
+  --       Date fetched Out : $Modtime:   Sep 17 2020 13:57:54  $
+  --       Version          : $Revision:   1.7  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.6  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.7  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -3764,7 +3764,8 @@ AS
           ,hpt_name                    process_name
           ,hpt_area_type               area_type
       FROM hig_process_types_v
-     WHERE hpt_see_in_hig2510  =  'Y';
+     WHERE hpt_see_in_hig2510  =  'Y'
+     ORDER BY hpt_name;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
