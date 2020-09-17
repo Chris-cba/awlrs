@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.19   Sep 16 2020 14:09:54   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Sep 16 2020 14:09:54  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.20   Sep 17 2020 14:29:14   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Sep 17 2020 14:29:14  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Sep 16 2020 13:18:48  $
-  --       Version          : $Revision:   1.19  $
+  --       Date fetched Out : $Modtime:   Sep 17 2020 14:24:56  $
+  --       Version          : $Revision:   1.20  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.19  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.20  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -1074,20 +1074,17 @@ AS
     lv_exists VARCHAR2(1):= 'N';
   BEGIN
     --
-    IF pi_email IS NOT NULL 
-      THEN
-        SELECT 'Y'
-          INTO lv_exists
-          FROM nm_mail_users
-         WHERE UPPER(nmu_email_address) = UPPER(pi_email);
-    END IF;
+    SELECT 'Y'
+      INTO lv_exists
+      FROM nm_mail_users
+     WHERE UPPER(nmu_email_address) = UPPER(pi_email);
     --
     RETURN (lv_exists = 'Y');
     --
   EXCEPTION
     WHEN NO_DATA_FOUND
      THEN
-        null;
+        RETURN FALSE;
         
   END email_exists;
   --
