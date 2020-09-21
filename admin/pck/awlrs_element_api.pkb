@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.46   Sep 11 2020 17:22:42   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_element_api.pkb-arc   1.47   Sep 21 2020 10:17:42   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_element_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 11 2020 17:22:42  $
-  --       Date fetched Out : $Modtime:   Sep 10 2020 15:44:36  $
-  --       Version          : $Revision:   1.46  $
+  --       Date into PVCS   : $Date:   Sep 21 2020 10:17:42  $
+  --       Date fetched Out : $Modtime:   Sep 17 2020 15:21:02  $
+  --       Version          : $Revision:   1.47  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.46  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.47  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_element_api';
   --
   --
@@ -1924,6 +1924,78 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END add_np_ad_asset;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_np_ad_asset(pi_iit_ne_id               IN  nm_elements_all.ne_id%TYPE
+                              ,pi_inv_type                IN  nm_inv_types_all.nit_inv_type%TYPE
+                              ,pi_old_attrib_names        IN  awlrs_asset_api.attrib_name_tab
+                              ,pi_old_attrib_scrn_texts   IN  awlrs_asset_api.attrib_scrn_text_tab
+                              ,pi_old_attrib_char_values  IN  awlrs_asset_api.attrib_value_tab
+                              ,pi_new_attrib_names        IN  awlrs_asset_api.attrib_name_tab
+                              ,pi_new_attrib_scrn_texts   IN  awlrs_asset_api.attrib_scrn_text_tab
+                              ,pi_new_attrib_char_values  IN  awlrs_asset_api.attrib_value_tab
+                              ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor          OUT sys_refcursor)
+    IS
+    --
+    lt_old_attribs  awlrs_asset_api.flex_attr_tab;
+    lt_new_attribs  awlrs_asset_api.flex_attr_tab;
+    lr_iit          nm_inv_items_all%ROWTYPE;
+    --
+  BEGIN
+    --
+    lr_iit := nm3get.get_iit(pi_iit_ne_id);
+    --
+    IF pi_old_attrib_names.COUNT != pi_old_attrib_scrn_texts.COUNT
+     OR pi_old_attrib_names.COUNT != pi_old_attrib_char_values.COUNT
+     OR pi_old_attrib_names.COUNT != pi_new_attrib_names.COUNT
+     OR pi_old_attrib_scrn_texts.COUNT != pi_new_attrib_scrn_texts.COUNT
+     OR pi_old_attrib_char_values.COUNT != pi_new_attrib_char_values.COUNT
+     THEN
+        --The attribute tables passed in must have matching row counts
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 => 5
+                     ,pi_supplementary_info => 'awlrs_element_api.update_np_ad_asset');
+    END IF;
+    /*
+    ||None of the asset record will be changed other than flexible attributes, so default to current values
+    */
+    awlrs_asset_api.update_asset(pi_iit_ne_id              => pi_iit_ne_id
+                                ,pi_asset_type             => pi_inv_type
+                                ,pi_old_primary_key        => lr_iit.iit_primary_key
+                                ,pi_old_admin_unit         => lr_iit.iit_admin_unit
+                                ,pi_old_xsp                => lr_iit.iit_x_sect
+                                ,pi_old_description        => lr_iit.iit_descr
+                                ,pi_old_start_date         => lr_iit.iit_start_date
+                                ,pi_old_end_date           => lr_iit.iit_end_date
+                                ,pi_old_notes              => lr_iit.iit_note
+                                ,pi_new_primary_key        => lr_iit.iit_primary_key
+                                ,pi_new_admin_unit         => lr_iit.iit_admin_unit
+                                ,pi_new_xsp                => lr_iit.iit_x_sect
+                                ,pi_new_description        => lr_iit.iit_descr
+                                ,pi_new_start_date         => lr_iit.iit_start_date
+                                ,pi_new_end_date           => lr_iit.iit_end_date
+                                ,pi_new_notes              => lr_iit.iit_note
+                                ,pi_old_attrib_names       => pi_old_attrib_names
+                                ,pi_attrib_names           => pi_new_attrib_names
+                                ,pi_old_attrib_scrn_texts  => pi_old_attrib_scrn_texts
+                                ,pi_attrib_scrn_texts      => pi_new_attrib_scrn_texts
+                                ,pi_old_attrib_char_values => pi_old_attrib_char_values
+                                ,pi_new_attrib_char_values => pi_new_attrib_char_values
+                                ,po_message_severity       => po_message_severity
+                                ,po_message_cursor         => po_message_cursor);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_np_ad_asset;
 
   --
   ------------------------------------------------------------------------------
