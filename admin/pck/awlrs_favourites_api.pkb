@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.9   Aug 20 2020 11:34:06   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.10   Oct 05 2020 12:18:18   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_favourites_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 20 2020 11:34:06  $
-  --       Date fetched Out : $Modtime:   Aug 20 2020 11:31:34  $
-  --       Version          : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   Oct 05 2020 12:18:18  $
+  --       Date fetched Out : $Modtime:   Oct 05 2020 11:49:38  $
+  --       Version          : $Revision:   1.10  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.9  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_favourites_api';
   --
   c_root_folder  CONSTANT VARCHAR2(10) := '_ROOT';
@@ -2505,6 +2505,7 @@ AS
       FROM awlrs_favourites_folders
    CONNECT BY PRIOR aff_af_id = aff_parent_af_id
      START WITH aff_af_id = lv_root_folder_id
+     ORDER SIBLINGS BY aff_seq_no
          ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
