@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkh-arc   1.6   Jun 18 2020 16:51:08   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jun 18 2020 16:51:08  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkh-arc   1.7   Oct 12 2020 11:43:40   Peter.Bibby  $
+  --       Date into PVCS   : $Date:   Oct 12 2020 11:43:40  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkh  $
-  --       Date fetched Out : $Modtime:   Jun 18 2020 09:20:08  $
-  --       Version          : $Revision:   1.6  $
+  --       Date fetched Out : $Modtime:   Oct 12 2020 11:23:16  $
+  --       Version          : $Revision:   1.7  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
 
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.6  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.7  $"';
 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -891,17 +891,17 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_inv_types_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
-                             ,po_message_cursor   OUT  sys_refcursor
-                             ,po_cursor           OUT  sys_refcursor);
+  PROCEDURE get_inv_types_ad_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT  sys_refcursor
+                                ,po_cursor           OUT  sys_refcursor);
                                
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_inv_type_lov(pi_inv_type         IN     nm_nw_ad_types.nad_inv_type%TYPE
-                            ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                            ,po_message_cursor      OUT sys_refcursor
-                            ,po_cursor              OUT sys_refcursor);                                
+  PROCEDURE get_inv_type_ad_lov(pi_inv_type         IN     nm_nw_ad_types.nad_inv_type%TYPE
+                               ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT sys_refcursor
+                               ,po_cursor              OUT sys_refcursor);                                
 
   --
   -----------------------------------------------------------------------------
