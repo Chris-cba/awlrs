@@ -4,11 +4,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.11   Jun 18 2020 16:51:08   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Jun 18 2020 16:51:08  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_metanet_api.pkb-arc   1.12   Oct 12 2020 11:43:42   Peter.Bibby  $
+  --       Date into PVCS   : $Date:   Oct 12 2020 11:43:42  $
   --       Module Name      : $Workfile:   awlrs_metanet_api.pkb  $
-  --       Date fetched Out : $Modtime:   Jun 18 2020 09:21:54  $
-  --       Version          : $Revision:   1.11  $
+  --       Date fetched Out : $Modtime:   Oct 12 2020 11:23:28  $
+  --       Version          : $Revision:   1.12  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
@@ -16,7 +16,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.11  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.12  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_metanet_api';
   --
@@ -6385,9 +6385,9 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_inv_types_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
-                             ,po_message_cursor   OUT  sys_refcursor
-                             ,po_cursor           OUT  sys_refcursor)
+  PROCEDURE get_inv_types_ad_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT  sys_refcursor
+                                ,po_cursor           OUT  sys_refcursor)
   IS
   --
   BEGIN
@@ -6407,15 +6407,15 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END get_inv_types_lov;                             
+  END get_inv_types_ad_lov;                             
                                
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_inv_type_lov(pi_inv_type         IN     nm_nw_ad_types.nad_inv_type%TYPE
-                            ,po_message_severity    OUT hig_codes.hco_code%TYPE
-                            ,po_message_cursor      OUT sys_refcursor
-                            ,po_cursor              OUT sys_refcursor)
+  PROCEDURE get_inv_type_ad_lov(pi_inv_type         IN     nm_nw_ad_types.nad_inv_type%TYPE
+                               ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT sys_refcursor
+                               ,po_cursor              OUT sys_refcursor)
   IS
   --
   BEGIN
@@ -6436,7 +6436,7 @@ AS
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END get_inv_type_lov;                                                   
+  END get_inv_type_ad_lov;                                                   
 
   --
   -----------------------------------------------------------------------------
