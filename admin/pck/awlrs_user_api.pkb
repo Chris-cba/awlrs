@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.20   Sep 17 2020 14:29:14   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Sep 17 2020 14:29:14  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.21   Nov 05 2020 16:11:10   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Nov 05 2020 16:11:10  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Sep 17 2020 14:24:56  $
-  --       Version          : $Revision:   1.20  $
+  --       Date fetched Out : $Modtime:   Nov 05 2020 16:06:00  $
+  --       Version          : $Revision:   1.21  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.20  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.21  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -324,6 +324,7 @@ AS
           ,nmu.nmu_email_address        email
           ,awlrs_user_api.sso_user_yn(pi_email => nmu.nmu_email_address) sso_user
           ,awlrs_user_api.override_pwd(pi_email => nmu.nmu_email_address) override_pwd
+          ,CASE WHEN hus.hus_ack_tc IS NOT NULL THEN 'Y' ELSE 'N' END    acknowledge_tc
       FROM v_nm_hig_users  hus
           ,hig_admin_units hau               
           ,hig_user_contacts_all huc
@@ -403,6 +404,7 @@ AS
           ,nmu.nmu_email_address        email
           ,awlrs_user_api.sso_user_yn(pi_email => nmu.nmu_email_address) sso_user
           ,awlrs_user_api.override_pwd(pi_email => nmu.nmu_email_address) override_pwd
+          ,CASE WHEN hus.hus_ack_tc IS NOT NULL THEN 'Y' ELSE 'N' END    acknowledge_tc
       FROM v_nm_hig_users  hus
           ,hig_admin_units hau               
           ,hig_user_contacts_all huc
@@ -422,6 +424,84 @@ AS
                                    ,po_cursor           => po_message_cursor);
   END get_user;                           
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user(pi_username             IN     hig_users.hus_username%TYPE
+                    ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor          OUT sys_refcursor
+                    ,po_cursor                  OUT sys_refcursor)
+  IS
+    --
+    lr_hus   hig_users%ROWTYPE;
+    --
+  BEGIN
+    -- 
+    lr_hus := nm3user.get_hus(pi_hus_username => pi_username);              
+    --
+    Begin
+      Nm3Ctx.Set_Context('HIG1832_FILTER',cv_user_filter);
+    End;  
+    --
+    OPEN po_cursor FOR
+    SELECT hus.hus_user_id              user_id
+          ,hus.hus_name                 name
+          ,hus.hus_initials             initials
+          ,hus.hus_job_title            job_title
+          ,awlrs_user_api.active_user_yn(pi_end_date => hus.hus_end_date) active
+          ,hus.hus_start_date           start_date
+          ,hus.hus_end_date             end_date
+          ,hus.account_status           status
+          ,hus.hus_unrestricted         unrestricted
+          ,hus.hus_username             username
+          ,hus.password                 password  
+          ,hus.default_tablespace       dflt_tablespace         
+          ,hus.temporary_tablespace     temp_tablespace
+          ,hus.profile                  profile
+          ,hus.hus_agent_code           agent_code
+          ,hus.hus_admin_unit           admin_unit
+          ,hau.hau_unit_code            admin_unit_code
+          ,hau.hau_name                 admin_unit_name
+          ,huc.huc_address1             address1
+          ,huc.huc_address2             address2
+          ,huc.huc_address3             address3
+          ,huc.huc_address4             address4
+          ,huc.huc_address5             address5
+          ,huc.huc_postcode             postcode
+          ,huc.huc_tel_type_1           tel_type_1
+          ,huc.huc_telephone_1          tel_no_1
+          ,huc_primary_tel_1            primary_tel_1
+          ,huc.huc_tel_type_2           tel_type_2
+          ,huc.huc_telephone_2          tel_no_2
+          ,huc_primary_tel_2            primary_tel_2
+          ,huc.huc_tel_type_3           tel_type_3
+          ,huc.huc_telephone_3          tel_no_3
+          ,huc_primary_tel_3            primary_tel_3
+          ,huc.huc_tel_type_4           tel_type_4
+          ,huc.huc_telephone_4          tel_no_4
+          ,huc_primary_tel_4            primary_tel_4  
+          ,nmu.nmu_email_address        email
+          ,awlrs_user_api.sso_user_yn(pi_email => nmu.nmu_email_address) sso_user
+          ,awlrs_user_api.override_pwd(pi_email => nmu.nmu_email_address) override_pwd
+          ,CASE WHEN hus.hus_ack_tc IS NOT NULL THEN 'Y' ELSE 'N' END    acknowledge_tc
+      FROM v_nm_hig_users  hus
+          ,hig_admin_units hau               
+          ,hig_user_contacts_all huc
+          ,nm_mail_users  nmu
+     WHERE hus.hus_user_id    = lr_hus.hus_user_id
+       AND hus.hus_admin_unit = hau.hau_admin_unit(+)
+       AND hus.hus_user_id    = huc.huc_hus_user_id(+)   
+       AND hus.hus_user_id    = nmu.nmu_hus_user_id(+);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN OTHERS
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_user;
   --
   -----------------------------------------------------------------------------
   --
@@ -483,6 +563,7 @@ AS
                                                     ,nmu.nmu_email_address        email
                                                     ,awlrs_user_api.sso_user_yn(pi_email => nmu.nmu_email_address) sso_user
                                                     ,awlrs_user_api.override_pwd(pi_email => nmu.nmu_email_address) override_pwd
+                                                    ,CASE WHEN hus.hus_ack_tc IS NOT NULL THEN ''Y'' ELSE ''N'' END acknowledge_tc
                                                 FROM v_nm_hig_users  hus     
                                                     ,hig_admin_units hau          
                                                     ,hig_user_contacts_all huc
@@ -530,6 +611,7 @@ AS
                                                   ||',email'
                                                   ||',sso_user'
                                                   ||',override_pwd'
+                                                  ||',acknowledge_tc'
                                                   ||',row_count'
                                             ||' FROM (SELECT rownum ind'
                                                         ||' ,a.*'
@@ -590,6 +672,12 @@ AS
                                 ,pi_query_col    => 'hus_end_date'
                                 ,pi_datatype     => awlrs_util.c_date_col
                                 ,pi_mask         => 'DD-MON-YYYY'
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'acknowledge_tc'
+                                ,pi_query_col    => 'CASE WHEN hus.hus_ack_tc IS NOT NULL THEN ''Y'' ELSE ''N'' END'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
     END set_column_data;
@@ -1069,22 +1157,23 @@ AS
   --
   -----------------------------------------------------------------------------
   --
-  FUNCTION email_exists(pi_email IN nm_mail_users.nmu_email_address%TYPE) RETURN BOOLEAN
+  FUNCTION email_exists(pi_email IN nm_mail_users.nmu_email_address%TYPE) RETURN nm_mail_users.nmu_hus_user_id%TYPE
   IS
-    lv_exists VARCHAR2(1):= 'N';
+    lv_hus_user_id nm_mail_users.nmu_hus_user_id%TYPE;
   BEGIN
     --
-    SELECT 'Y'
-      INTO lv_exists
+    SELECT nmu_hus_user_id
+      INTO lv_hus_user_id
       FROM nm_mail_users
      WHERE UPPER(nmu_email_address) = UPPER(pi_email);
     --
-    RETURN (lv_exists = 'Y');
+    RETURN lv_hus_user_id;
     --
   EXCEPTION
     WHEN NO_DATA_FOUND
      THEN
-        RETURN FALSE;
+        lv_hus_user_id := Null;
+        RETURN lv_hus_user_id;
         
   END email_exists;
   --
@@ -1971,9 +2060,11 @@ AS
      THEN
         RETURN lv_exists;
   END user_email_exists;    
+
   --
   -----------------------------------------------------------------------------
-  --                    
+  --
+                      
   PROCEDURE validate_user_for_update(pi_old_user_id                IN      hig_users.hus_user_id%TYPE
                                     ,pi_old_name                   IN      hig_users.hus_name%TYPE
                                     ,pi_old_initials               IN      hig_users.hus_initials%TYPE
@@ -5406,11 +5497,14 @@ AS
   --
   PROCEDURE add_email(pi_username           IN     hig_users.hus_username%TYPE
                      ,pi_email              IN     nm_mail_users.nmu_email_address%TYPE
+                     ,pi_ack_tc             IN     varchar2 DEFAULT 'N'
                      ,po_message_severity      OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor        OUT sys_refcursor)
   IS
   --
-  lr_hus   hig_users%ROWTYPE;
+  lr_hus         hig_users%ROWTYPE;
+  lv_hus_user_id nm_mail_users.nmu_hus_user_id%TYPE;
+  lv_email_exists varchar2(1) := 'N';
   --
   BEGIN
     --
@@ -5423,40 +5517,55 @@ AS
                       ,pi_id   => 146);
     END IF;
     --
+    awlrs_util.validate_notnull(pi_parameter_desc  => 'Email'
+                               ,pi_parameter_value => pi_email);                          
+    --
+    IF pi_ack_tc != 'Y' THEN
+        --
+        hig.raise_ner(pi_appl               => 'AWLRS'
+                     ,pi_id                 =>  92
+                     ,pi_supplementary_info => 'Acknowledge Terms of Use: '||pi_ack_tc);
+    END IF;                 
+    --
     IF pi_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME') 
       THEN
          lr_hus := nm3user.get_hus(pi_hus_username => pi_username);
          --
-         IF user_email_exists(pi_user_id => lr_hus.hus_user_id) = 'Y' 
-            THEN
-              hig.raise_ner(pi_appl                => 'HIG'
-                           ,pi_id                  => 64
-                           ,pi_supplementary_info  => 'Email address already registered for '|| pi_username);
-         END IF;
-         -- 
-         IF email_exists(pi_email => pi_email)
-            THEN
+         lv_hus_user_id := email_exists(pi_email => pi_email);
+         --
+         IF NVL(lv_hus_user_id,lr_hus.hus_user_id) != lr_hus.hus_user_id
+           THEN
               hig.raise_ner(pi_appl                => 'AWLRS'
-                           ,pi_id                  => 91);
-         END IF;
+                           ,pi_id                  => 91); 
+         END IF;                  
          --
-         INSERT
-           INTO nm_mail_users
-                   (nmu_id
-                   ,nmu_hus_user_id
-                   ,nmu_name
-                   ,nmu_email_address)
-           VALUES ( Nm3seq.Next_Nmu_Id_Seq
-                   ,lr_hus.hus_user_id
-                   ,lr_hus.hus_name 
-                   ,pi_email);  
+         MERGE INTO nm_mail_users
+            USING (SELECT 1 FROM dual)
+            ON    (nmu_hus_user_id     =  lr_hus.hus_user_id)
+            WHEN MATCHED THEN UPDATE 
+                 SET nmu_email_address =  pi_email
+               WHERE nmu_hus_user_id   =  lr_hus.hus_user_id
+            WHEN NOT MATCHED THEN INSERT
+                    (nmu_id
+                    ,nmu_hus_user_id
+                    ,nmu_name
+                    ,nmu_email_address)
+             VALUES (nm3seq.next_nmu_id_seq
+                    ,lr_hus.hus_user_id
+                    ,lr_hus.hus_name
+                    ,pi_email);
          --
+         UPDATE hig_users
+           SET hus_ack_tc   = SYSDATE
+         WHERE hus_user_id  = lr_hus.hus_user_id
+           AND pi_ack_tc    = 'Y'
+           AND hus_ack_tc IS NULL;
     ELSE  
         hig.raise_ner(pi_appl                => 'HIG'
                      ,pi_id                  => 556   
-                     ,pi_supplementary_info  => 'You are unable to add an Email address for another User via this process.');
+                     ,pi_supplementary_info  => 'You are unable to add an Email address and/or acknowledge Terms of Use for another User.');
     END IF;
-    --     
+    --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
@@ -5466,7 +5575,7 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END add_email;
-                                                                                                  
+  
   --                                  
 
 END awlrs_user_api;
