@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkh-arc   1.4   Sep 15 2020 13:55:12   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Sep 15 2020 13:55:12  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkh-arc   1.5   Nov 05 2020 16:11:08   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Nov 05 2020 16:11:08  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkh  $
-  --       Date fetched Out : $Modtime:   Sep 15 2020 13:52:54  $
-  --       Version          : $Revision:   1.4  $
+  --       Date fetched Out : $Modtime:   Nov 05 2020 09:16:36  $
+  --       Version          : $Revision:   1.5  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
 
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
 
   -- This function returns the current SCCS version
   FUNCTION get_version
@@ -64,6 +64,13 @@ AS
                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
                     ,po_message_cursor          OUT sys_refcursor
                     ,po_cursor                  OUT sys_refcursor);
+                    
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user(pi_username             IN     hig_users.hus_username%TYPE
+                    ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor          OUT sys_refcursor
+                    ,po_cursor                  OUT sys_refcursor);                    
 
   
   --
@@ -587,9 +594,11 @@ AS
   --
   PROCEDURE add_email(pi_username           IN     hig_users.hus_username%TYPE
                      ,pi_email              IN     nm_mail_users.nmu_email_address%TYPE
+                     ,pi_ack_tc             IN     varchar2 DEFAULT 'N'
                      ,po_message_severity      OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor        OUT sys_refcursor);   
-                       
-  --                                                                   
+  
+  --   
+                                                                  
 END awlrs_user_api;
 /
