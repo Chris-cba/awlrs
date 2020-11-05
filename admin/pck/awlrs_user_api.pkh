@@ -1,0 +1,604 @@
+CREATE OR REPLACE PACKAGE awlrs_user_api
+AS 
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkh-arc   1.5   Nov 05 2020 16:11:08   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Nov 05 2020 16:11:08  $
+  --       Module Name      : $Workfile:   awlrs_user_api.pkh  $
+  --       Date fetched Out : $Modtime:   Nov 05 2020 09:16:36  $
+  --       Version          : $Revision:   1.5  $
+  --
+  -----------------------------------------------------------------------------------
+  -- Copyright (c) 2019 Bentley Systems Incorporated.  All rights reserved.
+  -----------------------------------------------------------------------------------
+  --
+
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
+
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+    
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION active_user_yn(pi_end_date  IN  hig_users.hus_end_date%TYPE) RETURN varchar2;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION sso_user_yn(pi_email  IN  nm_mail_users.nmu_email_address%TYPE) RETURN varchar2;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE sso_user_yn(pi_username         IN     hig_users.hus_username%TYPE
+                       ,po_sso_user           OUT  varchar2
+                       ,po_message_severity   OUT  hig_codes.hco_code%TYPE
+                       ,po_message_cursor     OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION override_pwd(pi_email  IN  nm_mail_users.nmu_email_address%TYPE) RETURN varchar2;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_users(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                     ,po_message_cursor      OUT  sys_refcursor
+                     ,po_cursor              OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user(pi_user_id              IN     hig_users.hus_user_id%TYPE
+                    ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor          OUT sys_refcursor
+                    ,po_cursor                  OUT sys_refcursor);
+                    
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user(pi_username             IN     hig_users.hus_username%TYPE
+                    ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                    ,po_message_cursor          OUT sys_refcursor
+                    ,po_cursor                  OUT sys_refcursor);                    
+
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_users(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                           ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                           ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                           ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                           ,pi_skip_n_rows          IN     PLS_INTEGER
+                           ,pi_pagesize             IN     PLS_INTEGER
+                           ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor          OUT sys_refcursor
+                           ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_user_admin_units_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT  sys_refcursor
+                                    ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_user_admin_unit_lov(pi_user_admin_unit  IN      hig_admin_units.hau_admin_unit%TYPE
+                                   ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                   ,po_message_cursor      OUT  sys_refcursor
+                                   ,po_cursor              OUT  sys_refcursor);  
+                                                                               
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_temp_tablespaces_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT  sys_refcursor
+                                    ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_temp_tablespace_lov(pi_tablespace_name  IN      dba_tablespaces.tablespace_name%TYPE
+                                   ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                   ,po_message_cursor      OUT  sys_refcursor
+                                   ,po_cursor              OUT  sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_dflt_tablespaces_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT  sys_refcursor
+                                    ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_dflt_tablespace_lov(pi_tablespace_name  IN      dba_tablespaces.tablespace_name%TYPE
+                                   ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                   ,po_message_cursor      OUT  sys_refcursor
+                                   ,po_cursor              OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_user_profiles_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT  sys_refcursor
+                                 ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_user_profile_lov(pi_profile          IN      dba_profiles.profile%TYPE
+                                ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor      OUT  sys_refcursor
+                                ,po_cursor              OUT  sys_refcursor);   
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_proxy_lov(pi_username         IN      hig_users.hus_username%TYPE
+                         ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                         ,po_message_cursor      OUT  sys_refcursor
+                         ,po_cursor              OUT  sys_refcursor);                                
+                                                                           
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_proxy_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                         ,po_message_cursor      OUT  sys_refcursor
+                         ,po_cursor              OUT  sys_refcursor);                                                                                           
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE create_user(pi_user_id                IN      hig_users.hus_user_id%TYPE
+                       ,pi_name                   IN      hig_users.hus_name%TYPE
+                       ,pi_initials               IN      hig_users.hus_initials%TYPE
+                       ,pi_job_title              IN      hig_users.hus_job_title%TYPE
+                       ,pi_start_date             IN      hig_users.hus_start_date%TYPE
+                       ,pi_end_date               IN      hig_users.hus_end_date%TYPE
+                       ,pi_unrestricted           IN      hig_users.hus_unrestricted%TYPE
+                       ,pi_username               IN      hig_users.hus_username%TYPE
+                       ,pi_password               IN      varchar2 
+                       ,pi_dflt_tablespace        IN      dba_tablespaces.tablespace_name%TYPE
+                       ,pi_temp_tablespace        IN      dba_tablespaces.tablespace_name%TYPE
+                       ,pi_profile                IN      dba_profiles.profile%TYPE
+                       ,pi_agent_code             IN      hig_users.hus_agent_code%TYPE
+                       ,pi_admin_unit             IN      hig_users.hus_admin_unit%TYPE
+                       ,pi_address1               IN      hig_user_contacts_all.huc_address1%TYPE
+                       ,pi_address2               IN      hig_user_contacts_all.huc_address2%TYPE
+                       ,pi_address3               IN      hig_user_contacts_all.huc_address3%TYPE
+                       ,pi_address4               IN      hig_user_contacts_all.huc_address4%TYPE
+                       ,pi_address5               IN      hig_user_contacts_all.huc_address5%TYPE
+                       ,pi_postcode               IN      hig_user_contacts_all.huc_postcode%TYPE
+                       ,pi_tel_type_1             IN      hig_user_contacts_all.huc_tel_type_1%TYPE
+                       ,pi_tel_no_1               IN      hig_user_contacts_all.huc_telephone_1%TYPE
+                       ,pi_primary_tel_1          IN      hig_user_contacts_all.huc_primary_tel_1%TYPE
+                       ,pi_tel_type_2             IN      hig_user_contacts_all.huc_tel_type_2%TYPE
+                       ,pi_tel_no_2               IN      hig_user_contacts_all.huc_telephone_2%TYPE
+                       ,pi_primary_tel_2          IN      hig_user_contacts_all.huc_primary_tel_2%TYPE
+                       ,pi_tel_type_3             IN      hig_user_contacts_all.huc_tel_type_3%TYPE
+                       ,pi_tel_no_3               IN      hig_user_contacts_all.huc_telephone_3%TYPE
+                       ,pi_primary_tel_3          IN      hig_user_contacts_all.huc_primary_tel_3%TYPE
+                       ,pi_tel_type_4             IN      hig_user_contacts_all.huc_tel_type_4%TYPE
+                       ,pi_tel_no_4               IN      hig_user_contacts_all.huc_telephone_4%TYPE
+                       ,pi_primary_tel_4          IN      hig_user_contacts_all.huc_primary_tel_4%TYPE
+                       ,pi_email                  IN      nm_mail_users.nmu_email_address%TYPE
+                       ,pi_sso_user               IN      varchar2
+                       ,pi_override_password      IN      varchar2
+                       ,pi_proxy_users            IN      nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                       ,po_message_severity          OUT  hig_codes.hco_code%TYPE
+                       ,po_message_cursor            OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE copy_user(pi_copy_user_id      IN      hig_users.hus_user_id%TYPE
+                     ,pi_copy_username     IN      hig_users.hus_username%TYPE
+                     ,pi_new_name          IN      hig_users.hus_name%TYPE
+                     ,pi_new_initials      IN      hig_users.hus_initials%TYPE
+                     ,pi_new_username      IN      hig_users.hus_username%TYPE
+                     ,pi_new_password      IN      varchar2
+                     ,pi_new_start_date    IN      hig_users.hus_start_date%TYPE
+                     ,pi_new_unrestricted  IN      hig_users.hus_unrestricted%TYPE
+                     ,pi_new_roles         IN      varchar2 
+                     ,pi_new_admin_units   IN      varchar2
+                     ,pi_new_user_options  IN      varchar2
+                     ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                     ,po_message_cursor       OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --       
+  PROCEDURE update_user(pi_old_user_id                IN      hig_users.hus_user_id%TYPE
+                       ,pi_old_name                   IN      hig_users.hus_name%TYPE
+                       ,pi_old_initials               IN      hig_users.hus_initials%TYPE
+                       ,pi_old_job_title              IN      hig_users.hus_job_title%TYPE
+                       ,pi_old_start_date             IN      hig_users.hus_start_date%TYPE
+                       ,pi_old_end_date               IN      hig_users.hus_end_date%TYPE
+                       ,pi_old_unrestricted           IN      hig_users.hus_unrestricted%TYPE
+                       ,pi_old_username               IN      hig_users.hus_username%TYPE
+                       ,pi_old_password               IN      varchar2 
+                       ,pi_old_dflt_tablespace        IN      dba_tablespaces.tablespace_name%TYPE
+                       ,pi_old_temp_tablespace        IN      dba_tablespaces.tablespace_name%TYPE
+                       ,pi_old_profile                IN      dba_profiles.profile%TYPE
+                       ,pi_old_agent_code             IN      hig_users.hus_agent_code%TYPE
+                       ,pi_old_admin_unit             IN      hig_users.hus_admin_unit%TYPE
+                       ,pi_old_address1               IN      hig_user_contacts_all.huc_address1%TYPE
+                       ,pi_old_address2               IN      hig_user_contacts_all.huc_address2%TYPE
+                       ,pi_old_address3               IN      hig_user_contacts_all.huc_address3%TYPE
+                       ,pi_old_address4               IN      hig_user_contacts_all.huc_address4%TYPE
+                       ,pi_old_address5               IN      hig_user_contacts_all.huc_address5%TYPE
+                       ,pi_old_postcode               IN      hig_user_contacts_all.huc_postcode%TYPE
+                       ,pi_old_tel_type_1             IN      hig_user_contacts_all.huc_tel_type_1%TYPE
+                       ,pi_old_tel_no_1               IN      hig_user_contacts_all.huc_telephone_1%TYPE
+                       ,pi_old_primary_tel_1          IN      hig_user_contacts_all.huc_primary_tel_1%TYPE
+                       ,pi_old_tel_type_2             IN      hig_user_contacts_all.huc_tel_type_2%TYPE
+                       ,pi_old_tel_no_2               IN      hig_user_contacts_all.huc_telephone_2%TYPE
+                       ,pi_old_primary_tel_2          IN      hig_user_contacts_all.huc_primary_tel_2%TYPE
+                       ,pi_old_tel_type_3             IN      hig_user_contacts_all.huc_tel_type_3%TYPE
+                       ,pi_old_tel_no_3               IN      hig_user_contacts_all.huc_telephone_3%TYPE
+                       ,pi_old_primary_tel_3          IN      hig_user_contacts_all.huc_primary_tel_3%TYPE
+                       ,pi_old_tel_type_4             IN      hig_user_contacts_all.huc_tel_type_4%TYPE
+                       ,pi_old_tel_no_4               IN      hig_user_contacts_all.huc_telephone_4%TYPE
+                       ,pi_old_primary_tel_4          IN      hig_user_contacts_all.huc_primary_tel_4%TYPE
+                       ,pi_old_email                  IN      nm_mail_users.nmu_email_address%TYPE
+                       ,pi_old_sso_user               IN      varchar2
+                       ,pi_old_override_password      IN      varchar2
+                       ,pi_old_proxy_users            IN      nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                       ,pi_new_user_id                IN      hig_users.hus_user_id%TYPE
+                       ,pi_new_name                   IN      hig_users.hus_name%TYPE
+                       ,pi_new_initials               IN      hig_users.hus_initials%TYPE
+                       ,pi_new_job_title              IN      hig_users.hus_job_title%TYPE
+                       ,pi_new_start_date             IN      hig_users.hus_start_date%TYPE
+                       ,pi_new_end_date               IN      hig_users.hus_end_date%TYPE
+                       ,pi_new_unrestricted           IN      hig_users.hus_unrestricted%TYPE
+                       ,pi_new_username               IN      hig_users.hus_username%TYPE
+                       ,pi_new_password               IN      varchar2 
+                       ,pi_new_dflt_tablespace        IN      dba_tablespaces.tablespace_name%TYPE
+                       ,pi_new_temp_tablespace        IN      dba_tablespaces.tablespace_name%TYPE
+                       ,pi_new_profile                IN      dba_profiles.profile%TYPE
+                       ,pi_new_agent_code             IN      hig_users.hus_agent_code%TYPE
+                       ,pi_new_admin_unit             IN      hig_users.hus_admin_unit%TYPE
+                       ,pi_new_address1               IN      hig_user_contacts_all.huc_address1%TYPE
+                       ,pi_new_address2               IN      hig_user_contacts_all.huc_address2%TYPE
+                       ,pi_new_address3               IN      hig_user_contacts_all.huc_address3%TYPE
+                       ,pi_new_address4               IN      hig_user_contacts_all.huc_address4%TYPE
+                       ,pi_new_address5               IN      hig_user_contacts_all.huc_address5%TYPE
+                       ,pi_new_postcode               IN      hig_user_contacts_all.huc_postcode%TYPE
+                       ,pi_new_tel_type_1             IN      hig_user_contacts_all.huc_tel_type_1%TYPE
+                       ,pi_new_tel_no_1               IN      hig_user_contacts_all.huc_telephone_1%TYPE
+                       ,pi_new_primary_tel_1          IN      hig_user_contacts_all.huc_primary_tel_1%TYPE
+                       ,pi_new_tel_type_2             IN      hig_user_contacts_all.huc_tel_type_2%TYPE
+                       ,pi_new_tel_no_2               IN      hig_user_contacts_all.huc_telephone_2%TYPE
+                       ,pi_new_primary_tel_2          IN      hig_user_contacts_all.huc_primary_tel_2%TYPE
+                       ,pi_new_tel_type_3             IN      hig_user_contacts_all.huc_tel_type_3%TYPE
+                       ,pi_new_tel_no_3               IN      hig_user_contacts_all.huc_telephone_3%TYPE
+                       ,pi_new_primary_tel_3          IN      hig_user_contacts_all.huc_primary_tel_3%TYPE
+                       ,pi_new_tel_type_4             IN      hig_user_contacts_all.huc_tel_type_4%TYPE
+                       ,pi_new_tel_no_4               IN      hig_user_contacts_all.huc_telephone_4%TYPE
+                       ,pi_new_primary_tel_4          IN      hig_user_contacts_all.huc_primary_tel_4%TYPE
+                       ,pi_new_email                  IN      nm_mail_users.nmu_email_address%TYPE
+                       ,pi_new_sso_user               IN      varchar2
+                       ,pi_new_override_password      IN      varchar2
+                       ,pi_new_proxy_users            IN      nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                       ,po_message_severity              OUT  hig_codes.hco_code%TYPE
+                       ,po_message_cursor                OUT  sys_refcursor);                             
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE active_jobs_exist(pi_username          IN      hig_users.hus_username%TYPE
+                             ,po_active_jobs_exist    OUT  varchar2
+                             ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor       OUT  sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_user(pi_user_id          IN      hig_users.hus_user_id%TYPE
+                       ,pi_username         IN      hig_users.hus_username%TYPE
+                       ,pi_email            IN      nm_mail_users.nmu_email_address%TYPE
+                       ,pi_disable_jobs     IN      varchar2
+                       ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                       ,po_message_cursor      OUT  sys_refcursor);                       
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE reactivate_user(pi_user_id          IN      hig_users.hus_user_id%TYPE
+                           ,pi_username         IN      hig_users.hus_username%TYPE
+                           ,pi_status           IN      dba_users.Account_Status%TYPE
+                           ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                           ,po_message_cursor      OUT  sys_refcursor);  
+
+  --
+  -----------------------------------------------------------------------------
+  --                              
+  PROCEDURE get_user_roles(pi_username          IN      hig_users.hus_username%TYPE
+                          ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                          ,po_message_cursor       OUT  sys_refcursor
+                          ,po_cursor               OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user_role(pi_username             IN     hig_users.hus_username%TYPE
+                         ,pi_role                 IN     dba_role_privs.granted_role%TYPE
+                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor          OUT sys_refcursor
+                         ,po_cursor                  OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_user_roles(pi_username             IN     hig_users.hus_username%TYPE
+                                ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                ,pi_skip_n_rows          IN     PLS_INTEGER
+                                ,pi_pagesize             IN     PLS_INTEGER
+                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor);
+                                
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_user_roles_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT  sys_refcursor
+                              ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_user_role_lov(pi_role             IN      hig_roles.hro_role%TYPE
+                             ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor      OUT  sys_refcursor
+                             ,po_cursor              OUT  sys_refcursor);    
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE create_user_role(pi_username          IN     hig_users.hus_username%TYPE
+                            ,pi_role              IN     dba_role_privs.granted_role%TYPE
+                            ,pi_admin_option      IN     dba_role_privs.admin_option%TYPE DEFAULT Null
+                            ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor       OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --       
+  PROCEDURE get_user_default_role(pi_username		IN	   dba_role_privs.grantee%TYPE
+						         ,pi_role_name	    IN	   dba_role_privs.granted_role%TYPE
+								 ,po_default_role	   OUT dba_role_privs.default_role%TYPE
+                                 ,po_message_severity  OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor    OUT sys_refcursor);                             
+  --
+  -----------------------------------------------------------------------------
+  --
+                              
+  PROCEDURE delete_user_role(pi_username          IN     hig_users.hus_username%TYPE
+                            ,pi_role              IN     dba_role_privs.granted_role%TYPE
+                            ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                            ,po_message_cursor       OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  
+  PROCEDURE get_user_admin_units(pi_user_id           IN     hig_users.hus_user_id%TYPE
+                                ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor      OUT  sys_refcursor
+                                ,po_cursor              OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user_admin_unit(pi_user_id            IN     hig_users.hus_user_id%TYPE
+                               ,pi_admin_unit         IN     nm_user_aus.nua_admin_unit%TYPE
+                               ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor        OUT sys_refcursor
+                               ,po_cursor                OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_user_admin_units(pi_user_id              IN     hig_users.hus_user_id%TYPE
+                                      ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                      ,pi_skip_n_rows          IN     PLS_INTEGER
+                                      ,pi_pagesize             IN     PLS_INTEGER
+                                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor          OUT sys_refcursor
+                                      ,po_cursor                  OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_admin_units_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT  sys_refcursor
+                               ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_admin_unit_lov(pi_admin_unit       IN      hig_admin_units.hau_admin_unit%TYPE
+                              ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor      OUT  sys_refcursor
+                              ,po_cursor              OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE create_user_admin_unit(pi_user_id          IN     nm_user_aus_all.nua_user_id%TYPE
+                                  ,pi_admin_unit       IN     nm_user_aus_all.nua_admin_unit%TYPE
+                                  ,pi_mode             IN     nm_user_aus_all.nua_mode%TYPE
+                                  ,pi_start_date       IN     nm_user_aus_all.nua_start_date%TYPE
+                                  ,pi_end_date         IN     nm_user_aus_all.nua_end_date%TYPE
+                                  ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor      OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --       
+  PROCEDURE update_user_admin_unit(pi_old_user_id      IN     nm_user_aus_all.nua_user_id%TYPE
+                                  ,pi_old_admin_unit   IN     nm_user_aus_all.nua_admin_unit%TYPE
+                                  ,pi_old_mode         IN     nm_user_aus_all.nua_mode%TYPE
+                                  ,pi_old_start_date   IN     nm_user_aus_all.nua_start_date%TYPE
+                                  ,pi_old_end_date     IN     nm_user_aus_all.nua_end_date%TYPE
+                                  ,pi_new_user_id      IN     nm_user_aus_all.nua_user_id%TYPE
+                                  ,pi_new_admin_unit   IN     nm_user_aus_all.nua_admin_unit%TYPE
+                                  ,pi_new_mode         IN     nm_user_aus_all.nua_mode%TYPE
+                                  ,pi_new_start_date   IN     nm_user_aus_all.nua_start_date%TYPE
+                                  ,pi_new_end_date     IN     nm_user_aus_all.nua_end_date%TYPE
+                                  ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor      OUT sys_refcursor);                             
+  --
+  -----------------------------------------------------------------------------
+  --
+                              
+  PROCEDURE delete_user_admin_unit(pi_user_id          IN     nm_user_aus_all.nua_user_id%TYPE
+                                  ,pi_admin_unit       IN     nm_user_aus_all.nua_admin_unit%TYPE
+                                  ,pi_start_date       IN     nm_user_aus_all.nua_start_date%TYPE
+                                  ,pi_end_date         IN     nm_user_aus_all.nua_end_date%TYPE
+                                  ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor      OUT sys_refcursor);
+                            
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user_options(pi_user_id           IN     hig_users.hus_user_id%TYPE
+                            ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                            ,po_message_cursor      OUT  sys_refcursor
+                            ,po_cursor              OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user_option(pi_user_id            IN     hig_users.hus_user_id%TYPE
+                           ,pi_option_id          IN     hig_user_options.huo_id%TYPE
+                           ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor        OUT sys_refcursor
+                           ,po_cursor                OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_user_options(pi_user_id              IN     hig_users.hus_user_id%TYPE
+                                  ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                  ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                  ,pi_skip_n_rows          IN     PLS_INTEGER
+                                  ,pi_pagesize             IN     PLS_INTEGER
+                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor          OUT sys_refcursor
+                                  ,po_cursor                  OUT sys_refcursor);   
+                                  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_user_options_lov(pi_user_id          IN      hig_users.hus_user_id%TYPE
+                                ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor      OUT  sys_refcursor
+                                ,po_cursor              OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_user_option_lov(pi_user_id          IN      hig_users.hus_user_id%TYPE
+                               ,pi_option_id        IN      hig_user_option_list_all.huol_id%TYPE
+                               ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT  sys_refcursor
+                               ,po_cursor              OUT  sys_refcursor);   
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_user_options_lov(pi_user_id              IN     hig_users.hus_user_id%TYPE
+                                      ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                      ,pi_skip_n_rows          IN     PLS_INTEGER
+                                      ,pi_pagesize             IN     PLS_INTEGER
+                                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor          OUT sys_refcursor
+                                      ,po_cursor                  OUT sys_refcursor);    
+                                                           
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE create_user_option(pi_user_id          IN      hig_user_options.huo_hus_user_id%TYPE
+                              ,pi_option_id        IN      hig_user_options.huo_id%TYPE
+                              ,pi_option_value     IN      hig_user_options.huo_value%TYPE
+                              ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor      OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --       
+  PROCEDURE update_user_option(pi_old_user_id          IN      hig_user_options.huo_hus_user_id%TYPE
+                              ,pi_old_option_id        IN      hig_user_options.huo_id%TYPE
+                              ,pi_old_option_value     IN      hig_user_options.huo_value%TYPE
+                              ,pi_new_user_id          IN      hig_user_options.huo_hus_user_id%TYPE
+                              ,pi_new_option_id        IN      hig_user_options.huo_id%TYPE
+                              ,pi_new_option_value     IN      hig_user_options.huo_value%TYPE
+                              ,po_message_severity        OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor          OUT  sys_refcursor);                             
+  --
+  -----------------------------------------------------------------------------
+  --
+                              
+  PROCEDURE delete_user_option(pi_user_id          IN      hig_user_options.huo_hus_user_id%TYPE
+                              ,pi_option_id        IN      hig_user_options.huo_id%TYPE
+                              ,pi_option_value     IN      hig_user_options.huo_value%TYPE
+                              ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor      OUT  sys_refcursor); 
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE change_password(pi_username           IN     hig_users.hus_username%TYPE
+                           ,pi_old_password       IN     varchar2
+                           ,pi_new_password1      IN     varchar2
+                           ,pi_new_password2      IN     varchar2
+                           ,po_message_severity     OUT  hig_codes.hco_code%TYPE
+                           ,po_message_cursor       OUT  sys_refcursor);                                                                                                                                                               
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_email(pi_username           IN     hig_users.hus_username%TYPE
+                     ,pi_email              IN     nm_mail_users.nmu_email_address%TYPE
+                     ,pi_ack_tc             IN     varchar2 DEFAULT 'N'
+                     ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                     ,po_message_cursor        OUT sys_refcursor);   
+  
+  --   
+                                                                  
+END awlrs_user_api;
+/
