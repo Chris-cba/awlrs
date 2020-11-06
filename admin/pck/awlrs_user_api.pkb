@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.21   Nov 05 2020 16:11:10   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Nov 05 2020 16:11:10  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.22   Nov 06 2020 14:27:06   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Nov 06 2020 14:27:06  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Nov 05 2020 16:06:00  $
-  --       Version          : $Revision:   1.21  $
+  --       Date fetched Out : $Modtime:   Nov 06 2020 13:20:50  $
+  --       Version          : $Revision:   1.22  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.21  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.22  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -437,7 +437,7 @@ AS
     --
   BEGIN
     -- 
-    lr_hus := nm3user.get_hus(pi_hus_username => pi_username);              
+    lr_hus := nm3user.get_hus(pi_hus_username => UPPER(pi_username));              
     --
     Begin
       Nm3Ctx.Set_Context('HIG1832_FILTER',cv_user_filter);
@@ -5527,9 +5527,9 @@ AS
                      ,pi_supplementary_info => 'Acknowledge Terms of Use: '||pi_ack_tc);
     END IF;                 
     --
-    IF pi_username = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME') 
+    IF UPPER(pi_username) = UPPER(SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME')) 
       THEN
-         lr_hus := nm3user.get_hus(pi_hus_username => pi_username);
+         lr_hus := nm3user.get_hus(pi_hus_username => UPPER(pi_username));
          --
          lv_hus_user_id := email_exists(pi_email => pi_email);
          --
