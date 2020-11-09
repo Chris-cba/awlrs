@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.50   Sep 10 2020 11:28:12   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.51   Nov 09 2020 17:43:30   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 10 2020 11:28:12  $
-  --       Date fetched Out : $Modtime:   Sep 10 2020 11:13:20  $
-  --       Version          : $Revision:   1.50  $
+  --       Date into PVCS   : $Date:   Nov 09 2020 17:43:30  $
+  --       Date fetched Out : $Modtime:   Nov 09 2020 17:41:18  $
+  --       Version          : $Revision:   1.51  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.50  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.51  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -7553,7 +7553,6 @@ AS
     --
   END get_table_results;
 
-
   --
   -----------------------------------------------------------------------------
   --
@@ -7566,7 +7565,7 @@ AS
                                      ,po_title       IN OUT CLOB)
     IS
     --
-    lv_sql     nm3type.max_varchar2 := 'DECLARE lv_tmp CLOB; lv_out CLOB; CURSOR get_results IS SELECT ';
+    lv_sql     nm3type.max_varchar2 := 'DECLARE lv_tmp nm3type.max_varchar2; lv_out CLOB; CURSOR get_results IS SELECT ';
     lv_concat  nm3type.max_varchar2;
     lv_field   nm3type.max_varchar2;
     lv_title   CLOB;
@@ -7623,10 +7622,7 @@ AS
     IF pi_include_wkt = 'Y'
      THEN
         lv_title := lv_title||',"WKT"';
-        lv_sql := lv_sql||',awlrs_sdo.get_wkt_by_pk('''||pi_theme_types.feature_table
-                                              ||''','''||pi_theme_types.feature_shape_column
-                                              ||''','''||pi_theme_types.feature_pk_column
-                                              ||''','||pi_theme_types.feature_pk_column||','''||NVL(pi_theme_types.network_is_linear,'N')||''') shape_wkt';
+        lv_sql := lv_sql||',awlrs_sdo.sdo_geom_to('||pi_theme_types.feature_shape_column||',''WKT'','''||NVL(pi_theme_types.network_is_linear,'N')||''') shape_wkt';
         lv_concat := lv_concat||'||'',"''||lt_results(i).shape_wkt||''"''';
     END IF;
     --
@@ -7662,10 +7658,13 @@ AS
     ||' OPEN  get_results;'
     ||' FETCH get_results BULK COLLECT INTO lt_results;'
     ||' CLOSE get_results;'
+    ||' dbms_lob.createtemporary(lv_out,TRUE);'
+    ||' dbms_lob.open(lv_out,DBMS_LOB.LOB_READWRITE);'
     ||' FOR i IN 1..lt_results.COUNT LOOP'
-    ||' lv_tmp := '||lv_concat||'||CHR(10);'
-    ||' lv_out := lv_out||lv_tmp;'
+    ||' awlrs_util.append_clob(lv_out,lv_tmp,'||lv_concat||'||CHR(10));'
     ||' END LOOP;'
+    ||' awlrs_util.append_clob(lv_out,lv_tmp,NULL,TRUE);'
+    ||' dbms_lob.close(lv_out);'
     ||' :out := lv_out;'
     ||' END;'
     ;
@@ -7721,7 +7720,6 @@ AS
     --
     lv_sql       nm3type.max_varchar2;
     lv_tmp_clob  CLOB;
-    lv_title     CLOB;
     lv_retval    CLOB;
     --
   BEGIN
@@ -7731,7 +7729,7 @@ AS
                              ,pi_max_rows    => pi_max_rows
                              ,pi_include_wkt => pi_include_wkt
                              ,po_sql         => lv_sql
-                             ,po_title       => lv_title);
+                             ,po_title       => lv_retval);
     --
     IF pi_max_rows IS NOT NULL
      THEN
@@ -7740,7 +7738,7 @@ AS
         EXECUTE IMMEDIATE lv_sql USING OUT lv_tmp_clob;
     END IF;
     --
-    lv_retval := lv_title||lv_tmp_clob;
+    dbms_lob.append(lv_retval,lv_tmp_clob);
     --
     OPEN po_cursor FOR
     SELECT lv_retval
@@ -7748,6 +7746,94 @@ AS
     ;
     --
   END get_all_table_results_csv;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_feature_table_data_sql(pi_theme_types IN awlrs_map_api.theme_types_rec
+                                     ,pi_max_rows    IN NUMBER DEFAULT NULL
+                                     ,pi_include_wkt IN VARCHAR2 DEFAULT 'N')
+    RETURN nm3type.max_varchar2 IS
+    --
+    lv_sql    nm3type.max_varchar2;
+    --
+    CURSOR get_attr(cp_feature_table IN all_tab_columns.table_name%TYPE)
+        IS
+    SELECT column_name
+          ,data_type
+      FROM all_tab_columns
+     WHERE owner = SYS_CONTEXT('NM3CORE','APPLICATION_OWNER')
+       AND table_name = cp_feature_table
+       AND data_type IN('VARCHAR2','NUMBER','DATE')
+     ORDER
+        BY column_id
+         ;
+    --
+    TYPE attr_rec IS TABLE OF get_attr%ROWTYPE;
+    lt_attr  attr_rec;
+    --
+  BEGIN
+    --
+    OPEN  get_attr(pi_theme_types.feature_table);
+    FETCH get_attr
+     BULK COLLECT
+     INTO lt_attr;
+    CLOSE get_attr;
+    --
+    FOR i IN 1..lt_attr.COUNT LOOP
+      --
+      IF i > 1
+       THEN
+          lv_sql := lv_sql||','||lt_attr(i).column_name;
+      ELSE
+          lv_sql := lv_sql||lt_attr(i).column_name;
+      END IF;
+      --
+    END LOOP;
+    --
+    IF pi_include_wkt = 'Y'
+     THEN
+        lv_sql := lv_sql||',awlrs_sdo.sdo_geom_to('||pi_theme_types.feature_shape_column||',''WKT'','''||NVL(pi_theme_types.network_is_linear,'N')||''') WKT';
+    END IF;
+    --
+    lv_sql := 'SELECT '||lv_sql
+             ||' FROM '||pi_theme_types.feature_table;
+    --
+    IF pi_max_rows IS NOT NULL
+     THEN
+        lv_sql := lv_sql||' WHERE rownum <= :max_rows';
+    END IF;
+    --
+    RETURN lv_sql;
+    --
+  END get_feature_table_data_sql;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_feature_table_data(pi_theme_types IN  awlrs_map_api.theme_types_rec
+                                  ,pi_max_rows    IN  NUMBER DEFAULT NULL
+                                  ,pi_include_wkt IN  VARCHAR2 DEFAULT 'N'
+                                  ,po_cursor      OUT sys_refcursor)
+    IS
+    --
+    lv_sql       nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    lv_sql := get_feature_table_data_sql(pi_theme_types => pi_theme_types
+                                        ,pi_max_rows    => pi_max_rows
+                                        ,pi_include_wkt => pi_include_wkt);
+    --
+    IF pi_max_rows IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_sql
+          USING pi_max_rows;
+    ELSE
+        OPEN po_cursor FOR lv_sql;
+    END IF;
+    --
+  END get_feature_table_data;
 
   --
   -----------------------------------------------------------------------------
@@ -8684,6 +8770,49 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END get_all_results_csv;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_feature_table_data(pi_theme_name       IN  nm_themes_all.nth_theme_name%TYPE
+                                  ,pi_max_rows         IN  NUMBER DEFAULT NULL
+                                  ,pi_include_wkt      IN  VARCHAR2 DEFAULT 'N'
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor
+                                  ,po_cursor           OUT sys_refcursor)
+    IS
+    --
+    lt_theme_types  awlrs_map_api.theme_types_tab;
+    --
+  BEGIN
+    --
+    lt_theme_types := awlrs_map_api.get_theme_types(pi_theme_name => pi_theme_name);
+    --
+    IF lt_theme_types.COUNT > 0
+     THEN
+        --
+        get_feature_table_data(pi_theme_types => lt_theme_types(1)
+                              ,pi_max_rows    => pi_max_rows
+                              ,pi_include_wkt => pi_include_wkt
+                              ,po_cursor      => po_cursor);
+        --
+    ELSE
+        --
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 6
+                     ,pi_supplementary_info => pi_theme_name);
+        --
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_feature_table_data;
 
   --
   -----------------------------------------------------------------------------
