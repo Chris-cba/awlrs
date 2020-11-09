@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.22   Sep 11 2020 17:20:54   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_asset_api.pkh-arc   1.23   Nov 09 2020 15:30:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_asset_api.pkh  $
-  --       Date into PVCS   : $Date:   Sep 11 2020 17:20:54  $
-  --       Date fetched Out : $Modtime:   Sep 11 2020 16:14:42  $
-  --       Version          : $Revision:   1.22  $
+  --       Date into PVCS   : $Date:   Nov 09 2020 15:30:50  $
+  --       Date fetched Out : $Modtime:   Nov 09 2020 15:13:44  $
+  --       Version          : $Revision:   1.23  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.22  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.23  $';
   -- Default value constants
   g_iit_rec             nm_inv_items_all%ROWTYPE;
   g_db_iit_rec          nm_inv_items_all%ROWTYPE;
@@ -104,6 +104,14 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_asset_types(pi_ne_id            IN  nm_elements_all.ne_id%TYPE
+                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor   OUT sys_refcursor
+                           ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_types(pi_nt_type          IN  nm_types.nt_type%TYPE
                            ,po_message_severity OUT hig_codes.hco_code%TYPE
                            ,po_message_cursor   OUT sys_refcursor
                            ,po_cursor           OUT sys_refcursor);
