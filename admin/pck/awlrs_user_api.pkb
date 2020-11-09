@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.22   Nov 06 2020 14:27:06   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Nov 06 2020 14:27:06  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_user_api.pkb-arc   1.23   Nov 09 2020 16:44:58   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Nov 09 2020 16:44:58  $
   --       Module Name      : $Workfile:   awlrs_user_api.pkb  $
-  --       Date fetched Out : $Modtime:   Nov 06 2020 13:20:50  $
-  --       Version          : $Revision:   1.22  $
+  --       Date fetched Out : $Modtime:   Nov 09 2020 13:14:16  $
+  --       Version          : $Revision:   1.23  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.22  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.23  $"';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_user_api';
   --
@@ -325,6 +325,7 @@ AS
           ,awlrs_user_api.sso_user_yn(pi_email => nmu.nmu_email_address) sso_user
           ,awlrs_user_api.override_pwd(pi_email => nmu.nmu_email_address) override_pwd
           ,CASE WHEN hus.hus_ack_tc IS NOT NULL THEN 'Y' ELSE 'N' END    acknowledge_tc
+          ,nmu.nmu_name                 display_name
       FROM v_nm_hig_users  hus
           ,hig_admin_units hau               
           ,hig_user_contacts_all huc
@@ -405,6 +406,7 @@ AS
           ,awlrs_user_api.sso_user_yn(pi_email => nmu.nmu_email_address) sso_user
           ,awlrs_user_api.override_pwd(pi_email => nmu.nmu_email_address) override_pwd
           ,CASE WHEN hus.hus_ack_tc IS NOT NULL THEN 'Y' ELSE 'N' END    acknowledge_tc
+          ,nmu.nmu_name                 display_name
       FROM v_nm_hig_users  hus
           ,hig_admin_units hau               
           ,hig_user_contacts_all huc
@@ -484,6 +486,7 @@ AS
           ,awlrs_user_api.sso_user_yn(pi_email => nmu.nmu_email_address) sso_user
           ,awlrs_user_api.override_pwd(pi_email => nmu.nmu_email_address) override_pwd
           ,CASE WHEN hus.hus_ack_tc IS NOT NULL THEN 'Y' ELSE 'N' END    acknowledge_tc
+          ,nmu.nmu_name                 display_name
       FROM v_nm_hig_users  hus
           ,hig_admin_units hau               
           ,hig_user_contacts_all huc
@@ -564,6 +567,7 @@ AS
                                                     ,awlrs_user_api.sso_user_yn(pi_email => nmu.nmu_email_address) sso_user
                                                     ,awlrs_user_api.override_pwd(pi_email => nmu.nmu_email_address) override_pwd
                                                     ,CASE WHEN hus.hus_ack_tc IS NOT NULL THEN ''Y'' ELSE ''N'' END acknowledge_tc
+                                                    ,nmu.nmu_name                 display_name
                                                 FROM v_nm_hig_users  hus     
                                                     ,hig_admin_units hau          
                                                     ,hig_user_contacts_all huc
@@ -612,6 +616,7 @@ AS
                                                   ||',sso_user'
                                                   ||',override_pwd'
                                                   ||',acknowledge_tc'
+                                                  ||',display_name'
                                                   ||',row_count'
                                             ||' FROM (SELECT rownum ind'
                                                         ||' ,a.*'
