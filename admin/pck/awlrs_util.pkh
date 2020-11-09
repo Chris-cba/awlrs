@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.29   Jul 15 2020 15:08:52   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkh-arc   1.30   Nov 09 2020 17:32:50   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkh  $
-  --       Date into PVCS   : $Date:   Jul 15 2020 15:08:52  $
-  --       Date fetched Out : $Modtime:   Jul 14 2020 13:48:12  $
-  --       Version          : $Revision:   1.29  $
+  --       Date into PVCS   : $Date:   Nov 09 2020 17:32:50  $
+  --       Date fetched Out : $Modtime:   Oct 14 2020 10:37:02  $
+  --       Version          : $Revision:   1.30  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.29  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.30  $';
   --
   TYPE option_names_tab IS TABLE OF hig_option_list.hol_id%TYPE INDEX BY BINARY_INTEGER;
   --
@@ -158,6 +158,20 @@ AS
   --
   FUNCTION escape_single_quotes(pi_string IN VARCHAR2)
     RETURN nm3type.max_varchar2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- Procedure to be used when running many concatenationd to a clob, for example
+  -- when adding to a clob from within a loop.
+  -- NB. Once the loop is complete this procedure must be called with a null value
+  -- for pi_text and TRUE as the value if pi_flush_buffer to ensure that any text
+  -- remaining in pi_buffer is writen to the clob.
+  --
+  PROCEDURE append_clob(pi_clob         IN OUT CLOB
+                       ,pi_buffer       IN OUT NOCOPY VARCHAR2
+                       ,pi_text         IN     VARCHAR2
+                       ,pi_flush_buffer IN     BOOLEAN DEFAULT FALSE);
 
   --
   -----------------------------------------------------------------------------
@@ -425,6 +439,7 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE validate_simple_sql_name(pi_name               IN VARCHAR2
+                                    ,pi_allow_quoted       IN BOOLEAN DEFAULT TRUE
                                     ,pi_supplementary_info IN VARCHAR2);
 
   --
