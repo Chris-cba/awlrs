@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.40   Sep 10 2020 16:09:44   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_util.pkb-arc   1.41   Nov 09 2020 17:32:52   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_util.pkb  $
-  --       Date into PVCS   : $Date:   Sep 10 2020 16:09:44  $
-  --       Date fetched Out : $Modtime:   Sep 10 2020 16:06:20  $
-  --       Version          : $Revision:   1.40  $
+  --       Date into PVCS   : $Date:   Nov 09 2020 17:32:52  $
+  --       Date fetched Out : $Modtime:   Oct 14 2020 10:50:04  $
+  --       Version          : $Revision:   1.41  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.40  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.41  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_util';
   --
   --
@@ -91,6 +91,57 @@ AS
     RETURN REPLACE(pi_string,lv_single_quote,lv_escaped_single_quote);
     --
   END escape_single_quotes;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- Procedure to be used when running many concatenationd to a clob, for example
+  -- when adding to a clob from within a loop.
+  -- NB. Once the loop is complete this procedure must be called with a null value
+  -- for pi_text and TRUE as the value if pi_flush_buffer to ensure that any text
+  -- remaining in pi_buffer is writen to the clob.
+  --
+  PROCEDURE append_clob(pi_clob         IN OUT CLOB
+                       ,pi_buffer       IN OUT NOCOPY VARCHAR2
+                       ,pi_text         IN     VARCHAR2
+                       ,pi_flush_buffer IN     BOOLEAN DEFAULT FALSE)
+    IS
+    --
+    lv_flush_buffer  BOOLEAN := pi_flush_buffer;
+    --
+  BEGIN
+    --
+    IF NOT lv_flush_buffer
+     THEN
+        BEGIN
+          pi_buffer := pi_buffer||pi_text;
+        EXCEPTION
+          WHEN value_error
+           THEN
+              lv_flush_buffer := TRUE;
+        END;
+    END IF;
+    --
+    IF lv_flush_buffer
+     THEN
+        --IF dbms_lob.getlength(pi_clob) = 0
+        -- THEN
+        --    pi_clob := pi_buffer;
+        --ELSE
+            IF LENGTH(pi_buffer) > 0
+             THEN
+                dbms_lob.append(pi_clob,pi_buffer);
+                --dbms_lob.writeappend(pi_clob
+                --                    ,LENGTH(pi_buffer)
+                --                    ,pi_buffer);
+            END IF;
+        --END IF;
+        --
+        pi_buffer := pi_text;
+        --
+    END IF;
+    --
+  END append_clob;
 
   --
   -----------------------------------------------------------------------------
@@ -2011,12 +2062,21 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE validate_simple_sql_name(pi_name               IN VARCHAR2
+                                    ,pi_allow_quoted       IN BOOLEAN DEFAULT TRUE
                                     ,pi_supplementary_info IN VARCHAR2)
     IS
     --
     lv_check  nm3type.max_varchar2;
     --
+    ex_quoted  EXCEPTION;
+    --
   BEGIN
+    --
+    IF NOT pi_allow_quoted
+     AND SUBSTR(LTRIM(pi_name),1,1) = CHR(34)
+     THEN
+        RAISE ex_quoted;
+    END IF;
     --
     lv_check := dbms_assert.simple_sql_name(pi_name);
     --
@@ -2025,7 +2085,7 @@ AS
      THEN
         --
         hig.raise_ner(pi_appl               => 'HIG'
-                     ,pi_id                 =>  283
+                     ,pi_id                 =>  444
                      ,pi_supplementary_info => pi_supplementary_info||': '||pi_name);
         --
   END validate_simple_sql_name;
