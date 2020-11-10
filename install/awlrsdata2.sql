@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.33   Sep 16 2020 13:58:40   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.34   Nov 10 2020 11:52:12   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Sep 16 2020 13:58:40  $
---       Date fetched Out : $Modtime:   Sep 16 2020 13:57:16  $
---       Version          : $Revision:   1.33  $
+--       Date into PVCS   : $Date:   Nov 10 2020 11:52:12  $
+--       Date fetched Out : $Modtime:   Nov 10 2020 09:58:34  $
+--       Version          : $Revision:   1.34  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 14-AUG-2020 13:59
+--       Generation Date  : 10-NOV-2020 09:58
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -1677,7 +1677,25 @@ SELECT 'AWLRS'
  WHERE NOT EXISTS(SELECT 1
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
-                     AND NER_ID = 91);                     
+                     AND NER_ID = 91);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,92
+      ,null
+      ,'Value must be set to Y'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 92);
 --
 ----------------------------------------------------------------------------------------
 -- HIG_STANDARD_FAVOURITES
@@ -1896,6 +1914,24 @@ INSERT
       ,HSTF_DESCR
       ,HSTF_TYPE
       ,HSTF_ORDER)
+SELECT 'AWLRS_LAUNCHPAD'
+      ,'AWLRS_UI_SETTINGS'
+      ,'UI Settings'
+      ,'M'
+      ,80
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_LAUNCHPAD'
+                     AND HSTF_CHILD = 'AWLRS_UI_SETTINGS');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
 SELECT 'AWLRS_NETWORK'
       ,'NM0001'
       ,'Node Types'
@@ -1942,6 +1978,24 @@ SELECT 'AWLRS_NETWORK'
                     FROM HIG_STANDARD_FAVOURITES
                    WHERE HSTF_PARENT = 'AWLRS_NETWORK'
                      AND HSTF_CHILD = 'NM0004');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_NETWORK'
+      ,'NM0700'
+      ,'Maintain AD Types'
+      ,'M'
+      ,40
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_NETWORK'
+                     AND HSTF_CHILD = 'NM0700');
 --
 INSERT
   INTO HIG_STANDARD_FAVOURITES
@@ -2266,6 +2320,24 @@ SELECT 'AWLRS_SPATIAL'
                     FROM HIG_STANDARD_FAVOURITES
                    WHERE HSTF_PARENT = 'AWLRS_SPATIAL'
                      AND HSTF_CHILD = 'GIS0010');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_UI_SETTINGS'
+      ,'AWLRS0002'
+      ,'Copy-Trace'
+      ,'M'
+      ,10
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_UI_SETTINGS'
+                     AND HSTF_CHILD = 'AWLRS0002');
 --
 ----------------------------------------------------------------------------------------
 --
