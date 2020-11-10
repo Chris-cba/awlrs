@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.23   Aug 17 2020 13:00:12   Peter.Bibby  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata1.sql-arc   1.24   Nov 10 2020 11:52:10   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrsdata1.sql  $
---       Date into PVCS   : $Date:   Aug 17 2020 13:00:12  $
---       Date fetched Out : $Modtime:   Aug 17 2020 11:27:06  $
---       Version          : $Revision:   1.23  $
+--       Date into PVCS   : $Date:   Nov 10 2020 11:52:10  $
+--       Date fetched Out : $Modtime:   Nov 10 2020 09:58:34  $
+--       Version          : $Revision:   1.24  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 17-AUG-2020 11:27
+--       Generation Date  : 10-NOV-2020 09:58
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -28,6 +28,7 @@
 --   NM_INV_CATEGORY_MODULES
 --   AWLRS_FAV_ENTITY_TYPES
 --   AWLRS_FAV_ENTITY_TYPE_LABELS
+--   HIG_MODULE_ROLES
 --
 -----------------------------------------------------------------------------
 --
@@ -1008,6 +1009,31 @@ SELECT 'AWLRS0001'
                     FROM HIG_MODULES
                    WHERE HMO_MODULE = 'AWLRS0001');
 --
+INSERT
+  INTO HIG_MODULES
+      (HMO_MODULE
+      ,HMO_TITLE
+      ,HMO_FILENAME
+      ,HMO_MODULE_TYPE
+      ,HMO_FASTPATH_OPTS
+      ,HMO_FASTPATH_INVALID
+      ,HMO_USE_GRI
+      ,HMO_APPLICATION
+      ,HMO_MENU)
+SELECT 'AWLRS0002'
+      ,'AWLRS Copy Trace'
+      ,'awlrs0002'
+      ,'FMX'
+      ,''
+      ,'Y'
+      ,'N'
+      ,'AWLRS'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_MODULES
+                   WHERE HMO_MODULE = 'AWLRS0002');
+--
 ----------------------------------------------------------------------------------------
 -- NM_INV_CATEGORY_MODULES
 --
@@ -1086,6 +1112,32 @@ SELECT 'NETWORK'
 SET TERM ON
 PROMPT awlrs_fav_entity_type_labels
 SET TERM OFF
+--
+----------------------------------------------------------------------------------------
+-- HIG_MODULE_ROLES
+--
+-- select * from awlrs_metadata.hig_module_roles
+-- order by hmr_module
+--         ,hmr_role
+--
+----------------------------------------------------------------------------------------
+SET TERM ON
+PROMPT hig_module_roles
+SET TERM OFF
+--
+INSERT
+  INTO HIG_MODULE_ROLES
+      (HMR_MODULE
+      ,HMR_ROLE
+      ,HMR_MODE)
+SELECT 'AWLRS0002'
+      ,'HIG_ADMIN'
+      ,'NORMAL'
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_MODULE_ROLES
+                   WHERE HMR_MODULE = 'AWLRS0002'
+                     AND HMR_ROLE = 'HIG_ADMIN');
 --
 ----------------------------------------------------------------------------------------
 --
