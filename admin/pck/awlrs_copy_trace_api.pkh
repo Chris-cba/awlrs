@@ -1,0 +1,201 @@
+CREATE OR REPLACE PACKAGE awlrs_copy_trace_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_copy_trace_api.pkh-arc   1.1   Nov 11 2020 12:18:38   Peter.Bibby  $
+  --       Module Name      : $Workfile:   awlrs_copy_trace_api.pkh  $
+  --       Date into PVCS   : $Date:   Nov 11 2020 12:18:38  $
+  --       Date fetched Out : $Modtime:   Oct 23 2020 10:49:20  $
+  --       Version          : $Revision:   1.1  $
+  -------------------------------------------------------------------------
+  --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
+  -------------------------------------------------------------------------
+  --
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '\$Revision:   1.1  $';
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+    RETURN VARCHAR2;
+
+  --
+  ------------------------------------------------------------------------------
+  --
+  FUNCTION is_used_for_unique(pi_nt_type IN nm_types.nt_type%TYPE
+                             ,pi_column  IN nm_type_columns.ntc_column_name%TYPE)
+    RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_file_feature_map(pi_file_descr          IN     awlrs_file_feature_maps.affm_file_descr%TYPE
+                                ,pi_datum_nt            IN     awlrs_file_feature_maps.affm_datum_nt%TYPE
+                                ,po_file_feature_map_id IN OUT awlrs_file_feature_maps.affm_id%TYPE
+                                ,po_message_severity       OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor         OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE del_file_feature_map(pi_affm_id          IN     awlrs_file_feature_maps.affm_id%TYPE
+                                ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor      OUT sys_refcursor);
+                                
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_file_feature_map(pi_file_feature_map_id  IN      awlrs_file_feature_maps.affm_id%TYPE
+                                   ,pi_old_descr            IN      awlrs_file_feature_maps.affm_file_descr%TYPE 
+                                   ,pi_old_datum_nt         IN      awlrs_file_feature_maps.affm_datum_nt%TYPE
+                                   ,pi_new_descr            IN      awlrs_file_feature_maps.affm_file_descr%TYPE
+                                   ,pi_new_datum_nt         IN      awlrs_file_feature_maps.affm_datum_nt%TYPE
+                                   ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor           OUT sys_refcursor);
+                                   
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_file_feature_maps(po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE del_group_attrib_map(pi_afgam_id            IN     awlrs_file_grp_attrib_map.afgam_id%TYPE
+                                ,po_message_severity       OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor         OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_group_attrib_map(pi_group_attrib_map_id  IN      awlrs_file_grp_attrib_map.afgam_id%TYPE
+                                   ,pi_old_affm_id          IN      awlrs_file_grp_attrib_map.afgam_affm_id%TYPE 
+                                   ,pi_old_target_nt        IN      awlrs_file_grp_attrib_map.afgam_target_nt%TYPE
+                                   ,pi_old_target_gty       IN      awlrs_file_grp_attrib_map.afgam_target_gty%TYPE
+                                   ,pi_old_file_attrib      IN      awlrs_file_grp_attrib_map.afgam_file_attrib%TYPE
+                                   ,pi_old_target_attrib    IN      awlrs_file_grp_attrib_map.afgam_target_attrib%TYPE
+                                   ,pi_new_affm_id          IN      awlrs_file_grp_attrib_map.afgam_affm_id%TYPE 
+                                   ,pi_new_target_nt        IN      awlrs_file_grp_attrib_map.afgam_target_nt%TYPE
+                                   ,pi_new_target_gty       IN      awlrs_file_grp_attrib_map.afgam_target_gty%TYPE
+                                   ,pi_new_file_attrib      IN      awlrs_file_grp_attrib_map.afgam_file_attrib%TYPE
+                                   ,pi_new_target_attrib    IN      awlrs_file_grp_attrib_map.afgam_target_attrib%TYPE                                   
+                                   ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor           OUT sys_refcursor);
+                                   
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_group_attrib_map(pi_file_feature_map_id IN     awlrs_file_grp_attrib_map.afgam_affm_id%TYPE
+                                ,pi_target_nt           IN     awlrs_file_grp_attrib_map.afgam_target_nt%TYPE
+                                ,pi_target_gty          IN     awlrs_file_grp_attrib_map.afgam_target_gty%TYPE
+                                ,pi_file_attrib         IN     awlrs_file_grp_attrib_map.afgam_file_attrib%TYPE
+                                ,pi_target_attrib       IN     awlrs_file_grp_attrib_map.afgam_target_attrib%TYPE
+                                ,po_file_grp_attrib_id  IN OUT awlrs_file_feature_maps.affm_id%TYPE
+                                ,po_message_severity       OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor         OUT sys_refcursor);
+                                
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_group_attrib_map(pi_affm_id          IN  awlrs_file_feature_maps.affm_id%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE del_datum_attrib_map(pi_afdam_id         IN  awlrs_file_datum_attrib_map.afdam_id%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE add_datum_attrib_map(pi_file_feature_map_id IN     awlrs_file_datum_attrib_map.afdam_affm_id%TYPE
+                                ,pi_file_attrib         IN     awlrs_file_datum_attrib_map.afdam_file_attrib%TYPE
+                                ,pi_target_attrib       IN     awlrs_file_datum_attrib_map.afdam_target_attrib%TYPE
+                                ,po_datum_attrib_map_id IN OUT awlrs_file_datum_attrib_map.afdam_id%TYPE
+                                ,po_message_severity       OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor         OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_datum_attrib_map(pi_datum_attrib_id      IN      awlrs_file_datum_attrib_map.afdam_id%TYPE
+                                   ,pi_old_affm_id          IN      awlrs_file_datum_attrib_map.afdam_affm_id%TYPE 
+                                   ,pi_old_file_attrib      IN      awlrs_file_datum_attrib_map.afdam_file_attrib%TYPE
+                                   ,pi_old_target_attrib    IN      awlrs_file_datum_attrib_map.afdam_target_attrib%TYPE
+                                   ,pi_new_affm_id          IN      awlrs_file_datum_attrib_map.afdam_affm_id%TYPE 
+                                   ,pi_new_file_attrib      IN      awlrs_file_datum_attrib_map.afdam_file_attrib%TYPE
+                                   ,pi_new_target_attrib    IN      awlrs_file_datum_attrib_map.afdam_target_attrib%TYPE                                 
+                                   ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor           OUT sys_refcursor);
+                                   
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_datum_attrib_map(pi_affm_id          IN  awlrs_file_feature_maps.affm_id%TYPE
+                                ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT sys_refcursor
+                                ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_auto_inclusion_types(pi_datumn_nt        IN  nm_types.nt_type%TYPE
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_parent_ne_id(pi_parent_nt        IN  nm_elements.ne_nt_type%TYPE
+                            ,pi_ne_unique        IN  nm_elements.ne_unique%TYPE
+                            ,pi_ne_owner         IN  nm_elements.ne_owner%TYPE
+                            ,pi_ne_name_1        IN  nm_elements.ne_name_1%TYPE
+                            ,pi_ne_name_2        IN  nm_elements.ne_name_2%TYPE
+                            ,pi_ne_prefix        IN  nm_elements.ne_prefix%TYPE
+                            ,pi_ne_number        IN  nm_elements.ne_number%TYPE
+                            ,pi_ne_sub_type      IN  nm_elements.ne_sub_type%TYPE
+                            ,pi_ne_no_start      IN  nm_elements.ne_no_start%TYPE
+                            ,pi_ne_no_end        IN  nm_elements.ne_no_end%TYPE
+                            ,pi_ne_sub_class     IN  nm_elements.ne_sub_class%TYPE
+                            ,pi_ne_nsg_ref       IN  nm_elements.ne_nsg_ref%TYPE
+                            ,pi_ne_version_no    IN  nm_elements.ne_version_no%TYPE
+                            ,pi_ne_group         IN  nm_elements.ne_group%TYPE
+                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_datum_nt_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT  sys_refcursor
+                            ,po_cursor           OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_network_attributes_lov(pi_nt_type          IN      nm_type_columns.ntc_nt_type%TYPE
+                                      ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                      ,po_message_cursor      OUT  sys_refcursor
+                                      ,po_cursor              OUT  sys_refcursor);
+
+END awlrs_copy_trace_api;
+/
