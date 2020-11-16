@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_install.sql-arc   1.44.1.3   Nov 10 2020 09:22:50   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_install.sql-arc   1.44.1.4   Nov 16 2020 10:36:42   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrs_install.sql  $
---       Date into PVCS   : $Date:   Nov 10 2020 09:22:50  $
---       Date fetched Out : $Modtime:   Nov 10 2020 09:22:12  $
---       Version          : $Revision:   1.44.1.3  $
+--       Date into PVCS   : $Date:   Nov 16 2020 10:36:42  $
+--       Date fetched Out : $Modtime:   Nov 16 2020 10:34:18  $
+--       Version          : $Revision:   1.44.1.4  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
@@ -96,8 +96,24 @@ BEGIN
                                 ,p_version => '4.8.0.3');
 END;
 /
-                             
-                                
+--
+Declare
+  n  Varchar2(1);
+Begin
+  Select  Null
+  Into    n
+  From    Hig_Upgrades
+  Where   Hup_Product     =   'NET'
+  And     From_Version    =   '4.8.0.3'
+  And     Upgrade_Script  =   'log_nm_4800_fix6.sql' 
+  And     rownum       =   1;
+Exception 
+  When No_Data_Found
+Then
+  RAISE_APPLICATION_ERROR(-20000,'Please install NET 4800 Fix 6 before proceding.');  
+End;
+/
+--
 WHENEVER SQLERROR CONTINUE
 --
 ---------------------------------------------------------------------------------------------------
