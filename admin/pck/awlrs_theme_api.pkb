@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.12.1.0   Oct 13 2020 16:02:40   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Oct 13 2020 16:02:40  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.12.1.1   Nov 16 2020 10:10:18   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Nov 16 2020 10:10:18  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkb  $
-  --       Date fetched Out : $Modtime:   Oct 13 2020 12:08:18  $
-  --       Version          : $Revision:   1.12.1.0  $
+  --       Date fetched Out : $Modtime:   Nov 16 2020 10:09:08  $
+  --       Version          : $Revision:   1.12.1.1  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.12.1.0  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.12.1.1  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -680,6 +680,7 @@ AS
           ,nta1.nth_location_updatable       is_updatable
           ,is_custom_theme(pi_theme_id => nta1.nth_theme_id) is_custom
           ,can_delete(pi_theme_id => nta1.nth_theme_id) can_delete
+          ,nta2.nth_feature_table            base_theme_feature_table
       FROM nm_themes_all  nta1
           ,nm_themes_all  nta2
           ,nm_units un  
@@ -745,6 +746,7 @@ AS
           ,nta1.nth_location_updatable       is_updatable
           ,is_custom_theme(pi_theme_id => nta1.nth_theme_id) is_custom
           ,can_delete(pi_theme_id => nta1.nth_theme_id) can_delete
+          ,nta2.nth_feature_table            base_theme_feature_table
       FROM nm_themes_all  nta1
           ,nm_themes_all  nta2
           ,nm_units un 
@@ -819,7 +821,8 @@ AS
                                                       ,nta1.nth_snap_to_theme            snap_to_theme
                                                       ,nta1.nth_location_updatable       is_updatable
                                                       ,awlrs_theme_api.is_custom_theme(nta1.nth_theme_id) is_custom
-                                                      ,awlrs_theme_api.can_delete(nta1.nth_theme_id) can_delete     
+                                                      ,awlrs_theme_api.can_delete(nta1.nth_theme_id) can_delete    
+                                                      ,nta2.nth_feature_table            base_theme_feature_table    
                                                   FROM nm_themes_all  nta1
                                                       ,nm_themes_all  nta2
                                                       ,nm_units un 
@@ -859,6 +862,7 @@ AS
                                                    ||',is_updatable'
                                                    ||',is_custom'
                                                    ||',can_delete'
+                                                   ||',base_theme_feature_table'
                                                    ||',row_count'
                                              ||' FROM (SELECT rownum ind'
                                                          ||' ,a.*'
@@ -1044,7 +1048,13 @@ AS
                                 ,pi_query_col    => 'awlrs_theme_api.can_delete(nta1.nth_theme_id)'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col                     
                                 ,pi_mask         => NULL
-                                ,pio_column_data => po_column_data);                          
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'base_theme_feature_table'
+                                ,pi_query_col    => 'nta2.nth_feature_table'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col                     
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);                                                          
       --
     END set_column_data;
     --
