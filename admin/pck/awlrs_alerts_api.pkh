@@ -1,0 +1,514 @@
+CREATE OR REPLACE PACKAGE awlrs_alerts_api
+AS
+  -------------------------------------------------------------------------
+  --   PVCS Identifiers :-
+  --
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkh-arc   1.0   Nov 19 2020 16:35:56   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Nov 19 2020 16:35:56  $
+  --       Module Name      : $Workfile:   awlrs_alerts_api.pkh  $
+  --       Date fetched Out : $Modtime:   Nov 19 2020 16:30:38  $
+  --       Version          : $Revision:   1.0  $
+  --
+  -----------------------------------------------------------------------------------
+  -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
+  -----------------------------------------------------------------------------------
+  --
+
+  --g_sccsid is the SCCS ID for the package
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.0  $"';
+  --
+  TYPE alert_log_id_tab   IS TABLE OF hig_alert_manager_logs_vw.haml_hal_id%TYPE INDEX BY BINARY_INTEGER;
+  TYPE alert_recip_id_tab IS TABLE OF hig_alert_manager_logs_vw.haml_har_id%TYPE INDEX BY BINARY_INTEGER;
+  -- 
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version
+  FUNCTION get_version
+  RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- This function returns the current SCCS version of the package body
+  FUNCTION get_body_version
+  RETURN VARCHAR2;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_screen_text(pi_ita_inv_type    IN  nm_inv_type_attribs.ita_inv_type%TYPE
+                          ,pi_ita_attrib_name IN  nm_inv_type_attribs.ita_attrib_name%TYPE) RETURN nm_inv_type_attribs.ita_scrn_text%TYPE;
+                          
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_trg_alert_types(po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_trg_alert_type(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                              ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor          OUT sys_refcursor
+                              ,po_cursor                  OUT sys_refcursor);                           
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_trg_alert_types(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                     ,pi_skip_n_rows          IN     PLS_INTEGER
+                                     ,pi_pagesize             IN     PLS_INTEGER
+                                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor          OUT sys_refcursor
+                                     ,po_cursor                  OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_sched_alert_types(po_message_severity        OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT sys_refcursor
+                                 ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_sched_alert_type(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor);                           
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_sched_alert_types(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                       ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                       ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                       ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                       ,pi_skip_n_rows          IN     PLS_INTEGER
+                                       ,pi_pagesize             IN     PLS_INTEGER
+                                       ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor          OUT sys_refcursor
+                                       ,po_cursor                  OUT sys_refcursor);
+                                       
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_alert_type_attribs(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                                  ,pi_inv_type             IN     hig_alert_types.halt_nit_inv_type%TYPE
+                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor          OUT sys_refcursor
+                                  ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_alert_type_attrib(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                                 ,pi_inv_type             IN     hig_alert_types.halt_nit_inv_type%TYPE
+                                 ,pi_attribute_name       IN     hig_alert_type_attributes.hata_attribute_name%TYPE 
+                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT sys_refcursor
+                                 ,po_cursor                  OUT sys_refcursor);                           
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_alert_type_attribs(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                                        ,pi_inv_type             IN     hig_alert_types.halt_nit_inv_type%TYPE
+                                        ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                        ,pi_skip_n_rows          IN     PLS_INTEGER
+                                        ,pi_pagesize             IN     PLS_INTEGER
+                                        ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor          OUT sys_refcursor
+                                        ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_alert_type_conds(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                                ,pi_inv_type             IN     hig_alert_types.halt_nit_inv_type%TYPE
+                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_alert_type_cond(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                               ,pi_inv_type             IN     hig_alert_types.halt_nit_inv_type%TYPE
+                               ,pi_attribute_name       IN     hig_alert_type_attributes.hata_attribute_name%TYPE 
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor);       
+                               
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_mail_recipients(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                               ,pi_inv_type             IN     hig_alert_types.halt_nit_inv_type%TYPE
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor);                                                               
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_mail_details(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                            ,pi_inv_type             IN     hig_alert_types.halt_nit_inv_type%TYPE
+                            ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor          OUT sys_refcursor
+                            ,po_cursor                  OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_asset_types_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT  sys_refcursor
+                               ,po_cursor              OUT  sys_refcursor);
+                              
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_alert_ops_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                             ,po_message_cursor      OUT  sys_refcursor
+                             ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_alert_type_attribs_lov(pi_inv_type          IN     hig_alert_types.halt_nit_inv_type%TYPE
+                                      ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                      ,po_message_cursor      OUT  sys_refcursor
+                                      ,po_cursor              OUT  sys_refcursor);
+                                                                
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_trigger_alert(pi_inv_type              IN     hig_alert_types.halt_nit_inv_type%TYPE
+                                ,pi_table_name            IN     hig_alert_types.halt_table_name%TYPE
+                                ,pi_descr                 IN     hig_alert_types.halt_description%TYPE 
+                                ,pi_operation             IN     hig_alert_types.halt_operation%TYPE
+                                ,pi_immediate             IN     hig_alert_types.halt_immediate%TYPE
+                                ,pi_batch_email_threshold IN     hig_alert_types.halt_trigger_count%TYPE
+                                ,pi_batch_email_freq      IN     hig_alert_types.halt_frequency_id%TYPE
+                                ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor           OUT sys_refcursor);
+                                
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_trigger_attributes(pi_alert_id             IN     hig_alert_type_attributes.hata_halt_id%TYPE
+                                     ,pi_operation            IN     hig_alert_types.halt_operation%TYPE
+                                     ,pi_attribute_name       IN     hig_alert_type_attributes.hata_attribute_name%TYPE  
+                                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor          OUT sys_refcursor);                                
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_frequencies_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT  sys_refcursor
+                               ,po_cursor           OUT  sys_refcursor);
+                           
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_scheduled_alert(pi_inv_type             IN     hig_alert_types.halt_nit_inv_type%TYPE
+                                  ,pi_query_id             IN     hig_alert_types.halt_hqt_id%TYPE
+                                  ,pi_descr                IN     hig_alert_types.halt_description%TYPE 
+                                  ,pi_frequency_id         IN     hig_alert_types.halt_frequency_id%TYPE
+                                  ,pi_suspend_query        IN     hig_alert_types.halt_suspend_query%TYPE
+                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor          OUT sys_refcursor);                                
+                        
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_trigger(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                          ,pi_inv_type             IN     hig_alert_types.halt_nit_inv_type%TYPE
+                          ,pi_recip_type           IN     hig_alert_type_recipients.hatr_type%TYPE 
+                          ,pi_recip_rule_id        IN     hig_alert_type_recipients.hatr_harr_id%TYPE
+                          ,pi_recip_user_id        IN     hig_alert_type_recipients.hatr_nmu_id%TYPE
+                          ,pi_recip_group_id       IN     hig_alert_type_recipients.hatr_nmg_id%TYPE
+                          ,pi_mail_subject         IN     hig_alert_type_mail.hatm_subject%TYPE
+                          ,pi_mail_text            IN     hig_alert_type_mail.hatm_mail_text%TYPE
+                          ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor          OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE drop_trigger(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                        ,pi_trigger_name         IN     hig_alert_types.halt_trigger_name%TYPE
+                        ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor          OUT sys_refcursor);
+                        
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE suspend_query(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                         ,po_next_run_date           OUT hig_alert_types.halt_next_run_date%TYPE
+                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor          OUT sys_refcursor);                        
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE resume_query(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                        ,pi_frequency_id         IN     hig_alert_types.halt_frequency_id%TYPE
+                        ,po_next_run_date           OUT hig_alert_types.halt_next_run_date%TYPE
+                        ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor          OUT sys_refcursor);                                               
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_alert_logs(po_message_severity        OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor          OUT sys_refcursor
+                          ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_alert_log(pi_alert_log_id         IN     hig_alert_manager_logs_vw.haml_hal_id%TYPE
+                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor          OUT sys_refcursor
+                         ,po_cursor                  OUT sys_refcursor);                           
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_alert_logs(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                ,pi_skip_n_rows          IN     PLS_INTEGER
+                                ,pi_pagesize             IN     PLS_INTEGER
+                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor);   
+                                
+  --
+  -----------------------------------------------------------------------------
+  --
+  -- for individual/multiple recipients
+  PROCEDURE send_email(pi_recip_ids             IN     alert_recip_id_tab
+                      ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                      ,po_message_cursor           OUT sys_refcursor);                       
+
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_mail_groups(po_message_severity        OUT hig_codes.hco_code%TYPE
+                           ,po_message_cursor          OUT sys_refcursor
+                           ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_mail_group(pi_nmg_id               IN     nm_mail_groups.nmg_id%TYPE
+                          ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor          OUT sys_refcursor
+                          ,po_cursor                  OUT sys_refcursor);                           
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_mail_groups(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                 ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                 ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                 ,pi_skip_n_rows          IN     PLS_INTEGER
+                                 ,pi_pagesize             IN     PLS_INTEGER
+                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT sys_refcursor
+                                 ,po_cursor                  OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_mail_group(pi_nmg_name                 IN     nm_mail_groups.nmg_name%TYPE
+                             ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor              OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_mail_group(pi_old_nmg_id               IN     nm_mail_groups.nmg_id%TYPE
+                             ,pi_old_nmg_name             IN     nm_mail_groups.nmg_name%TYPE
+                             ,pi_new_nmg_id               IN     nm_mail_groups.nmg_id%TYPE
+                             ,pi_new_nmg_name             IN     nm_mail_groups.nmg_name%TYPE
+                             ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor              OUT sys_refcursor);                             
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_mail_group(pi_nmg_id                   IN     nm_mail_groups.nmg_id%TYPE
+                             ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor              OUT sys_refcursor); 
+                                                                  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_mail_grp_members(pi_nmg_id               IN     nm_mail_groups.nmg_id%TYPE
+                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor);
+ 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_mail_grp_member(pi_nmg_id               IN     nm_mail_groups.nmg_id%TYPE
+                               ,pi_nmgm_nmu_id          IN     nm_mail_group_membership.nmgm_nmu_id%TYPE
+                               ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor          OUT sys_refcursor
+                               ,po_cursor                  OUT sys_refcursor);                           
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_mail_grp_members(pi_nmg_id               IN     nm_mail_groups.nmg_id%TYPE
+                                      ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                      ,pi_skip_n_rows          IN     PLS_INTEGER
+                                      ,pi_pagesize             IN     PLS_INTEGER
+                                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor          OUT sys_refcursor
+                                      ,po_cursor                  OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_grp_members_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                               ,po_message_cursor      OUT  sys_refcursor
+                               ,po_cursor              OUT  sys_refcursor);
+                                                                    
+  --
+  -----------------------------------------------------------------------------
+  --     
+  PROCEDURE create_mail_grp_member(pi_nmgm_nmg_id              IN     nm_mail_group_membership.nmgm_nmg_id%TYPE
+                                  ,pi_nmgm_nmu_id              IN     nm_mail_group_membership.nmgm_nmu_id%TYPE
+                                  ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor              OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_mail_grp_member(pi_old_nmgm_nmg_id          IN     nm_mail_group_membership.nmgm_nmg_id%TYPE
+                                  ,pi_old_nmgm_nmu_id          IN     nm_mail_group_membership.nmgm_nmu_id%TYPE
+                                  ,pi_new_nmgm_nmg_id          IN     nm_mail_group_membership.nmgm_nmg_id%TYPE
+                                  ,pi_new_nmgm_nmu_id          IN     nm_mail_group_membership.nmgm_nmu_id%TYPE
+                                  ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor              OUT sys_refcursor);                             
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_mail_grp_member(pi_nmgm_nmg_id              IN     nm_mail_group_membership.nmgm_nmg_id%TYPE
+                                  ,pi_nmgm_nmu_id              IN     nm_mail_group_membership.nmgm_nmu_id%TYPE
+                                  ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor              OUT sys_refcursor);
+                                  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_mail_users(po_message_severity       OUT hig_codes.hco_code%TYPE
+                          ,po_message_cursor         OUT sys_refcursor
+                          ,po_cursor                 OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_mail_user(pi_nmu_id               IN     nm_mail_users.nmu_id%TYPE
+                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                         ,po_message_cursor          OUT sys_refcursor
+                         ,po_cursor                  OUT sys_refcursor);                           
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_mail_users(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                ,pi_skip_n_rows          IN     PLS_INTEGER
+                                ,pi_pagesize             IN     PLS_INTEGER
+                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor          OUT sys_refcursor
+                                ,po_cursor                  OUT sys_refcursor);
+                                
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_user_mail_grps(pi_nmgm_nmu_id          IN     nm_mail_group_membership.nmgm_nmu_id%TYPE
+                              ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor          OUT sys_refcursor
+                              ,po_cursor                  OUT sys_refcursor);       
+                              
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_users_lov(po_message_severity    OUT  hig_codes.hco_code%TYPE
+                         ,po_message_cursor      OUT  sys_refcursor
+                         ,po_cursor              OUT  sys_refcursor);
+                         
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_mail_user(pi_nmu_name                 IN     nm_mail_users.nmu_name%TYPE
+                            ,pi_nmu_email                IN     nm_mail_users.nmu_email_address%TYPE
+                            ,pi_nmu_user_id              IN     nm_mail_users.nmu_hus_user_id%TYPE
+                            ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor              OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_mail_user(pi_old_nmu_id               IN     nm_mail_users.nmu_id%TYPE
+                            ,pi_old_nmu_name             IN     nm_mail_users.nmu_name%TYPE
+                            ,pi_old_nmu_email            IN     nm_mail_users.nmu_email_address%TYPE
+                            ,pi_old_nmu_user_id          IN     nm_mail_users.nmu_hus_user_id%TYPE
+                            ,pi_new_nmu_id               IN     nm_mail_users.nmu_id%TYPE
+                            ,pi_new_nmu_name             IN     nm_mail_users.nmu_name%TYPE
+                            ,pi_new_nmu_email            IN     nm_mail_users.nmu_email_address%TYPE
+                            ,pi_new_nmu_user_id          IN     nm_mail_users.nmu_hus_user_id%TYPE
+                            ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor              OUT sys_refcursor);                             
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_mail_user(pi_nmu_id                   IN     nm_mail_users.nmu_id%TYPE
+                            ,po_message_severity            OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor              OUT sys_refcursor);                         
+                                                            
+
+  --                                                                   
+  
+END awlrs_alerts_api;
+/
