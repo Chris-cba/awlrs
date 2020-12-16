@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkh-arc   1.0   Nov 19 2020 16:35:56   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Nov 19 2020 16:35:56  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkh-arc   1.1   Dec 16 2020 09:45:40   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Dec 16 2020 09:45:40  $
   --       Module Name      : $Workfile:   awlrs_alerts_api.pkh  $
-  --       Date fetched Out : $Modtime:   Nov 19 2020 16:30:38  $
-  --       Version          : $Revision:   1.0  $
+  --       Date fetched Out : $Modtime:   Nov 23 2020 16:05:00  $
+  --       Version          : $Revision:   1.1  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_sccsid is the SCCS ID for the package
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.0  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
   --
   TYPE alert_log_id_tab   IS TABLE OF hig_alert_manager_logs_vw.haml_hal_id%TYPE INDEX BY BINARY_INTEGER;
   TYPE alert_recip_id_tab IS TABLE OF hig_alert_manager_logs_vw.haml_har_id%TYPE INDEX BY BINARY_INTEGER;
@@ -194,7 +194,23 @@ AS
                                       ,po_message_severity    OUT  hig_codes.hco_code%TYPE
                                       ,po_message_cursor      OUT  sys_refcursor
                                       ,po_cursor              OUT  sys_refcursor);
-                                                                
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_attrib_values_lov(pi_inv_type          IN     hig_alert_types.halt_nit_inv_type%TYPE
+                                 ,pi_attrib_name       IN     hig_alert_type_conditions.hatc_attribute_value%TYPE
+                                 ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                 ,po_message_cursor      OUT  sys_refcursor
+                                 ,po_cursor              OUT  sys_refcursor); 
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_attrib_old_new_lov(pi_operation         IN     hig_alert_types.halt_operation%TYPE
+                                  ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                                  ,po_message_cursor      OUT  sys_refcursor
+                                  ,po_cursor              OUT  sys_refcursor);                                                                                              
   --
   -----------------------------------------------------------------------------
   --
@@ -214,6 +230,25 @@ AS
   PROCEDURE create_trigger_attributes(pi_alert_id             IN     hig_alert_type_attributes.hata_halt_id%TYPE
                                      ,pi_operation            IN     hig_alert_types.halt_operation%TYPE
                                      ,pi_attribute_name       IN     hig_alert_type_attributes.hata_attribute_name%TYPE  
+                                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor          OUT sys_refcursor);                                
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_trigger_attributes(pi_old_attrib_id        IN     hig_alert_type_attributes.hata_id%TYPE
+                                     ,pi_old_alert_id         IN     hig_alert_type_attributes.hata_halt_id%TYPE
+                                     ,pi_old_attribute_name   IN     hig_alert_type_attributes.hata_attribute_name%TYPE
+                                     ,pi_new_attrib_id        IN     hig_alert_type_attributes.hata_id%TYPE
+                                     ,pi_new_alert_id         IN     hig_alert_type_attributes.hata_halt_id%TYPE
+                                     ,pi_new_attribute_name   IN     hig_alert_type_attributes.hata_attribute_name%TYPE  
+                                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor          OUT sys_refcursor); 
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_trigger_attributes(pi_attrib_id            IN     hig_alert_type_attributes.hata_id%TYPE
                                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                      ,po_message_cursor          OUT sys_refcursor);                                
 
