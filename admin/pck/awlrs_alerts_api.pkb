@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.1   Dec 16 2020 09:45:38   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Dec 16 2020 09:45:38  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.2   Dec 16 2020 10:37:30   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Dec 16 2020 10:37:30  $
   --       Module Name      : $Workfile:   awlrs_alerts_api.pkb  $
-  --       Date fetched Out : $Modtime:   Nov 23 2020 16:20:58  $
-  --       Version          : $Revision:   1.1  $
+  --       Date fetched Out : $Modtime:   Dec 16 2020 10:36:08  $
+  --       Version          : $Revision:   1.2  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
   g_package_name  CONSTANT  VARCHAR2 (30)  := 'awlrs_alerts_api';
   --
   --Role constants--
@@ -3480,7 +3480,7 @@ END get_screen_text;
                                    ,pi_operators    => pi_filter_operators
                                    ,pi_values_1     => pi_filter_values_1
                                    ,pi_values_2     => pi_filter_values_2
-                                   ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
                                    ,po_where_clause => lv_filter);
           
       END IF;
