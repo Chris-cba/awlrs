@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.2   Dec 16 2020 10:37:30   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Dec 16 2020 10:37:30  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.3   Dec 23 2020 13:17:40   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Dec 23 2020 13:17:40  $
   --       Module Name      : $Workfile:   awlrs_alerts_api.pkb  $
-  --       Date fetched Out : $Modtime:   Dec 16 2020 10:36:08  $
-  --       Version          : $Revision:   1.2  $
+  --       Date fetched Out : $Modtime:   Dec 23 2020 11:31:42  $
+  --       Version          : $Revision:   1.3  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.3  $"';
   g_package_name  CONSTANT  VARCHAR2 (30)  := 'awlrs_alerts_api';
   --
   --Role constants--
@@ -195,48 +195,29 @@ END get_screen_text;
       lv_order_by         nm3type.max_varchar2;
       lv_filter           nm3type.max_varchar2;
       --
-      lv_driving_sql  nm3type.max_varchar2 :='SELECT halt_alert_type         alert_type
-                                                    ,halt_id                 alert_id
-                                                    ,halt_nit_inv_type       inv_type
-                                                    ,nit_descr               alert_for
-                                                    ,halt_description        descr_
-                                                    ,halt_operation          operation
-                                                    ,halt_table_name         table_name
-                                                    ,halt_trigger_name       trigger_name
-                                                    ,CASE 
-                                                       WHEN halt_trigger_name IS NULL THEN ''Not Created''
-                                                       ELSE hig_alert.get_trigger_status(pi_trigger_name => halt_trigger_name)
-                                                     END                     trg_status   
-                                                    ,halt_immediate          immediate_
-                                                    ,halt_trigger_count      batch_email_threshold
-                                                    ,halt_frequency_id       batch_email_freq_id
-                                                    ,hsfr_meaning            batch_email_freq_descr
-                                                FROM hig_alert_types
-                                                    ,nm_inv_types_all
-                                                    ,hig_scheduling_frequencies
-                                               WHERE halt_alert_type   = ''T''     
-                                                 AND halt_nit_inv_type = nit_inv_type(+)
-                                                 AND halt_frequency_id = hsfr_frequency_id(+)';                                                              
-      --
-      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  alert_type'
-                                                  ||',alert_id'
-                                                  ||',inv_type'
-                                                  ||',alert_for'
-                                                  ||',descr_'
-                                                  ||',operation'
-                                                  ||',table_name'
-                                                  ||',trigger_name'
-                                                  ||',trg_status'
-                                                  ||',immediate_'
-                                                  ||',batch_email_threshold'
-                                                  ||',batch_email_freq_id'
-                                                  ||',batch_email_freq_descr'
-                                                  ||',row_count'
-                                            ||' FROM (SELECT rownum ind'
-                                                        ||' ,a.*'
-                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                                                        ||' FROM ('||lv_driving_sql
-      ;
+      lv_cursor_sql  nm3type.max_varchar2 :='SELECT halt_alert_type    alert_type'
+                                                 ||',halt_id            alert_id'
+                                                 ||',halt_nit_inv_type  inv_type'
+                                                 ||',nit_descr          alert_for'
+                                                 ||',halt_description   descr_'
+                                                 ||',halt_operation     operation'
+                                                 ||',halt_table_name    table_name'
+                                                 ||',halt_trigger_name  trigger_name'
+                                                 ||',CASE'
+                                                   ||' WHEN halt_trigger_name IS NULL THEN ''Not Created'''
+                                                   ||' ELSE hig_alert.get_trigger_status(pi_trigger_name => halt_trigger_name)'
+                                                 ||' END                trg_status'
+                                                 ||',halt_immediate     immediate_'
+                                                 ||',halt_trigger_count batch_email_threshold'
+                                                 ||',halt_frequency_id  batch_email_freq_id'
+                                                 ||',hsfr_meaning       batch_email_freq_descr'
+                                                 ||',COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                            ||' FROM hig_alert_types'
+                                                 ||',nm_inv_types_all'
+                                                 ||',hig_scheduling_frequencies'
+                                           ||' WHERE halt_alert_type   = ''T'''
+                                             ||' AND halt_nit_inv_type = nit_inv_type(+)'
+                                             ||' AND halt_frequency_id = hsfr_frequency_id(+)';
       --
       lt_column_data  awlrs_util.column_data_tab;
       --
@@ -269,10 +250,10 @@ END get_screen_text;
                                 ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'trg_status'
-                                ,pi_query_col    => 'CASE 
-                                                       WHEN halt_trigger_name IS NULL THEN ''Not Created''
-                                                       ELSE hig_alert.get_trigger_status(pi_trigger_name => halt_trigger_name)
-                                                     END'
+                                ,pi_query_col    => 'CASE'
+                                                   ||' WHEN halt_trigger_name IS NULL THEN ''Not Created'''
+                                                   ||' ELSE hig_alert.get_trigger_status(pi_trigger_name => halt_trigger_name)'
+                                                 ||' END'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
@@ -298,45 +279,41 @@ END get_screen_text;
     END set_column_data;
     --
   BEGIN
-    
-      /*
-      ||Get the Order By clause.
-      */
-      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
-                                            ,pi_order_asc_desc => pi_order_asc_desc);
-      /*
-      ||Process the filter.
-      */
-      IF pi_filter_columns.COUNT > 0
-       THEN
-          
-          set_column_data(po_column_data => lt_column_data);
-          
-          awlrs_util.process_filter(pi_columns      => pi_filter_columns
-                                   ,pi_column_data  => lt_column_data
-                                   ,pi_operators    => pi_filter_operators
-                                   ,pi_values_1     => pi_filter_values_1
-                                   ,pi_values_2     => pi_filter_values_2
-                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
-                                   ,po_where_clause => lv_filter);
-          
-      END IF;
-      -- 
-      IF pi_pagesize IS NOT NULL
-        THEN
-          lv_cursor_sql := lv_cursor_sql
-                           ||CHR(10)||lv_filter
-                           ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'halt_id')||') a)'
-                           ||CHR(10)||' OFFSET '||pi_skip_n_rows  ||' ROWS '
-                           ||CHR(10)||' FETCH NEXT '||pi_pagesize ||' ROWS ONLY ';
-      ELSE
-          lv_cursor_sql := lv_cursor_sql
-                           ||CHR(10)||lv_filter
-                           ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'halt_id')||') a)'
-                           ||CHR(10)||' OFFSET '||pi_skip_n_rows  ||' ROWS ';
-      END IF;
-      --  
-      OPEN po_cursor FOR lv_cursor_sql;
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||lv_filter
+                     ||' ORDER BY '||NVL(lv_order_by,'halt_id')
+                     ||' OFFSET '||pi_skip_n_rows||' ROWS '
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+      THEN
+        lv_cursor_sql := lv_cursor_sql||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
+    END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -450,50 +427,33 @@ END get_screen_text;
                                        ,po_message_cursor          OUT sys_refcursor
                                        ,po_cursor                  OUT sys_refcursor)
   IS
-      --
-      lv_order_by         nm3type.max_varchar2;
-      lv_filter           nm3type.max_varchar2;
-      --
-      lv_driving_sql  nm3type.max_varchar2 :='SELECT halt_alert_type         alert_type
-                                                    ,halt_id                 alert_id
-                                                    ,halt_nit_inv_type       inv_type
-                                                    ,halt_hqt_id             query_id
-                                                    ,hqt_name                query_name   
-                                                    ,halt_description        descr_
-                                                    ,halt_frequency_id       frequency_id
-                                                    ,hsfr_meaning            freq_descr
-                                                    ,halt_last_run_date      last_run_date
-                                                    ,halt_next_run_date      next_run_date
-                                                    ,halt_suspend_query      suspend_query
-                                                FROM hig_alert_types
-                                                    ,nm_inv_types_all
-                                                    ,hig_query_types
-                                                    ,hig_scheduling_frequencies
-                                               WHERE halt_alert_type   = ''Q''
-                                                 AND halt_nit_inv_type = nit_inv_type(+)
-                                                 AND halt_hqt_id       = hqt_id(+) 
-                                                 AND halt_frequency_id = hsfr_frequency_id(+)';                                                              
-      --
-      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  alert_type'
-                                                  ||',alert_id'
-                                                  ||',inv_type'
-                                                  ||',query_id'
-                                                  ||',query_name'
-                                                  ||',descr_'
-                                                  ||',frequency_id'
-                                                  ||',freq_descr'
-                                                  ||',last_run_date'
-                                                  ||',next_run_date'
-                                                  ||',suspend_query'
-                                                  ||',row_count'
-                                            ||' FROM (SELECT rownum ind'
-                                                        ||' ,a.*'
-                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                                                        ||' FROM ('||lv_driving_sql
-      ;
-      --
-      lt_column_data  awlrs_util.column_data_tab;
-      --
+    --
+    lv_order_by         nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    --
+    lv_cursor_sql  nm3type.max_varchar2 :='SELECT halt_alert_type    alert_type'
+                                              ||',halt_id            alert_id'
+                                              ||',halt_nit_inv_type  inv_type'
+                                              ||',halt_hqt_id        query_id'
+                                              ||',hqt_name           query_name'
+                                              ||',halt_description   descr_'
+                                              ||',halt_frequency_id  frequency_id'
+                                              ||',hsfr_meaning       freq_descr'
+                                              ||',halt_last_run_date last_run_date'
+                                              ||',halt_next_run_date next_run_date'
+                                              ||',halt_suspend_query suspend_query'
+                                              ||',COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                         ||' FROM hig_alert_types'
+                                              ||',nm_inv_types_all'
+                                              ||',hig_query_types'
+                                              ||',hig_scheduling_frequencies'
+                                        ||' WHERE halt_alert_type   = ''Q'''
+                                          ||' AND halt_nit_inv_type = nit_inv_type(+)'
+                                          ||' AND halt_hqt_id       = hqt_id(+)'
+                                          ||' AND halt_frequency_id = hsfr_frequency_id(+)';
+    --
+    lt_column_data  awlrs_util.column_data_tab;
+    --
     PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
       IS
     BEGIN
@@ -503,7 +463,25 @@ END get_screen_text;
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
-      --   
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'alert_id'
+                                ,pi_query_col    => 'halt_id'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'inv_type'
+                                ,pi_query_col    => 'halt_nit_inv_type'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'query_id'
+                                ,pi_query_col    => 'halt_hqt_id'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
       awlrs_util.add_column_data(pi_cursor_col   => 'query_name'
                                 ,pi_query_col    => 'hqt_name'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
@@ -516,12 +494,18 @@ END get_screen_text;
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
+      awlrs_util.add_column_data(pi_cursor_col   => 'frequency_id'
+                                ,pi_query_col    => 'halt_frequency_id'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
       awlrs_util.add_column_data(pi_cursor_col   => 'freq_descr'
                                 ,pi_query_col    => 'hsfr_meaning'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
-      --                          
+      --
       awlrs_util.add_column_data(pi_cursor_col   => 'last_run_date'
                                 ,pi_query_col    => 'halt_last_run_date'
                                 ,pi_datatype     => awlrs_util.c_datetime_col
@@ -543,45 +527,41 @@ END get_screen_text;
     END set_column_data;
     --
   BEGIN
-    
-      /*
-      ||Get the Order By clause.
-      */
-      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
-                                            ,pi_order_asc_desc => pi_order_asc_desc);
-      /*
-      ||Process the filter.
-      */
-      IF pi_filter_columns.COUNT > 0
-       THEN
-          
-          set_column_data(po_column_data => lt_column_data);
-          
-          awlrs_util.process_filter(pi_columns      => pi_filter_columns
-                                   ,pi_column_data  => lt_column_data
-                                   ,pi_operators    => pi_filter_operators
-                                   ,pi_values_1     => pi_filter_values_1
-                                   ,pi_values_2     => pi_filter_values_2
-                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
-                                   ,po_where_clause => lv_filter);
-          
-      END IF;
-      --
-      IF pi_pagesize IS NOT NULL
-        THEN
-          lv_cursor_sql := lv_cursor_sql
-                           ||CHR(10)||lv_filter
-                           ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'halt_id')||') a)'
-                           ||CHR(10)||' OFFSET '||pi_skip_n_rows  ||' ROWS '
-                           ||CHR(10)||' FETCH NEXT '||pi_pagesize ||' ROWS ONLY ';
-      ELSE
-          lv_cursor_sql := lv_cursor_sql
-                           ||CHR(10)||lv_filter
-                           ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'halt_id')||') a)'
-                           ||CHR(10)||' OFFSET '||pi_skip_n_rows  ||' ROWS ';
-      END IF;
-      --  
-      OPEN po_cursor FOR lv_cursor_sql;
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||lv_filter
+                     ||' ORDER BY '||NVL(lv_order_by,'halt_id')
+                     ||' OFFSET '||pi_skip_n_rows||' ROWS '
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+      THEN
+        lv_cursor_sql := lv_cursor_sql||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
+    END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -681,37 +661,46 @@ END get_screen_text;
                                         ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                         ,po_message_cursor          OUT sys_refcursor
                                         ,po_cursor                  OUT sys_refcursor)
-  IS
-      --
-      lv_order_by         nm3type.max_varchar2;
-      lv_filter           nm3type.max_varchar2;
-      --
-      lv_driving_sql  nm3type.max_varchar2 :='SELECT hata_halt_id            alert_id
-                                                    ,hata_id                 attrib_id
-                                                    ,hata_attribute_name     attrib_name
-                                                    ,ita_scrn_text           attrib_name_descr
-                                                FROM hig_alert_type_attributes
-                                                    ,nm_inv_type_attribs_all
-                                               WHERE hata_halt_id        = :pi_alert_id
-                                                 AND hata_attribute_name = ita_attrib_name
-                                                 AND ita_inv_type        = :pi_inv_type';                                                              
-      --
-      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  alert_id'
-                                                  ||',attrib_id'
-                                                  ||',attrib_name'
-                                                  ||',attrib_name_descr'
-                                                  ||',row_count'
-                                            ||' FROM (SELECT rownum ind'
-                                                        ||' ,a.*'
-                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                                                        ||' FROM ('||lv_driving_sql
-      ;
-      --
-      lt_column_data  awlrs_util.column_data_tab;
-      --
+    IS
+    --
+    lv_order_by         nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    --
+    lv_cursor_sql  nm3type.max_varchar2 :='SELECT hata_halt_id        alert_id'
+                                              ||',hata_id             attrib_id'
+                                              ||',hata_attribute_name attrib_name'
+                                              ||',ita_scrn_text       attrib_name_descr'
+                                              ||',COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                         ||' FROM hig_alert_type_attributes'
+                                              ||',nm_inv_type_attribs_all'
+                                        ||' WHERE hata_halt_id        = :pi_alert_id'
+                                          ||' AND hata_attribute_name = ita_attrib_name'
+                                          ||' AND ita_inv_type        = :pi_inv_type'
+    ;
+    --
+    lt_column_data  awlrs_util.column_data_tab;
+    --
     PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
       IS
     BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'alert_id'
+                                ,pi_query_col    => 'hata_halt_id'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'attrib_id'
+                                ,pi_query_col    => 'hata_id'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'attrib_name'
+                                ,pi_query_col    => 'hata_attribute_name'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'attrib_name_descr'
                                 ,pi_query_col    => 'ita_scrn_text'
@@ -722,47 +711,44 @@ END get_screen_text;
     END set_column_data;
     --
   BEGIN
-    
-      /*
-      ||Get the Order By clause.
-      */
-      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
-                                            ,pi_order_asc_desc => pi_order_asc_desc);
-      /*
-      ||Process the filter.
-      */
-      IF pi_filter_columns.COUNT > 0
-       THEN
-          
-          set_column_data(po_column_data => lt_column_data);
-          
-          awlrs_util.process_filter(pi_columns      => pi_filter_columns
-                                   ,pi_column_data  => lt_column_data
-                                   ,pi_operators    => pi_filter_operators
-                                   ,pi_values_1     => pi_filter_values_1
-                                   ,pi_values_2     => pi_filter_values_2
-                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
-                                   ,po_where_clause => lv_filter);
-          
-      END IF;
-      -- 
-      IF pi_pagesize IS NOT NULL
-        THEN
-          lv_cursor_sql := lv_cursor_sql
-                           ||CHR(10)||lv_filter
-                           ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'ita_scrn_text')||') a)'
-                           ||CHR(10)||' OFFSET '||pi_skip_n_rows  ||' ROWS '
-                           ||CHR(10)||' FETCH NEXT '||pi_pagesize ||' ROWS ONLY ';
-      ELSE
-          lv_cursor_sql := lv_cursor_sql
-                           ||CHR(10)||lv_filter
-                           ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'ita_scrn_text')||') a)'
-                           ||CHR(10)||' OFFSET '||pi_skip_n_rows  ||' ROWS ';
-      END IF; 
-      --      
-      OPEN po_cursor FOR lv_cursor_sql
-          USING pi_alert_id
-               ,pi_inv_type;
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||lv_filter
+                     ||' ORDER BY '||NVL(lv_order_by,'ita_scrn_text')
+                     ||' OFFSET '||pi_skip_n_rows||' ROWS '
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+      THEN
+        lv_cursor_sql := lv_cursor_sql||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
+    END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql
+    USING pi_alert_id
+         ,pi_inv_type
+    ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -2039,54 +2025,33 @@ END get_screen_text;
                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                 ,po_message_cursor          OUT sys_refcursor
                                 ,po_cursor                  OUT sys_refcursor)
-  IS
-      --
-      lv_order_by         nm3type.max_varchar2;
-      lv_filter           nm3type.max_varchar2;
-      --
-      lv_driving_sql  nm3type.max_varchar2 :='SELECT haml_halt_id           alert_id
-                                                    ,haml_hal_id            alert_log_id  
-                                                    ,haml_har_id            recip_id
-                                                    ,haml_nit_inv_type      inv_type
-                                                    ,haml_descr             inv_type_descr
-                                                    ,haml_description       alert_descr
-                                                    ,haml_pk_column         primary_key
-                                                    ,haml_pk_id             pk_id
-                                                    ,haml_recipient_email   recip_email
-                                                    ,haml_created_date      alert_raised_date
-                                                    ,haml_email_date_sent   alert_sent_date
-                                                    ,haml_status            status
-                                                    ,haml_mail_from         mail_from
-                                                    ,haml_subject           mail_subject
-                                                    ,haml_email_body        mail_text
-                                                    ,haml_comments          failure_comments
-                                                FROM hig_alert_manager_logs_vw';                                                              
-      --
-      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  alert_id'
-                                                  ||',alert_log_id'
-                                                  ||',recip_id'
-                                                  ||',inv_type'
-                                                  ||',inv_type_descr'
-                                                  ||',alert_descr'
-                                                  ||',primary_key'
-                                                  ||',pk_id'
-                                                  ||',recip_email'
-                                                  ||',alert_raised_date'
-                                                  ||',alert_sent_date'
-                                                  ||',status'
-                                                  ||',mail_from'
-                                                  ||',mail_subject'
-                                                  ||',mail_text'
-                                                  ||',failure_comments'
-                                                  ||',row_count'
-                                            ||' FROM (SELECT rownum ind'
-                                                        ||' ,a.*'
-                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                                                        ||' FROM ('||lv_driving_sql
-      ;
-      --
-      lt_column_data  awlrs_util.column_data_tab;
-      --
+    IS
+    --
+    lv_order_by         nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    --
+    lv_cursor_sql  nm3type.max_varchar2 :='SELECT haml_halt_id         alert_id'
+                                              ||',haml_hal_id          alert_log_id'
+                                              ||',haml_har_id          recip_id'
+                                              ||',haml_nit_inv_type    inv_type'
+                                              ||',haml_descr           inv_type_descr'
+                                              ||',haml_description     alert_descr'
+                                              ||',haml_pk_column       primary_key'
+                                              ||',haml_pk_id           pk_id'
+                                              ||',haml_recipient_email recip_email'
+                                              ||',haml_created_date    alert_raised_date'
+                                              ||',haml_email_date_sent alert_sent_date'
+                                              ||',haml_status          status'
+                                              ||',haml_mail_from       mail_from'
+                                              ||',haml_subject         mail_subject'
+                                              ||',haml_email_body      mail_text'
+                                              ||',haml_comments        failure_comments'
+                                              ||',COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                         ||' FROM hig_alert_manager_logs_vw'
+    ;
+    --
+    lt_column_data  awlrs_util.column_data_tab;
+    --
     PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
       IS
     BEGIN
@@ -2148,45 +2113,41 @@ END get_screen_text;
     END set_column_data;
     --
   BEGIN
-    
-      /*
-      ||Get the Order By clause.
-      */
-      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
-                                            ,pi_order_asc_desc => pi_order_asc_desc);
-      /*
-      ||Process the filter.
-      */
-      IF pi_filter_columns.COUNT > 0
-       THEN
-          
-          set_column_data(po_column_data => lt_column_data);
-          
-          awlrs_util.process_filter(pi_columns      => pi_filter_columns
-                                   ,pi_column_data  => lt_column_data
-                                   ,pi_operators    => pi_filter_operators
-                                   ,pi_values_1     => pi_filter_values_1
-                                   ,pi_values_2     => pi_filter_values_2
-                                   ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
-                                   ,po_where_clause => lv_filter);
-          
-      END IF;
-      --  
-      IF pi_pagesize IS NOT NULL
-        THEN
-          lv_cursor_sql := lv_cursor_sql
-                           ||CHR(10)||lv_filter
-                           ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'haml_hal_id')||') a)'
-                           ||CHR(10)||' OFFSET '||pi_skip_n_rows  ||' ROWS '
-                           ||CHR(10)||' FETCH NEXT '||pi_pagesize ||' ROWS ONLY ';
-      ELSE
-          lv_cursor_sql := lv_cursor_sql
-                           ||CHR(10)||lv_filter
-                           ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'haml_hal_id')||') a)'
-                           ||CHR(10)||' OFFSET '||pi_skip_n_rows  ||' ROWS ';
-      END IF;
-      --      
-      OPEN po_cursor FOR lv_cursor_sql;
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||lv_filter
+                     ||' ORDER BY '||NVL(lv_order_by,'haml_hal_id')
+                     ||' OFFSET '||pi_skip_n_rows||' ROWS '
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+      THEN
+        lv_cursor_sql := lv_cursor_sql||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
+    END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -2196,7 +2157,8 @@ END get_screen_text;
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  END get_paged_alert_logs;                                                      
+  END get_paged_alert_logs;
+                                                      
   
   --
   -----------------------------------------------------------------------------
@@ -2384,26 +2346,19 @@ END get_screen_text;
                                  ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                  ,po_message_cursor          OUT sys_refcursor
                                  ,po_cursor                  OUT sys_refcursor)
-  IS
-      --
-      lv_order_by         nm3type.max_varchar2;
-      lv_filter           nm3type.max_varchar2;
-      --
-      lv_driving_sql  nm3type.max_varchar2 :='SELECT nmg_id        nmg_id  
-                                                    ,nmg_name      nmg_name    
-                                                FROM nm_mail_groups';                                                              
-      --
-      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  nmg_id'
-                                                  ||',nmg_name'
-                                                  ||',row_count'
-                                            ||' FROM (SELECT rownum ind'
-                                                        ||' ,a.*'
-                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                                                        ||' FROM ('||lv_driving_sql
-      ;
-      --
-      lt_column_data  awlrs_util.column_data_tab;
-      --
+    IS
+    --
+    lv_order_by         nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    --
+    lv_cursor_sql  nm3type.max_varchar2 :='SELECT nmg_id   nmg_id'
+                                              ||',nmg_name nmg_name'
+                                              ||',COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                         ||' FROM nm_mail_groups'
+    ;
+    --
+    lt_column_data  awlrs_util.column_data_tab;
+    --
     PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
       IS
     BEGIN
@@ -2423,45 +2378,41 @@ END get_screen_text;
     END set_column_data;
     --
   BEGIN
-    
-      /*
-      ||Get the Order By clause.
-      */
-      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
-                                            ,pi_order_asc_desc => pi_order_asc_desc);
-      /*
-      ||Process the filter.
-      */
-      IF pi_filter_columns.COUNT > 0
-       THEN
-          
-          set_column_data(po_column_data => lt_column_data);
-          
-          awlrs_util.process_filter(pi_columns      => pi_filter_columns
-                                   ,pi_column_data  => lt_column_data
-                                   ,pi_operators    => pi_filter_operators
-                                   ,pi_values_1     => pi_filter_values_1
-                                   ,pi_values_2     => pi_filter_values_2
-                                   ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
-                                   ,po_where_clause => lv_filter);
-          
-      END IF;
-      --  
-      IF pi_pagesize IS NOT NULL
-        THEN
-          lv_cursor_sql := lv_cursor_sql
-                           ||CHR(10)||lv_filter
-                           ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'UPPER(nmg_name)')||') a)'
-                           ||CHR(10)||' OFFSET '||pi_skip_n_rows  ||' ROWS '
-                           ||CHR(10)||' FETCH NEXT '||pi_pagesize ||' ROWS ONLY ';
-      ELSE
-          lv_cursor_sql := lv_cursor_sql
-                           ||CHR(10)||lv_filter
-                           ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'UPPER(nmg_name)')||') a)'
-                           ||CHR(10)||' OFFSET '||pi_skip_n_rows  ||' ROWS ';
-      END IF; 
-      --
-      OPEN po_cursor FOR lv_cursor_sql;
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'WHERE' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||lv_filter
+                     ||' ORDER BY '||NVL(lv_order_by,'UPPER(nmg_name)')
+                     ||' OFFSET '||pi_skip_n_rows||' ROWS '
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+      THEN
+        lv_cursor_sql := lv_cursor_sql||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
+    END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -2926,29 +2877,21 @@ END get_screen_text;
                                       ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                       ,po_message_cursor          OUT sys_refcursor
                                       ,po_cursor                  OUT sys_refcursor)
-  IS
-      --
-      lv_order_by         nm3type.max_varchar2;
-      lv_filter           nm3type.max_varchar2;
-      --
-      lv_driving_sql  nm3type.max_varchar2 :='SELECT nmgm_nmg_id      nmgm_nmg_id  
-                                                    ,nmgm_nmu_id      nmgm_nmu_id
-                                                    ,nmu_name         nmu_name  
-                                                FROM v_nm_mail_group_membership
-                                               WHERE nmgm_nmg_id = :pi_nmg_id';                                                              
-      --
-      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  nmgm_nmg_id'
-                                                  ||',nmgm_nmu_id'
-                                                  ||',nmu_name'
-                                                  ||',row_count'
-                                            ||' FROM (SELECT rownum ind'
-                                                        ||' ,a.*'
-                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                                                        ||' FROM ('||lv_driving_sql
-      ;
-      --
-      lt_column_data  awlrs_util.column_data_tab;
-      --
+    IS
+    --
+    lv_order_by         nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    --
+    lv_cursor_sql  nm3type.max_varchar2 :='SELECT nmgm_nmg_id nmgm_nmg_id'
+                                              ||',nmgm_nmu_id nmgm_nmu_id'
+                                              ||',nmu_name    nmu_name'
+                                              ||',COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                         ||' FROM v_nm_mail_group_membership'
+                                        ||' WHERE nmgm_nmg_id = :pi_nmg_id'
+    ;
+    --
+    lt_column_data  awlrs_util.column_data_tab;
+    --
     PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
       IS
     BEGIN
@@ -2970,50 +2913,47 @@ END get_screen_text;
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
-      --                          
+      --
     END set_column_data;
     --
   BEGIN
-    
-      /*
-      ||Get the Order By clause.
-      */
-      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
-                                            ,pi_order_asc_desc => pi_order_asc_desc);
-      /*
-      ||Process the filter.
-      */
-      IF pi_filter_columns.COUNT > 0
-       THEN
-          
-          set_column_data(po_column_data => lt_column_data);
-          
-          awlrs_util.process_filter(pi_columns      => pi_filter_columns
-                                   ,pi_column_data  => lt_column_data
-                                   ,pi_operators    => pi_filter_operators
-                                   ,pi_values_1     => pi_filter_values_1
-                                   ,pi_values_2     => pi_filter_values_2
-                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
-                                   ,po_where_clause => lv_filter);
-          
-      END IF;
-      --
-      IF pi_pagesize IS NOT NULL
-        THEN
-          lv_cursor_sql := lv_cursor_sql
-                           ||CHR(10)||lv_filter
-                           ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'UPPER(nmu_name)')||') a)'
-                           ||CHR(10)||' OFFSET '||pi_skip_n_rows  ||' ROWS '
-                           ||CHR(10)||' FETCH NEXT '||pi_pagesize ||' ROWS ONLY ';
-      ELSE
-          lv_cursor_sql := lv_cursor_sql
-                           ||CHR(10)||lv_filter
-                           ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'UPPER(nmu_name)')||') a)'
-                           ||CHR(10)||' OFFSET '||pi_skip_n_rows  ||' ROWS ';
-      END IF;  
-      --
-      OPEN po_cursor FOR lv_cursor_sql
-          USING pi_nmg_id;
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||lv_filter
+                     ||' ORDER BY '||NVL(lv_order_by,'UPPER(nmu_name)')
+                     ||' OFFSET '||pi_skip_n_rows||' ROWS '
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+      THEN
+        lv_cursor_sql := lv_cursor_sql||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
+    END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql
+    USING pi_nmg_id
+    ;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -3023,7 +2963,7 @@ END get_screen_text;
      THEN
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
-  
+
   END get_paged_mail_grp_members;                                                                                    
   
   --
@@ -3401,26 +3341,15 @@ END get_screen_text;
       lv_order_by         nm3type.max_varchar2;
       lv_filter           nm3type.max_varchar2;
       --
-      lv_driving_sql  nm3type.max_varchar2 :='SELECT nmu_id             nmu_id
-                                                    ,nmu_name           nmu_name
-                                                    ,nmu_email_address  nmu_email_address
-                                                    ,nmu_hus_user_id    nmu_hus_user_id
-                                                    ,hus_name           hus_name
-                                                FROM nm_mail_users
-                                                    ,hig_users
-                                               WHERE nmu_hus_user_id = hus_user_id(+)';                                                              
-      --
-      lv_cursor_sql  nm3type.max_varchar2 := 'SELECT  nmu_id'
-                                                  ||',nmu_name'
-                                                  ||',nmu_email_address'
-                                                  ||',nmu_hus_user_id'
-                                                  ||',hus_name'
-                                                  ||',row_count'
-                                            ||' FROM (SELECT rownum ind'
-                                                        ||' ,a.*'
-                                                        ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
-                                                        ||' FROM ('||lv_driving_sql
-      ;
+      lv_cursor_sql  nm3type.max_varchar2 :='SELECT nmu_id            nmu_id'
+                                                ||',nmu_name          nmu_name'
+                                                ||',nmu_email_address nmu_email_address'
+                                                ||',nmu_hus_user_id   nmu_hus_user_id'
+                                                ||',hus_name          hus_name'
+                                                ||',COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                           ||' FROM nm_mail_users'
+                                                ||',hig_users'
+                                          ||' WHERE nmu_hus_user_id = hus_user_id(+)';
       --
       lt_column_data  awlrs_util.column_data_tab;
       --
@@ -3461,45 +3390,41 @@ END get_screen_text;
     END set_column_data;
     --
   BEGIN
-    
-      /*
-      ||Get the Order By clause.
-      */
-      lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
-                                            ,pi_order_asc_desc => pi_order_asc_desc);
-      /*
-      ||Process the filter.
-      */
-      IF pi_filter_columns.COUNT > 0
-       THEN
-          
-          set_column_data(po_column_data => lt_column_data);
-          
-          awlrs_util.process_filter(pi_columns      => pi_filter_columns
-                                   ,pi_column_data  => lt_column_data
-                                   ,pi_operators    => pi_filter_operators
-                                   ,pi_values_1     => pi_filter_values_1
-                                   ,pi_values_2     => pi_filter_values_2
-                                   ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
-                                   ,po_where_clause => lv_filter);
-          
-      END IF;
-      --  
-      IF pi_pagesize IS NOT NULL
-        THEN
-          lv_cursor_sql := lv_cursor_sql
-                           ||CHR(10)||lv_filter
-                           ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'UPPER(nmu_name)')||') a)'   --ordering may change--
-                           ||CHR(10)||' OFFSET '||pi_skip_n_rows  ||' ROWS '
-                           ||CHR(10)||' FETCH NEXT '||pi_pagesize ||' ROWS ONLY ';
-      ELSE
-          lv_cursor_sql := lv_cursor_sql
-                           ||CHR(10)||lv_filter
-                           ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'UPPER(nmu_name)')||') a)'   --ordering may change--
-                           ||CHR(10)||' OFFSET '||pi_skip_n_rows  ||' ROWS ';
-      END IF;
-      --
-      OPEN po_cursor FOR lv_cursor_sql;
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'AND' --Depends on lv_driving_sql if it has a where clause already then AND otherwise WHERE
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||lv_filter
+                     ||' ORDER BY '||NVL(lv_order_by,'UPPER(nmu_name)')
+                     ||' OFFSET '||pi_skip_n_rows||' ROWS '
+    ;
+    --
+    IF pi_pagesize IS NOT NULL
+      THEN
+        lv_cursor_sql := lv_cursor_sql||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
+    END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
