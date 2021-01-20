@@ -2,11 +2,11 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_util IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_util.pkh-arc   1.1   Aug 07 2020 14:38:48   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_util.pkh-arc   1.2   Jan 20 2021 12:00:32   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_util.pkh  $
-  --       Date into PVCS   : $Date:   Aug 07 2020 14:38:48  $
-  --       Date fetched Out : $Modtime:   Jul 30 2020 10:48:22  $
-  --       PVCS Version     : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Jan 20 2021 12:00:32  $
+  --       Date fetched Out : $Modtime:   Jan 18 2021 17:53:10  $
+  --       PVCS Version     : $Revision:   1.2  $
   --
   --   Author : Vikas Mhetre
   --
@@ -14,7 +14,7 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_util IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_sccsid CONSTANT VARCHAR2(200) := '$Revision:   1.1  $';
+  g_sccsid CONSTANT VARCHAR2(200) := '$Revision:   1.2  $';
   --
   TYPE swd_id_tab IS TABLE OF sdl_wip_datums.swd_id%TYPE
                   INDEX BY BINARY_INTEGER;
@@ -22,8 +22,22 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_util IS
   TYPE sld_key_tab IS TABLE OF sdl_load_data.sld_key%TYPE
                    INDEX BY BINARY_INTEGER;
   --
+  TYPE sfs_id_tab IS TABLE OF sdl_file_submissions.sfs_id%TYPE
+                   INDEX BY BINARY_INTEGER;
+  --
+  TYPE sam_id_tab IS TABLE OF sdl_attribute_mapping.sam_id%TYPE
+                   INDEX BY BINARY_INTEGER;
+  --
+  TYPE spfc_id_tab IS TABLE OF sdl_profile_file_columns.spfc_id%TYPE
+                   INDEX BY BINARY_INTEGER;
+  --
   TYPE sam_file_attribute_tab IS TABLE OF sdl_attribute_mapping.sam_file_attribute_name%TYPE
                              INDEX BY BINARY_INTEGER;
+  --
+  TYPE spfc_col_name_tab IS TABLE OF sdl_profile_file_columns.spfc_col_name%TYPE
+                             INDEX BY BINARY_INTEGER;
+  --
+  TYPE file_attribute_tab IS TABLE OF VARCHAR2( 200 );
   --
   -- This function returns the current version of the package header
   FUNCTION get_version RETURN VARCHAR2;
@@ -42,6 +56,12 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_util IS
   -----------------------------------------------------------------------------
   --
   PROCEDURE validate_user_role;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_current_user(po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor);
   --
   -----------------------------------------------------------------------------
   --
