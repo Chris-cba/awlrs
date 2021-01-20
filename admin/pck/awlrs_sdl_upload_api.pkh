@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_upload_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_upload_api.pkh-arc   1.1   Aug 07 2020 14:40:48   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_upload_api.pkh-arc   1.2   Jan 20 2021 12:00:56   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_upload_api.pkh  $
-  --       Date into PVCS   : $Date:   Aug 07 2020 14:40:48  $
-  --       Date fetched Out : $Modtime:   Jul 28 2020 21:22:30  $
-  --       PVCS Version     : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Jan 20 2021 12:00:56  $
+  --       Date fetched Out : $Modtime:   Jan 20 2021 07:13:30  $
+  --       PVCS Version     : $Revision:   1.2  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_upload_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_sccsid CONSTANT VARCHAR2(200) := '$Revision:   1.1  $';
+  g_sccsid CONSTANT VARCHAR2(200) := '$Revision:   1.2  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -53,6 +53,12 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_upload_api IS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE batch_status_failed(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_batch_file_path(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
                                ,po_message_severity OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor   OUT sys_refcursor
@@ -77,6 +83,56 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_upload_api IS
                                       ,po_message_severity OUT hig_codes.hco_code%TYPE
                                       ,po_message_cursor   OUT sys_refcursor
                                       ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_submission(pi_batch_id          IN  sdl_file_submissions.sfs_id%TYPE
+                             ,pi_old_sfs_name      IN  sdl_file_submissions.sfs_name%TYPE
+                             ,pi_new_sfs_name      IN  sdl_file_submissions.sfs_name%TYPE
+                             ,po_message_severity  OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor    OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_submission(pi_batch_ids        IN  awlrs_sdl_util.sfs_id_tab
+                             ,pi_select_all       IN  VARCHAR2 DEFAULT 'N'
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_process_audit_ui_active(po_ui_active         OUT VARCHAR2
+                                       ,po_message_severity  OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor    OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_batch_process_audit_info(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE reset_batch_process_status(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                      ,pi_spa_id           IN  sdl_process_audit.spa_id%TYPE
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_submission_attribs_details(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor   OUT sys_refcursor
+                                          ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_load_record_attribs(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                      ,pi_sld_key          IN  sdl_load_data.sld_key%TYPE
+                                      ,pi_record_json      IN  CLOB
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor);
   --
   -----------------------------------------------------------------------------
   --
@@ -273,12 +329,6 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_upload_api IS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_update_status_codes(po_message_severity OUT hig_codes.hco_code%TYPE
-                                   ,po_message_cursor   OUT sys_refcursor
-                                   ,po_cursor           OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
   PROCEDURE update_load_record_status(pi_status           IN  sdl_load_data.sld_status%TYPE
                                      ,pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
                                      ,pi_sld_keys         IN  awlrs_sdl_util.sld_key_tab
@@ -304,7 +354,47 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_upload_api IS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_batch_destination_types(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor   OUT sys_refcursor
+                                       ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_load_destination_details(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                        ,pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                        ,pi_dest_id          IN  sdl_destination_header.sdh_id%TYPE
+                                        ,pi_destination_type IN  sdl_destination_header.sdh_destination_type%TYPE
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_load_datums_detail(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor
+                                  ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_load_datums_detail(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                        ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                        ,pi_skip_n_rows      IN  PLS_INTEGER
+                                        ,pi_pagesize         IN  PLS_INTEGER
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE transfer_load_data(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                              ,pi_dest_id          IN  sdl_destination_header.sdh_id%TYPE
                               ,pi_load_option      IN  VARCHAR2 DEFAULT 'AFTER'
                               ,po_message_severity OUT hig_codes.hco_code%TYPE
                               ,po_message_cursor   OUT sys_refcursor);
