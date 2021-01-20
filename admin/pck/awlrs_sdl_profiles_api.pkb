@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.8   Jan 20 2021 12:02:12   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.9   Jan 20 2021 12:54:20   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 20 2021 12:02:12  $
-  --       Date fetched Out : $Modtime:   Jan 20 2021 07:09:18  $
-  --       PVCS Version     : $Revision:   1.8  $
+  --       Date into PVCS   : $Date:   Jan 20 2021 12:54:20  $
+  --       Date fetched Out : $Modtime:   Jan 20 2021 12:52:22  $
+  --       PVCS Version     : $Revision:   1.9  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.8  $';
+  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.9  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -4002,11 +4002,13 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   IS
   --
     CURSOR c_sam IS
-    SELECT ROWNUM col_id, sam_col_id, sam_id
-      FROM sdl_attribute_mapping
-     WHERE sam_sp_id = pi_profile_id
-       AND sam_sdh_id = pi_dest_header_id
-     ORDER BY sam_col_id;
+     SELECT ROWNUM col_id, sam_col_id, sam_id
+     FROM (
+         SELECT sam_col_id, sam_id
+           FROM sdl_attribute_mapping
+          WHERE sam_sp_id = pi_profile_id
+           AND sam_sdh_id = pi_dest_header_id
+         ORDER BY sam_col_id);
   --
   BEGIN
     --
