@@ -2,11 +2,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_util IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_util.pkb-arc   1.1   Aug 07 2020 14:39:42   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_util.pkb-arc   1.2   Jan 20 2021 12:00:46   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_util.pkb  $
-  --       Date into PVCS   : $Date:   Aug 07 2020 14:39:42  $
-  --       Date fetched Out : $Modtime:   Jul 30 2020 10:48:50  $
-  --       PVCS Version     : $Revision:   1.1  $
+  --       Date into PVCS   : $Date:   Jan 20 2021 12:00:46  $
+  --       Date fetched Out : $Modtime:   Jan 18 2021 17:53:28  $
+  --       PVCS Version     : $Revision:   1.2  $
   --
   --   Author : Vikas Mhetre
   --
@@ -14,7 +14,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_util IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.1  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.2  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_sdl_util';
   --
   -----------------------------------------------------------------------------
@@ -74,6 +74,33 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_util IS
     END IF;
     --
   END validate_user_role;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_current_user(po_message_severity OUT hig_codes.hco_code%TYPE
+                            ,po_message_cursor   OUT sys_refcursor
+                            ,po_cursor           OUT sys_refcursor)
+  IS
+    --
+  BEGIN
+    --
+    awlrs_sdl_util.validate_user_role;
+    --
+      OPEN po_cursor FOR
+    SELECT hu.hus_user_id  userid
+          ,hu.hus_username username
+     FROM hig_users hu
+    WHERE hu.hus_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID');
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_current_user;
   --
   -----------------------------------------------------------------------------
   --
