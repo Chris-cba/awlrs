@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.9   Jan 20 2021 12:54:20   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.10   Jan 20 2021 15:40:18   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 20 2021 12:54:20  $
-  --       Date fetched Out : $Modtime:   Jan 20 2021 12:52:22  $
-  --       PVCS Version     : $Revision:   1.9  $
+  --       Date into PVCS   : $Date:   Jan 20 2021 15:40:18  $
+  --       Date fetched Out : $Modtime:   Jan 20 2021 15:38:36  $
+  --       PVCS Version     : $Revision:   1.10  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.9  $';
+  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.10  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -1029,6 +1029,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
     DELETE sdl_profile_source_header
      WHERE spsh_sp_id = pi_profile_id;
+    --
+    DELETE sdl_datum_attribute_mapping
+     WHERE sdam_profile_id = pi_profile_id;
     --
     DELETE sdl_profiles
      WHERE sp_id = pi_profile_id;
