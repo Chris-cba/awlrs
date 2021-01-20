@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkh-arc   1.2   Aug 07 2020 14:49:02   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkh-arc   1.3   Jan 20 2021 12:01:14   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkh  $
-  --       Date into PVCS   : $Date:   Aug 07 2020 14:49:02  $
-  --       Date fetched Out : $Modtime:   Jul 28 2020 21:24:10  $
-  --       PVCS Version     : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   Jan 20 2021 12:01:14  $
+  --       Date fetched Out : $Modtime:   Jan 20 2021 07:07:34  $
+  --       PVCS Version     : $Revision:   1.3  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-    g_sccsid CONSTANT VARCHAR2(200) := '$Revision:   1.2  $';
+    g_sccsid CONSTANT VARCHAR2(200) := '$Revision:   1.3  $';
   --
   -- This function returns the current version of the package header
   FUNCTION get_version RETURN VARCHAR2;
@@ -35,9 +35,20 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION csv_headers_exists(pi_profile_id IN sdl_profiles.sp_id%TYPE) RETURN VARCHAR2;
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE generate_profile_views(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_file_load_attribute_list(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor);
   --
   -----------------------------------------------------------------------------
   --
@@ -77,14 +88,7 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   PROCEDURE create_profile(pi_name            IN  sdl_profiles.sp_name%TYPE
                           ,pi_desc             IN  sdl_profiles.sp_desc%TYPE
                           ,pi_file_type        IN  sdl_profiles.sp_import_file_type%TYPE
-                          ,pi_import_level     IN  sdl_profiles.sp_max_import_level%TYPE
-                          ,pi_tolerance        IN  sdl_profiles.sp_default_tolerance%TYPE
-                          ,pi_topology_level   IN  sdl_profiles.sp_topology_level%TYPE
-                          ,pi_nlt_id           IN  sdl_profiles.sp_nlt_id%TYPE
-                          ,pi_tol_load_search  IN  sdl_profiles.sp_tol_load_search%TYPE
-                          ,pi_tol_nw_search    IN  sdl_profiles.sp_tol_nw_search%TYPE
-                          ,pi_tol_search_unit  IN  sdl_profiles.sp_tol_search_unit%TYPE
-                          ,pi_stop_count       IN  sdl_profiles.sp_stop_count%TYPE
+                          ,pi_attribute_edit_allowed IN sdl_profiles.sp_attribute_edit_allowed%TYPE
                           ,po_message_severity OUT hig_codes.hco_code%TYPE
                           ,po_message_cursor   OUT sys_refcursor);
   --
@@ -95,24 +99,10 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
                           ,pi_new_name            IN  sdl_profiles.sp_name%TYPE
                           ,pi_old_desc            IN  sdl_profiles.sp_desc%TYPE
                           ,pi_new_desc            IN  sdl_profiles.sp_desc%TYPE
-                          ,pi_old_nlt_id          IN  sdl_profiles.sp_nlt_id%TYPE
-                          ,pi_new_nlt_id          IN  sdl_profiles.sp_nlt_id%TYPE
                           ,pi_old_file_type       IN  sdl_profiles.sp_import_file_type%TYPE
                           ,pi_new_file_type       IN  sdl_profiles.sp_import_file_type%TYPE
-                          ,pi_old_import_level    IN  sdl_profiles.sp_max_import_level%TYPE
-                          ,pi_new_import_level    IN  sdl_profiles.sp_max_import_level%TYPE
-                          ,pi_old_tolerance       IN  sdl_profiles.sp_default_tolerance%TYPE
-                          ,pi_new_tolerance       IN  sdl_profiles.sp_default_tolerance%TYPE
-                          ,pi_old_topology_level  IN  sdl_profiles.sp_topology_level%TYPE
-                          ,pi_new_topology_level  IN  sdl_profiles.sp_topology_level%TYPE
-                          ,pi_old_tol_load_search IN  sdl_profiles.sp_tol_load_search%TYPE
-                          ,pi_new_tol_load_search IN  sdl_profiles.sp_tol_load_search%TYPE
-                          ,pi_old_tol_nw_search   IN  sdl_profiles.sp_tol_nw_search%TYPE
-                          ,pi_new_tol_nw_search   IN  sdl_profiles.sp_tol_nw_search%TYPE
-                          ,pi_old_tol_search_unit IN  sdl_profiles.sp_tol_search_unit%TYPE
-                          ,pi_new_tol_search_unit IN  sdl_profiles.sp_tol_search_unit%TYPE
-                          ,pi_old_stop_count      IN  sdl_profiles.sp_stop_count%TYPE
-                          ,pi_new_stop_count      IN  sdl_profiles.sp_stop_count%TYPE
+                          ,pi_old_attrib_edit_allowed IN sdl_profiles.sp_attribute_edit_allowed%TYPE
+                          ,pi_new_attrib_edit_allowed IN sdl_profiles.sp_attribute_edit_allowed%TYPE
                           ,po_message_severity    OUT hig_codes.hco_code%TYPE
                           ,po_message_cursor      OUT sys_refcursor);
   --
@@ -156,8 +146,24 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_paged_user_profiles_list(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                        ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                        ,pi_skip_n_rows      IN  PLS_INTEGER
+                                        ,pi_pagesize         IN  PLS_INTEGER
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE create_user_profile(pi_user_id          IN  hig_users.hus_user_id%TYPE
                                ,pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                               ,pi_access_type      IN  sdl_user_profiles.sup_access_type%TYPE
                                ,po_message_severity OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor   OUT sys_refcursor);
   --
@@ -167,6 +173,8 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
                                ,pi_sup_id             IN  sdl_user_profiles.sup_id%TYPE
                                ,pi_old_user_id        IN  sdl_user_profiles.sup_user_id%TYPE
                                ,pi_new_user_id        IN  sdl_user_profiles.sup_user_id%TYPE
+                               ,pi_old_access_type    IN  sdl_user_profiles.sup_access_type%TYPE
+                               ,pi_new_access_type    IN  sdl_user_profiles.sup_access_type%TYPE
                                ,po_message_severity   OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor     OUT sys_refcursor);
   --
@@ -186,68 +194,252 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_profile_attribute_mapping(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
-                                         ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                         ,po_message_cursor   OUT sys_refcursor
-                                         ,po_cursor           OUT sys_refcursor);
+  PROCEDURE get_source_type_attributes(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor
+                                      ,po_cursor           OUT sys_refcursor);
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_paged_attribute_mapping(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
-                                       ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                       ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                       ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
-                                       ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
-                                       ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                       ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
-                                       ,pi_skip_n_rows      IN  PLS_INTEGER
-                                       ,pi_pagesize         IN  PLS_INTEGER
-                                       ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                       ,po_message_cursor   OUT sys_refcursor
-                                       ,po_cursor           OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE create_attribute_mapping(pi_profile_id       IN  sdl_attribute_mapping.sam_sp_id%TYPE
-                                    ,pi_file_column      IN  sdl_attribute_mapping.sam_file_attribute_name%TYPE
-                                    ,pi_view_column      IN  sdl_attribute_mapping.sam_view_column_name%TYPE
-                                    ,pi_ne_column        IN  sdl_attribute_mapping.sam_ne_column_name%TYPE
-                                    ,pi_attrib_formula   IN  sdl_attribute_mapping.sam_attribute_formula%TYPE
-                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                    ,po_message_cursor   OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE update_attribute_mapping(pi_profile_id              IN  sdl_profiles.sp_id%TYPE
-                                    ,pi_sam_id                  IN  sdl_attribute_mapping.sam_id%TYPE
-                                    ,pi_old_file_attribute_name IN  sdl_attribute_mapping.sam_file_attribute_name%TYPE
-                                    ,pi_new_file_attribute_name IN  sdl_attribute_mapping.sam_file_attribute_name%TYPE
-                                    ,pi_old_view_column_name    IN  sdl_attribute_mapping.sam_view_column_name%TYPE
-                                    ,pi_new_view_column_name    IN  sdl_attribute_mapping.sam_view_column_name%TYPE
-                                    ,pi_old_attribute_formula   IN  sdl_attribute_mapping.sam_attribute_formula%TYPE
-                                    ,pi_new_attribute_formula   IN  sdl_attribute_mapping.sam_attribute_formula%TYPE
-                                    ,pi_old_ne_column_name      IN  sdl_attribute_mapping.sam_ne_column_name%TYPE
-                                    ,pi_new_ne_column_name      IN  sdl_attribute_mapping.sam_ne_column_name%TYPE
-                                    ,po_message_severity        OUT hig_codes.hco_code%TYPE
-                                    ,po_message_cursor          OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE delete_attribute_mapping(pi_profile_id        IN  sdl_profiles.sp_id%TYPE
-                                    ,pi_sam_id            IN  sdl_attribute_mapping.sam_id%TYPE
-                                    ,po_message_severity  OUT hig_codes.hco_code%TYPE
-                                    ,po_message_cursor    OUT sys_refcursor);
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_network_column_lookup(pi_nlt_id           IN  nm_linear_types.nlt_id%TYPE
+  PROCEDURE get_profile_source_header(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
                                      ,po_message_cursor   OUT sys_refcursor
                                      ,po_cursor           OUT sys_refcursor);
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE edit_profile_source_header(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                      ,pi_spsh_clob        IN  CLOB
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE source_description_active(pi_profile_id        IN  sdl_profiles.sp_id%TYPE
+                                     ,po_active            OUT VARCHAR2
+                                     ,po_message_severity  OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor    OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_profile_file_columns(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_profile_file_columns(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                          ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                          ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                          ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                          ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                          ,pi_skip_n_rows      IN  PLS_INTEGER
+                                          ,pi_pagesize         IN  PLS_INTEGER
+                                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor   OUT sys_refcursor
+                                          ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE edit_profile_source_columns(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                       ,pi_old_file_cols    IN  CLOB
+                                       ,pi_new_file_cols    IN  CLOB
+                                       ,pi_del_file_col_ids IN  awlrs_sdl_util.spfc_id_tab
+                                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_destination_type_lookup(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                       ,pi_dest_type_select IN  VARCHAR2 DEFAULT 'N'
+                                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor   OUT sys_refcursor
+                                       ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_source_container_lookup(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor   OUT sys_refcursor
+                                       ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_destination_location_lookup(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                           ,po_message_cursor   OUT sys_refcursor
+                                           ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_destination_table_lookup(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_profile_destination_types(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                         ,po_message_cursor   OUT sys_refcursor
+                                         ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_profile_destination_location(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                            ,pi_destination_type IN  sdl_destination_header.sdh_destination_type%TYPE
+                                            ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                            ,po_message_cursor   OUT sys_refcursor
+                                            ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_destination_type(pi_profile_id           IN  sdl_profiles.sp_id%TYPE
+                                   ,pi_sdh_type             IN  sdl_destination_header.sdh_type%TYPE 
+                                   ,pi_destination_type     IN  sdl_destination_header.sdh_destination_type%TYPE
+                                   ,pi_nlt_id               IN  sdl_destination_header.sdh_nlt_id%TYPE
+                                   ,pi_source_container     IN  sdl_destination_header.sdh_source_container%TYPE
+                                   ,pi_load_destination_id  IN  sdl_destination_header.sdh_nld_id%TYPE
+                                   ,pi_table_name           IN  sdl_destination_header.sdh_table_name%TYPE
+                                   ,pi_load_procedure       IN  sdl_destination_header.sdh_insert_procedure%TYPE
+                                   ,pi_validation_procedure IN  sdl_destination_header.sdh_validation_procedure%TYPE
+                                   ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor       OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_destination_location(pi_profile_id           IN  sdl_profiles.sp_id%TYPE
+                                       ,pi_destination_type     IN  sdl_destination_header.sdh_destination_type%TYPE
+                                       ,pi_source_container     IN  sdl_destination_header.sdh_source_container%TYPE
+                                       ,pi_load_destination_id  IN  sdl_destination_header.sdh_nld_id%TYPE
+                                       ,pi_table_name           IN  sdl_destination_header.sdh_table_name%TYPE
+                                       ,pi_load_procedure       IN  sdl_destination_header.sdh_insert_procedure%TYPE
+                                       ,pi_validation_procedure IN  sdl_destination_header.sdh_validation_procedure%TYPE
+                                       ,po_message_severity     OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor       OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_destination_type(pi_dest_header_id           IN  sdl_destination_header.sdh_id%TYPE
+                                   ,pi_profile_id               IN  sdl_profiles.sp_id%TYPE
+                                   ,pi_old_source_container     IN  sdl_destination_header.sdh_source_container%TYPE
+                                   ,pi_new_source_container     IN  sdl_destination_header.sdh_source_container%TYPE
+                                   ,pi_old_load_destination_id  IN  sdl_destination_header.sdh_nld_id%TYPE
+                                   ,pi_new_load_destination_id  IN  sdl_destination_header.sdh_nld_id%TYPE
+                                   ,pi_old_table_name           IN  sdl_destination_header.sdh_table_name%TYPE
+                                   ,pi_new_table_name           IN  sdl_destination_header.sdh_table_name%TYPE
+                                   ,pi_old_load_procedure       IN  sdl_destination_header.sdh_insert_procedure%TYPE
+                                   ,pi_new_load_procedure       IN  sdl_destination_header.sdh_insert_procedure%TYPE
+                                   ,pi_old_validation_procedure IN  sdl_destination_header.sdh_validation_procedure%TYPE
+                                   ,pi_new_validation_procedure IN  sdl_destination_header.sdh_validation_procedure%TYPE
+                                   ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_destination_location(pi_dest_header_id           IN  sdl_destination_header.sdh_id%TYPE
+                                       ,pi_profile_id               IN  sdl_profiles.sp_id%TYPE
+                                       ,pi_destination_type         IN  sdl_destination_header.sdh_destination_type%TYPE
+                                       ,pi_old_source_container     IN  sdl_destination_header.sdh_source_container%TYPE
+                                       ,pi_new_source_container     IN  sdl_destination_header.sdh_source_container%TYPE
+                                       ,pi_old_load_destination_id  IN  sdl_destination_header.sdh_nld_id%TYPE
+                                       ,pi_new_load_destination_id  IN  sdl_destination_header.sdh_nld_id%TYPE
+                                       ,pi_old_table_name           IN  sdl_destination_header.sdh_table_name%TYPE
+                                       ,pi_new_table_name           IN  sdl_destination_header.sdh_table_name%TYPE
+                                       ,pi_old_load_procedure       IN  sdl_destination_header.sdh_insert_procedure%TYPE
+                                       ,pi_new_load_procedure       IN  sdl_destination_header.sdh_insert_procedure%TYPE
+                                       ,pi_old_validation_procedure IN  sdl_destination_header.sdh_validation_procedure%TYPE
+                                       ,pi_new_validation_procedure IN  sdl_destination_header.sdh_validation_procedure%TYPE
+                                       ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_destination_type(pi_dest_header_id    IN  sdl_destination_header.sdh_id%TYPE
+                                   ,pi_profile_id        IN  sdl_profiles.sp_id%TYPE
+                                   ,pi_destination_type  IN  sdl_destination_header.sdh_destination_type%TYPE
+                                   ,po_message_severity  OUT hig_codes.hco_code%TYPE
+                                   ,po_message_cursor    OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_edit_prof_attrib_mapping(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                        ,pi_dest_header_id   IN  sdl_destination_header.sdh_id%TYPE
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_profile_attribute_mapping(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                         ,pi_dest_header_id   IN  sdl_destination_header.sdh_id%TYPE
+                                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                         ,po_message_cursor   OUT sys_refcursor
+                                         ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_attrib_mapping(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                    ,pi_dest_header_id   IN  sdl_destination_header.sdh_id%TYPE
+                                    ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                    ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                    ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                    ,pi_skip_n_rows      IN  PLS_INTEGER
+                                    ,pi_pagesize         IN  PLS_INTEGER
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE edit_profile_attribute_mapping (pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                           ,pi_dest_header_id   IN  sdl_destination_header.sdh_id%TYPE
+                                           ,pi_old_attr_map     IN  CLOB
+                                           ,pi_new_attr_map     IN  CLOB
+                                           ,pi_del_attr_map_ids IN  awlrs_sdl_util.sam_id_tab
+                                           ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                           ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_source_column_lookup(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                    ,pi_container        IN  sdl_destination_header.sdh_source_container%TYPE
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_destination_column_lookup(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                         ,pi_dest_header_id   IN  sdl_destination_header.sdh_id%TYPE
+                                         ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                         ,po_message_cursor   OUT sys_refcursor
+                                         ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_profile_dest_type_lookup(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_rule_users_lookup(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                 ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor   OUT sys_refcursor
+                                 ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_attribute_adjustment_rules(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                          ,pi_user_select      IN  VARCHAR2 DEFAULT 'A'
                                           ,po_message_severity OUT hig_codes.hco_code%TYPE
                                           ,po_message_cursor   OUT sys_refcursor
                                           ,po_cursor           OUT sys_refcursor);
@@ -255,6 +447,7 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_paged_attrib_adjust_rules(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                         ,pi_user_select      IN  VARCHAR2 DEFAULT 'A'
                                          ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                          ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                          ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
@@ -278,9 +471,11 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   -----------------------------------------------------------------------------
   --
   PROCEDURE create_attrib_adjustment_rule(pi_profile_id          IN  sdl_attribute_adjustment_rules.saar_sp_id%TYPE
+                                         ,pi_destination_id      IN  sdl_attribute_adjustment_rules.saar_sdh_id%TYPE
                                          ,pi_target_attrib_name  IN  sdl_attribute_adjustment_rules.saar_target_attribute_name%TYPE
                                          ,pi_source_value        IN  sdl_attribute_adjustment_rules.saar_source_value%TYPE
                                          ,pi_adjust_to_value     IN  sdl_attribute_adjustment_rules.saar_adjust_to_value%TYPE
+                                         ,pi_rule_user_id        IN  sdl_attribute_adjustment_rules.saar_user_id%TYPE
                                          ,po_message_severity    OUT hig_codes.hco_code%TYPE
                                          ,po_message_cursor      OUT sys_refcursor);
   --
@@ -288,12 +483,16 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   --
   PROCEDURE update_attrib_adjustment_rule(pi_profile_id                IN  sdl_profiles.sp_id%TYPE
                                          ,pi_saar_id                   IN  sdl_attribute_adjustment_rules.saar_id%TYPE
+                                         ,pi_old_destination_id        IN  sdl_attribute_adjustment_rules.saar_sdh_id%TYPE
+                                         ,pi_new_destination_id        IN  sdl_attribute_adjustment_rules.saar_sdh_id%TYPE
                                          ,pi_old_target_attribute_name IN  sdl_attribute_adjustment_rules.saar_target_attribute_name%TYPE
                                          ,pi_new_target_attribute_name IN  sdl_attribute_adjustment_rules.saar_target_attribute_name%TYPE
                                          ,pi_old_source_value          IN  sdl_attribute_adjustment_rules.saar_source_value%TYPE
                                          ,pi_new_source_value          IN  sdl_attribute_adjustment_rules.saar_source_value%TYPE
                                          ,pi_old_adjust_to_value       IN  sdl_attribute_adjustment_rules.saar_adjust_to_value%TYPE
                                          ,pi_new_adjust_to_value       IN  sdl_attribute_adjustment_rules.saar_adjust_to_value%TYPE
+                                         ,pi_old_rule_user_id          IN  sdl_attribute_adjustment_rules.saar_user_id%TYPE
+                                         ,pi_new_rule_user_id          IN  sdl_attribute_adjustment_rules.saar_user_id%TYPE
                                          ,po_message_severity          OUT hig_codes.hco_code%TYPE
                                          ,po_message_cursor            OUT sys_refcursor);
   --
@@ -328,11 +527,40 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_profile_spatial_info(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor
+                                    ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_destination_cs_lookup(po_message_severity OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor   OUT sys_refcursor
+                                     ,po_cursor           OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE set_spatial_review_action(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
                                      ,pi_ssrl_id          IN  sdl_spatial_review_levels.ssrl_id%TYPE
                                      ,pi_action           IN  sdl_spatial_review_levels.ssrl_default_action%TYPE
                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
                                      ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_profile_spatial_info(pi_profile_id          IN  sdl_profiles.sp_id%TYPE
+                                       ,pi_old_tol_load_search IN  sdl_profiles.sp_tol_load_search%TYPE
+                                       ,pi_new_tol_load_search IN  sdl_profiles.sp_tol_load_search%TYPE
+                                       ,pi_old_tol_nw_search   IN  sdl_profiles.sp_tol_nw_search%TYPE
+                                       ,pi_new_tol_nw_search   IN  sdl_profiles.sp_tol_nw_search%TYPE
+                                       ,pi_old_tol_search_unit IN  sdl_profiles.sp_tol_search_unit%TYPE
+                                       ,pi_new_tol_search_unit IN  sdl_profiles.sp_tol_search_unit%TYPE
+                                       ,pi_old_stop_count      IN  sdl_profiles.sp_stop_count%TYPE
+                                       ,pi_new_stop_count      IN  sdl_profiles.sp_stop_count%TYPE
+                                       ,pi_old_destination_cs  IN  sdl_profiles.sp_destination_cs%TYPE
+                                       ,pi_new_destination_cs  IN  sdl_profiles.sp_destination_cs%TYPE
+                                       ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor      OUT sys_refcursor);
   --
   -----------------------------------------------------------------------------
   --
