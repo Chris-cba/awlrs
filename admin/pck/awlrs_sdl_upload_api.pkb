@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_upload_api.pkb-arc   1.3   Aug 07 2020 14:44:18   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_upload_api.pkb-arc   1.4   Jan 20 2021 12:01:04   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_upload_api.pkb  $
-  --       Date into PVCS   : $Date:   Aug 07 2020 14:44:18  $
-  --       Date fetched Out : $Modtime:   Jul 30 2020 12:56:00  $
-  --       PVCS Version     : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   Jan 20 2021 12:01:04  $
+  --       Date fetched Out : $Modtime:   Jan 20 2021 07:51:04  $
+  --       PVCS Version     : $Revision:   1.4  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.3  $';
+  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.4  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -33,9 +33,107 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE validate_notnull(pi_parameter_desc  IN hig_options.hop_id%TYPE
+                            ,pi_parameter_value IN hig_options.hop_value%TYPE)
+  IS
+  --
+  BEGIN
+    --
+    IF pi_parameter_value IS NULL THEN
+      --
+      hig.raise_ner(pi_appl               => 'HIG'
+                   ,pi_id                 => 22
+                   ,pi_supplementary_info => pi_parameter_desc || ' has not been specified');
+      --
+    END IF;
+    --
+  END validate_notnull;
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_submission_profile_id(pi_batch_id IN sdl_file_submissions.sfs_id%TYPE)
+    RETURN sdl_profiles.sp_name%TYPE
+  IS
+  --
+    CURSOR c_profile
+        IS
+    SELECT sp.sp_id
+      FROM sdl_profiles sp
+          ,sdl_file_submissions sfs
+     WHERE sp.sp_id = sfs.sfs_sp_id
+       AND sfs.sfs_id = pi_batch_id;
+  --
+    ln_ret_id sdl_profiles.sp_id%TYPE;
+  --
+  BEGIN
+  --
+    OPEN  c_profile;
+    FETCH c_profile INTO ln_ret_id;
+    CLOSE c_profile;
+  --
+    RETURN ln_ret_id;
+  --
+  END get_submission_profile_id;
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_submission_profile_name(pi_batch_id IN sdl_file_submissions.sfs_id%TYPE)
+    RETURN sdl_profiles.sp_name%TYPE
+  IS
+  --
+    CURSOR c_profile
+        IS
+    SELECT sp.sp_name
+      FROM sdl_profiles sp
+          ,sdl_file_submissions sfs
+     WHERE sp.sp_id = sfs.sfs_sp_id
+       AND sfs.sfs_id = pi_batch_id;
+  --
+    lv_ret_name sdl_profiles.sp_name%TYPE;
+  --
+  BEGIN
+  --
+    OPEN  c_profile;
+    FETCH c_profile INTO lv_ret_name;
+    CLOSE c_profile;
+  --
+    RETURN lv_ret_name;
+  --
+  END get_submission_profile_name;
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION get_submission_load_type(pi_batch_id IN sdl_file_submissions.sfs_id%TYPE)
+    RETURN sdl_destination_header.sdh_type%TYPE
+  IS
+  --
+    CURSOR c_sub
+        IS
+    SELECT sdh.sdh_type
+      FROM sdl_destination_header sdh
+          ,sdl_file_submissions sfs
+     WHERE sdh.sdh_sp_id = sfs.sfs_sp_id
+       AND sdh.sdh_id = sfs.sfs_sdh_id
+       AND sfs.sfs_id = pi_batch_id;
+  --
+    lv_ret_name sdl_destination_header.sdh_type%TYPE;
+  --
+  BEGIN
+  --
+    OPEN  c_sub;
+    FETCH c_sub INTO lv_ret_name;
+    CLOSE c_sub;
+  --
+    RETURN lv_ret_name;
+  --
+  END get_submission_load_type;
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE pre_file_submission(pi_profile_id      IN sdl_file_submissions.sfs_sp_id%TYPE
                                ,pi_submission_name IN sdl_file_submissions.sfs_name%TYPE
-                               ,pi_file_attributes IN awlrs_sdl_util.sam_file_attribute_tab)
+                               ,pi_file_attributes IN awlrs_sdl_util.sam_file_attribute_tab
+                               ,po_sdh_id          OUT sdl_destination_header.sdh_id%TYPE)
   IS
     --
     CURSOR chk_submission_name(cp_submission_name IN sdl_file_submissions.sfs_name%TYPE)
@@ -48,6 +146,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
         IS
     SELECT sp.sp_name
           ,sp.sp_loading_view_name
+          ,sp.sp_import_file_type
       FROM sdl_profiles sp
      WHERE sp.sp_id = cp_profile_id;
     --
@@ -56,23 +155,31 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     SELECT 1
       FROM all_objects
      WHERE object_name = cp_view_name
-       AND object_type = 'VIEW';
+       AND object_type IN ('TABLE', 'VIEW');
     --
     CURSOR chk_mapping(cp_profile_id     sdl_profiles.sp_id%TYPE
                       ,cp_file_attribute sdl_attribute_mapping.sam_file_attribute_name%TYPE)
         IS
     SELECT 1
       FROM sdl_attribute_mapping sam
-     WHERE sam.sam_sp_id = cp_profile_id
-       AND sam.sam_file_attribute_name = cp_file_attribute
+          ,sdl_profile_file_columns spfc
+          ,sdl_destination_header sdh
+     WHERE sam.sam_sp_id = spfc.spfc_sp_id
+       AND sam.sam_file_attribute_name = spfc.spfc_col_name
+       AND sam.sam_sdh_id = sdh.sdh_id
+       AND sdh.sdh_source_container = spfc.spfc_container
+       AND sam.sam_sp_id = cp_profile_id
+       AND UPPER(sam.sam_file_attribute_name) = cp_file_attribute
     ORDER BY sam_col_id;
     --
-    ln_exists       NUMBER(1);
-    lv_retval       BOOLEAN := FALSE;
-    lv_profile_name sdl_profiles.sp_name%TYPE;
-    lv_view_name    sdl_profiles.sp_loading_view_name%TYPE;
-    lv_match        VARCHAR2(1) := 'N';
-    lv_mapping      VARCHAR2(1) := 'N';
+    ln_exists             NUMBER(1);
+    lv_retval             BOOLEAN := FALSE;
+    lv_profile_name       sdl_profiles.sp_name%TYPE;
+    lv_view_name          sdl_profiles.sp_loading_view_name%TYPE;
+    lv_file_type          sdl_profiles.sp_import_file_type%TYPE;
+    lv_match              VARCHAR2(1) := 'N';
+    lv_mapping            VARCHAR2(1) := 'N';
+    ln_source_columns_cnt NUMBER(3);
     --
   BEGIN
     --
@@ -89,7 +196,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     END IF;
     --
      OPEN c_profile(pi_profile_id);
-    FETCH c_profile INTO lv_profile_name, lv_view_name;
+    FETCH c_profile INTO lv_profile_name, lv_view_name, lv_file_type;
     CLOSE c_profile;
     --
     IF NOT awlrs_sdl_profiles_api.check_mapping_exists(pi_profile_id) THEN
@@ -98,7 +205,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     END IF;
     --
     IF lv_view_name IS NULL THEN
-      lv_view_name := 'V_SDL_' || REPLACE (UPPER(lv_profile_name), ' ', '_') || '_LD';
+      IF lv_file_type = 'CSV' THEN
+        lv_view_name := 'TDL_' || REPLACE (UPPER(lv_profile_name), ' ', '_') || '_LD';
+      ELSE
+        lv_view_name := 'V_SDL_' || REPLACE (UPPER(lv_profile_name), ' ', '_') || '_LD';
+      END IF;
     END IF;
     --
      OPEN chk_view(lv_view_name);
@@ -111,31 +222,90 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                'Profile views does not exists for the profile ' || lv_profile_name || '. Please contact the Administrator to generate Profile views before uploading a file.');
     END IF;
     --
+    -- TDL supports single container single destination type at the moment
+    -- so get the header id and link with the submission.
+    -- when multiple destination types allowed correct sdh_id for the submission to be determined 
+    -- from the next section while reading the file attributes with table mapping pi_file_attributes
+    BEGIN
+        SELECT sdh_id
+          INTO po_sdh_id
+          FROM sdl_destination_header sdh
+         WHERE sdh.sdh_sp_id = pi_profile_id
+           AND sdh.sdh_destination_location = 'N';
+      EXCEPTION
+        WHEN TOO_MANY_ROWS THEN
+          RAISE_APPLICATION_ERROR (-20061,
+                                   'Multiple destination types exists aganist the container of the profile '|| lv_profile_name);
+    
+    END;   
     --
-    FOR i IN 1..pi_file_attributes.COUNT
-    LOOP
+    IF awlrs_sdl_profiles_api.csv_headers_exists(pi_profile_id) = 'N' THEN
+      -- check for CSV file without column headers
       --
-       OPEN chk_mapping(pi_profile_id, UPPER(pi_file_attributes(i)));
-      FETCH chk_mapping INTO ln_exists;
-        IF chk_mapping%FOUND THEN
+      SELECT COUNT(1)
+        INTO ln_source_columns_cnt
+        FROM sdl_attribute_mapping sam
+            ,sdl_profile_file_columns spfc
+            ,sdl_destination_header sdh
+       WHERE sam.sam_sp_id = spfc.spfc_sp_id
+         AND sam.sam_file_attribute_name = spfc.spfc_col_name
+         AND sam.sam_sdh_id = sdh.sdh_id
+         AND sdh.sdh_source_container = spfc.spfc_container
+         AND sam.sam_sp_id = pi_profile_id;
+      --
+      IF ln_source_columns_cnt < pi_file_attributes.COUNT THEN
+        RAISE_APPLICATION_ERROR (-20060,
+                                 'There is no source description configured for some source file columns for the profile ' || lv_profile_name || '. File cannot be uploaded.');
+      END IF;
+      --
+      FOR i IN 1..pi_file_attributes.COUNT
+      LOOP
+        --
+        IF UPPER(pi_file_attributes(i)) = 'FIELD_' || i THEN
           lv_match := 'Y';
         ELSE
           lv_match := 'N';
         END IF;
-      CLOSE chk_mapping;
+        --
+        IF lv_match = 'Y' THEN
+          lv_mapping := 'Y';
+        END IF;
       --
-      IF lv_match = 'Y' THEN
-        lv_mapping := 'Y';
+      END LOOP;
+      --
+      IF lv_mapping = 'N' THEN
+        RAISE_APPLICATION_ERROR (-20061,
+                                 'The source is defined with no column headers for the profile ' || lv_profile_name || ' , whereas selected file has column headers present. File cannot be uploaded.');
       END IF;
-    --
-    END LOOP;
-    --
-    IF lv_mapping = 'N' THEN
-      RAISE_APPLICATION_ERROR (-20043,
-                               'There is no match between file columns and ' || lv_profile_name || ' profile attribute mappings. File cannot be uploaded.');
+      --
+    ELSE
+      -- check for CSV file with column headers and other source type files
+      --
+      FOR i IN 1..pi_file_attributes.COUNT
+      LOOP
+        --
+         OPEN chk_mapping(pi_profile_id, UPPER(pi_file_attributes(i)));
+        FETCH chk_mapping INTO ln_exists;
+          IF chk_mapping%FOUND THEN
+            lv_match := 'Y';
+          ELSE
+            lv_match := 'N';
+          END IF;
+        CLOSE chk_mapping;
+        --
+        IF lv_match = 'Y' THEN
+          lv_mapping := 'Y';
+        END IF;
+      --
+      END LOOP;
+      --
+      IF lv_mapping = 'N' THEN
+        RAISE_APPLICATION_ERROR (-20043,
+                                 'There is no match between file column and ' || lv_profile_name || ' profile attribute mappings. File cannot be uploaded.');
+      END IF;
+      --
     END IF;
-
-	--
+    --
   END pre_file_submission;
   --
   -----------------------------------------------------------------------------
@@ -153,9 +323,10 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
     p_status   VARCHAR2(10) := 'NEW';
     p_batch_id sdl_file_submissions.sfs_id%TYPE;
+    p_sdh_id   sdl_destination_header.sdh_id%TYPE;
   BEGIN
     --
-    pre_file_submission(pi_profile_id, pi_submission_name, pi_file_attributes);
+    pre_file_submission(pi_profile_id, pi_submission_name, pi_file_attributes, p_sdh_id);
     --
     SELECT sfs_id_seq.NEXTVAL INTO p_batch_id FROM dual;
     --
@@ -168,7 +339,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
            ,sfs_file_name
            ,sfs_layer_name
            ,sfs_file_path
-           ,sfs_status)
+           ,sfs_status
+           ,sfs_sdh_id)
     VALUES (p_batch_id
            ,UPPER(pi_submission_name)
            ,pi_profile_id
@@ -177,7 +349,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
            ,UPPER(pi_layer_name)
            ,pi_file_path
            ,p_status
-            );
+           ,p_sdh_id);
     --
     sdl_audit.log_process_start(p_batch_id, p_status, NULL, NULL, NULL);
     --
@@ -285,61 +457,95 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     l_unit_factor   NUMBER;
     l_round         NUMBER;
     l_tol           NUMBER;
+    ln_srid_number  VARCHAR2(1) := 'Y';
     --
   BEGIN
-    -- Get the loading table view name of the batch
-    SELECT sp_loading_view_name
-      INTO lv_table_name
-      FROM sdl_profiles
-      WHERE sp_id = (SELECT sfs_sp_id
-                       FROM sdl_file_submissions
-                      WHERE sfs_id = pi_batch_id);
-    -- Get the SRID from the SDO metadata.
-    ln_srid := nm3sdo.get_table_srid(p_table_name  => lv_table_name
-                                    ,p_column_name => lv_column_name);
-    -- If no SRID is set use the default from product option.
-    IF ln_srid IS NULL
-     THEN
-        ln_srid := hig.get_sysopt('AWLMAPSRID');
+    --
+    IF get_submission_load_type(pi_batch_id) != 'A' THEN -- for network data loading .. shapefile, file geodatabase
+      -- Get the loading table view name of the batch
+      SELECT sp_loading_view_name
+        INTO lv_table_name
+        FROM sdl_profiles
+        WHERE sp_id = (SELECT sfs_sp_id
+                         FROM sdl_file_submissions
+                        WHERE sfs_id = pi_batch_id);
+      -- Get the SRID from the SDO metadata.
+      ln_srid := nm3sdo.get_table_srid(p_table_name  => lv_table_name
+                                      ,p_column_name => lv_column_name);
+      --
+      BEGIN
+        SELECT 'N'
+          INTO ln_srid_number
+          FROM DUAL
+         WHERE NOT REGEXP_LIKE(hig.get_sysopt('AWLMAPSRID'), '^[[:digit:]]+$');
+      EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+          ln_srid_number := 'Y';
+      END;
+      -- If no SRID is set use the default from product option.
+      IF ln_srid IS NULL
+      THEN
+        --
+        IF ln_srid_number = 'Y' AND hig.get_sysopt('AWLMAPSRID') IS NOT NULL THEN
+          ln_srid := hig.get_sysopt('AWLMAPSRID');
+        ELSIF ln_srid_number = 'N' THEN
+          RAISE_APPLICATION_ERROR (-20062,
+                                   ': Product option AWLMAPSRID is not configured correctly.');
+        ELSIF hig.get_sysopt('AWLMAPSRID') IS NULL THEN
+          RAISE_APPLICATION_ERROR (-20063,
+                                   ': Product option AWLMAPSRID is not configured.');
+        END IF;
+      END IF;
+      --
+      -- Update METADATA SRID for the recently uploaded layer if the SRID is set to NULL
+      UPDATE user_sdo_geom_metadata
+         SET srid = ln_srid
+       WHERE table_name = lv_table_name
+         AND column_name = lv_column_name
+         AND (srid IS NULL OR srid != ln_srid);
+      -- Update the SRID of loaded geometry in the recently uploaded batch records
+      UPDATE sdl_load_data sld
+         SET sld.sld_load_geometry.sdo_srid = hig.get_sysopt('AWLMAPSRID')
+       WHERE sld.sld_sfs_id = pi_batch_id
+         AND (sld.sld_load_geometry.sdo_srid IS NULL
+              OR sld.sld_load_geometry.sdo_srid != ln_srid);
+      -- update batch records with the formula set for attributes at profile
+      -- update_attributes_formula(pi_batch_id); -- commented this time being because need to validate the incoming SQL statements
+	                                             -- to avoid SQL injection until we find an approach to handle incoming formula.
+       -- set working geometry
+      BEGIN
+        SELECT m.*
+          INTO meta_row
+          FROM v_sdl_profile_nw_types m
+              ,sdl_file_submissions sfs
+         WHERE sfs.sfs_id = pi_batch_id
+           AND m.sp_id = sfs.sfs_sp_id;
+      EXCEPTION
+        WHEN TOO_MANY_ROWS THEN
+          RAISE_APPLICATION_ERROR (-20064,
+                                   ': Multiple destination types exists for the profile.');
+      END;
+      --
+      l_tol := nm3unit.get_tol_from_unit_mask (
+                  NVL (meta_row.profile_group_unit_id, meta_row.datum_unit_id));
+      --
+      l_round := nm3unit.get_rounding (l_tol);
+      --
+      SELECT conversion_factor
+        INTO l_unit_factor
+        FROM mdsys.sdo_dist_units
+       WHERE sdo_unit = meta_row.datum_unit_name;
+      --
+      DELETE FROM sdl_validation_results
+            WHERE svr_sfs_id = pi_batch_id;
+      --
+      sdl_validate.set_working_geometry (pi_batch_id, l_unit_factor, l_round);
+      --
+    ELSE
+      --
+      NULL; -- post file submission/validations process for CSV
+      --
     END IF;
-    -- Update METADATA SRID for the recently uploaded layer if the SRID is set to NULL
-    UPDATE user_sdo_geom_metadata
-       SET srid = ln_srid
-     WHERE table_name = lv_table_name
-       AND column_name = lv_column_name
-       AND (srid IS NULL OR srid != ln_srid);
-    -- Update the SRID of loaded geometry in the recently uploaded batch records
-    UPDATE sdl_load_data sld
-       SET sld.sld_load_geometry.sdo_srid = hig.get_sysopt('AWLMAPSRID')
-     WHERE sld.sld_sfs_id = pi_batch_id
-       AND (sld.sld_load_geometry.sdo_srid IS NULL
-            OR sld.sld_load_geometry.sdo_srid != ln_srid);
-    -- update batch records with the formula set for attributes at profile
-    -- update_attributes_formula(pi_batch_id); -- commented this time being because need to validate the incoming SQL statements 
-	                                           -- to avoid SQL injection until we find an approach to handle incoming formula. 
-    -- set working geometry
-    SELECT m.*
-      INTO meta_row
-      FROM v_sdl_profile_nw_types m
-          ,sdl_file_submissions sfs
-     WHERE sfs.sfs_id = pi_batch_id
-       AND m.sp_id = sfs.sfs_sp_id;
-    --
-    l_tol := nm3unit.get_tol_from_unit_mask (
-                NVL (meta_row.profile_group_unit_id, meta_row.datum_unit_id));
-    --
-    l_round := nm3unit.get_rounding (l_tol);
-    --
-    SELECT conversion_factor
-      INTO l_unit_factor
-      FROM mdsys.sdo_dist_units
-     WHERE sdo_unit = meta_row.datum_unit_name;
-    --
-    DELETE FROM sdl_validation_results
-          WHERE svr_sfs_id = pi_batch_id;
-    --
-    sdl_validate.set_working_geometry (pi_batch_id, l_unit_factor, l_round);
-    --
     -- Update batch status to load
     sdl_audit.log_process_end(pi_batch_id, 'LOAD');
     --
@@ -352,6 +558,28 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END post_file_submission;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE batch_status_failed(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                               ,po_message_severity OUT hig_codes.hco_code%TYPE
+                               ,po_message_cursor   OUT sys_refcursor)
+  IS
+  BEGIN
+    --
+    UPDATE sdl_file_submissions
+       SET sfs_status = 'FAILED'
+     WHERE sfs_id = pi_batch_id;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END batch_status_failed;  
   --
   -----------------------------------------------------------------------------
   --
@@ -393,18 +621,21 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     SELECT sfs.sfs_id batch_id
           ,sfs.sfs_name submission_name
           ,sfs.sfs_sp_id profile_id
-          ,awlrs_sdl_profiles_api.get_profile_name(sfs.sfs_sp_id) profile_name
-          ,hv.hco_meaning import_file_type
+          ,sp.sp_name profile_name
+          ,sp.sp_import_file_type source_file_type_code
+          ,hv.hco_meaning source_file_type
           ,sfs.sfs_file_name file_name
           ,sfs.sfs_layer_name layer_name
           ,sfs.sfs_date_created action_date
           ,sfs.sfs_date_modified last_action_date
           ,sfs.sfs_status status
+          ,sp.sp_attribute_edit_allowed attribute_edit_allowed
       FROM sdl_file_submissions sfs
           ,sdl_profiles sp
           ,hig_codes hv
      WHERE sfs.sfs_sp_id = sp.sp_id
        AND sp.sp_import_file_type = hv.hco_code
+       AND hv.hco_domain = 'SDL_FILE_TYPE'
        AND sfs.sfs_user_id = SYS_CONTEXT('NM3CORE', 'USER_ID')
     ORDER BY sfs.sfs_id DESC;
     --
@@ -443,29 +674,34 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                                    ,sfs.sfs_name submission_name
                                                    ,sfs.sfs_sp_id profile_id
                                                    ,sp.sp_name profile_name
-                                                   ,hv.hco_meaning import_file_type
+                                                   ,sp.sp_import_file_type source_file_type_code
+                                                   ,hv.hco_meaning source_file_type
                                                    ,sfs.sfs_file_name file_name
                                                    ,sfs.sfs_layer_name layer_name
                                                    ,sfs.sfs_date_created action_date
                                                    ,sfs.sfs_date_modified last_action_date
                                                    ,sfs.sfs_status status
+                                                   ,sp.sp_attribute_edit_allowed attribute_edit_allowed
                                                FROM sdl_file_submissions sfs
                                                    ,sdl_profiles sp
                                                    ,hig_codes hv
                                               WHERE sfs.sfs_sp_id = sp.sp_id
                                                 AND sp.sp_import_file_type = hv.hco_code
+                                                AND hv.hco_domain = ''SDL_FILE_TYPE''
                                                 AND sfs.sfs_user_id = SYS_CONTEXT(''NM3CORE'', ''USER_ID'')';
     --
     lv_cursor_sql  nm3type.max_varchar2 := 'SELECT batch_id'
                                               ||' ,submission_name'
                                               ||' ,profile_id'
                                               ||' ,profile_name'
-                                              ||' ,import_file_type'
+                                              ||' ,source_file_type_code'
+                                              ||' ,source_file_type'
                                               ||' ,file_name'
                                               ||' ,layer_name'
                                               ||' ,action_date'
                                               ||' ,last_action_date'
                                               ||' ,status'
+                                              ||' ,attribute_edit_allowed'
                                               ||' ,row_count'
                                           ||' FROM (SELECT rownum ind'
                                                       ||' ,a.*'
@@ -484,7 +720,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
       --
-      awlrs_util.add_column_data(pi_cursor_col   => 'import_file_type'
+      awlrs_util.add_column_data(pi_cursor_col   => 'source_file_type'
                                 ,pi_query_col    => 'hco_meaning'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
@@ -582,14 +818,521 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE update_submission(pi_batch_id          IN  sdl_file_submissions.sfs_id%TYPE
+                             ,pi_old_sfs_name      IN  sdl_file_submissions.sfs_name%TYPE
+                             ,pi_new_sfs_name      IN  sdl_file_submissions.sfs_name%TYPE
+                             ,po_message_severity  OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor    OUT sys_refcursor)
+  IS
+    --
+    lr_db_rec     sdl_file_submissions%ROWTYPE;
+    lv_upd        VARCHAR2(1) := 'N';
+    --
+    PROCEDURE get_db_rec(pi_batch_id IN sdl_file_submissions.sfs_id%TYPE)
+      IS
+    BEGIN
+      --
+      SELECT *
+        INTO lr_db_rec
+        FROM sdl_file_submissions
+       WHERE sfs_id = pi_batch_id
+         FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN no_data_found THEN
+        --
+        hig.raise_ner(pi_appl               => 'HIG'
+                     ,pi_id                 => 85
+                     ,pi_supplementary_info => 'Submission record does not exist');
+      --
+    END get_db_rec;
+    --
+  BEGIN
+    --
+    validate_notnull(pi_parameter_desc  => 'Submission Name'
+                    ,pi_parameter_value => pi_new_sfs_name);
+    --
+    get_db_rec(pi_batch_id => pi_batch_id);
+    --
+    /*
+    ||Compare old with DB
+    */
+    IF lr_db_rec.sfs_name != pi_old_sfs_name
+     OR (lr_db_rec.sfs_name IS NULL AND pi_old_sfs_name IS NOT NULL)
+     OR (lr_db_rec.sfs_name IS NOT NULL AND pi_old_sfs_name IS NULL)
+    THEN
+        --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    ELSE
+      /*
+      ||Compare old with New
+      */
+      IF pi_old_sfs_name != pi_new_sfs_name
+       OR (pi_old_sfs_name IS NULL AND pi_new_sfs_name IS NOT NULL)
+       OR (pi_old_sfs_name IS NOT NULL AND pi_new_sfs_name IS NULL)
+       THEN
+         lv_upd := 'Y';
+      END IF;
+      --
+      IF lv_upd = 'N'
+       THEN
+          --There are no changes to be applied
+          hig.raise_ner(pi_appl => 'AWLRS'
+                       ,pi_id   => 25);
+      ELSE
+        --
+        UPDATE sdl_file_submissions
+           SET sfs_name = pi_new_sfs_name
+         WHERE sfs_id = pi_batch_id;
+        --
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+        --
+      END IF;
+      --
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_submission;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_submission(pi_batch_ids        IN  awlrs_sdl_util.sfs_id_tab
+                             ,pi_select_all       IN  VARCHAR2 DEFAULT 'N'
+                             ,po_message_severity OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor   OUT sys_refcursor)
+  IS
+    --
+  BEGIN
+    --
+    -- pi_select_all not used
+    FOR i IN 1..pi_batch_ids.COUNT
+    LOOP
+      --
+      DELETE FROM sdl_validation_results
+      WHERE svr_sfs_id = pi_batch_ids(i);
+
+      DELETE FROM sdl_attribute_adjustment_audit
+      WHERE saaa_sfs_id = pi_batch_ids(i);
+
+      DELETE FROM sdl_wip_intsct_geom
+      WHERE batch_id = pi_batch_ids(i);
+
+      DELETE FROM sdl_wip_pt_geom
+      WHERE batch_id = pi_batch_ids(i);
+
+      DELETE FROM sdl_wip_pt_arrays
+      WHERE batch_id = pi_batch_ids(i);
+
+      DELETE FROM sdl_wip_datum_nodes
+      WHERE batch_id = pi_batch_ids(i);
+
+      DELETE FROM sdl_wip_nodes
+      WHERE batch_id = pi_batch_ids(i);
+
+      DELETE FROM sdl_wip_route_nodes
+      WHERE batch_id = pi_batch_ids(i);
+
+      DELETE FROM sdl_wip_self_intersections
+      WHERE sld_key IN (SELECT sld_key
+                  FROM sdl_load_data
+                 WHERE sld_sfs_id = pi_batch_ids(i));
+
+      DELETE FROM sdl_pline_statistics
+      WHERE slps_sld_key IN (SELECT sld_key
+                       FROM sdl_load_data
+                      WHERE sld_sfs_id = pi_batch_ids(i))
+        AND slps_swd_id IN (SELECT swd_id
+                      FROM sdl_wip_datums
+                     WHERE batch_id = pi_batch_ids(i));
+
+      DELETE FROM sdl_geom_accuracy
+      WHERE slga_sld_key IN (SELECT sld_key
+                       FROM sdl_load_data
+                      WHERE sld_sfs_id = pi_batch_ids(i));
+
+      DELETE FROM sdl_wip_datums
+      WHERE batch_id = pi_batch_ids(i);
+
+       DELETE FROM sdl_wip_datum_reversals
+       WHERE batch_id = pi_batch_ids(i);
+
+      DELETE FROM sdl_process_audit
+      WHERE spa_sfs_id = pi_batch_ids(i);
+
+      DELETE FROM sdl_row_status
+      WHERE srs_sfs_id = pi_batch_ids(i);
+
+      DELETE FROM sdl_load_data
+      WHERE sld_sfs_id = pi_batch_ids(i);
+
+      DELETE FROM sdl_file_submissions
+      WHERE sfs_id = pi_batch_ids(i);
+
+    END LOOP;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+      THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_submission;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_process_audit_ui_active(po_ui_active         OUT VARCHAR2
+                                       ,po_message_severity  OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor    OUT sys_refcursor)
+  IS
+    --
+  BEGIN
+    --
+    po_ui_active := NVL(hig.get_sysopt('SDLAUDITUI'),'N');
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_process_audit_ui_active;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_batch_process_audit_info(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor)
+  IS
+    --
+  BEGIN
+    --
+      OPEN po_cursor FOR
+     SELECT spa.spa_id id
+           ,spa.spa_process process
+           ,CASE WHEN spa.spa_started IS NOT NULL
+                   AND spa.spa_ended IS NULL
+                 THEN 'Running'
+                 WHEN spa.spa_started IS NOT NULL
+                   AND spa.spa_ended IS NOT NULL
+                 THEN 'Completed'
+                 ELSE 'Unknown'
+             END status
+           ,spa.spa_started start_time
+           ,spa.spa_ended end_time
+           ,ROUND((CAST(spa.spa_ended AS date) - CAST(spa.spa_started AS date)) * 24 * 60) elapsed_time_in_mins
+           ,spa.spa_sld_key sld_key
+           ,spa.spa_tolerance tolerance
+           ,spa.spa_match_tolerance match_tolerance
+           ,spa.spa_buffer buffer
+           ,NVL(spa.spa_modified_by, spa.spa_created_by) user_name
+       FROM sdl_process_audit spa
+      WHERE spa.spa_sfs_id = pi_batch_id
+      ORDER BY spa.spa_id DESC;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_batch_process_audit_info;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE reset_batch_process_status(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                      ,pi_spa_id           IN  sdl_process_audit.spa_id%TYPE
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor)
+  IS
+    --
+  BEGIN
+    --
+      UPDATE sdl_process_audit
+         SET spa_ended = SYSTIMESTAMP
+       WHERE spa_id = pi_spa_id
+         AND spa_sfs_id = pi_batch_id
+         AND spa_ended IS NULL;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+      THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END reset_batch_process_status;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_submission_attribs_details(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                          ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                          ,po_message_cursor   OUT sys_refcursor
+                                          ,po_cursor           OUT sys_refcursor)
+  IS
+    --
+  BEGIN
+    --
+    IF get_submission_load_type(pi_batch_id) = 'A' THEN -- Asset loading
+    --
+        OPEN po_cursor FOR
+      SELECT spfc.spfc_col_id sam_col_id
+            ,sam.sam_view_column_name
+            ,INITCAP(REPLACE(sam.sam_view_column_name,'_',' ')) column_prompt
+            ,spfc.spfc_col_datatype field_type
+            ,spfc.spfc_col_size field_length
+            ,'' dec_places
+            ,spfc.spfc_date_format format_mask
+            ,spfc.spfc_mandatory mandatory
+            ,'' domain
+        FROM sdl_attribute_mapping sam
+            ,sdl_profiles sp
+            ,sdl_profile_file_columns spfc
+            ,sdl_file_submissions sfs
+            ,sdl_destination_header sdh
+        WHERE sam.sam_sp_id = sp.sp_id
+          AND spfc.spfc_sp_id = sp.sp_id
+          AND sp.sp_id = sfs.sfs_sp_id
+      --  AND sam.sam_sdh_id = sdh.sdh_id
+          AND sfs.sfs_sdh_id = sdh.sdh_id
+          AND spfc.spfc_container = sdh.sdh_source_container
+          AND spfc.spfc_col_name = sam.sam_file_attribute_name
+          AND sfs.sfs_id = pi_batch_id
+        ORDER BY spfc.spfc_col_id;
+      --
+    ELSE
+      --
+        OPEN po_cursor FOR
+      SELECT sam.sam_col_id
+            ,sam.sam_view_column_name
+            ,NVL(vnc.column_prompt, INITCAP(REPLACE(sam.sam_view_column_name,'_',' ')))column_prompt
+            ,vnc.field_type
+            ,vnc.field_length
+            ,vnc.dec_places
+            ,vnc.format_mask
+            ,vnc.mandatory
+            ,vnc.domain
+        FROM sdl_attribute_mapping sam
+            ,sdl_profiles sp
+            ,sdl_file_submissions sfs
+            ,sdl_destination_header sdh
+            ,v_nm_nw_columns vnc
+            ,nm_linear_types nlt
+       WHERE sam.sam_sp_id = sp.sp_id
+         AND sp.sp_id = sfs.sfs_sp_id
+         AND sam.sam_sdh_id = sdh.sdh_id
+         AND sdh.sdh_nlt_id = nlt.nlt_id
+         AND sfs.sfs_sdh_id = sdh.sdh_id
+         AND sdh.sdh_destination_location = 'N'
+         AND sam.sam_ne_column_name = vnc.column_name
+         AND vnc.network_type = nlt.nlt_nt_type
+         AND ((nlt.nlt_g_i_d = 'G' AND vnc.group_type = nlt.nlt_gty_type)
+                 OR nlt.nlt_g_i_d = 'D')
+         AND sfs.sfs_id = pi_batch_id
+       ORDER BY sam.sam_col_id;
+      --
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_submission_attribs_details;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_load_record_attribs(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                      ,pi_sld_key          IN  sdl_load_data.sld_key%TYPE
+                                      ,pi_record_json      IN  CLOB
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor)
+  IS
+    --
+    ln_max_col_id  NUMBER(2);
+    lv_col_dec     VARCHAR2(2000);
+    lv_select_list VARCHAR2(2000);
+    lv_into_list   VARCHAR2(2000);
+    lv_col_list    VARCHAR2(2000);
+    lv_if          nm3type.max_varchar2 := '  IF';
+    lv_else        nm3type.max_varchar2;
+    lv_update      nm3type.max_varchar2;
+    lv_sql         CLOB;
+    --
+  BEGIN
+    --
+    SELECT MAX(sam_col_id)
+      INTO ln_max_col_id
+      FROM sdl_attribute_mapping
+     WHERE sam_sp_id = (SELECT sfs_sp_id
+                          FROM sdl_file_submissions
+                         WHERE sfs_id = pi_batch_id);
+    --
+    FOR i IN 1..ln_max_col_id
+    LOOP
+	    --
+      lv_col_dec := lv_col_dec || '  old_col_' || i || ' VARCHAR2(2000);'
+                               || CHR(10) || '  new_col_' || i || ' VARCHAR2(2000);';
+      --
+      lv_select_list := lv_select_list || 'old_rec.col_' || i || ', new_rec.col_' || i;
+	    --
+      lv_into_list := lv_into_list || 'old_col_' || i || ', new_col_' || i;
+	    --
+      lv_col_list := lv_col_list || 'col_'|| i || ' PATH ''$.Col' || i ||'''';
+      --
+      lv_if := lv_if || ' lr_db_rec.sld_col_' || i || ' != old_col_' || i
+                   || CHR(10) || '    OR (lr_db_rec.sld_col_' || i || ' IS NULL AND old_col_' || i || ' IS NOT NULL)'
+                   || CHR(10) || '    OR (lr_db_rec.sld_col_' || i || ' IS NOT NULL AND old_col_' || i || ' IS NULL)';
+      --
+      lv_else := lv_else || '    IF old_col_' || i || ' != new_col_' || i
+                   || CHR(10) || '      OR (old_col_' || i || ' IS NULL AND new_col_' || i || ' IS NOT NULL)'
+                   || CHR(10) || '      OR (old_col_' || i || ' IS NOT NULL AND new_col_' || i || ' IS NULL)'
+                   || CHR(10) || '    THEN'
+                   || CHR(10) || '      lv_upd := ''Y'';'
+                   || CHR(10) || '    END IF;';
+      --
+      lv_update := lv_update ||'sld_col_' || i || ' = new_col_' || i;
+      --
+      IF i != ln_max_col_id THEN
+	    --
+        lv_col_dec := lv_col_dec || CHR(10);
+        lv_select_list := lv_select_list || CHR(10) || '        ,';
+        lv_into_list := lv_into_list || CHR(10) || '        ,';
+        lv_col_list := lv_col_list || CHR(10) || '                   ,';
+        lv_if := lv_if ||  CHR(10) || '    OR';
+        lv_else := lv_else || CHR(10);
+        lv_update := lv_update || CHR(10) || '         ,';
+		  --
+      END IF;
+	    --
+    END LOOP;
+    --
+    lv_sql := 'DECLARE'
+           || CHR(10) || lv_col_dec
+           || CHR(10) || '  lv_upd VARCHAR2(1) := ''N'';'
+           || CHR(10) || '  lr_db_rec sdl_load_data%ROWTYPE;'
+           || CHR(10) || '  PROCEDURE get_db_rec(pi_sld_key IN sdl_load_data.sld_key%TYPE) IS'
+           || CHR(10) || '  BEGIN'
+           || CHR(10) || '    SELECT *'
+           || CHR(10) || '      INTO lr_db_rec'
+           || CHR(10) || '      FROM sdl_load_data'
+           || CHR(10) || '     WHERE sld_key = pi_sld_key'
+           || CHR(10) || '       FOR UPDATE NOWAIT;'
+           || CHR(10) || '  EXCEPTION'
+           || CHR(10) || '    WHEN no_data_found THEN'
+           || CHR(10) || '      hig.raise_ner(pi_appl               => ''HIG'''
+           || CHR(10) || '                   ,pi_id                 => 85'
+           || CHR(10) || '                   ,pi_supplementary_info => ''Load record does not exist'');'
+           || CHR(10) || '  END get_db_rec;'
+           || CHR(10) || 'BEGIN'
+           || CHR(10) || '  get_db_rec(pi_sld_key => ' || pi_sld_key || ');'
+           || CHR(10) || '  SELECT ' || lv_select_list
+           || CHR(10) || '    INTO ' || lv_into_list
+           || CHR(10) || '    FROM dual '
+           || CHR(10) || '        ,JSON_TABLE(''' || pi_record_json || ''',''$.oldLoadRecordAttrib[*]'''
+           || CHR(10) || '           COLUMNS (' || lv_col_list
+           || CHR(10) || '          )) old_rec'
+           || CHR(10) || '        ,JSON_TABLE(''' || pi_record_json || ''',''$.newLoadRecordAttrib[*]'''
+           || CHR(10) || '           COLUMNS (' || lv_col_list
+           || CHR(10) || '          )) new_rec;'
+           || CHR(10) || '  --'
+           || CHR(10) || '  -- Compare old with DB '
+           || CHR(10) || lv_if
+           || CHR(10) || '  THEN'
+           || CHR(10) || '    --Updated by another user'
+           || CHR(10) || '    hig.raise_ner(pi_appl => ''AWLRS'', pi_id   => 24);'
+           || CHR(10) || '  ELSE'
+           || CHR(10) || '    -- Compare old with New '
+           || CHR(10) || lv_else
+           || CHR(10) || '    IF lv_upd = ''N'' THEN'
+           || CHR(10) || '      --There are no changes to be applied'
+           || CHR(10) || '      hig.raise_ner(pi_appl => ''AWLRS'', pi_id   => 25);'
+           || CHR(10) || '    ELSE'
+           || CHR(10) || '      UPDATE sdl_load_data'
+           || CHR(10) || '      SET ' || lv_update
+           || CHR(10) || '      WHERE sld_key = ' || pi_sld_key || ';'
+           || CHR(10) || '    END IF;'
+           || CHR(10) || '  END IF;'
+           || CHR(10) || 'END;';
+    --
+    EXECUTE IMMEDIATE lv_sql;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END update_load_record_attribs;
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE validate_batch_attributes(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
                                      ,po_message_cursor   OUT sys_refcursor)
   IS
     --
+    ln_sdh_id      sdl_destination_header.sdh_id%TYPE;
+    ln_error_count NUMBER(10);
+    --
   BEGIN
     --
-    sdl_process.load_validate(p_batch_id => pi_batch_id);
+    IF get_submission_load_type(pi_batch_id) = 'A' THEN -- Asset loading
+      -- this should be loop through sdh_id associated with profile of the submission through container
+      -- when multiple containers allowed
+      -- each container can have one or more destination type
+      BEGIN
+      SELECT sdh.sdh_id
+        INTO ln_sdh_id
+        FROM sdl_profiles sp
+            ,sdl_file_submissions sfs
+            ,sdl_destination_header sdh
+       WHERE sp.sp_id = sfs.sfs_sp_id
+         AND sp.sp_id = sdh.sdh_sp_id
+         AND sdh.sdh_destination_location = 'N'
+         AND sfs.sfs_id = pi_batch_id;
+      EXCEPTION
+        WHEN TOO_MANY_ROWS THEN
+        raise_application_error (-20070,
+                                'Profile having multiple containers.');
+      END;
+      --
+      sdl_audit.log_process_start(pi_batch_id, 'ADJUST', NULL, NULL, NULL);
+  -- sdl_invval.attribute adjustment rule
+      sdl_audit.log_process_end(pi_batch_id, 'ADJUST');
+      sdl_audit.log_process_start(pi_batch_id, 'LOAD_VALIDATION', NULL, NULL, NULL);
+      sdl_invval.validate_inv_data (p_sp_id => get_submission_profile_id(pi_batch_id),
+                                    p_sfs_id => pi_batch_id,
+                                    p_sdh_id => ln_sdh_id,
+                                    p_error_count => ln_error_count);
+      sdl_audit.log_process_end(pi_batch_id, 'LOAD_VALIDATION');
+      --
+    ELSE -- Network Loading
+      --
+      sdl_process.load_validate(p_batch_id => pi_batch_id);
+      --
+    END IF;
     --
     reset_attribute_validation_flag(pi_batch_id);
     --
@@ -618,7 +1361,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
     -- show option - INVALID = Attribute Validation failures , ADJUSTED = Attribute adjustments,
     -- REJECTED = Rejected, GEOMINVALID = Geometry failures
-    --
+    ---
       OPEN po_cursor FOR
     SELECT ROWNUM row_num
           ,val_id
@@ -1135,7 +1878,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                     ,po_message_cursor   OUT sys_refcursor)
   IS
     --
-    lv_spatial_analysis_completed sdl_file_submissions.sfs_spatial_analysis_completed%TYPE;
+   -- lv_spatial_analysis_completed sdl_file_submissions.sfs_spatial_analysis_completed%TYPE;
     --
   BEGIN
     --
@@ -1241,59 +1984,82 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   -----------------------------------------------------------------------------
   --
   PROCEDURE set_batch_column_data(pi_batch_id  IN     sdl_file_submissions.sfs_id%TYPE
-                               ,po_column_data IN OUT awlrs_util.column_data_tab)
+                                 ,po_column_data IN OUT awlrs_util.column_data_tab)
   IS
     --
     lv_column   nm3type.max_varchar2;
     lv_prompt   sdl_attribute_mapping.sam_view_column_name%TYPE;
     lv_type     VARCHAR2(10);
+    lv_load_type sdl_destination_header.sdh_type%TYPE := get_submission_load_type(pi_batch_id);
     --
     CURSOR get_attr(cp_batch_id IN sdl_file_submissions.sfs_id%TYPE)
-        IS
-    SELECT 'sld_col_' || sam.sam_col_id column_name,
-           LOWER(sam.sam_view_column_name) prompt
+    IS
+    SELECT CASE WHEN lv_load_type = 'A' -- Asset
+                THEN LOWER(sam.sam_file_attribute_name)
+                ELSE 'sld_col_' || sam.sam_col_id
+           END column_name
+          ,LOWER(sam.sam_view_column_name) prompt
       FROM sdl_attribute_mapping sam
           ,sdl_profiles sp
           ,sdl_file_submissions sfs
+          ,sdl_profile_file_columns spfc
+          ,sdl_destination_header sdh
      WHERE sam.sam_sp_id = sp.sp_id
        AND sp.sp_id = sfs.sfs_sp_id
+       AND sp.sp_id = spfc.spfc_sp_id
+   --    AND sam.sam_sdh_id = sdh.sdh_id
+       AND sfs.sfs_sdh_id = sdh.sdh_id
+       AND spfc.spfc_container = sdh.sdh_source_container
+       AND sam.sam_file_attribute_name = spfc.spfc_col_name
        AND sfs.sfs_id = cp_batch_id
-     ORDER BY sam.sam_col_id;
+     ORDER BY spfc.spfc_col_id;
     --
     TYPE attr_rec IS TABLE OF get_attr%ROWTYPE;
     lt_attr  attr_rec;
     --
   BEGIN
     --
-    awlrs_util.add_column_data(pi_cursor_col   => 'sld_key'
-                              ,pi_query_col    => 'sld_key'
-                              ,pi_datatype     => awlrs_util.c_number_col
-                              ,pi_mask         => NULL
-                              ,pio_column_data => po_column_data);
-
-    awlrs_util.add_column_data(pi_cursor_col   => 'status_'
-                              ,pi_query_col    => 'sld_status'
-                              ,pi_datatype     => awlrs_util.c_varchar2_col
-                              ,pi_mask         => NULL
-                              ,pio_column_data => po_column_data);
-
-    awlrs_util.add_column_data(pi_cursor_col   => 'pct_inside'
-                              ,pi_query_col    => 'slga_pct_inside'
-                              ,pi_datatype     => awlrs_util.c_number_col
-                              ,pi_mask         => NULL
-                              ,pio_column_data => po_column_data);
-
-    awlrs_util.add_column_data(pi_cursor_col   => 'buffer_size'
-                              ,pi_query_col    => 'slga_buffer_size'
-                              ,pi_datatype     => awlrs_util.c_number_col
-                              ,pi_mask         => NULL
-                              ,pio_column_data => po_column_data);
-
-    awlrs_util.add_column_data(pi_cursor_col   => 'length'
-                              ,pi_query_col    => 'ROUND(SDO_LRS.GEOM_SEGMENT_END_MEASURE(sld_working_geometry) - SDO_LRS.GEOM_SEGMENT_START_MEASURE(sld_working_geometry),4)'
-                              ,pi_datatype     => awlrs_util.c_number_col
-                              ,pi_mask         => NULL
-                              ,pio_column_data => po_column_data);
+    IF lv_load_type = 'A' THEN -- Asset loading
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'tld_id'
+                                ,pi_query_col    => 'tld_id'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+    ELSE -- Network loading
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'sld_key'
+                                ,pi_query_col    => 'sld_key'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      -- only needed in input data api and not file attributes api
+      awlrs_util.add_column_data(pi_cursor_col   => 'status_'
+                                ,pi_query_col    => 'sld_status'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'pct_inside'
+                                ,pi_query_col    => 'slga_pct_inside'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'buffer_size'
+                                ,pi_query_col    => 'slga_buffer_size'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'length'
+                                ,pi_query_col    => 'ROUND(SDO_LRS.GEOM_SEGMENT_END_MEASURE(sld_working_geometry) - SDO_LRS.GEOM_SEGMENT_START_MEASURE(sld_working_geometry),4)'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+    END IF;
     --
     /* Get Dynamic list of batch attributes */
     OPEN  get_attr(pi_batch_id);
@@ -1328,35 +2094,50 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
     lv_prompt   nm_type_columns.ntc_prompt%TYPE;
     --
-    TYPE attrib_rec IS RECORD(sam_col_id           sdl_attribute_mapping.sam_col_id%TYPE
-                             ,sam_view_column_name sdl_attribute_mapping.sam_view_column_name%TYPE);
+    TYPE attrib_rec IS RECORD(sam_col_id              sdl_attribute_mapping.sam_col_id%TYPE
+                             ,sam_file_attribute_name sdl_attribute_mapping.sam_file_attribute_name%TYPE
+                             ,sam_view_column_name    sdl_attribute_mapping.sam_view_column_name%TYPE);
     TYPE attrib_tab IS TABLE OF attrib_rec;
     lt_attrib  attrib_tab;
+    --
+    lv_load_type sdl_destination_header.sdh_type%TYPE := get_submission_load_type(pi_batch_id);
     --
   BEGIN
     /*
     ||Add batch profile attributes
     */
-    SELECT sam.sam_col_id,
-           sam.sam_view_column_name
-      BULK COLLECT
-      INTO lt_attrib
-      FROM sdl_attribute_mapping sam
-          ,sdl_profiles sp
-          ,sdl_file_submissions sfs
-     WHERE sam.sam_sp_id = sp.sp_id
-       AND sp.sp_id = sfs.sfs_sp_id
-       AND sfs.sfs_id = pi_batch_id
-     ORDER BY sam.sam_col_id;
+    --
+    SELECT sam.sam_col_id
+          ,CASE WHEN lv_load_type = 'A' -- Asset loading
+                THEN LOWER(sam.sam_file_attribute_name)
+                ELSE 'sld_col_' || sam.sam_col_id
+            END sam_file_attribute_name
+           ,sam.sam_view_column_name
+       BULK COLLECT
+       INTO lt_attrib
+       FROM sdl_attribute_mapping sam
+           ,sdl_profiles sp
+           ,sdl_file_submissions sfs
+           ,sdl_profile_file_columns spfc
+           ,sdl_destination_header sdh
+      WHERE sam.sam_sp_id = sp.sp_id
+        AND sp.sp_id = sfs.sfs_sp_id
+        AND sp.sp_id = spfc.spfc_sp_id
+     --   AND sam.sam_sdh_id = sdh.sdh_id
+        AND sfs.sfs_sdh_id = sdh.sdh_id
+        AND spfc.spfc_container = sdh.sdh_source_container
+        AND sam.sam_file_attribute_name = spfc.spfc_col_name
+        AND sfs.sfs_id = pi_batch_id
+      ORDER BY spfc.spfc_col_id;
     --
     FOR i IN 1..lt_attrib.COUNT
     LOOP
       --
       lv_prompt := LOWER(lt_attrib(i).sam_view_column_name);
       --
-      po_select_list := po_select_list||CHR(10)||' ,sld_col_' || lt_attrib(i).sam_col_id||' "'||lv_prompt||'"';
+      po_select_list := po_select_list||CHR(10)||' ,' || lt_attrib(i).sam_file_attribute_name||' "'||lv_prompt||'"';
       --
-      po_alias_list := po_alias_list||CHR(10)||' ,"'||lv_prompt||'"';
+      po_alias_list := po_alias_list||CHR(10)||' ,'||lv_prompt;
       --
     END LOOP;
     --
@@ -1375,10 +2156,12 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     lv_select_list  nm3type.max_varchar2;
     lv_pagecols     VARCHAR2(200);
     lv_retval       nm3type.max_varchar2;
+    lv_load_type    sdl_destination_header.sdh_type%TYPE := get_submission_load_type(pi_batch_id);
+    lv_profile_name sdl_profiles.sp_name%TYPE := get_submission_profile_name(pi_batch_id);
     --
   BEGIN
     --
-    get_batch_attributes_list(pi_batch_id     => pi_batch_id
+    get_batch_attributes_list(pi_batch_id    => pi_batch_id
                              ,po_alias_list  => lv_alias_list
                              ,po_select_list => lv_select_list);
     --
@@ -1389,39 +2172,60 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
             ||CHR(10)||'      ,';
     END IF;
     --
-    SELECT 'SELECT sld_key AS "sld_key", '
-           || LISTAGG('sld_col_' || sam.sam_col_id || ' AS "' || LOWER(sam.sam_view_column_name) || '"', ', ') WITHIN
-            GROUP(ORDER BY sam_col_id, sam.sam_id)
-           || ' FROM '
-           || ' ('
-           || 'SELECT sld.sld_key sld_key, '
-           || LISTAGG('CASE WHEN awlrs_sdl_upload_api.is_attrib_adjusted_for_batch(vo.saaa_sld_key, vo.saaa_sfs_id, ' || sam.sam_id || ') =  ''Y'' THEN vo.saaa_col_' || sam.sam_col_id || ' ELSE sld.sld_col_' || sam.sam_col_id
-           || ' END sld_col_' || sam.sam_col_id , ', ') WITHIN GROUP(ORDER BY sam_col_id, sam.sam_id)
-           || ' FROM sdl_load_data sld, v_sdl_actual_load_data vo '
-           || ' WHERE sld.sld_sfs_id = vo.saaa_sfs_id(+)'
-           || '   AND sld.sld_key = vo.saaa_sld_key(+)'
-           || '   AND sld.sld_sfs_id = '
-           || pi_batch_id
-    INTO lv_retval
-    FROM sdl_attribute_mapping sam,
-         sdl_profiles sp,
-         sdl_file_submissions sfs
-    WHERE sam.sam_sp_id = sp.sp_id
-      AND sp.sp_id = sfs.sfs_sp_id
-      AND sfs.sfs_id = pi_batch_id
-   GROUP BY sp.sp_name;
+    SELECT CASE WHEN lv_load_type = 'A' -- Asset loading
+                THEN 'SELECT tld.tld_id "tld_id", '
+                     || LISTAGG(LOWER(spfc.spfc_col_name)
+                     || ' ' || LOWER(sam.sam_view_column_name), ', ') WITHIN GROUP(ORDER BY spfc.spfc_col_id)
+                     || ' FROM tdl_' || LOWER(REPLACE(lv_profile_name, ' ', '_')) || '_ld tld '
+                     || ' WHERE tld.tld_sfs_id = '
+                     || pi_batch_id
+                ELSE 'SELECT sld.sld_key "sld_key", '
+                     || LISTAGG('sld.sld_col_' || sam.sam_col_id
+                     || ' ' || LOWER(sam.sam_view_column_name), ', ') WITHIN GROUP(ORDER BY sam.sam_col_id, sam.sam_id)
+                     || ' FROM sdl_load_data sld '
+                     || ' WHERE sld.sld_sfs_id = '
+                     || pi_batch_id
+                      END
+      INTO lv_retval
+      FROM sdl_attribute_mapping sam
+          ,sdl_profiles sp
+          ,sdl_file_submissions sfs
+          ,sdl_profile_file_columns spfc
+          ,sdl_destination_header sdh
+     WHERE sam.sam_sp_id = sp.sp_id
+       AND sp.sp_id = sfs.sfs_sp_id
+       AND sp.sp_id = spfc.spfc_sp_id
+     --  AND sam.sam_sdh_id = sdh.sdh_id
+       AND sfs.sfs_sdh_id = sdh.sdh_id
+       AND spfc.spfc_container = sdh.sdh_source_container
+       AND sam.sam_file_attribute_name = spfc.spfc_col_name
+       AND sfs.sfs_id = pi_batch_id;
     --
-    lv_retval := 'WITH batch_attribs AS '
-                 || '('
-                 || lv_retval
-                 ||CHR(10)||')'
-                 ||CHR(10)||'  WHERE 1=1'
-                 ||CHR(10)||'   AND ('||NVL(pi_where_clause,'1=1')||')'
-                 ||CHR(10)||'   ORDER BY '||NVL(LOWER(pi_order_column),'"sld_key"')||')'
-                 ||CHR(10)||'SELECT '||lv_pagecols
-                          ||'"sld_key"'
-                          ||lv_alias_list
-                 ||CHR(10)||'  FROM batch_attribs';
+    IF lv_load_type = 'A' THEN -- Asset Loading
+      --
+      lv_retval := 'WITH batch_attribs AS '
+                   || '('
+                   || lv_retval
+                   ||CHR(10)||'   AND ('||NVL(pi_where_clause,'1=1')||')'
+                   ||CHR(10)||'   ORDER BY '||NVL(LOWER(pi_order_column),'tld_id')||')'
+                   ||CHR(10)||'SELECT '||lv_pagecols
+                            ||'"tld_id"'
+                            ||lv_alias_list
+                   ||CHR(10)||'  FROM batch_attribs';
+      --
+    ELSE -- Network loading
+      --
+      lv_retval := 'WITH batch_attribs AS '
+                   || '('
+                   || lv_retval
+                   ||CHR(10)||'   AND ('||NVL(pi_where_clause,'1=1')||')'
+                   ||CHR(10)||'   ORDER BY '||NVL(LOWER(pi_order_column),'sld_key')||')'
+                   ||CHR(10)||'SELECT '||lv_pagecols
+                            ||'"sld_key"'
+                            ||lv_alias_list
+                   ||CHR(10)||'  FROM batch_attribs';
+      --
+    END IF;
     --
     RETURN lv_retval;
     --
@@ -1435,28 +2239,43 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                      ,po_cursor           OUT sys_refcursor)
   IS
     --
-    lv_sql nm3type.max_varchar2;
+    lv_sql          nm3type.max_varchar2;
+    lv_load_type    sdl_destination_header.sdh_type%TYPE := get_submission_load_type(pi_batch_id);
+    lv_profile_name sdl_profiles.sp_name%TYPE := get_submission_profile_name(pi_batch_id);
     --
   BEGIN
     --
-    SELECT 'SELECT sld.sld_key, '
-           || LISTAGG('CASE WHEN awlrs_sdl_upload_api.is_attrib_adjusted_for_batch(vo.saaa_sld_key, vo.saaa_sfs_id, ' || sam.sam_id || ') =  ''Y'' THEN vo.saaa_col_' || sam.sam_col_id || ' ELSE sld.sld_col_' || sam.sam_col_id
-           || ' END ' || LOWER(sam.sam_view_column_name), ', ') WITHIN GROUP(ORDER BY sam_col_id, sam.sam_id)
-           || ' FROM sdl_load_data sld, v_sdl_actual_load_data vo '
-           || ' WHERE sld.sld_sfs_id = vo.saaa_sfs_id(+)'
-           || '   AND sld.sld_key = vo.saaa_sld_key(+)'
-           || '   AND sld.sld_sfs_id = '
-           || pi_batch_id
-           || ' ORDER BY sld_key'
-    INTO lv_sql
-    FROM sdl_attribute_mapping sam
-        ,sdl_profiles sp
-        ,sdl_file_submissions sfs
-    WHERE sam.sam_sp_id = sp.sp_id
-      AND sp.sp_id = sfs.sfs_sp_id
-      AND sfs.sfs_id = pi_batch_id
-   GROUP BY sp.sp_name;
-    --
+    SELECT CASE WHEN lv_load_type = 'A' -- Asset loading
+                THEN 'SELECT tld.tld_id, '
+                     || LISTAGG(LOWER(spfc.spfc_col_name)
+                     || ' ' || LOWER(sam.sam_view_column_name), ', ') WITHIN GROUP(ORDER BY spfc.spfc_col_id)
+                     || ' FROM tdl_' || LOWER(REPLACE(lv_profile_name, ' ', '_')) || '_ld tld '
+                     || ' WHERE tld.tld_sfs_id = '
+                     || pi_batch_id
+                     || ' ORDER BY tld.tld_id'
+                ELSE 'SELECT sld.sld_key, '
+                     || LISTAGG('sld.sld_col_' || sam.sam_col_id
+                     || ' ' || LOWER(sam.sam_view_column_name), ', ') WITHIN GROUP(ORDER BY sam.sam_col_id, sam.sam_id)
+                     || ' FROM sdl_load_data sld '
+                     || ' WHERE sld.sld_sfs_id = '
+                     || pi_batch_id
+                     || ' ORDER BY sld.sld_key'
+                 END
+      INTO lv_sql
+      FROM sdl_attribute_mapping sam
+          ,sdl_profiles sp
+          ,sdl_file_submissions sfs
+          ,sdl_profile_file_columns spfc
+          ,sdl_destination_header sdh
+     WHERE sam.sam_sp_id = sp.sp_id
+       AND sp.sp_id = sfs.sfs_sp_id
+       AND sp.sp_id = spfc.spfc_sp_id
+   --  AND sam.sam_sdh_id = sdh.sdh_id
+       AND sfs.sfs_sdh_id = sdh.sdh_id
+       AND spfc.spfc_container = sdh.sdh_source_container
+       AND sam.sam_file_attribute_name = spfc.spfc_col_name
+       AND sfs.sfs_id = pi_batch_id;
+     --
     OPEN po_cursor FOR lv_sql;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -1595,6 +2414,49 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_orig_attributes_list(pi_batch_id    IN  sdl_file_submissions.sfs_id%TYPE
+                                    ,po_alias_list  IN OUT VARCHAR2
+                                    ,po_select_list IN OUT VARCHAR2)
+  IS
+    --
+    lv_prompt   nm_type_columns.ntc_prompt%TYPE;
+    --
+    TYPE attrib_rec IS RECORD(sam_col_id           sdl_attribute_mapping.sam_col_id%TYPE
+                             ,sam_view_column_name sdl_attribute_mapping.sam_view_column_name%TYPE);
+    TYPE attrib_tab IS TABLE OF attrib_rec;
+    lt_attrib  attrib_tab;
+    --
+  BEGIN
+    /*
+    ||Add batch profile attributes
+    */
+    SELECT sam.sam_col_id,
+           sam.sam_view_column_name
+      BULK COLLECT
+      INTO lt_attrib
+      FROM sdl_attribute_mapping sam
+          ,sdl_profiles sp
+          ,sdl_file_submissions sfs
+     WHERE sam.sam_sp_id = sp.sp_id
+       AND sp.sp_id = sfs.sfs_sp_id
+       AND sfs.sfs_id = pi_batch_id
+     ORDER BY sam.sam_col_id;
+    --
+    FOR i IN 1..lt_attrib.COUNT
+    LOOP
+      --
+      lv_prompt := LOWER(lt_attrib(i).sam_view_column_name);
+      --
+      po_select_list := po_select_list||CHR(10)||' ,sld_col_' || lt_attrib(i).sam_col_id||' "'||lv_prompt||'"';
+      --
+      po_alias_list := po_alias_list||CHR(10)||' ,"'||lv_prompt||'"';
+      --
+    END LOOP;
+    --
+  END get_orig_attributes_list;
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_selected_feature_attributes(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
                                            ,pi_sld_key          IN  sdl_load_data.sld_key%TYPE
                                            ,po_message_severity OUT hig_codes.hco_code%TYPE
@@ -1727,9 +2589,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
   BEGIN
     --
-    get_batch_attributes_list(pi_batch_id    => pi_batch_id
-                             ,po_alias_list  => lv_alias_list
-                             ,po_select_list => lv_select_list);
+    get_orig_attributes_list(pi_batch_id    => pi_batch_id
+                            ,po_alias_list  => lv_alias_list
+                            ,po_select_list => lv_select_list);
     --
     IF pi_paged
      THEN
@@ -2413,35 +3275,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE get_update_status_codes(po_message_severity OUT hig_codes.hco_code%TYPE
-                                   ,po_message_cursor   OUT sys_refcursor
-                                   ,po_cursor           OUT sys_refcursor)
-  IS
-    --
-  BEGIN
-    --
-    OPEN po_cursor FOR
-    SELECT hc.hco_code
-          ,hc.hco_code || ' - ' || hc.hco_meaning hco_meaning
-      FROM hig_codes hc
-          ,hig_domains hd
-     WHERE hc.hco_domain = hd.hdo_domain
-       AND hd.hdo_product = 'NET'
-       AND hd.hdo_domain = 'SDL_REVIEW_ACTION'
-     ORDER BY hc.hco_seq;
-    --
-    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                         ,po_cursor           => po_message_cursor);
-    --
-  EXCEPTION
-    WHEN others
-     THEN
-        awlrs_util.handle_exception(po_message_severity => po_message_severity
-                                   ,po_cursor           => po_message_cursor);
-  END get_update_status_codes;
-  --
-  -----------------------------------------------------------------------------
-  --
   PROCEDURE update_load_record_status(pi_status           IN  sdl_load_data.sld_status%TYPE
                                      ,pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
                                      ,pi_sld_keys         IN  awlrs_sdl_util.sld_key_tab
@@ -2450,7 +3283,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                      ,po_message_cursor   OUT sys_refcursor)
   IS
     --
-    lv_severity  hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    --lv_severity  hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
     ln_cnt       NUMBER;
     lt_sld_keys  awlrs_sdl_util.sld_key_tab;
     --
@@ -2467,7 +3300,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     ELSE
       lt_sld_keys := pi_sld_keys;
     END IF;
-
+	--
     FOR i in 1..lt_sld_keys.COUNT
     LOOP
       --
@@ -2483,12 +3316,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
           RAISE_APPLICATION_ERROR (-20046,
                                    'The associated datum/s has an INVALID status record found for Spatial ID ' || lt_sld_keys(i) || '. Can not update the status to LOAD.');
         END IF;
-
-     /* EXCEPTION
-        WHEN OTHERS THEN
-          NULL;*/
+      --
       END;
-
       -- Update the status of selected Input Load Data record
       UPDATE sdl_load_data sld
          SET sld.sld_status = pi_status
@@ -2532,7 +3361,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                 ,po_message_cursor   OUT sys_refcursor)
   IS
     --
-    lv_severity hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
+    --lv_severity hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
     ln_cnt      NUMBER;
     --
   BEGIN
@@ -2626,7 +3455,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
       --
     ELSE
       lt_sld_keys_tab := pi_sld_keys;
-    END IF;    
+    END IF;
     --
     FOR i IN 1..lt_sld_keys_tab.COUNT
     LOOP
@@ -2656,13 +3485,14 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     lv_val_completed  sdl_file_submissions.sfs_attri_validation_completed%TYPE;
     --
   BEGIN
+    --
 
       SELECT sfs_attri_validation_completed
         INTO lv_val_completed
         FROM sdl_file_submissions
        WHERE sfs_id = pi_batch_id;
        --
-       -- in case the attribute validationis already validation completed for the submisison
+       -- in case the attribute validation is already validation completed for the submission
        -- then re-set the validation completed flag to N
        IF lv_val_completed = 'Y' THEN
          UPDATE sdl_file_submissions
@@ -2708,15 +3538,322 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_batch_destination_types(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                       ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor   OUT sys_refcursor
+                                       ,po_cursor           OUT sys_refcursor)
+  IS
+    --
+  BEGIN
+    --
+      OPEN po_cursor FOR
+    SELECT sdh_dest.sdh_destination_type destination_type
+          ,tpc.tpc_container container
+          ,sfs.sfs_sp_id profile_id
+          ,sdh_dest.sdh_id dest_id
+          ,sdh_loc.sdh_id dest_loc_id
+      FROM sdl_destination_header sdh_dest
+          ,sdl_destination_header sdh_loc
+          ,v_tdl_profile_containers tpc
+          ,sdl_file_submissions sfs
+     WHERE sdh_dest.sdh_sp_id = sdh_loc.sdh_sp_id
+       AND sdh_dest.sdh_source_container = sdh_loc.sdh_source_container
+       AND sdh_dest.sdh_destination_type = sdh_loc.sdh_destination_type
+       AND sdh_dest.sdh_sp_id = tpc.tpc_sp_id
+       AND sdh_dest.sdh_source_container = tpc.tpc_container
+       AND sdh_dest.sdh_sp_id = sfs.sfs_sp_id
+       AND sdh_dest.sdh_destination_location = 'N'
+       AND sdh_loc.sdh_destination_location = 'Y'
+       AND sfs.sfs_id = pi_batch_id;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_batch_destination_types;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_load_destination_details(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                        ,pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                        ,pi_dest_id          IN  sdl_destination_header.sdh_id%TYPE
+                                        ,pi_destination_type IN  sdl_destination_header.sdh_destination_type%TYPE
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor)
+  IS
+    --
+    lv_view_name VARCHAR2(30);
+    lv_sql       nm3type.max_varchar2;
+    --
+  BEGIN
+    --
+    lv_view_name := 'V_TDL_'|| pi_profile_id || '_' || pi_dest_id || '_'
+                            || pi_destination_type || '_LD';
+    --
+    SELECT 'SELECT * FROM '
+	          || lv_view_name
+            || ' WHERE tld_sfs_id = '
+            || pi_batch_id
+            || ' ORDER BY tld_id'
+      INTO lv_sql
+      FROM dual;
+    --
+    OPEN po_cursor FOR lv_sql;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_load_destination_details;
+  --
+  -----------------------------------------------------------------------------
+  -- datum handling to be done with destination header.. might not required
+  PROCEDURE get_load_datums_detail(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor
+                                  ,po_cursor           OUT sys_refcursor)
+  IS
+    --
+  BEGIN
+    --
+      OPEN po_cursor FOR
+    SELECT sld_key
+          ,swd_id
+          ,fit_percent
+          ,datum_length
+          ,start_node
+          ,end_node
+     FROM (SELECT ROUND(swd.pct_match, 4) fit_percent
+                 ,ROUND(SDO_LRS.GEOM_SEGMENT_END_MEASURE(swd.geom) - SDO_LRS.GEOM_SEGMENT_START_MEASURE(swd.geom),4) datum_length
+                 ,st.existing_node_id start_node
+                 ,en.existing_node_id end_node
+                 ,swd.sld_key
+                 ,swd.swd_id
+                 ,swd.datum_id
+                 ,swd.status
+                 ,swd.batch_id
+             FROM sdl_wip_datums swd
+                 ,v_sdl_node_usages snu
+                 ,sdl_wip_nodes st
+                 ,sdl_wip_nodes en
+            WHERE swd.swd_id = snu.swd_id
+              AND snu.start_node = st.hashcode
+              AND snu.end_node = en.hashcode)
+    WHERE batch_id = pi_batch_id
+      AND status = 'LOAD'
+  ORDER BY sld_key, swd_id;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_load_datums_detail;
+  --
+  -----------------------------------------------------------------------------
+  -- datum handling to be done with destination header.. might not required
+  PROCEDURE get_paged_load_datums_detail(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                                        ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                        ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                        ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                        ,pi_skip_n_rows      IN  PLS_INTEGER
+                                        ,pi_pagesize         IN  PLS_INTEGER
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
+                                        ,po_cursor           OUT sys_refcursor)
+  IS
+    --
+    lv_lower_index      PLS_INTEGER;
+    lv_upper_index      PLS_INTEGER;
+    lv_row_restriction  nm3type.max_varchar2;
+    lv_order_by         nm3type.max_varchar2;
+    lv_filter           nm3type.max_varchar2;
+    --
+    lv_driving_sql  nm3type.max_varchar2 := 'SELECT sld_key
+                                                   ,swd_id
+                                                   ,fit_percent
+                                                   ,datum_length
+                                                   ,start_node
+                                                   ,end_node
+                                              FROM (SELECT ROUND(swd.pct_match, 4) fit_percent,
+                                                           ROUND(SDO_LRS.GEOM_SEGMENT_END_MEASURE(swd.geom) -
+                                                                SDO_LRS.GEOM_SEGMENT_START_MEASURE(swd.geom),4) datum_length,
+                                                           st.existing_node_id start_node,
+                                                           en.existing_node_id end_node,
+                                                           swd.sld_key,
+                                                           swd.swd_id,
+                                                           swd.datum_id,
+                                                           swd.status,
+                                                           swd.batch_id
+                                                      FROM sdl_wip_datums swd,
+                                                           v_sdl_node_usages snu,
+                                                           sdl_wip_nodes st,
+                                                           sdl_wip_nodes en
+                                                     WHERE swd.swd_id = snu.swd_id
+                                                       AND snu.start_node = st.hashcode
+                                                       AND snu.end_node = en.hashcode)
+                                             WHERE batch_id = :pi_batch_id
+                                               AND status = ''LOAD''';
+    --
+    lv_cursor_sql  nm3type.max_varchar2 := 'SELECT sld_key'
+                                              ||' ,swd_id'
+                                              ||' ,fit_percent'
+                                              ||' ,datum_length'
+                                              ||' ,start_node'
+                                              ||' ,end_node'
+                                              ||' ,row_count'
+                                          ||' FROM (SELECT rownum ind'
+                                                      ||' ,a.*'
+                                                      ||' ,COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
+                                                  ||' FROM ('||lv_driving_sql;
+    --
+    lt_column_data  awlrs_util.column_data_tab;
+    --
+    PROCEDURE set_column_data(po_column_data IN OUT awlrs_util.column_data_tab)
+      IS
+    BEGIN
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'sld_key'
+                                ,pi_query_col    => 'sld_key'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'swd_id'
+                                ,pi_query_col    => 'swd_id'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'fit_percent'
+                                ,pi_query_col    => 'fit_percent'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'datum_length'
+                                ,pi_query_col    => 'datum_length'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'start_node'
+                                ,pi_query_col    => 'start_node'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'end_node'
+                                ,pi_query_col    => 'end_node'
+                                ,pi_datatype     => awlrs_util.c_number_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+     --
+    END set_column_data;
+    --
+  BEGIN
+    /*
+    ||Get the page parameters.
+    */
+    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
+                                  ,pi_skip_n_rows  => pi_skip_n_rows
+                                  ,pi_pagesize     => pi_pagesize
+                                  ,po_lower_index  => lv_lower_index
+                                  ,po_upper_index  => lv_upper_index
+                                  ,po_statement    => lv_row_restriction);
+    /*
+    ||Get the Order By clause.
+    */
+    lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
+                                          ,pi_order_asc_desc => pi_order_asc_desc);
+    /*
+    ||Process the filter.
+    */
+    IF pi_filter_columns.COUNT > 0
+     THEN
+        --
+        set_column_data(po_column_data => lt_column_data);
+        --
+        awlrs_util.process_filter(pi_columns      => pi_filter_columns
+                                 ,pi_column_data  => lt_column_data
+                                 ,pi_operators    => pi_filter_operators
+                                 ,pi_values_1     => pi_filter_values_1
+                                 ,pi_values_2     => pi_filter_values_2
+                                 ,pi_where_or_and => 'AND'
+                                 ,po_where_clause => lv_filter);
+        --
+    END IF;
+    --
+    lv_cursor_sql := lv_cursor_sql
+                     ||CHR(10)||lv_filter
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'sld_key, swd_id')||') a)'
+                     ||CHR(10)||lv_row_restriction;
+    --
+    IF pi_pagesize IS NOT NULL
+     THEN
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_batch_id
+             ,lv_lower_index
+             ,lv_upper_index;
+    ELSE
+        OPEN po_cursor FOR lv_cursor_sql
+        USING pi_batch_id
+             ,lv_lower_index;
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_paged_load_datums_detail;
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE transfer_load_data(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
+                              ,pi_dest_id          IN  sdl_destination_header.sdh_id%TYPE
                               ,pi_load_option      IN  VARCHAR2 DEFAULT 'AFTER'
                               ,po_message_severity OUT hig_codes.hco_code%TYPE
                               ,po_message_cursor   OUT sys_refcursor)
   IS
     --
+    ln_rows_processed number(38);
+    --
   BEGIN
-    -- pi_load_option = AFTER is the only option as of now so no need to pass it further.
-    sdl_process.transfer(p_batch_id => pi_batch_id);
+    --
+    IF get_submission_load_type(pi_batch_id) = 'A' THEN -- Asset Loading
+      --
+      sdl_audit.log_process_start(pi_batch_id, 'TRANSFER', NULL, NULL, NULL);
+      --
+      sdl_inv_load.load_data(p_sp_id => get_submission_profile_id(pi_batch_id)
+                            ,p_sfs_id => pi_batch_id
+                            ,p_sdh_id => pi_dest_id
+                            ,p_rows_processed => ln_rows_processed );
+      --
+      sdl_audit.log_process_end(pi_batch_id, 'TRANSFER');
+      --
+    ELSE -- Network loading
+      -- pi_load_option = AFTER is the only option as of now so no need to pass it further.
+      sdl_process.transfer(p_batch_id => pi_batch_id);
+    END IF;
     --
     UPDATE sdl_file_submissions
        SET sfs_load_data_completed = 'Y'
@@ -2741,6 +3878,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                               ,po_message_cursor   OUT sys_refcursor
                               ,po_cursor           OUT sys_refcursor)
   IS
+    --
+    lv_load_type sdl_destination_header.sdh_type%TYPE := get_submission_load_type(pi_batch_id);
     --
   BEGIN
     --
@@ -2775,30 +3914,35 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     SELECT sfs.sfs_id
           ,sfs.sfs_status
           ,CASE
-           WHEN sp.sp_max_import_level IN ('VALIDATE', 'SPATIAL', 'LOADNE')
+           WHEN sup.sup_access_type IN ('VALIDATE', 'SPATIAL', 'LOADNE')
+                AND sfs.sfs_status != 'FAILED'
            THEN 'Y'
            ELSE 'N'
            END validation_active
           ,sfs.sfs_attri_validation_completed validation_completed
           ,CASE
-           WHEN sp.sp_max_import_level IN ('SPATIAL', 'LOADNE')
+           WHEN sup.sup_access_type IN ('SPATIAL', 'LOADNE')
                 AND sfs.sfs_attri_validation_completed = 'Y'
+                AND lv_load_type != 'A'
            THEN 'Y'
            ELSE 'N'
            END analysis_active
           ,sfs.sfs_spatial_analysis_completed analysis_completed
           ,CASE
-           WHEN sp.sp_max_import_level IN ('LOADNE')
-                AND sfs.sfs_spatial_analysis_completed = 'Y'
+           WHEN sup.sup_access_type IN ('LOADNE')
+                AND ((sfs.sfs_spatial_analysis_completed = 'Y' AND lv_load_type != 'A')
+                    OR (sfs.sfs_attri_validation_completed = 'Y' AND lv_load_type = 'A'))
            THEN 'Y'
            ELSE 'N'
            END transfer_active
           ,sfs.sfs_load_data_completed transfer_completed
     FROM sdl_profiles sp
+        ,sdl_user_profiles sup
         ,sdl_file_submissions sfs
         ,hig_codes hc
-    WHERE sp.sp_id = sfs.sfs_sp_id
-      AND sp.sp_max_import_level = hc.hco_code
+    WHERE sp.sp_id = sup.sup_sp_id
+      AND sp.sp_id = sfs.sfs_sp_id
+      AND sup.sup_access_type = hc.hco_code
       AND hc.hco_domain = 'SDL_MAX_IMPORT_LEVEL'
     ) st
     WHERE st.sfs_id = pi_batch_id;
@@ -2857,7 +4001,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   IS
   --
   BEGIN
-  -- when lengthy process running used in UI to keep spinner running until process completed
+    -- when lengthy process running used in UI to keep spinner running until process completed
     IF pi_current_tab = 'ATTRIBVALIDATION' -- Attribute Validation
     THEN
       IF check_process_status(pi_batch_id, 'ADJUST') = 'COMPLETED'
