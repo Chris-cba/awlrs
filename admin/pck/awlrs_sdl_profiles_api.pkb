@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.10   Jan 20 2021 15:40:18   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.11   Jan 21 2021 09:21:48   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 20 2021 15:40:18  $
-  --       Date fetched Out : $Modtime:   Jan 20 2021 15:38:36  $
-  --       PVCS Version     : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   Jan 21 2021 09:21:48  $
+  --       Date fetched Out : $Modtime:   Jan 21 2021 09:20:18  $
+  --       PVCS Version     : $Revision:   1.11  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.10  $';
+  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.11  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -2610,13 +2610,13 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                    ,pi_old_col_id => r_spfc.old_spfc_col_id
                                    ,pi_new_col_id => r_spfc.new_spfc_col_id
                                    ,pi_old_col_name => r_spfc.old_spfc_col_name
-                                   ,pi_new_col_name => r_spfc.new_spfc_col_name
+                                   ,pi_new_col_name => REPLACE(UPPER(r_spfc.new_spfc_col_name), ' ', '_')
                                    ,pi_old_col_datatype => r_spfc.old_spfc_col_datatype
                                    ,pi_new_col_datatype => r_spfc.new_spfc_col_datatype
                                    ,pi_old_col_size => r_spfc.old_spfc_col_size
                                    ,pi_new_col_size => r_spfc.new_spfc_col_size
                                    ,pi_old_container => r_spfc.old_spfc_container
-                                   ,pi_new_container => r_spfc.new_spfc_container
+                                   ,pi_new_container => REPLACE(UPPER(r_spfc.new_spfc_container), ' ', '_')
                                    ,pi_old_mandatory => r_spfc.old_spfc_mandatory
                                    ,pi_new_mandatory => r_spfc.new_spfc_mandatory
                                    ,pi_old_date_format => r_spfc.old_spfc_date_format
@@ -2628,10 +2628,10 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
         --
         create_profile_file_columns(pi_profile_id => pi_profile_id
                                    ,pi_col_id => r_spfc.new_spfc_col_id
-                                   ,pi_col_name => r_spfc.new_spfc_col_name
+                                   ,pi_col_name => REPLACE(UPPER(r_spfc.new_spfc_col_name), ' ', '_')
                                    ,pi_col_datatype => r_spfc.new_spfc_col_datatype
                                    ,pi_col_size => r_spfc.new_spfc_col_size
-                                   ,pi_container => r_spfc.new_spfc_container
+                                   ,pi_container => REPLACE(UPPER(r_spfc.new_spfc_container), ' ', '_')
                                    ,pi_mandatory => r_spfc.new_spfc_mandatory
                                    ,pi_date_format => r_spfc.new_spfc_date_format);
         --
