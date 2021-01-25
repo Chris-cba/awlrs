@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.34   Sep 08 2020 15:42:04   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.35   Jan 25 2021 18:14:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   Sep 08 2020 15:42:04  $
-  --       Date fetched Out : $Modtime:   Sep 08 2020 15:32:38  $
-  --       Version          : $Revision:   1.34  $
+  --       Date into PVCS   : $Date:   Jan 25 2021 18:14:38  $
+  --       Date fetched Out : $Modtime:   Jan 25 2021 18:11:14  $
+  --       Version          : $Revision:   1.35  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.34  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.35  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -761,6 +761,17 @@ AS
     l_mem_ne_rec  nm_elements%ROWTYPE;
     l_nm_rec      nm_members%ROWTYPE;
     --
+    lv_check  NUMBER;
+    --
+    CURSOR chk_member(cp_group_id  IN nm_elements_all.ne_id%TYPE
+                     ,cp_member_id IN nm_elements_all.ne_id%TYPE)
+        IS
+    SELECT 1
+      FROM nm_members
+     WHERE nm_ne_id_in = cp_group_id
+       AND nm_ne_id_of = cp_member_id
+         ;
+    --
   BEGIN
     --
     IF awlrs_element_api.is_nt_inclusion_parent(pi_nt_type => pi_group_rec.ne_nt_type)
@@ -784,10 +795,10 @@ AS
                      ,pi_supplementary_info => l_mem_ne_rec.ne_unique);
     END IF;
     --
-    IF (pi_group_rec.ne_nt_type = 'G'
+    IF (pi_group_rec.ne_type = 'G'
         AND NOT(nm3net.nt_valid_in_group(pi_nt_type => l_mem_ne_rec.ne_nt_type
                                         ,pi_gty     => pi_group_rec.ne_gty_group_type)))
-     OR (pi_group_rec.ne_nt_type = 'P'
+     OR (pi_group_rec.ne_type = 'P'
          AND NOT(valid_sub_group_type(pi_parent_group_type => pi_group_rec.ne_gty_group_type
                                      ,pi_child_group_type  => l_mem_ne_rec.ne_gty_group_type)))
      THEN
@@ -795,6 +806,24 @@ AS
         hig.raise_ner(pi_appl => 'NET'
                      ,pi_id   => 55
                      ,pi_supplementary_info => l_mem_ne_rec.ne_unique);
+    END IF;
+    /*
+    ||Prevent duplicate members for groups of groups.
+    */
+    IF pi_group_rec.ne_type = 'P'
+     THEN
+        --
+        OPEN  chk_member(pi_group_rec.ne_id,l_mem_ne_rec.ne_id);
+        FETCH chk_member
+         INTO lv_check;
+        IF chk_member%FOUND
+         THEN
+            CLOSE chk_member;
+            hig.raise_ner(pi_appl => 'AWLRS'
+                         ,pi_id   => 93);
+        END IF;
+        CLOSE chk_member;
+        --
     END IF;
     /*
     ||Set the membership details.
