@@ -1,19 +1,19 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.34   Nov 10 2020 11:52:12   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.35   Jan 25 2021 18:15:48   Mike.Huitson  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Nov 10 2020 11:52:12  $
---       Date fetched Out : $Modtime:   Nov 10 2020 09:58:34  $
---       Version          : $Revision:   1.34  $
+--       Date into PVCS   : $Date:   Jan 25 2021 18:15:48  $
+--       Date fetched Out : $Modtime:   Jan 25 2021 16:28:00  $
+--       Version          : $Revision:   1.35  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 10-NOV-2020 09:58
+--       Generation Date  : 25-JAN-2021 16:28
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
 --
 -------------------------------------------------------------------------
---   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
+--   Copyright (c) 2021 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
 --
 --   TABLES PROCESSED
@@ -1696,6 +1696,24 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 92);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,93
+      ,null
+      ,'Element is already a member of the group'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 93);
 --
 ----------------------------------------------------------------------------------------
 -- HIG_STANDARD_FAVOURITES
