@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.10   Oct 05 2020 12:18:18   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.11   Jan 25 2021 18:55:22   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_favourites_api.pkb  $
-  --       Date into PVCS   : $Date:   Oct 05 2020 12:18:18  $
-  --       Date fetched Out : $Modtime:   Oct 05 2020 11:49:38  $
-  --       Version          : $Revision:   1.10  $
+  --       Date into PVCS   : $Date:   Jan 25 2021 18:55:22  $
+  --       Date fetched Out : $Modtime:   Jan 20 2021 12:29:34  $
+  --       Version          : $Revision:   1.11  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.10  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_favourites_api';
   --
   c_root_folder  CONSTANT VARCHAR2(10) := '_ROOT';
@@ -1853,11 +1853,12 @@ AS
                            ||',entity_network_group_type'
                            ||',entity_id'
                            ||',child_count'
+                           ||',entity_data'
                       ||' FROM (SELECT CAST(''ENTITY'' AS VARCHAR2(6)) folder_or_entity'
                                    ||',CAST(NULL AS NUMBER(38)) af_id'
                                    ||',CAST(NULL AS NUMBER(38)) parent_af_id'
                                    ||','||gen_network_label_sql||'||CASE WHEN cne.ne_gty_group_type IS NULL THEN '' : From ''||nm_begin_mp||'' To ''||nm_end_mp||'' (''||un_unit_name||'')'' ELSE NULL END label'
-                                   ||',CASE WHEN ngt_linear_flag = ''Y'' THEN nm_seq_no ELSE NULL END seq_no'
+                                   ||',CASE WHEN pgt.ngt_linear_flag = ''Y'' THEN nm_seq_no ELSE NULL END seq_no'
                                    ||',CAST(''NETWORK'' AS VARCHAR2(100)) entity_type'
                                    ||',cne.ne_nt_type entity_sub_type'
                                    ||',cne.ne_gty_group_type entity_network_group_type'
@@ -1872,22 +1873,31 @@ AS
                                      ||' ELSE'
                                          ||' 0'
                                    ||' END child_count'
+                                   ||',CASE'
+                                     ||' WHEN cne.ne_gty_group_type IS NOT NULL'
+                                      ||' THEN'
+                                         ||' TO_CLOB(''{element_type: "''||cne.ne_type||''", is_linear: "''||cgt.ngt_linear_flag||''", Unique: "''||cne.ne_unique||''", Description: "''||cne.ne_descr||''"}'')'
+                                     ||' ELSE'
+                                         ||' TO_CLOB(''{element_type: "''||cne.ne_type||''", Seq: "''||m1.nm_seq_no||''", Unique: "''||cne.ne_unique||''", Offset: ''||m1.nm_slk||'', Description: "''||cne.ne_descr||''"}'')'
+                                   ||' END entity_data'
                                   ||' FROM nm_elements pne'
-                                       ||',nm_group_types_all'
+                                       ||',nm_group_types_all pgt'
                                        ||',nm_members m1'
                                        ||',nm_elements cne'
                                        ||',nm_types'
                                        ||',nm_units'
+                                       ||',nm_group_types_all cgt'
                                  ||' WHERE pne.ne_id = :ne_id'
-                                   ||' AND pne.ne_gty_group_type = ngt_group_type'
+                                   ||' AND pne.ne_gty_group_type = pgt.ngt_group_type'
                                    ||' AND pne.ne_id = m1.nm_ne_id_in'
                                    ||' AND m1.nm_type = ''G'''
                                    ||' AND m1.nm_ne_id_of = cne.ne_id'
                                    ||' AND cne.ne_nt_type = nt_type'
                                    ||' AND nt_length_unit = un_unit_id(+)'
+                                   ||' AND cne.ne_gty_group_type = cgt.ngt_group_type(+)'
                                  ||' ORDER'
-                                    ||' BY CASE WHEN ngt_linear_flag = ''Y'' THEN m1.nm_seq_no ELSE NULL END'
-                                       ||',CASE WHEN ngt_linear_flag = ''N'' THEN CASE WHEN cne.ne_nt_type = ''NSGN'' THEN cne.ne_number WHEN cne.ne_nt_type = ''ESU'' THEN cne.ne_name_1 ELSE cne.ne_unique END ELSE NULL END)'
+                                    ||' BY CASE WHEN pgt.ngt_linear_flag = ''Y'' THEN m1.nm_seq_no ELSE NULL END'
+                                       ||',CASE WHEN pgt.ngt_linear_flag = ''N'' THEN CASE WHEN cne.ne_nt_type = ''NSGN'' THEN cne.ne_number WHEN cne.ne_nt_type = ''ESU'' THEN cne.ne_name_1 ELSE cne.ne_unique END ELSE NULL END) t'
       USING lv_entity_type_display_name
            ,pi_ne_id
     ;
@@ -1936,11 +1946,12 @@ AS
                                                 ||',entity_network_group_type'
                                                 ||',entity_id'
                                                 ||',child_count'
+                                                ||',entity_data'
                                            ||' FROM (SELECT CAST(''ENTITY'' AS VARCHAR2(6)) folder_or_entity'
                                                         ||',CAST(NULL AS NUMBER(38)) af_id'
                                                         ||',CAST(NULL AS NUMBER(38)) parent_af_id'
                                                         ||',awlrs_favourites_api.get_entity_label(''NETWORK'',cne.ne_nt_type,cne.ne_id)||CASE WHEN cne.ne_gty_group_type IS NULL THEN '' : From ''||nm_begin_mp||'' To ''||nm_end_mp||'' (''||un_unit_name||'')'' ELSE NULL END label'
-                                                        ||',CASE WHEN ngt_linear_flag = ''Y'' THEN nm_seq_no ELSE NULL END seq_no'
+                                                        ||',CASE WHEN pgt.ngt_linear_flag = ''Y'' THEN nm_seq_no ELSE NULL END seq_no'
                                                         ||',CAST(''NETWORK'' AS VARCHAR2(100)) entity_type'
                                                         ||',cne.ne_nt_type entity_sub_type'
                                                         ||',cne.ne_gty_group_type entity_network_group_type'
@@ -1955,22 +1966,31 @@ AS
                                                           ||' ELSE'
                                                               ||' 0'
                                                         ||' END child_count'
+                                                        ||',CASE'
+                                                          ||' WHEN cne.ne_gty_group_type IS NOT NULL'
+                                                           ||' THEN'
+                                                              ||' TO_CLOB(''{element_type: "''||cne.ne_type||''", is_linear: "''||cgt.ngt_linear_flag||''", Unique: "''||cne.ne_unique||''", Description: "''||cne.ne_descr||''"}'')'
+                                                          ||' ELSE'
+                                                              ||' TO_CLOB(''{element_type: "''||cne.ne_type||''", Seq: "''||m1.nm_seq_no||''", Unique: "''||cne.ne_unique||''", Offset: ''||m1.nm_slk||'', Description: "''||cne.ne_descr||''"}'')'
+                                                        ||' END entity_data'
                                                    ||' FROM nm_elements pne'
-                                                        ||',nm_group_types_all'
+                                                        ||',nm_group_types_all pgt'
                                                         ||',nm_members m1'
                                                         ||',nm_elements cne'
                                                         ||',nm_types'
                                                         ||',nm_units'
+                                                        ||',nm_group_types_all cgt'
                                                   ||' WHERE pne.ne_id = :ne_id'
-                                                    ||' AND pne.ne_gty_group_type = ngt_group_type'
+                                                    ||' AND pne.ne_gty_group_type = pgt.ngt_group_type'
                                                     ||' AND pne.ne_id = m1.nm_ne_id_in'
                                                     ||' AND m1.nm_type = ''G'''
                                                     ||' AND m1.nm_ne_id_of = cne.ne_id'
                                                     ||' AND cne.ne_nt_type = nt_type'
                                                     ||' AND nt_length_unit = un_unit_id(+)'
+                                                    ||' AND cne.ne_gty_group_type = cgt.ngt_group_type(+)'
                                                   ||' ORDER'
-                                                  ||' BY CASE WHEN ngt_linear_flag = ''Y'' THEN m1.nm_seq_no ELSE NULL END'
-                                                  ||',CASE WHEN ngt_linear_flag = ''N'' THEN CASE WHEN cne.ne_nt_type = ''NSGN'' THEN cne.ne_number WHEN cne.ne_nt_type = ''ESU'' THEN cne.ne_name_1 ELSE cne.ne_unique END ELSE NULL END)'
+                                                  ||' BY CASE WHEN pgt.ngt_linear_flag = ''Y'' THEN m1.nm_seq_no ELSE NULL END'
+                                                  ||',CASE WHEN pgt.ngt_linear_flag = ''N'' THEN CASE WHEN cne.ne_nt_type = ''NSGN'' THEN cne.ne_number WHEN cne.ne_nt_type = ''ESU'' THEN cne.ne_name_1 ELSE cne.ne_unique END ELSE NULL END) t'
     ;
     lv_cursor_sql  nm3type.max_varchar2 := 'SELECT folder_or_entity'
                                                ||',af_id'
@@ -1983,6 +2003,7 @@ AS
                                                ||',entity_network_group_type'
                                                ||',entity_id'
                                                ||',child_count'
+                                               ||',entity_data'
                                                ||',row_count'
                                           ||' FROM (SELECT rownum ind'
                                                       ||' ,a.*'
@@ -2264,6 +2285,7 @@ AS
           ,NULL entity_network_group_type
           ,entity_id
           ,child_count
+          ,entity_data
       FROM (SELECT CAST('ENTITY' AS VARCHAR2(6)) folder_or_entity
                   ,CAST(NULL AS NUMBER(38)) af_id
                   ,CAST(NULL AS NUMBER(38)) parent_af_id
@@ -2274,6 +2296,7 @@ AS
                   ,(SELECT COUNT(*)
                       FROM nm_inv_item_groupings
                      WHERE iig_parent_id = iitc.iit_ne_id) child_count
+                  ,TO_CLOB('{}') entity_data
               FROM nm_inv_items iitp
                   ,nm_inv_item_groupings
                   ,nm_inv_items iitc
@@ -2345,6 +2368,23 @@ AS
                      ELSE
                          0
                    END child_count
+                  ,CASE
+                     WHEN afe_entity_type = 'NETWORK'
+                      THEN
+                         (SELECT CASE
+                                   WHEN cne.ne_gty_group_type IS NOT NULL
+                                    THEN
+                                       TO_CLOB('{element_type: "'||cne.ne_type||'", is_linear: "'||cgt.ngt_linear_flag||'"}')
+                                   ELSE
+                                       TO_CLOB('{element_type: "'||cne.ne_type||'"}')
+                                 END
+                            FROM nm_elements_all cne
+                                ,nm_group_types_all cgt
+                           WHERE cne.ne_id = afe_entity_id
+                             AND cne.ne_gty_group_type = cgt.ngt_group_type(+))
+                     ELSE
+                         TO_CLOB('{}')
+                   END entity_data
               FROM awlrs_favourites_entities
                   ,awlrs_fav_entity_types
              WHERE afe_parent_af_id = pi_aff_af_id
@@ -2361,6 +2401,7 @@ AS
                   ,NULL entity_network_group_type
                   ,NULL entity_id
                   ,awlrs_favourites_api.get_folder_child_count(aff_af_id) child_count
+                  ,TO_CLOB('{}') entity_data
               FROM awlrs_favourites_folders
              WHERE aff_parent_af_id = pi_aff_af_id)
      ORDER
@@ -2421,6 +2462,7 @@ AS
           ,CAST(NULL AS VARCHAR2(4)) entity_network_group_type
           ,CAST(NULL AS NUMBER(38)) entity_id
           ,awlrs_favourites_api.get_folder_child_count(aff_af_id) child_count
+          ,TO_CLOB('{}') entity_data
       FROM awlrs_favourites_folders
      WHERE aff_af_id = cp_aff_af_id
      ORDER
@@ -2465,6 +2507,7 @@ AS
           ,CAST(NULL AS VARCHAR2(4)) entity_network_group_type
           ,CAST(NULL AS NUMBER(38)) entity_id
           ,awlrs_favourites_api.get_folder_child_count(aff_af_id) child_count
+          ,TO_CLOB('{}') entity_data
       FROM awlrs_favourites_folders
      WHERE aff_af_id = lv_root_folder_id
      ORDER
@@ -2568,6 +2611,23 @@ AS
                      ELSE
                          0
                    END child_count
+                  ,CASE
+                     WHEN afe_entity_type = 'NETWORK'
+                      THEN
+                         (SELECT CASE
+                                   WHEN cne.ne_gty_group_type IS NOT NULL
+                                    THEN
+                                       TO_CLOB('{element_type: "'||cne.ne_type||'", is_linear: "'||cgt.ngt_linear_flag||'"}')
+                                   ELSE
+                                       TO_CLOB('{element_type: "'||cne.ne_type||'"}')
+                                 END
+                            FROM nm_elements_all cne
+                                ,nm_group_types_all cgt
+                           WHERE cne.ne_id = afe_entity_id
+                             AND cne.ne_gty_group_type = cgt.ngt_group_type(+))
+                     ELSE
+                         TO_CLOB('{}')
+                   END entity_data
               FROM awlrs_favourites_entities
                   ,awlrs_fav_entity_types
              WHERE afe_parent_af_id = cp_aff_af_id
@@ -2584,6 +2644,7 @@ AS
                   ,CAST(NULL AS VARCHAR2(4)) entity_network_group_type
                   ,CAST(NULL AS NUMBER(38)) entity_id
                   ,awlrs_favourites_api.get_folder_child_count(aff_af_id) child_count
+                  ,TO_CLOB('{}') entity_data
               FROM awlrs_favourites_folders
              WHERE aff_parent_af_id = cp_aff_af_id)
      ORDER
