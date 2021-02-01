@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.35   Jan 25 2021 18:15:48   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.36   Feb 01 2021 15:23:16   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Jan 25 2021 18:15:48  $
---       Date fetched Out : $Modtime:   Jan 25 2021 16:28:00  $
---       Version          : $Revision:   1.35  $
+--       Date into PVCS   : $Date:   Feb 01 2021 15:23:16  $
+--       Date fetched Out : $Modtime:   Feb 01 2021 15:20:34  $
+--       Version          : $Revision:   1.36  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 25-JAN-2021 16:28
+--       Generation Date  : 01-FEB-2021 15:20
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -1843,6 +1843,24 @@ INSERT
       ,HSTF_TYPE
       ,HSTF_ORDER)
 SELECT 'AWLRS_LAUNCHPAD'
+      ,'AWLRS_MAIL'
+      ,'Mail'
+      ,'F'
+      ,70
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_LAUNCHPAD'
+                     AND HSTF_CHILD = 'AWLRS_MAIL');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_LAUNCHPAD'
       ,'AWLRS_NETWORK'
       ,'Network Metadata'
       ,'F'
@@ -1942,6 +1960,78 @@ SELECT 'AWLRS_LAUNCHPAD'
                     FROM HIG_STANDARD_FAVOURITES
                    WHERE HSTF_PARENT = 'AWLRS_LAUNCHPAD'
                      AND HSTF_CHILD = 'AWLRS_UI_SETTINGS');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_MAIL'
+      ,'HIG1520'
+      ,'Alert Setup'
+      ,'M'
+      ,30
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_MAIL'
+                     AND HSTF_CHILD = 'HIG1520');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_MAIL'
+      ,'HIG1525'
+      ,'Alert Log'
+      ,'M'
+      ,40
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_MAIL'
+                     AND HSTF_CHILD = 'HIG1525');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_MAIL'
+      ,'HIG1900'
+      ,'Mail Users'
+      ,'M'
+      ,10
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_MAIL'
+                     AND HSTF_CHILD = 'HIG1900');
+--
+INSERT
+  INTO HIG_STANDARD_FAVOURITES
+      (HSTF_PARENT
+      ,HSTF_CHILD
+      ,HSTF_DESCR
+      ,HSTF_TYPE
+      ,HSTF_ORDER)
+SELECT 'AWLRS_MAIL'
+      ,'HIG1901'
+      ,'Mail Groups'
+      ,'M'
+      ,20
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM HIG_STANDARD_FAVOURITES
+                   WHERE HSTF_PARENT = 'AWLRS_MAIL'
+                     AND HSTF_CHILD = 'HIG1901');
 --
 INSERT
   INTO HIG_STANDARD_FAVOURITES
