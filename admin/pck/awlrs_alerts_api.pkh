@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkh-arc   1.1   Dec 16 2020 09:45:40   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Dec 16 2020 09:45:40  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkh-arc   1.2   Feb 01 2021 14:22:24   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Feb 01 2021 14:22:24  $
   --       Module Name      : $Workfile:   awlrs_alerts_api.pkh  $
-  --       Date fetched Out : $Modtime:   Nov 23 2020 16:05:00  $
-  --       Version          : $Revision:   1.1  $
+  --       Date fetched Out : $Modtime:   Jan 28 2021 15:12:00  $
+  --       Version          : $Revision:   1.2  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_sccsid is the SCCS ID for the package
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.1  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.2  $"';
   --
   TYPE alert_log_id_tab   IS TABLE OF hig_alert_manager_logs_vw.haml_hal_id%TYPE INDEX BY BINARY_INTEGER;
   TYPE alert_recip_id_tab IS TABLE OF hig_alert_manager_logs_vw.haml_har_id%TYPE INDEX BY BINARY_INTEGER;
@@ -139,6 +139,13 @@ AS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION get_cond_attrib_meaning(pi_inv_type      IN   hig_alert_types.halt_nit_inv_type%TYPE
+                                  ,pi_attrib_name   IN   hig_alert_type_conditions.hatc_attribute_name%TYPE
+                                  ,pi_attrib_value  IN   hig_alert_type_conditions.hatc_attribute_value%TYPE
+                                  ) RETURN varchar2;
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_alert_type_conds(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
                                 ,pi_inv_type             IN     hig_alert_types.halt_nit_inv_type%TYPE
                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
@@ -154,7 +161,24 @@ AS
                                ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                ,po_message_cursor          OUT sys_refcursor
                                ,po_cursor                  OUT sys_refcursor);       
-                               
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_alert_type_conds(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                                      ,pi_inv_type             IN     hig_alert_types.halt_nit_inv_type%TYPE
+                                      ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                      ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                      ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                      ,pi_skip_n_rows          IN     PLS_INTEGER
+                                      ,pi_pagesize             IN     PLS_INTEGER
+                                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor          OUT sys_refcursor
+                                      ,po_cursor                  OUT sys_refcursor);
+                             
   --
   -----------------------------------------------------------------------------
   --
@@ -164,6 +188,23 @@ AS
                                ,po_message_cursor          OUT sys_refcursor
                                ,po_cursor                  OUT sys_refcursor);                                                               
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_mail_recipients(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
+                                     ,pi_inv_type             IN     hig_alert_types.halt_nit_inv_type%TYPE
+                                     ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                     ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                     ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                     ,pi_skip_n_rows          IN     PLS_INTEGER
+                                     ,pi_pagesize             IN     PLS_INTEGER
+                                     ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                     ,po_message_cursor          OUT sys_refcursor
+                                     ,po_cursor                  OUT sys_refcursor);
+                                     
   --
   -----------------------------------------------------------------------------
   --
@@ -223,13 +264,44 @@ AS
                                 ,pi_batch_email_freq      IN     hig_alert_types.halt_frequency_id%TYPE
                                 ,po_message_severity         OUT hig_codes.hco_code%TYPE
                                 ,po_message_cursor           OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_trigger_alert(pi_old_alert_id              IN     hig_alert_types.halt_id%TYPE
+                                ,pi_old_inv_type              IN     hig_alert_types.halt_nit_inv_type%TYPE
+                                ,pi_old_descr                 IN     hig_alert_types.halt_description%TYPE
+                                ,pi_old_operation             IN     hig_alert_types.halt_operation%TYPE 
+                                ,pi_old_immediate             IN     hig_alert_types.halt_immediate%TYPE
+                                ,pi_old_table_name            IN     hig_alert_types.halt_table_name%TYPE 
+                                ,pi_old_trigger_name          IN     hig_alert_types.halt_trigger_name%TYPE
+                                ,pi_old_batch_email_threshold IN     hig_alert_types.halt_trigger_count%TYPE
+                                ,pi_old_batch_email_freq      IN     hig_alert_types.halt_frequency_id%TYPE
+                                ,pi_new_descr                 IN     hig_alert_types.halt_description%TYPE                            
+                                ,pi_new_immediate             IN     hig_alert_types.halt_immediate%TYPE
+                                ,pi_new_batch_email_threshold IN     hig_alert_types.halt_trigger_count%TYPE
+                                ,pi_new_batch_email_freq      IN     hig_alert_types.halt_frequency_id%TYPE
+                                ,po_trigger_dropped              OUT varchar2
+                                ,po_message_severity             OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor               OUT sys_refcursor); 
                                 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_trigger_alert(pi_alert_id              IN     hig_alert_types.halt_id%TYPE
+                                ,pi_trigger_name          IN     hig_alert_types.halt_trigger_name%TYPE
+                                ,po_trigger_dropped          OUT varchar2
+                                ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                                ,po_message_cursor           OUT sys_refcursor);
+                                                                                                
   --
   -----------------------------------------------------------------------------
   --
   PROCEDURE create_trigger_attributes(pi_alert_id             IN     hig_alert_type_attributes.hata_halt_id%TYPE
                                      ,pi_operation            IN     hig_alert_types.halt_operation%TYPE
                                      ,pi_attribute_name       IN     hig_alert_type_attributes.hata_attribute_name%TYPE  
+                                     ,pi_trigger_name         IN     hig_alert_types.halt_trigger_name%TYPE
+                                     ,po_trigger_dropped         OUT varchar2
                                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                      ,po_message_cursor          OUT sys_refcursor);                                
 
@@ -242,6 +314,8 @@ AS
                                      ,pi_new_attrib_id        IN     hig_alert_type_attributes.hata_id%TYPE
                                      ,pi_new_alert_id         IN     hig_alert_type_attributes.hata_halt_id%TYPE
                                      ,pi_new_attribute_name   IN     hig_alert_type_attributes.hata_attribute_name%TYPE  
+                                     ,pi_trigger_name         IN     hig_alert_types.halt_trigger_name%TYPE
+                                     ,po_trigger_dropped         OUT varchar2
                                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                      ,po_message_cursor          OUT sys_refcursor); 
 
@@ -249,16 +323,451 @@ AS
   -----------------------------------------------------------------------------
   --
   PROCEDURE delete_trigger_attributes(pi_attrib_id            IN     hig_alert_type_attributes.hata_id%TYPE
+                                     ,pi_alert_id             IN     hig_alert_type_attributes.hata_halt_id%TYPE
+                                     ,pi_trigger_name         IN     hig_alert_types.halt_trigger_name%TYPE
+                                     ,po_trigger_dropped         OUT varchar2
                                      ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                      ,po_message_cursor          OUT sys_refcursor);                                
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_attribute_conditions(pi_alert_id             IN     hig_alert_type_conditions.hatc_halt_id%TYPE
+                                       ,pi_operation            IN     hig_alert_types.halt_operation%TYPE
+                                       ,pi_operator             IN     hig_alert_type_conditions.hatc_operator%TYPE
+                                       ,pi_pre_bracket          IN     hig_alert_type_conditions.hatc_pre_bracket%TYPE
+                                       ,pi_attribute_name       IN     hig_alert_type_conditions.hatc_attribute_name%TYPE
+                                       ,pi_condition            IN     hig_alert_type_conditions.hatc_condition%TYPE
+                                       ,pi_attribute_value      IN     hig_alert_type_conditions.hatc_attribute_value%TYPE
+                                       ,pi_post_bracket         IN     hig_alert_type_conditions.hatc_post_bracket%TYPE
+                                       ,pi_old_new_type         IN     hig_alert_type_conditions.hatc_old_new_type%TYPE
+                                       ,pi_trigger_name         IN     hig_alert_types.halt_trigger_name%TYPE
+                                       ,po_trigger_dropped         OUT varchar2
+                                       ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor          OUT sys_refcursor);    
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_attribute_conditions(pi_operation            IN     hig_alert_types.halt_operation%TYPE
+                                       ,pi_old_hatc_id          IN     hig_alert_type_conditions.hatc_id%TYPE
+                                       ,pi_old_alert_id         IN     hig_alert_type_conditions.hatc_halt_id%TYPE
+                                       ,pi_old_operator         IN     hig_alert_type_conditions.hatc_operator%TYPE
+                                       ,pi_old_pre_bracket      IN     hig_alert_type_conditions.hatc_pre_bracket%TYPE
+                                       ,pi_old_attribute_name   IN     hig_alert_type_conditions.hatc_attribute_name%TYPE
+                                       ,pi_old_condition        IN     hig_alert_type_conditions.hatc_condition%TYPE
+                                       ,pi_old_attribute_value  IN     hig_alert_type_conditions.hatc_attribute_value%TYPE
+                                       ,pi_old_post_bracket     IN     hig_alert_type_conditions.hatc_post_bracket%TYPE
+                                       ,pi_old_old_new_type     IN     hig_alert_type_conditions.hatc_old_new_type%TYPE
+                                       ,pi_new_hatc_id          IN     hig_alert_type_conditions.hatc_id%TYPE     
+                                       ,pi_new_alert_id         IN     hig_alert_type_conditions.hatc_halt_id%TYPE                                  
+                                       ,pi_new_operator         IN     hig_alert_type_conditions.hatc_operator%TYPE
+                                       ,pi_new_pre_bracket      IN     hig_alert_type_conditions.hatc_pre_bracket%TYPE
+                                       ,pi_new_attribute_name   IN     hig_alert_type_conditions.hatc_attribute_name%TYPE
+                                       ,pi_new_condition        IN     hig_alert_type_conditions.hatc_condition%TYPE
+                                       ,pi_new_attribute_value  IN     hig_alert_type_conditions.hatc_attribute_value%TYPE
+                                       ,pi_new_post_bracket     IN     hig_alert_type_conditions.hatc_post_bracket%TYPE
+                                       ,pi_new_old_new_type     IN     hig_alert_type_conditions.hatc_old_new_type%TYPE
+                                       ,pi_trigger_name         IN     hig_alert_types.halt_trigger_name%TYPE
+                                       ,po_trigger_dropped         OUT varchar2
+                                       ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor          OUT sys_refcursor); 
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_attribute_conditions(pi_hatc_id              IN     hig_alert_type_conditions.hatc_id%TYPE
+                                       ,pi_alert_id             IN     hig_alert_type_conditions.hatc_halt_id%TYPE
+                                       ,pi_trigger_name         IN     hig_alert_types.halt_trigger_name%TYPE
+                                       ,po_trigger_dropped         OUT varchar2
+                                       ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                       ,po_message_cursor          OUT sys_refcursor);                                                                                                               
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE recipient_type_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT  sys_refcursor
+                              ,po_cursor           OUT  sys_refcursor);
+                              
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE recipient_lov(pi_inv_type         IN      hig_alert_types.halt_nit_inv_type%TYPE
+                         ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                         ,po_message_cursor      OUT  sys_refcursor
+                         ,po_cursor              OUT  sys_refcursor);                              
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE username_recip_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT  sys_refcursor
+                              ,po_cursor           OUT  sys_refcursor); 
+
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE group_name_recip_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                                ,po_message_cursor   OUT  sys_refcursor
+                                ,po_cursor           OUT  sys_refcursor);
+                                                                                       
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_mail_recipient(pi_alert_id             IN     hig_alert_type_recipients.hatr_halt_id%TYPE
+                                 ,pi_recipient_type       IN     hig_alert_type_recipients.hatr_type%TYPE
+                                 ,pi_recipient            IN     hig_alert_type_recipients.hatr_harr_id%TYPE  
+                                 ,pi_user_id              IN     hig_alert_type_recipients.hatr_nmu_id%TYPE
+                                 ,pi_group_id             IN     hig_alert_type_recipients.hatr_nmg_id%TYPE
+                                 ,pi_trigger_name         IN     hig_alert_types.halt_trigger_name%TYPE
+                                 ,po_trigger_dropped         OUT varchar2
+                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT sys_refcursor);    
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_mail_recipient(pi_old_recip_id         IN     hig_alert_type_recipients.hatr_id%TYPE
+                                 ,pi_old_alert_id         IN     hig_alert_type_recipients.hatr_halt_id%TYPE
+                                 ,pi_old_recipient_type   IN     hig_alert_type_recipients.hatr_type%TYPE
+                                 ,pi_old_recipient        IN     hig_alert_type_recipients.hatr_harr_id%TYPE  
+                                 ,pi_old_user_id          IN     hig_alert_type_recipients.hatr_nmu_id%TYPE
+                                 ,pi_old_group_id         IN     hig_alert_type_recipients.hatr_nmg_id%TYPE
+                                 ,pi_new_recip_id         IN     hig_alert_type_recipients.hatr_id%TYPE
+                                 ,pi_new_alert_id         IN     hig_alert_type_recipients.hatr_halt_id%TYPE
+                                 ,pi_new_recipient_type   IN     hig_alert_type_recipients.hatr_type%TYPE
+                                 ,pi_new_recipient        IN     hig_alert_type_recipients.hatr_harr_id%TYPE  
+                                 ,pi_new_user_id          IN     hig_alert_type_recipients.hatr_nmu_id%TYPE
+                                 ,pi_new_group_id         IN     hig_alert_type_recipients.hatr_nmg_id%TYPE
+                                 ,pi_trigger_name         IN     hig_alert_types.halt_trigger_name%TYPE
+                                 ,po_trigger_dropped         OUT varchar2
+                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT sys_refcursor); 
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_mail_recipient(pi_recip_id             IN     hig_alert_type_recipients.hatr_id%TYPE
+                                 ,pi_alert_id             IN     hig_alert_type_recipients.hatr_halt_id%TYPE
+                                 ,pi_trigger_name         IN     hig_alert_types.halt_trigger_name%TYPE
+                                 ,po_trigger_dropped         OUT varchar2
+                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT sys_refcursor);                                                                                                               
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE mail_parameter_lov(pi_inv_type          IN     hig_alert_types.halt_nit_inv_type%TYPE
+                              ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor      OUT  sys_refcursor
+                              ,po_cursor              OUT  sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_mail(pi_alert_id          IN     hig_alert_type_mail.hatm_halt_id%TYPE
+                       ,pi_mail_subject      IN     hig_alert_type_mail.hatm_subject%TYPE
+                       ,pi_mail_text         IN     hig_alert_type_mail.hatm_mail_text%TYPE
+                       ,pi_mail_type         IN     hig_alert_type_mail.hatm_mail_type%TYPE
+                       ,pi_mail_from         IN     hig_alert_type_mail.hatm_mail_from%TYPE
+                       ,pi_param_1           IN     hig_alert_type_mail.hatm_param_1%TYPE
+                       ,pi_param_1_derived   IN     hig_alert_type_mail.hatm_p1_derived%TYPE
+                       ,pi_param_2           IN     hig_alert_type_mail.hatm_param_2%TYPE
+                       ,pi_param_2_derived   IN     hig_alert_type_mail.hatm_p2_derived%TYPE
+                       ,pi_param_3           IN     hig_alert_type_mail.hatm_param_3%TYPE
+                       ,pi_param_3_derived   IN     hig_alert_type_mail.hatm_p3_derived%TYPE
+                       ,pi_param_4           IN     hig_alert_type_mail.hatm_param_4%TYPE
+                       ,pi_param_4_derived   IN     hig_alert_type_mail.hatm_p4_derived%TYPE
+                       ,pi_param_5           IN     hig_alert_type_mail.hatm_param_5%TYPE
+                       ,pi_param_5_derived   IN     hig_alert_type_mail.hatm_p5_derived%TYPE
+                       ,pi_param_6           IN     hig_alert_type_mail.hatm_param_6%TYPE
+                       ,pi_param_6_derived   IN     hig_alert_type_mail.hatm_p6_derived%TYPE
+                       ,pi_param_7           IN     hig_alert_type_mail.hatm_param_7%TYPE
+                       ,pi_param_7_derived   IN     hig_alert_type_mail.hatm_p7_derived%TYPE
+                       ,pi_param_8           IN     hig_alert_type_mail.hatm_param_8%TYPE
+                       ,pi_param_8_derived   IN     hig_alert_type_mail.hatm_p8_derived%TYPE
+                       ,pi_param_9           IN     hig_alert_type_mail.hatm_param_9%TYPE
+                       ,pi_param_9_derived   IN     hig_alert_type_mail.hatm_p9_derived%TYPE
+                       ,pi_param_10          IN     hig_alert_type_mail.hatm_param_10%TYPE
+                       ,pi_param_10_derived  IN     hig_alert_type_mail.hatm_p10_derived%TYPE
+                       ,pi_param_11          IN     hig_alert_type_mail.hatm_param_11%TYPE
+                       ,pi_param_11_derived  IN     hig_alert_type_mail.hatm_p11_derived%TYPE
+                       ,pi_param_12          IN     hig_alert_type_mail.hatm_param_12%TYPE
+                       ,pi_param_12_derived  IN     hig_alert_type_mail.hatm_p12_derived%TYPE
+                       ,pi_param_13          IN     hig_alert_type_mail.hatm_param_13%TYPE
+                       ,pi_param_13_derived  IN     hig_alert_type_mail.hatm_p13_derived%TYPE
+                       ,pi_param_14          IN     hig_alert_type_mail.hatm_param_14%TYPE
+                       ,pi_param_14_derived  IN     hig_alert_type_mail.hatm_p14_derived%TYPE
+                       ,pi_param_15          IN     hig_alert_type_mail.hatm_param_15%TYPE
+                       ,pi_param_15_derived  IN     hig_alert_type_mail.hatm_p15_derived%TYPE
+                       ,pi_param_16          IN     hig_alert_type_mail.hatm_param_16%TYPE
+                       ,pi_param_16_derived  IN     hig_alert_type_mail.hatm_p16_derived%TYPE
+                       ,pi_param_17          IN     hig_alert_type_mail.hatm_param_17%TYPE
+                       ,pi_param_17_derived  IN     hig_alert_type_mail.hatm_p17_derived%TYPE
+                       ,pi_param_18          IN     hig_alert_type_mail.hatm_param_18%TYPE
+                       ,pi_param_18_derived  IN     hig_alert_type_mail.hatm_p18_derived%TYPE
+                       ,pi_param_19          IN     hig_alert_type_mail.hatm_param_19%TYPE
+                       ,pi_param_19_derived  IN     hig_alert_type_mail.hatm_p19_derived%TYPE
+                       ,pi_param_20          IN     hig_alert_type_mail.hatm_param_20%TYPE
+                       ,pi_param_20_derived  IN     hig_alert_type_mail.hatm_p20_derived%TYPE
+                       ,pi_trigger_name      IN     hig_alert_types.halt_trigger_name%TYPE
+                       ,po_trigger_dropped     OUT varchar2
+                       ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor      OUT sys_refcursor);        
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE create_mail(pi_alert_id         IN     hig_alert_type_mail.hatm_halt_id%TYPE
+                       ,pi_mail_subject     IN     hig_alert_type_mail.hatm_subject%TYPE
+                       ,pi_mail_text        IN     hig_alert_type_mail.hatm_mail_text%TYPE
+                       ,pi_mail_type        IN     hig_alert_type_mail.hatm_mail_type%TYPE
+                       ,pi_mail_from        IN     hig_alert_type_mail.hatm_mail_from%TYPE
+                       ,pi_params           IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
+                       ,pi_params_derived   IN     nm3type.tab_varchar1 DEFAULT CAST(NULL AS nm3type.tab_varchar1)
+                       ,pi_trigger_name     IN     hig_alert_types.halt_trigger_name%TYPE
+                       ,po_trigger_dropped     OUT varchar2
+                       ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor      OUT sys_refcursor);                      
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_mail(pi_old_mail_id           IN     hig_alert_type_mail.hatm_id%TYPE
+                       ,pi_old_alert_id          IN     hig_alert_type_mail.hatm_halt_id%TYPE
+                       ,pi_old_mail_from         IN     hig_alert_type_mail.hatm_mail_from%TYPE
+                       ,pi_old_mail_subject      IN     hig_alert_type_mail.hatm_subject%TYPE
+                       ,pi_old_mail_text         IN     hig_alert_type_mail.hatm_mail_text%TYPE
+                       ,pi_old_mail_type         IN     hig_alert_type_mail.hatm_mail_type%TYPE
+                       ,pi_old_param_1           IN     hig_alert_type_mail.hatm_param_1%TYPE
+                       ,pi_old_param_1_derived   IN     hig_alert_type_mail.hatm_p1_derived%TYPE
+                       ,pi_old_param_2           IN     hig_alert_type_mail.hatm_param_2%TYPE
+                       ,pi_old_param_2_derived   IN     hig_alert_type_mail.hatm_p2_derived%TYPE
+                       ,pi_old_param_3           IN     hig_alert_type_mail.hatm_param_3%TYPE
+                       ,pi_old_param_3_derived   IN     hig_alert_type_mail.hatm_p3_derived%TYPE
+                       ,pi_old_param_4           IN     hig_alert_type_mail.hatm_param_4%TYPE
+                       ,pi_old_param_4_derived   IN     hig_alert_type_mail.hatm_p4_derived%TYPE
+                       ,pi_old_param_5           IN     hig_alert_type_mail.hatm_param_5%TYPE
+                       ,pi_old_param_5_derived   IN     hig_alert_type_mail.hatm_p5_derived%TYPE
+                       ,pi_old_param_6           IN     hig_alert_type_mail.hatm_param_6%TYPE
+                       ,pi_old_param_6_derived   IN     hig_alert_type_mail.hatm_p6_derived%TYPE
+                       ,pi_old_param_7           IN     hig_alert_type_mail.hatm_param_7%TYPE
+                       ,pi_old_param_7_derived   IN     hig_alert_type_mail.hatm_p7_derived%TYPE
+                       ,pi_old_param_8           IN     hig_alert_type_mail.hatm_param_8%TYPE
+                       ,pi_old_param_8_derived   IN     hig_alert_type_mail.hatm_p8_derived%TYPE
+                       ,pi_old_param_9           IN     hig_alert_type_mail.hatm_param_9%TYPE
+                       ,pi_old_param_9_derived   IN     hig_alert_type_mail.hatm_p9_derived%TYPE
+                       ,pi_old_param_10          IN     hig_alert_type_mail.hatm_param_10%TYPE
+                       ,pi_old_param_10_derived  IN     hig_alert_type_mail.hatm_p10_derived%TYPE
+                       ,pi_old_param_11          IN     hig_alert_type_mail.hatm_param_11%TYPE
+                       ,pi_old_param_11_derived  IN     hig_alert_type_mail.hatm_p11_derived%TYPE
+                       ,pi_old_param_12          IN     hig_alert_type_mail.hatm_param_12%TYPE
+                       ,pi_old_param_12_derived  IN     hig_alert_type_mail.hatm_p12_derived%TYPE
+                       ,pi_old_param_13          IN     hig_alert_type_mail.hatm_param_13%TYPE
+                       ,pi_old_param_13_derived  IN     hig_alert_type_mail.hatm_p13_derived%TYPE
+                       ,pi_old_param_14          IN     hig_alert_type_mail.hatm_param_14%TYPE
+                       ,pi_old_param_14_derived  IN     hig_alert_type_mail.hatm_p14_derived%TYPE
+                       ,pi_old_param_15          IN     hig_alert_type_mail.hatm_param_15%TYPE
+                       ,pi_old_param_15_derived  IN     hig_alert_type_mail.hatm_p15_derived%TYPE
+                       ,pi_old_param_16          IN     hig_alert_type_mail.hatm_param_16%TYPE
+                       ,pi_old_param_16_derived  IN     hig_alert_type_mail.hatm_p16_derived%TYPE
+                       ,pi_old_param_17          IN     hig_alert_type_mail.hatm_param_17%TYPE
+                       ,pi_old_param_17_derived  IN     hig_alert_type_mail.hatm_p17_derived%TYPE
+                       ,pi_old_param_18          IN     hig_alert_type_mail.hatm_param_18%TYPE
+                       ,pi_old_param_18_derived  IN     hig_alert_type_mail.hatm_p18_derived%TYPE
+                       ,pi_old_param_19          IN     hig_alert_type_mail.hatm_param_19%TYPE
+                       ,pi_old_param_19_derived  IN     hig_alert_type_mail.hatm_p19_derived%TYPE
+                       ,pi_old_param_20          IN     hig_alert_type_mail.hatm_param_20%TYPE
+                       ,pi_old_param_20_derived  IN     hig_alert_type_mail.hatm_p20_derived%TYPE
+                       ,pi_new_mail_id           IN     hig_alert_type_mail.hatm_id%TYPE
+                       ,pi_new_alert_id          IN     hig_alert_type_mail.hatm_halt_id%TYPE
+                       ,pi_new_mail_from         IN     hig_alert_type_mail.hatm_mail_from%TYPE
+                       ,pi_new_mail_subject      IN     hig_alert_type_mail.hatm_subject%TYPE
+                       ,pi_new_mail_text         IN     hig_alert_type_mail.hatm_mail_text%TYPE
+                       ,pi_new_mail_type         IN     hig_alert_type_mail.hatm_mail_type%TYPE
+                       ,pi_new_param_1           IN     hig_alert_type_mail.hatm_param_1%TYPE
+                       ,pi_new_param_1_derived   IN     hig_alert_type_mail.hatm_p1_derived%TYPE
+                       ,pi_new_param_2           IN     hig_alert_type_mail.hatm_param_2%TYPE
+                       ,pi_new_param_2_derived   IN     hig_alert_type_mail.hatm_p2_derived%TYPE
+                       ,pi_new_param_3           IN     hig_alert_type_mail.hatm_param_3%TYPE
+                       ,pi_new_param_3_derived   IN     hig_alert_type_mail.hatm_p3_derived%TYPE
+                       ,pi_new_param_4           IN     hig_alert_type_mail.hatm_param_4%TYPE
+                       ,pi_new_param_4_derived   IN     hig_alert_type_mail.hatm_p4_derived%TYPE
+                       ,pi_new_param_5           IN     hig_alert_type_mail.hatm_param_5%TYPE
+                       ,pi_new_param_5_derived   IN     hig_alert_type_mail.hatm_p5_derived%TYPE
+                       ,pi_new_param_6           IN     hig_alert_type_mail.hatm_param_6%TYPE
+                       ,pi_new_param_6_derived   IN     hig_alert_type_mail.hatm_p6_derived%TYPE
+                       ,pi_new_param_7           IN     hig_alert_type_mail.hatm_param_7%TYPE
+                       ,pi_new_param_7_derived   IN     hig_alert_type_mail.hatm_p7_derived%TYPE
+                       ,pi_new_param_8           IN     hig_alert_type_mail.hatm_param_8%TYPE
+                       ,pi_new_param_8_derived   IN     hig_alert_type_mail.hatm_p8_derived%TYPE
+                       ,pi_new_param_9           IN     hig_alert_type_mail.hatm_param_9%TYPE
+                       ,pi_new_param_9_derived   IN     hig_alert_type_mail.hatm_p9_derived%TYPE
+                       ,pi_new_param_10          IN     hig_alert_type_mail.hatm_param_10%TYPE
+                       ,pi_new_param_10_derived  IN     hig_alert_type_mail.hatm_p10_derived%TYPE
+                       ,pi_new_param_11          IN     hig_alert_type_mail.hatm_param_11%TYPE
+                       ,pi_new_param_11_derived  IN     hig_alert_type_mail.hatm_p11_derived%TYPE
+                       ,pi_new_param_12          IN     hig_alert_type_mail.hatm_param_12%TYPE
+                       ,pi_new_param_12_derived  IN     hig_alert_type_mail.hatm_p12_derived%TYPE
+                       ,pi_new_param_13          IN     hig_alert_type_mail.hatm_param_13%TYPE
+                       ,pi_new_param_13_derived  IN     hig_alert_type_mail.hatm_p13_derived%TYPE
+                       ,pi_new_param_14          IN     hig_alert_type_mail.hatm_param_14%TYPE
+                       ,pi_new_param_14_derived  IN     hig_alert_type_mail.hatm_p14_derived%TYPE
+                       ,pi_new_param_15          IN     hig_alert_type_mail.hatm_param_15%TYPE
+                       ,pi_new_param_15_derived  IN     hig_alert_type_mail.hatm_p15_derived%TYPE
+                       ,pi_new_param_16          IN     hig_alert_type_mail.hatm_param_16%TYPE
+                       ,pi_new_param_16_derived  IN     hig_alert_type_mail.hatm_p16_derived%TYPE
+                       ,pi_new_param_17          IN     hig_alert_type_mail.hatm_param_17%TYPE
+                       ,pi_new_param_17_derived  IN     hig_alert_type_mail.hatm_p17_derived%TYPE
+                       ,pi_new_param_18          IN     hig_alert_type_mail.hatm_param_18%TYPE
+                       ,pi_new_param_18_derived  IN     hig_alert_type_mail.hatm_p18_derived%TYPE
+                       ,pi_new_param_19          IN     hig_alert_type_mail.hatm_param_19%TYPE
+                       ,pi_new_param_19_derived  IN     hig_alert_type_mail.hatm_p19_derived%TYPE
+                       ,pi_new_param_20          IN     hig_alert_type_mail.hatm_param_20%TYPE
+                       ,pi_new_param_20_derived  IN     hig_alert_type_mail.hatm_p20_derived%TYPE
+                       ,pi_trigger_name          IN     hig_alert_types.halt_trigger_name%TYPE
+                       ,po_trigger_dropped          OUT varchar2
+                       ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor           OUT sys_refcursor); 
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_mail(pi_mail_id              IN     hig_alert_type_mail.hatm_id%TYPE
+                       ,pi_alert_id             IN     hig_alert_type_mail.hatm_halt_id%TYPE
+                       ,pi_trigger_name         IN     hig_alert_types.halt_trigger_name%TYPE
+                       ,po_trigger_dropped         OUT varchar2
+                       ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                       ,po_message_cursor          OUT sys_refcursor);                                         
   --
   -----------------------------------------------------------------------------
   -- 
   PROCEDURE get_frequencies_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
                                ,po_message_cursor   OUT  sys_refcursor
                                ,po_cursor           OUT  sys_refcursor);
-                           
+  
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE query_type_lov(po_message_severity OUT  hig_codes.hco_code%TYPE
+                          ,po_message_cursor   OUT  sys_refcursor
+                          ,po_cursor           OUT  sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_queries(po_message_severity OUT  hig_codes.hco_code%TYPE
+                       ,po_message_cursor   OUT  sys_refcursor
+                       ,po_cursor           OUT  sys_refcursor); 
+   
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_paged_queries(pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                             ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                             ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                             ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                             ,pi_skip_n_rows          IN     PLS_INTEGER
+                             ,pi_pagesize             IN     PLS_INTEGER
+                             ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor          OUT sys_refcursor
+                             ,po_cursor                  OUT sys_refcursor);                                               
+   
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE run_query(pi_inv_type           IN     hig_query_types.hqt_nit_inv_type%TYPE
+                     ,pi_ignore_case        IN     hig_query_types.hqt_ignore_case%TYPE
+                     ,pi_pre_bracket        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                     ,pi_operator           IN     nm3type.tab_varchar30
+                     ,pi_attribute_name     IN     nm3type.tab_varchar30
+                     ,pi_condition          IN     nm3type.tab_varchar30
+                     ,pi_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
+                     ,pi_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                     ,pi_result_set_only    IN     varchar2 DEFAULT 'N'
+                     ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                     ,po_message_cursor        OUT sys_refcursor
+                     ,po_cursor                OUT sys_refcursor);                                       
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_query(pi_query_id         IN     hig_query_types.hqt_id%TYPE
+                        ,po_message_severity    OUT hig_codes.hco_code%TYPE
+                        ,po_message_cursor      OUT sys_refcursor);
+                                                
+  --
+  -----------------------------------------------------------------------------
+  -- 
+  PROCEDURE get_qry_attributes(pi_query_id         IN      hig_query_type_attributes.hqta_hqt_id%TYPE
+                              ,po_message_severity    OUT  hig_codes.hco_code%TYPE
+                              ,po_message_cursor      OUT  sys_refcursor
+                              ,po_cursor              OUT  sys_refcursor); 
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_paged_qry_attribs(pi_query_id             IN      hig_query_type_attributes.hqta_hqt_id%TYPE
+                                 ,pi_filter_columns       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_filter_operators     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_filter_values_1      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                 ,pi_filter_values_2      IN     nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
+                                 ,pi_order_columns        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                 ,pi_order_asc_desc       IN     nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
+                                 ,pi_skip_n_rows          IN     PLS_INTEGER
+                                 ,pi_pagesize             IN     PLS_INTEGER
+                                 ,po_message_severity        OUT hig_codes.hco_code%TYPE
+                                 ,po_message_cursor          OUT sys_refcursor
+                                 ,po_cursor                  OUT sys_refcursor); 
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE save_query_and_attribs(pi_inv_type           IN     hig_query_types.hqt_nit_inv_type%TYPE
+                                  ,pi_qry_name           IN     hig_query_types.hqt_name%TYPE
+                                  ,pi_qry_descr          IN     hig_query_types.hqt_descr%TYPE
+                                  ,pi_owner_filter       IN     hig_query_types.hqt_security%TYPE
+                                  ,pi_ignore_case        IN     hig_query_types.hqt_ignore_case%TYPE
+                                  ,pi_pre_bracket        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_operator           IN     nm3type.tab_varchar30
+                                  ,pi_attribute_name     IN     nm3type.tab_varchar30
+                                  ,pi_condition          IN     nm3type.tab_varchar30
+                                  ,pi_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
+                                  ,pi_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor        OUT sys_refcursor);
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_query_and_attribs(pi_old_query_id           IN     hig_query_type_attributes.hqta_hqt_id%TYPE
+                                    ,pi_old_inv_type           IN     hig_query_type_attributes.hqta_inv_type%TYPE
+                                    ,pi_old_qry_name           IN     hig_query_types.hqt_name%TYPE
+                                    ,pi_old_qry_descr          IN     hig_query_types.hqt_descr%TYPE
+                                    ,pi_old_qry_type           IN     hig_query_types.hqt_query_type%TYPE
+                                    ,pi_old_owner_filter       IN     hig_query_types.hqt_security%TYPE
+                                    ,pi_old_ignore_case        IN     hig_query_types.hqt_ignore_case%TYPE
+                                    ,pi_old_where_clause       IN     hig_query_types.hqt_where_clause%TYPE
+                                    ,pi_old_qry_attrib_id      IN     nm3type.tab_number
+                                    ,pi_old_pre_bracket        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_old_operator           IN     nm3type.tab_varchar30
+                                    ,pi_old_attribute_name     IN     nm3type.tab_varchar30
+                                    ,pi_old_condition          IN     nm3type.tab_varchar30
+                                    ,pi_old_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
+                                    ,pi_old_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_new_inv_type           IN     hig_query_type_attributes.hqta_inv_type%TYPE
+                                    ,pi_new_qry_descr          IN     hig_query_types.hqt_descr%TYPE
+                                    ,pi_new_owner_filter       IN     hig_query_types.hqt_security%TYPE
+                                    ,pi_new_ignore_case        IN     hig_query_types.hqt_ignore_case%TYPE
+                                    ,pi_new_pre_bracket        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_new_operator           IN     nm3type.tab_varchar30
+                                    ,pi_new_attribute_name     IN     nm3type.tab_varchar30
+                                    ,pi_new_condition          IN     nm3type.tab_varchar30
+                                    ,pi_new_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
+                                    ,pi_new_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)        
+                                    ,po_message_severity      OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor        OUT sys_refcursor);
+                        
   --
   -----------------------------------------------------------------------------
   --
@@ -269,18 +778,31 @@ AS
                                   ,pi_suspend_query        IN     hig_alert_types.halt_suspend_query%TYPE
                                   ,po_message_severity        OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor          OUT sys_refcursor);                                
-                        
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_scheduled_alert(pi_old_alert_id        IN     hig_alert_types.halt_id%TYPE
+                                  ,pi_old_query_id        IN     hig_alert_types.halt_hqt_id%TYPE
+                                  ,pi_old_inv_type        IN     hig_alert_types.halt_nit_inv_type%TYPE
+                                  ,pi_old_descr           IN     hig_alert_types.halt_description%TYPE
+                                  ,pi_old_frequency_id    IN     hig_alert_types.halt_frequency_id%TYPE
+                                  ,pi_old_suspend_query   IN     hig_alert_types.halt_suspend_query%TYPE
+                                  ,pi_new_descr           IN     hig_alert_types.halt_description%TYPE        
+                                  ,pi_new_frequency_id    IN     hig_alert_types.halt_frequency_id%TYPE                    
+                                  ,po_message_severity       OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor         OUT sys_refcursor); 
+                                
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_scheduled_alert(pi_alert_id              IN     hig_alert_types.halt_id%TYPE
+                                  ,po_message_severity         OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor           OUT sys_refcursor);                      
   --
   -----------------------------------------------------------------------------
   --
   PROCEDURE create_trigger(pi_alert_id             IN     hig_alert_types.halt_id%TYPE
-                          ,pi_inv_type             IN     hig_alert_types.halt_nit_inv_type%TYPE
-                          ,pi_recip_type           IN     hig_alert_type_recipients.hatr_type%TYPE 
-                          ,pi_recip_rule_id        IN     hig_alert_type_recipients.hatr_harr_id%TYPE
-                          ,pi_recip_user_id        IN     hig_alert_type_recipients.hatr_nmu_id%TYPE
-                          ,pi_recip_group_id       IN     hig_alert_type_recipients.hatr_nmg_id%TYPE
-                          ,pi_mail_subject         IN     hig_alert_type_mail.hatm_subject%TYPE
-                          ,pi_mail_text            IN     hig_alert_type_mail.hatm_mail_text%TYPE
                           ,po_message_severity        OUT hig_codes.hco_code%TYPE
                           ,po_message_cursor          OUT sys_refcursor);
   
