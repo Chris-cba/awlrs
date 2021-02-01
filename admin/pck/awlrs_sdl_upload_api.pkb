@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_upload_api.pkb-arc   1.4   Jan 20 2021 12:01:04   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_upload_api.pkb-arc   1.5   Feb 01 2021 12:19:58   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_upload_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 20 2021 12:01:04  $
-  --       Date fetched Out : $Modtime:   Jan 20 2021 07:51:04  $
-  --       PVCS Version     : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   Feb 01 2021 12:19:58  $
+  --       Date fetched Out : $Modtime:   Feb 01 2021 10:17:34  $
+  --       PVCS Version     : $Revision:   1.5  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.4  $';
+  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.5  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -664,9 +664,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                       ,po_cursor           OUT sys_refcursor)
   IS
     --
-    lv_lower_index      PLS_INTEGER;
-    lv_upper_index      PLS_INTEGER;
-    lv_row_restriction  nm3type.max_varchar2;
     lv_order_by         nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     --
@@ -760,15 +757,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
   BEGIN
     /*
-    ||Get the page parameters.
-    */
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
-                                  ,pi_skip_n_rows  => pi_skip_n_rows
-                                  ,pi_pagesize     => pi_pagesize
-                                  ,po_lower_index  => lv_lower_index
-                                  ,po_upper_index  => lv_upper_index
-                                  ,po_statement    => lv_row_restriction);
-    /*
     ||Get the Order By clause.
     */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
@@ -793,18 +781,16 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||CHR(10)||lv_filter
-                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'sfs.sfs_id DESC')||') a)'
-                     ||CHR(10)||lv_row_restriction;
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'sfs.sfs_id DESC')||') a)';
+    --
+    lv_cursor_sql := lv_cursor_sql||CHR(10)||' OFFSET '||pi_skip_n_rows||' ROWS ';
     --
     IF pi_pagesize IS NOT NULL
-     THEN
-        OPEN po_cursor FOR lv_cursor_sql
-        USING lv_lower_index
-             ,lv_upper_index;
-    ELSE
-        OPEN po_cursor FOR lv_cursor_sql
-        USING lv_lower_index;
+      THEN
+        lv_cursor_sql := lv_cursor_sql||CHR(10)||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
     END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1430,9 +1416,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                         ,po_cursor           OUT sys_refcursor)
   IS
     --
-    lv_lower_index      PLS_INTEGER;
-    lv_upper_index      PLS_INTEGER;
-    lv_row_restriction  nm3type.max_varchar2;
     lv_order_by         nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     --
@@ -1561,15 +1544,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
   BEGIN
     /*
-    ||Get the page parameters.
-    */
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
-                                  ,pi_skip_n_rows  => pi_skip_n_rows
-                                  ,pi_pagesize     => pi_pagesize
-                                  ,po_lower_index  => lv_lower_index
-                                  ,po_upper_index  => lv_upper_index
-                                  ,po_statement    => lv_row_restriction);
-    /*
     ||Get the Order By clause.
     */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
@@ -1594,23 +1568,18 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||CHR(10)||lv_filter
---                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'svr.validation_type, svr.val_id')||') a)'
-                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'row_num')||') a)'
-                     ||CHR(10)||lv_row_restriction;
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'row_num')||') a)';
+    --
+        lv_cursor_sql := lv_cursor_sql||CHR(10)||' OFFSET '||pi_skip_n_rows||' ROWS ';
     --
     IF pi_pagesize IS NOT NULL
-     THEN
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_batch_id
-             ,pi_show_option
-             ,lv_lower_index
-             ,lv_upper_index;
-    ELSE
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_batch_id
-             ,pi_show_option
-             ,lv_lower_index;
+      THEN
+        lv_cursor_sql := lv_cursor_sql||CHR(10)||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
     END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql
+    USING pi_batch_id
+         ,pi_show_option;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1688,9 +1657,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                           ,po_cursor           OUT sys_refcursor)
   IS
     --
-    lv_lower_index      PLS_INTEGER;
-    lv_upper_index      PLS_INTEGER;
-    lv_row_restriction  nm3type.max_varchar2;
     lv_order_by         nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     --
@@ -1767,15 +1733,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
   BEGIN
     /*
-    ||Get the page parameters.
-    */
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
-                                  ,pi_skip_n_rows  => pi_skip_n_rows
-                                  ,pi_pagesize     => pi_pagesize
-                                  ,po_lower_index  => lv_lower_index
-                                  ,po_upper_index  => lv_upper_index
-                                  ,po_statement    => lv_row_restriction);
-    /*
     ||Get the Order By clause.
     */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
@@ -1800,21 +1757,18 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||CHR(10)||lv_filter
-                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'ROWNUM')||') a)'
-                     ||CHR(10)||lv_row_restriction;
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'ROWNUM')||') a)';
+    --
+    lv_cursor_sql := lv_cursor_sql||CHR(10)||' OFFSET '||pi_skip_n_rows||' ROWS ';
     --
     IF pi_pagesize IS NOT NULL
-     THEN
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_batch_id
-             ,lv_lower_index
-             ,lv_upper_index;
-    ELSE
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_batch_id
-             ,lv_lower_index;
+      THEN
+        lv_cursor_sql := lv_cursor_sql||CHR(10)||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
     END IF;
     --
+    OPEN po_cursor FOR lv_cursor_sql
+    USING pi_batch_id;
+	--
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
     --
@@ -2299,14 +2253,12 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                         ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
                                         ,pi_skip_n_rows      IN  PLS_INTEGER
                                         ,pi_pagesize         IN  PLS_INTEGER
+                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                        ,po_message_cursor   OUT sys_refcursor
                                         ,po_cursor           OUT sys_refcursor)
   IS
     --
     lv_sql               nm3type.max_varchar2;
-    lv_query             nm3type.max_varchar2;
-    lv_lower_index       PLS_INTEGER;
-    lv_upper_index       PLS_INTEGER;
-    lv_row_restriction   nm3type.max_varchar2;
     lv_order_by          nm3type.max_varchar2;
     lv_filter            nm3type.max_varchar2;
     --
@@ -2314,12 +2266,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
   BEGIN
     --
-    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
-                                  ,pi_skip_n_rows  => pi_skip_n_rows
-                                  ,pi_pagesize     => pi_pagesize
-                                  ,po_lower_index  => lv_lower_index
-                                  ,po_upper_index  => lv_upper_index
-                                  ,po_statement    => lv_row_restriction);
     /* Get the Order By clause. */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
                                           ,pi_order_asc_desc => pi_order_asc_desc
@@ -2341,70 +2287,24 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
         --
     END IF;
     --
-    lv_query := 'SELECT *'
-                 ||CHR(10)||'  FROM ('||get_batch_attributes_sql(pi_batch_id          => pi_batch_id
+    lv_sql := 'SELECT *'
+                 ||CHR(10)||'  FROM ('||get_batch_attributes_sql(pi_batch_id         => pi_batch_id
                                                                 ,pi_where_clause     => lv_filter
                                                                 ,pi_order_column     => lv_order_by
-                                                                ,pi_paged            => TRUE)||')'
-                 ||lv_row_restriction;
+                                                                ,pi_paged            => TRUE)||')';
     --
-    lv_sql :=  'DECLARE'
-               ||CHR(10)||'  lv_query          nm3type.max_varchar2 := :query;'
-               ||CHR(10)||'  lv_lower_index    PLS_INTEGER := :lower_index;'
-               ||CHR(10)||'  lv_upper_index    PLS_INTEGER := :upper_index;'
-               ||CHR(10)||'BEGIN'
-               ||CHR(10)||'  OPEN :cursor_out FOR lv_query'
-               ||CHR(10)||'  USING '
-               ||CHR(10)||'       lv_lower_index'
-                        ||CASE
-                          WHEN pi_pagesize IS NOT NULL
-                          THEN
-                            CHR(10)||'       ,lv_upper_index'
-                          ELSE
-                            NULL
-                          END
-               ||CHR(10)||'  ;'
-               ||CHR(10)||'END;';
+    lv_sql := lv_sql||CHR(10)||' OFFSET '||pi_skip_n_rows||' ROWS ';
     --
-    EXECUTE IMMEDIATE lv_sql
-      USING lv_query
-           ,lv_lower_index
-           ,lv_upper_index
-           ,IN OUT po_cursor;
+    IF pi_pagesize IS NOT NULL
+      THEN
+        lv_sql := lv_sql||CHR(10)||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
+    END IF;
     --
-  END get_paged_batch_file_attribs;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_paged_batch_file_attribs(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
-                                        ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                        ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                        ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
-                                        ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
-                                        ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                        ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
-                                        ,pi_skip_n_rows      IN  PLS_INTEGER
-                                        ,pi_pagesize         IN  PLS_INTEGER
-                                        ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                        ,po_message_cursor   OUT sys_refcursor
-                                        ,po_cursor           OUT sys_refcursor)
-  IS
-  BEGIN
-  --
-    get_paged_batch_file_attribs(pi_batch_id         => pi_batch_id
-                                ,pi_filter_columns   => pi_filter_columns
-                                ,pi_filter_operators => pi_filter_operators
-                                ,pi_filter_values_1  => pi_filter_values_1
-                                ,pi_filter_values_2  => pi_filter_values_2
-                                ,pi_order_columns    => pi_order_columns
-                                ,pi_order_asc_desc   => pi_order_asc_desc
-                                ,pi_skip_n_rows      => pi_skip_n_rows
-                                ,pi_pagesize         => pi_pagesize
-                                ,po_cursor           => po_cursor);
-  --
-  awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
-  --
+    OPEN po_cursor FOR lv_sql;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
   EXCEPTION
     WHEN others
      THEN
@@ -2609,7 +2509,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
            || ' FROM sdl_load_data sld, sdl_geom_accuracy sga'
            || ' WHERE sld.sld_key = sga.slga_sld_key (+) '
            || ' AND sga.slga_datum_id IS NULL '
---           || ' AND sld.sld_status = ''VALID'''
            || ' AND sld.sld_status IN (''VALID'',''REVIEW'',''LOAD'',''SKIP'',''TRANSFERRED'')'
            || ' AND sld.sld_sfs_id = '
            || pi_batch_id
@@ -2697,14 +2596,12 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                       ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
                                       ,pi_skip_n_rows      IN  PLS_INTEGER
                                       ,pi_pagesize         IN  PLS_INTEGER
+                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                      ,po_message_cursor   OUT sys_refcursor
                                       ,po_cursor           OUT sys_refcursor)
   IS
     --
     lv_sql               nm3type.max_varchar2;
-    lv_query             nm3type.max_varchar2;
-    lv_lower_index       PLS_INTEGER;
-    lv_upper_index       PLS_INTEGER;
-    lv_row_restriction   nm3type.max_varchar2;
     lv_order_by          nm3type.max_varchar2;
     lv_filter            nm3type.max_varchar2;
     --
@@ -2712,12 +2609,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
   BEGIN
     --
-    awlrs_util.gen_row_restriction(pi_index_column => '"ind"'
-                                  ,pi_skip_n_rows  => pi_skip_n_rows
-                                  ,pi_pagesize     => pi_pagesize
-                                  ,po_lower_index  => lv_lower_index
-                                  ,po_upper_index  => lv_upper_index
-                                  ,po_statement    => lv_row_restriction);
     /* Get the Order By clause. */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
                                           ,pi_order_asc_desc => pi_order_asc_desc
@@ -2739,70 +2630,24 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
         --
     END IF;
     --
-    lv_query := 'SELECT *'
+    lv_sql := 'SELECT *'
                 ||CHR(10)||'  FROM ('||get_batch_input_data_sql(pi_batch_id     => pi_batch_id
                                                                ,pi_where_clause => lv_filter
                                                                ,pi_order_column => lv_order_by
-                                                               ,pi_paged        => TRUE)||')'
-                ||lv_row_restriction;
+                                                               ,pi_paged        => TRUE)||')';
     --
-    lv_sql := 'DECLARE'
-              ||CHR(10)||'  lv_query          nm3type.max_varchar2 := :query;'
-              ||CHR(10)||'  lv_lower_index    PLS_INTEGER := :lower_index;'
-              ||CHR(10)||'  lv_upper_index    PLS_INTEGER := :upper_index;'
-              ||CHR(10)||'BEGIN'
-              ||CHR(10)||'  OPEN :cursor_out FOR lv_query'
-              ||CHR(10)||'  USING '
-              ||CHR(10)||'       lv_lower_index'
-                       ||CASE
-                         WHEN pi_pagesize IS NOT NULL
-                         THEN
-                           CHR(10)||'       ,lv_upper_index'
-                         ELSE
-                           NULL
-                         END
-              ||CHR(10)||'  ;'
-              ||CHR(10)||'END;';
+    lv_sql := lv_sql||CHR(10)||' OFFSET '||pi_skip_n_rows||' ROWS ';
     --
-    EXECUTE IMMEDIATE lv_sql
-      USING lv_query
-           ,lv_lower_index
-           ,lv_upper_index
-           ,IN OUT po_cursor;
+    IF pi_pagesize IS NOT NULL
+      THEN
+        lv_sql := lv_sql||CHR(10)||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
+    END IF;
     --
-  END get_paged_batch_input_data;
-  --
-  -----------------------------------------------------------------------------
-  --
-  PROCEDURE get_paged_batch_input_data(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
-                                      ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                      ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                      ,pi_filter_values_1  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
-                                      ,pi_filter_values_2  IN  nm3type.tab_varchar32767 DEFAULT CAST(NULL AS nm3type.tab_varchar32767)
-                                      ,pi_order_columns    IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                      ,pi_order_asc_desc   IN  nm3type.tab_varchar4 DEFAULT CAST(NULL AS nm3type.tab_varchar4)
-                                      ,pi_skip_n_rows      IN  PLS_INTEGER
-                                      ,pi_pagesize         IN  PLS_INTEGER
-                                      ,po_message_severity OUT hig_codes.hco_code%TYPE
-                                      ,po_message_cursor   OUT sys_refcursor
-                                      ,po_cursor           OUT sys_refcursor)
-  IS
-  BEGIN
-  --
-    get_paged_batch_input_data(pi_batch_id         => pi_batch_id
-                              ,pi_filter_columns   => pi_filter_columns
-                              ,pi_filter_operators => pi_filter_operators
-                              ,pi_filter_values_1  => pi_filter_values_1
-                              ,pi_filter_values_2  => pi_filter_values_2
-                              ,pi_order_columns    => pi_order_columns
-                              ,pi_order_asc_desc   => pi_order_asc_desc
-                              ,pi_skip_n_rows      => pi_skip_n_rows
-                              ,pi_pagesize         => pi_pagesize
-                              ,po_cursor           => po_cursor);
-  --
-  awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
-                                       ,po_cursor           => po_message_cursor);
-  --
+    OPEN po_cursor FOR lv_sql;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
   EXCEPTION
     WHEN others
      THEN
@@ -2878,9 +2723,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                   ,po_cursor           OUT sys_refcursor)
   IS
     --
-    lv_lower_index      PLS_INTEGER;
-    lv_upper_index      PLS_INTEGER;
-    lv_row_restriction  nm3type.max_varchar2;
     lv_order_by         nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     --
@@ -2973,15 +2815,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
   BEGIN
     /*
-    ||Get the page parameters.
-    */
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
-                                  ,pi_skip_n_rows  => pi_skip_n_rows
-                                  ,pi_pagesize     => pi_pagesize
-                                  ,po_lower_index  => lv_lower_index
-                                  ,po_upper_index  => lv_upper_index
-                                  ,po_statement    => lv_row_restriction);
-    /*
     ||Get the Order By clause.
     */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
@@ -3006,22 +2839,18 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||CHR(10)||lv_filter
-                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'swd_id')||') a)'
-                     ||CHR(10)||lv_row_restriction;
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'swd_id')||') a)';
+    --
+    lv_cursor_sql := lv_cursor_sql||CHR(10)||' OFFSET '||pi_skip_n_rows||' ROWS ';
     --
     IF pi_pagesize IS NOT NULL
-     THEN
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_batch_id
-             ,pi_sld_key
-             ,lv_lower_index
-             ,lv_upper_index;
-    ELSE
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_batch_id
-             ,pi_sld_key
-             ,lv_lower_index;
+      THEN
+        lv_cursor_sql := lv_cursor_sql||CHR(10)||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
     END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql
+    USING pi_batch_id
+         ,pi_sld_key;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -3111,9 +2940,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                           ,po_cursor           OUT sys_refcursor)
   IS
     --
-    lv_lower_index      PLS_INTEGER;
-    lv_upper_index      PLS_INTEGER;
-    lv_row_restriction  nm3type.max_varchar2;
     lv_order_by         nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     --
@@ -3213,15 +3039,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                               ||' FROM ('||lv_driving_sql;
     --
     /*
-    ||Get the page parameters.
-    */
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
-                                  ,pi_skip_n_rows  => pi_skip_n_rows
-                                  ,pi_pagesize     => pi_pagesize
-                                  ,po_lower_index  => lv_lower_index
-                                  ,po_upper_index  => lv_upper_index
-                                  ,po_statement    => lv_row_restriction);
-    /*
     ||Get the Order By clause.
     */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
@@ -3246,22 +3063,18 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||CHR(10)||lv_filter
-                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'seq_id')||') a)'
-                     ||CHR(10)||lv_row_restriction;
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'seq_id')||') a)';
+    --
+    lv_cursor_sql := lv_cursor_sql||CHR(10)||' OFFSET '||pi_skip_n_rows||' ROWS ';
     --
     IF pi_pagesize IS NOT NULL
-    THEN
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_swd_id
-             ,pi_sld_key
-             ,lv_lower_index
-             ,lv_upper_index;
-    ELSE
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_swd_id
-             ,pi_sld_key
-             ,lv_lower_index;
+      THEN
+        lv_cursor_sql := lv_cursor_sql||CHR(10)||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
     END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql
+    USING pi_swd_id
+         ,pi_sld_key;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -3616,7 +3429,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   END get_load_destination_details;
   --
   -----------------------------------------------------------------------------
-  -- datum handling to be done with destination header.. might not required
+  --
   PROCEDURE get_load_datums_detail(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor   OUT sys_refcursor
@@ -3663,7 +3476,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
   END get_load_datums_detail;
   --
   -----------------------------------------------------------------------------
-  -- datum handling to be done with destination header.. might not required
+  --
   PROCEDURE get_paged_load_datums_detail(pi_batch_id         IN  sdl_file_submissions.sfs_id%TYPE
                                         ,pi_filter_columns   IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                         ,pi_filter_operators IN  nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
@@ -3678,9 +3491,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
                                         ,po_cursor           OUT sys_refcursor)
   IS
     --
-    lv_lower_index      PLS_INTEGER;
-    lv_upper_index      PLS_INTEGER;
-    lv_row_restriction  nm3type.max_varchar2;
     lv_order_by         nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     --
@@ -3768,15 +3578,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
   BEGIN
     /*
-    ||Get the page parameters.
-    */
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
-                                  ,pi_skip_n_rows  => pi_skip_n_rows
-                                  ,pi_pagesize     => pi_pagesize
-                                  ,po_lower_index  => lv_lower_index
-                                  ,po_upper_index  => lv_upper_index
-                                  ,po_statement    => lv_row_restriction);
-    /*
     ||Get the Order By clause.
     */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
@@ -3801,20 +3602,17 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_upload_api IS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||CHR(10)||lv_filter
-                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'sld_key, swd_id')||') a)'
-                     ||CHR(10)||lv_row_restriction;
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'sld_key, swd_id')||') a)';
+    --
+    lv_cursor_sql := lv_cursor_sql||CHR(10)||' OFFSET '||pi_skip_n_rows||' ROWS ';
     --
     IF pi_pagesize IS NOT NULL
-     THEN
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_batch_id
-             ,lv_lower_index
-             ,lv_upper_index;
-    ELSE
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_batch_id
-             ,lv_lower_index;
+      THEN
+        lv_cursor_sql := lv_cursor_sql||CHR(10)||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
     END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql
+    USING pi_batch_id;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
