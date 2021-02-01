@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.11   Jan 21 2021 09:21:48   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.12   Feb 01 2021 12:18:14   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 21 2021 09:21:48  $
-  --       Date fetched Out : $Modtime:   Jan 21 2021 09:20:18  $
-  --       PVCS Version     : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   Feb 01 2021 12:18:14  $
+  --       Date fetched Out : $Modtime:   Feb 01 2021 11:43:22  $
+  --       PVCS Version     : $Revision:   1.12  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.11  $';
+  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.12  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -545,15 +545,12 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   --
   PROCEDURE generate_profile_views(pi_profile_id IN sdl_profiles.sp_id%TYPE)
   IS
-  --
-  BEGIN
-    --    
-    awlrs_sdl_util.validate_user_role;
     --
-    IF active_batch_exists(pi_profile_id) THEN
-      RAISE_APPLICATION_ERROR (-20034,
-                               'Generation of profile views not allowed. Profile ' || get_profile_name(pi_profile_id) || ' already has an active file data exists in the system.');
-    END IF;
+    ln_cnt NUMBER;
+    --
+  BEGIN
+    --
+    awlrs_sdl_util.validate_user_role;
     --
     IF NOT check_mapping_exists(pi_profile_id) THEN
       RAISE_APPLICATION_ERROR (-20035,
@@ -561,10 +558,26 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     END IF;
     --
     IF get_profile_file_type(pi_profile_id) = 'CSV' THEN -- this probably should be for asset types
-     -- sdl_ddl.gen_csv_profile_table(pi_profile_id);
+      --
+      SELECT COUNT(1)
+        INTO ln_cnt
+        FROM sdl_file_submissions sfs
+       WHERE sfs.sfs_sp_id = pi_profile_id;
+      --
+      IF ln_cnt >= 1 THEN
+        RAISE_APPLICATION_ERROR (-20034,
+                                 'Generation of profile table/views not allowed. Profile ' || get_profile_name(pi_profile_id) || ' already has an active file data exists in the system.');
+      END IF;
+      --
       sdl_inv_ddl.create_tdl_profile_tables (p_sp_id => pi_profile_id);
       sdl_inv_ddl.create_tdl_profile_views (p_sp_id => pi_profile_id);
     ELSE
+      --
+      IF active_batch_exists(pi_profile_id) THEN
+        RAISE_APPLICATION_ERROR (-20034,
+                                 'Generation of profile views not allowed. Profile ' || get_profile_name(pi_profile_id) || ' already has an active file data exists in the system.');
+      END IF;
+      --
       sdl_ddl.gen_sdl_profile_views(pi_profile_id);
     END IF;
     --
@@ -1183,9 +1196,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                    ,po_cursor           OUT sys_refcursor)
   IS
     --
-    lv_lower_index      PLS_INTEGER;
-    lv_upper_index      PLS_INTEGER;
-    lv_row_restriction  nm3type.max_varchar2;
     lv_order_by         nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     --
@@ -1258,15 +1268,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     awlrs_sdl_util.validate_user_role;
     --
     /*
-    ||Get the page parameters.
-    */
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
-                                  ,pi_skip_n_rows  => pi_skip_n_rows
-                                  ,pi_pagesize     => pi_pagesize
-                                  ,po_lower_index  => lv_lower_index
-                                  ,po_upper_index  => lv_upper_index
-                                  ,po_statement    => lv_row_restriction);
-    /*
     ||Get the Order By clause.
     */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
@@ -1291,18 +1292,16 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||CHR(10)||lv_filter
-                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'sp.sp_id DESC')||') a)'
-                     ||CHR(10)||lv_row_restriction;
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'sp.sp_id DESC')||') a)';
+    --
+    lv_cursor_sql := lv_cursor_sql||CHR(10)||' OFFSET '||pi_skip_n_rows||' ROWS ';
     --
     IF pi_pagesize IS NOT NULL
-     THEN
-        OPEN po_cursor FOR lv_cursor_sql
-        USING lv_lower_index
-             ,lv_upper_index;
-    ELSE
-        OPEN po_cursor FOR lv_cursor_sql
-        USING lv_lower_index;
+      THEN
+        lv_cursor_sql := lv_cursor_sql||CHR(10)||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
     END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1399,9 +1398,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                         ,po_cursor           OUT sys_refcursor)
   IS
     --
-    lv_lower_index      PLS_INTEGER;
-    lv_upper_index      PLS_INTEGER;
-    lv_row_restriction  nm3type.max_varchar2;
     lv_order_by         nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     --
@@ -1453,15 +1449,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     /*
-    ||Get the page parameters.
-    */
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
-                                  ,pi_skip_n_rows  => pi_skip_n_rows
-                                  ,pi_pagesize     => pi_pagesize
-                                  ,po_lower_index  => lv_lower_index
-                                  ,po_upper_index  => lv_upper_index
-                                  ,po_statement    => lv_row_restriction);
-    /*
     ||Get the Order By clause.
     */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
@@ -1486,20 +1473,17 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||CHR(10)||lv_filter
-                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'sup.sup_id')||') a)'
-                     ||CHR(10)||lv_row_restriction;
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'sup.sup_id')||') a)';
+    --
+    lv_cursor_sql := lv_cursor_sql||CHR(10)||' OFFSET '||pi_skip_n_rows||' ROWS ';
     --
     IF pi_pagesize IS NOT NULL
-     THEN
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_profile_id
-             ,lv_lower_index
-             ,lv_upper_index;
-    ELSE
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_profile_id
-             ,lv_lower_index;
+    THEN
+      lv_cursor_sql := lv_cursor_sql||CHR(10)||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
     END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql
+    USING pi_profile_id;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -2118,9 +2102,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                           ,po_cursor           OUT sys_refcursor)
   IS
     --
-    lv_lower_index      PLS_INTEGER;
-    lv_upper_index      PLS_INTEGER;
-    lv_row_restriction  nm3type.max_varchar2;
     lv_order_by         nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     --
@@ -2194,15 +2175,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     awlrs_sdl_util.validate_user_role;
     --
     /*
-    ||Get the page parameters.
-    */
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
-                                  ,pi_skip_n_rows  => pi_skip_n_rows
-                                  ,pi_pagesize     => pi_pagesize
-                                  ,po_lower_index  => lv_lower_index
-                                  ,po_upper_index  => lv_upper_index
-                                  ,po_statement    => lv_row_restriction);
-    /*
     ||Get the Order By clause.
     */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
@@ -2227,20 +2199,17 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||CHR(10)||lv_filter
-                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'spfc.spfc_col_id')||') a)'
-                     ||CHR(10)||lv_row_restriction;
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'spfc.spfc_col_id')||') a)';
+    --
+    lv_cursor_sql := lv_cursor_sql||CHR(10)||' OFFSET '||pi_skip_n_rows||' ROWS ';
     --
     IF pi_pagesize IS NOT NULL
     THEN
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_profile_id
-             ,lv_lower_index
-             ,lv_upper_index;
-    ELSE
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_profile_id
-             ,lv_lower_index;
+      lv_cursor_sql := lv_cursor_sql||CHR(10)||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
     END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql
+    USING pi_profile_id;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -2604,7 +2573,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     LOOP
       --
       IF r_spfc.t_action = 'U' THEN
-        --
+        --REPLACE(UPPER(pi_container), ' ', '_')
         update_profile_file_columns(pi_profile_id => pi_profile_id
                                    ,pi_spfc_id => r_spfc.new_spfc_id
                                    ,pi_old_col_id => r_spfc.old_spfc_col_id
@@ -2722,7 +2691,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
        AND NOT EXISTS (SELECT 1
                            FROM sdl_destination_header sdh
                           WHERE sdh.sdh_destination_type = dest.destination_type
-                            AND sdh.sdh_sp_id = pi_profile_id)
+                            AND sdh.sdh_sp_id = pi_profile_id
+                            AND ((sdh.sdh_nlt_id = dest.nlt_id AND pi_dest_type_select = 'N')
+                              OR pi_dest_type_select = 'A' ))
      ORDER BY DECODE(type, 'NETWORK', 1, 'ASSET', 2, 3);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -3626,9 +3597,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                     ,po_cursor           OUT sys_refcursor)
   IS
     --
-    lv_lower_index      PLS_INTEGER;
-    lv_upper_index      PLS_INTEGER;
-    lv_row_restriction  nm3type.max_varchar2;
     lv_order_by         nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     --
@@ -3738,15 +3706,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
   BEGIN
     /*
-    ||Get the page parameters.
-    */
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
-                                  ,pi_skip_n_rows  => pi_skip_n_rows
-                                  ,pi_pagesize     => pi_pagesize
-                                  ,po_lower_index  => lv_lower_index
-                                  ,po_upper_index  => lv_upper_index
-                                  ,po_statement    => lv_row_restriction);
-    /*
     ||Get the Order By clause.
     */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
@@ -3771,26 +3730,20 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||CHR(10)||lv_filter
-                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'dest_loc, col_id')||') a)'
-                     ||CHR(10)||lv_row_restriction;
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'dest_loc, col_id')||') a)';
+    --
+    lv_cursor_sql := lv_cursor_sql||CHR(10)||' OFFSET '||pi_skip_n_rows||' ROWS ';
     --
     IF pi_pagesize IS NOT NULL
-     THEN
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_profile_id
-             ,pi_dest_header_id
-             ,pi_dest_header_id
-             ,pi_dest_header_id
-             ,lv_lower_index
-             ,lv_upper_index;
-    ELSE
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_profile_id
-             ,pi_dest_header_id
-             ,pi_dest_header_id
-             ,pi_dest_header_id
-             ,lv_lower_index;
+    THEN
+      lv_cursor_sql := lv_cursor_sql||CHR(10)||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
     END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql
+    USING pi_profile_id
+         ,pi_dest_header_id
+         ,pi_dest_header_id
+         ,pi_dest_header_id;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -4348,10 +4301,12 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
           ,(SELECT network_type
                   ,network_descr
                   ,network_meaning
+                  ,nlt_id
               FROM (
                   SELECT nit.nit_inv_type network_type
                         ,nit.nit_descr network_descr
                         ,nit.nit_inv_type ||' - '|| nit.nit_descr network_meaning
+                        ,NULL nlt_id
                     FROM nm_inv_types nit
                         ,nm_load_destinations nld
                    WHERE nld.nld_table_name = NVL(nit.nit_view_name, nit.nit_table_name)
@@ -4359,11 +4314,13 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                     SELECT nlt.nlt_nt_type network_type
                           ,nlt.nlt_descr network_descr
                           ,nlt.nlt_nt_type ||' - '|| nlt.nlt_descr network_meaning
+                          ,nlt.nlt_id
                        FROM nm_linear_types nlt)
                      ) dest
      WHERE sdh.sdh_destination_type = dest.network_type
        AND sdh.sdh_sp_id = pi_profile_id
        AND sdh.sdh_destination_location = 'N'
+       AND (sdh.sdh_nlt_id = dest.nlt_id OR dest.nlt_id IS NULL)
      ORDER BY sdh.sdh_id;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -4491,9 +4448,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                          ,po_cursor           OUT sys_refcursor)
   IS
     --
-    lv_lower_index      PLS_INTEGER;
-    lv_upper_index      PLS_INTEGER;
-    lv_row_restriction  nm3type.max_varchar2;
     lv_order_by         nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     --
@@ -4534,10 +4488,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                               WHERE saar.saar_sdh_id = sdh.sdh_id
                                                 AND saar.saar_sp_id = sdh.sdh_sp_id
                                                 AND saar.saar_sp_id = :pi_profile_id
-                                                AND ((:pi_user_select = ''A'' /*AND saar.saar_user_id = -1*/)
+                                                AND ((:pi_user_select = ''A'')
                                                       OR
                                                      (:pi_user_select = ''U'' AND (saar.saar_user_id = SYS_CONTEXT(''NM3CORE'', ''USER_ID'')
-                                                                             OR saar.saar_user_id = -1))))';
+                                                                             OR saar.saar_user_id = -1))))
+											WHERE 1=1';
     --
     lv_cursor_sql  nm3type.max_varchar2 := 'SELECT saar_id'
                                               ||' ,profile_id'
@@ -4602,15 +4557,6 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     awlrs_sdl_util.validate_user_role;
     --
     /*
-    ||Get the page parameters.
-    */
-    awlrs_util.gen_row_restriction(pi_index_column => 'ind'
-                                  ,pi_skip_n_rows  => pi_skip_n_rows
-                                  ,pi_pagesize     => pi_pagesize
-                                  ,po_lower_index  => lv_lower_index
-                                  ,po_upper_index  => lv_upper_index
-                                  ,po_statement    => lv_row_restriction);
-    /*
     ||Get the Order By clause.
     */
     lv_order_by := awlrs_util.gen_order_by(pi_order_columns  => pi_order_columns
@@ -4635,24 +4581,19 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||CHR(10)||lv_filter
-                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'saar_id')||') a)'
-                     ||CHR(10)||lv_row_restriction;
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'saar_id')||') a)';
+    --
+    lv_cursor_sql := lv_cursor_sql||CHR(10)||' OFFSET '||pi_skip_n_rows||' ROWS ';
     --
     IF pi_pagesize IS NOT NULL
-     THEN
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_profile_id
-             ,pi_user_select
-             ,pi_user_select
-             ,lv_lower_index
-             ,lv_upper_index;
-    ELSE
-        OPEN po_cursor FOR lv_cursor_sql
-        USING pi_profile_id
-             ,pi_user_select
-             ,pi_user_select
-             ,lv_lower_index;
+    THEN
+      lv_cursor_sql := lv_cursor_sql||CHR(10)||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
     END IF;
+    --
+    OPEN po_cursor FOR lv_cursor_sql
+    USING pi_profile_id
+         ,pi_user_select
+         ,pi_user_select;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -4666,7 +4607,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   END get_paged_attrib_adjust_rules;
   --
   -----------------------------------------------------------------------------
-  --verify and delete
+  --verify and delete if not being used
   PROCEDURE get_attribute_adjustment_rule(pi_saar_id          IN  sdl_attribute_adjustment_rules.saar_id%TYPE
                                          ,pi_profile_id       IN  sdl_profiles.sp_id%TYPE
                                          ,po_message_severity OUT hig_codes.hco_code%TYPE
