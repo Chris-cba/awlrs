@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.4   Feb 01 2021 14:22:24   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Feb 01 2021 14:22:24  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.5   Feb 04 2021 15:23:32   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Feb 04 2021 15:23:32  $
   --       Module Name      : $Workfile:   awlrs_alerts_api.pkb  $
-  --       Date fetched Out : $Modtime:   Feb 01 2021 14:19:44  $
-  --       Version          : $Revision:   1.4  $
+  --       Date fetched Out : $Modtime:   Feb 04 2021 11:08:40  $
+  --       Version          : $Revision:   1.5  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
   g_package_name  CONSTANT  VARCHAR2 (30)  := 'awlrs_alerts_api';
   --
   --Role constants--
@@ -5223,7 +5223,8 @@ END get_screen_text;
   --
   PROCEDURE run_query(pi_inv_type           IN     hig_query_type_attributes.hqta_inv_type%TYPE
                      ,pi_where_clause       IN     hig_query_types.hqt_where_clause%TYPE 
-                     ,pi_result_set_only    IN     varchar2 DEFAULT 'N'
+                     ,pi_pagesize           IN     PLS_INTEGER
+                     ,pi_result_set_only    IN     varchar2 
                      ,po_message_severity      OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor        OUT sys_refcursor
                      ,po_cursor                OUT sys_refcursor)        
@@ -5272,6 +5273,8 @@ END get_screen_text;
 	      END IF;	   
 	END IF;
 	-- 
+	lv_cursor_sql := lv_cursor_sql||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
+	--
 	lv_query_parsed := nm3flx.sql_parses_without_error(lv_cursor_sql,lv_error);
 	IF NOT lv_query_parsed
 	  THEN
@@ -5303,6 +5306,7 @@ END get_screen_text;
                      ,pi_condition          IN     nm3type.tab_varchar30
                      ,pi_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
                      ,pi_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                     ,pi_pagesize           IN     PLS_INTEGER DEFAULT 15
                      ,pi_result_set_only    IN     varchar2 DEFAULT 'N'
                      ,po_message_severity      OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor        OUT sys_refcursor
@@ -5346,6 +5350,8 @@ END get_screen_text;
         --  
         run_query(pi_inv_type          =>  pi_inv_type
                  ,pi_where_clause      =>  lv_where
+                 ,pi_pagesize          =>  pi_pagesize
+                 ,pi_result_set_only   =>  pi_result_set_only  
                  ,po_message_severity  =>  po_message_severity
                  ,po_message_cursor    =>  po_message_cursor
                  ,po_cursor            =>  po_cursor);
