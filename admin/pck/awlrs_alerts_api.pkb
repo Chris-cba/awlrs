@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.5   Feb 04 2021 15:23:32   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Feb 04 2021 15:23:32  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.6   Feb 12 2021 10:53:18   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Feb 12 2021 10:53:18  $
   --       Module Name      : $Workfile:   awlrs_alerts_api.pkb  $
-  --       Date fetched Out : $Modtime:   Feb 04 2021 11:08:40  $
-  --       Version          : $Revision:   1.5  $
+  --       Date fetched Out : $Modtime:   Feb 12 2021 10:30:42  $
+  --       Version          : $Revision:   1.6  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.6  $"';
   g_package_name  CONSTANT  VARCHAR2 (30)  := 'awlrs_alerts_api';
   --
   --Role constants--
@@ -1188,7 +1188,7 @@ END get_screen_text;
     --
     lv_cursor_sql := lv_cursor_sql
                      ||lv_filter
-                     ||' ORDER BY '||NVL(lv_order_by,'hatr_type')
+                     ||' ORDER BY '||NVL(lv_order_by,'hatr_type desc')
                      ||' OFFSET '||pi_skip_n_rows||' ROWS '
     ;
     --
@@ -4510,7 +4510,12 @@ END get_screen_text;
           ,nit_descr        inv_type_descr
           ,hqt_created_by   owner_
           ,hqt_security     owner_filter  --Determines access rights for the query - Private (R) or Public (P).  Private queries are only be executed or amended by the owner.
+          ,CASE 
+             WHEN hqt_security = 'P' THEN 'Public'
+             WHEN hqt_security = 'R' THEN 'Private'
+           END              owner_filter_descr
           ,hqt_ignore_case  ignore_case
+          ,hqt_where_clause where_clause
      from hig_query_types
          ,nm_inv_types
     WHERE hqt_nit_inv_type = nit_inv_type    
@@ -4553,8 +4558,13 @@ END get_screen_text;
                                                 ||',hqt_nit_inv_type inv_type '
                                                 ||',nit_descr        inv_type_descr'
                                                 ||',hqt_created_by   owner_'
-                                                ||',hqt_security     owner_filter'
+                                                ||',hqt_security     owner_filter'                                             
+                                                ||',CASE 
+                                                      WHEN hqt_security = ''P'' THEN ''Public''
+                                                      WHEN hqt_security = ''R'' THEN ''Private''
+                                                    END              owner_filter_descr'
                                                 ||',hqt_ignore_case  ignore_case'
+                                                ||',hqt_where_clause where_clause' 
                                                 ||',COUNT(1) OVER(ORDER BY 1 RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) row_count'
                                            ||' FROM hig_query_types'
                                                 ||',nm_inv_types'
@@ -4586,6 +4596,15 @@ END get_screen_text;
       --
       awlrs_util.add_column_data(pi_cursor_col   => 'owner_'
                                 ,pi_query_col    => 'hqt_created_by'
+                                ,pi_datatype     => awlrs_util.c_varchar2_col
+                                ,pi_mask         => NULL
+                                ,pio_column_data => po_column_data);
+      --
+      awlrs_util.add_column_data(pi_cursor_col   => 'owner_filter_descr'
+                                ,pi_query_col    => 'CASE 
+                                                        WHEN hqt_security = ''P'' THEN ''Public''
+                                                        WHEN hqt_security = ''R'' THEN ''Private''
+                                                     END'
                                 ,pi_datatype     => awlrs_util.c_varchar2_col
                                 ,pi_mask         => NULL
                                 ,pio_column_data => po_column_data);
@@ -4656,7 +4675,6 @@ END get_screen_text;
   --
   BEGIN
     --
-    nm_debug.debug('calling validate_query');
     lr_nit_rec     := nm3get.get_nit(pi_inv_type);
     --
     lv_cursor_sql := 'SELECT To_Char('||NVL(lr_nit_rec.nit_foreign_pk_column,'IIT_NE_ID')||') pk_col '||Chr(10)||
@@ -4666,7 +4684,6 @@ END get_screen_text;
       THEN
         lv_cursor_sql := lv_cursor_sql||' '||pi_where_clause;
     END IF;
-    nm_debug.debug('after adding where clause: '||lv_cursor_sql);
     --
     IF NVL(lr_nit_rec.nit_table_name,'NM_INV_ITEMS_ALL') = 'NM_INV_ITEMS_ALL'
 	  THEN
@@ -4678,13 +4695,10 @@ END get_screen_text;
 	      END IF;	   
 	END IF;
 	-- 
-	nm_debug.debug('lr_nit_rec.nit_table_name: '||lr_nit_rec.nit_table_name);  
-	nm_debug.debug('before parses without error: '||lv_cursor_sql);  
 	lv_query_parsed := nm3flx.sql_parses_without_error(lv_cursor_sql,lv_error);
-	nm_debug.debug('after parses without error: '||lv_error);
+    --
 	RETURN lv_query_parsed;
-             
-      --  
+    --  
   EXCEPTION
     WHEN OTHERS
      THEN
@@ -4887,7 +4901,7 @@ END get_screen_text;
     OR pi_operator.COUNT != pi_condition.COUNT
     OR pi_operator.COUNT != pi_attribute_value.COUNT
     OR pi_operator.COUNT != pi_post_bracket.COUNT
-     THEN
+      THEN
         --The attribute tables passed in must have matching row counts
         hig.raise_ner(pi_appl               => 'AWLRS'
                      ,pi_id                 => 5
@@ -5005,6 +5019,7 @@ END get_screen_text;
            ,pi_operator 
            ,pi_attribute_name
            ,pi_condition
+           --,dbms_assert.enquote_literal(pi_attribute_value)
            ,pi_attribute_value
            ,pi_post_bracket
            ,pi_inv_type
@@ -5216,14 +5231,118 @@ END get_screen_text;
     END LOOP;
     
   END create_query; 
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_pk_column(pi_inv_type IN    nm_inv_types.nit_inv_type%TYPE 
+                         ,po_col_name   OUT nm_inv_type_attribs.ita_attrib_name%TYPE
+                         ,po_seq_no     OUT number)
+  --
+  IS
    
+   lv_ita_rec  nm_inv_type_attribs%ROWTYPE;
+   lv_pk_col   nm_inv_types.nit_foreign_pk_column%TYPE := NVL(nm3get.get_nit(pi_inv_type).nit_foreign_pk_column,'IIT_NE_ID'); 
+   lv_seq_no   Number := 0 ;
+   lv_col_name Varchar2(50);
+--
+BEGIN
+--
+   FOR i IN (SELECT *
+             FROM   nm_inv_type_attribs
+             WHERE  ita_inv_type    = pi_inv_type
+             ORDER  BY ita_disp_seq_no)
+   LOOP
+       IF i.ita_displayed = 'Y'
+       THEN
+           lv_seq_no := lv_seq_no + 1;
+       END IF ;
+       IF  i.ita_attrib_name = lv_pk_col        
+       AND i.ita_displayed = 'Y'
+       THEN
+           lv_col_name := i.ita_attrib_name ;
+           po_seq_no   := lv_seq_no ;
+           EXIT;
+       ELSE
+           lv_col_name := lv_pk_col ;
+       END IF ;
+   END LOOP;
+   IF lv_col_name IS NOT NULL
+   THEN 
+       po_col_name := lv_col_name  ;
+   ELSE
+       po_col_name := 'IIT_NE_ID';
+   END IF ;
+  --
+  END get_pk_column;
+  --
+  -----------------------------------------------------------------------------
+  --
+  --
+  --Local copy of hig_nav.get_column_displayed due to the Navigator fmb requiring 168 cols to be returned regardless.--
+  PROCEDURE get_column_displyed(pi_inv_type IN     nm_inv_types.nit_inv_type%TYPE
+                               ,po_cols        OUT Varchar2
+                               ,po_col_cnt     OUT Number)
+  IS
+  --
+   lv_dis_cnt    Number ;
+   lv_cnt        Number := 0 ;
+   lv_col_name   nm_inv_type_attribs.ita_attrib_name%TYPE ;
+   lv_seq_no     Number ;
+   lv_reduce_cnt Number := 0 ;
+  --
+  BEGIN 
+  --
+   SELECT COUNT(*)
+   INTO   lv_dis_cnt
+   FROM   nm_inv_type_attribs
+   WHERE  ita_inv_type  = pi_inv_type 
+   AND    ita_displayed = 'Y';
+   --
+   IF lv_dis_cnt > 0
+   THEN       
+       FOR i IN (SELECT *
+                 FROM   nm_inv_type_attribs
+                 WHERE  ita_inv_type  = pi_inv_type 
+                 AND    ita_displayed = 'Y'                 
+                 ORDER BY ita_disp_seq_no)
+       LOOP
+           lv_cnt := lv_cnt + 1;
+           IF i.ita_id_domain IS NOT NULL
+           THEN
+               po_cols := po_cols||',Substr(hig_nav.get_ial('''||i.ita_id_domain||''','||i.ita_attrib_name||'),1,500)'||'"'||i.ita_scrn_text||'"';
+           ELSE
+               IF i.ita_format = 'DATE'
+               THEN
+                   po_cols := po_cols||',To_Char(Trunc('||i.ita_attrib_name||'),''DD-Mon-YYYY'') '||'"'||i.ita_scrn_text||'"';
+               ELSE
+                   po_cols := po_cols||',Substr(To_Char('||i.ita_attrib_name||'),1,500) '||'"'||i.ita_scrn_text||'"';
+               END IF ;
+           END IF;
+       END LOOP; 
+   END IF ;
+   get_pk_column (pi_inv_type 
+                 ,lv_col_name 
+                 ,lv_seq_no);
+   IF lv_seq_no IS NULL
+   THEN
+       lv_reduce_cnt := 1;
+       po_cols := po_cols||','||lv_col_name ;
+   ELSE
+       lv_reduce_cnt := 0;
+   END IF ;
+   --
+   po_cols := Substr(po_cols,2);
+   po_col_cnt  :=  lv_dis_cnt ;
+   --
+   END get_column_displyed; 
                       
   --
   -----------------------------------------------------------------------------
   --
   PROCEDURE run_query(pi_inv_type           IN     hig_query_type_attributes.hqta_inv_type%TYPE
                      ,pi_where_clause       IN     hig_query_types.hqt_where_clause%TYPE 
-                     ,pi_pagesize           IN     PLS_INTEGER
+                     ,pi_sizelimit          IN     PLS_INTEGER
                      ,pi_result_set_only    IN     varchar2 
                      ,po_message_severity      OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor        OUT sys_refcursor
@@ -5251,10 +5370,10 @@ END get_screen_text;
         lv_cursor_sql := 'SELECT To_Char('||NVL(lr_nit_rec.nit_foreign_pk_column,'IIT_NE_ID')||') pk_col '||Chr(10)||
 	                     'FROM '||NVL(lr_nit_rec.nit_table_name,'NM_INV_ITEMS_ALL');
 	ELSE                     
-        hig_nav.get_column_displyed(pi_inv_type
-                                   ,lv_display_col
-                                   ,lv_col_cnt);
-                                   
+        get_column_displyed(pi_inv_type
+                           ,lv_display_col
+                           ,lv_col_cnt);
+        --
         lv_cursor_sql := 'SELECT '||lv_display_col||Chr(10)|| 'FROM '||NVL(lr_nit_rec.nit_table_name,'NM_INV_ITEMS_ALL');
     END IF;	
     --
@@ -5273,7 +5392,7 @@ END get_screen_text;
 	      END IF;	   
 	END IF;
 	-- 
-	lv_cursor_sql := lv_cursor_sql||' FETCH NEXT '||pi_pagesize||' ROWS ONLY ';
+	lv_cursor_sql := lv_cursor_sql||' FETCH NEXT '||pi_sizelimit||' ROWS ONLY ';
 	--
 	lv_query_parsed := nm3flx.sql_parses_without_error(lv_cursor_sql,lv_error);
 	IF NOT lv_query_parsed
@@ -5306,7 +5425,7 @@ END get_screen_text;
                      ,pi_condition          IN     nm3type.tab_varchar30
                      ,pi_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
                      ,pi_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                     ,pi_pagesize           IN     PLS_INTEGER DEFAULT 15
+                     ,pi_sizelimit          IN     PLS_INTEGER DEFAULT 15
                      ,pi_result_set_only    IN     varchar2 DEFAULT 'N'
                      ,po_message_severity      OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor        OUT sys_refcursor
@@ -5350,7 +5469,7 @@ END get_screen_text;
         --  
         run_query(pi_inv_type          =>  pi_inv_type
                  ,pi_where_clause      =>  lv_where
-                 ,pi_pagesize          =>  pi_pagesize
+                 ,pi_sizelimit          =>  pi_sizelimit
                  ,pi_result_set_only   =>  pi_result_set_only  
                  ,po_message_severity  =>  po_message_severity
                  ,po_message_cursor    =>  po_message_cursor
@@ -5691,6 +5810,7 @@ END get_screen_text;
                                   ,pi_condition          IN     nm3type.tab_varchar30
                                   ,pi_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
                                   ,pi_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,po_query_id              OUT hig_query_types.hqt_id%TYPE
                                   ,po_message_severity      OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor        OUT sys_refcursor)
   IS
@@ -5750,7 +5870,7 @@ END get_screen_text;
         --
         lt_messages.DELETE;
         --
-        create_qry_attributes(pi_query_id        =>  lv_query_id
+        create_qry_attributes(pi_query_id         =>  lv_query_id
                              ,pi_inv_type         =>  pi_inv_type
                              ,pi_pre_bracket      =>  pi_pre_bracket
                              ,pi_operator         =>  pi_operator
@@ -5765,13 +5885,20 @@ END get_screen_text;
     --
     IF lt_messages.COUNT > 0
      THEN
+        --
         awlrs_util.get_message_cursor(pi_message_tab => lt_messages
                                      ,po_cursor      => po_message_cursor);
+        --                             
         awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
                                        ,po_message_severity => po_message_severity);
+        --                               
     ELSE
+        --
+        po_query_id := lv_query_id;
+        --
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                              ,po_cursor           => po_message_cursor);
+        --                                     
     END IF;
     
   EXCEPTION
@@ -5887,9 +6014,9 @@ END get_screen_text;
      OR (UPPER(lr_db_rec.hqt_ignore_case) IS NOT NULL AND UPPER(pi_old_ignore_case) IS NULL)
      --
      --NB this is derived from the hig_query_type_attributes
-     --OR (UPPER(lr_db_rec.hqt_where_clause) != UPPER(pi_old_where_clause))
-     --OR (UPPER(lr_db_rec.hqt_where_clause) IS NULL AND UPPER(pi_old_where_clause) IS NOT NULL)
-     --OR (UPPER(lr_db_rec.hqt_where_clause) IS NOT NULL AND UPPER(pi_old_where_clause) IS NULL)
+     OR (UPPER(lr_db_rec.hqt_where_clause) != UPPER(pi_old_where_clause))
+     OR (UPPER(lr_db_rec.hqt_where_clause) IS NULL AND UPPER(pi_old_where_clause) IS NOT NULL)
+     OR (UPPER(lr_db_rec.hqt_where_clause) IS NOT NULL AND UPPER(pi_old_where_clause) IS NULL)
      --
      THEN
         --Updated by another user
@@ -5928,6 +6055,9 @@ END get_screen_text;
       END IF;
       --
       IF pi_new_where_clause IS NOT NULL  --just assume changes have been made
+      --IF UPPER(pi_old_where_clause) != UPPER(pi_new_where_clause)
+      -- OR (UPPER(pi_old_where_clause) IS NULL AND UPPER(pi_new_where_clause) IS NOT NULL)
+      -- OR (UPPER(pi_old_where_clause) IS NOT NULL AND UPPER(pi_new_where_clause) IS NULL)
        THEN
          lv_upd := 'Y';
       END IF;
@@ -6068,7 +6198,6 @@ END get_screen_text;
     --
   BEGIN
     --
-    nm_debug.debug('starting upd qry attribs');
     SAVEPOINT update_qry_attribs_sp;
     --
     awlrs_util.check_historic_mode;   
@@ -6787,6 +6916,7 @@ END get_screen_text;
     --
     UPDATE hig_alert_types
        SET halt_next_run_date = null
+          ,halt_suspend_query = 'Y'
      WHERE halt_id            = pi_alert_id; 
     --
     po_next_run_date := null; 
@@ -6835,6 +6965,7 @@ END get_screen_text;
     --
     UPDATE hig_alert_types
        SET halt_next_run_date = lv_next_run_date
+          ,halt_suspend_query = 'N'
      WHERE halt_id            = pi_alert_id;
     -- 
     po_next_run_date := lv_next_run_date; 
