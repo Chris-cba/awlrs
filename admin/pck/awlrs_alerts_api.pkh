@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkh-arc   1.3   Feb 04 2021 15:23:34   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Feb 04 2021 15:23:34  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkh-arc   1.4   Feb 12 2021 10:46:10   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Feb 12 2021 10:46:10  $
   --       Module Name      : $Workfile:   awlrs_alerts_api.pkh  $
-  --       Date fetched Out : $Modtime:   Feb 04 2021 10:25:44  $
-  --       Version          : $Revision:   1.3  $
+  --       Date fetched Out : $Modtime:   Feb 09 2021 11:12:56  $
+  --       Version          : $Revision:   1.4  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_sccsid is the SCCS ID for the package
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.3  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
   --
   TYPE alert_log_id_tab   IS TABLE OF hig_alert_manager_logs_vw.haml_hal_id%TYPE INDEX BY BINARY_INTEGER;
   TYPE alert_recip_id_tab IS TABLE OF hig_alert_manager_logs_vw.haml_har_id%TYPE INDEX BY BINARY_INTEGER;
@@ -684,7 +684,7 @@ AS
                      ,pi_condition          IN     nm3type.tab_varchar30
                      ,pi_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
                      ,pi_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                     ,pi_pagesize           IN     PLS_INTEGER DEFAULT 15
+                     ,pi_sizelimit          IN     PLS_INTEGER DEFAULT 15
                      ,pi_result_set_only    IN     varchar2 DEFAULT 'N'
                      ,po_message_severity      OUT hig_codes.hco_code%TYPE
                      ,po_message_cursor        OUT sys_refcursor
@@ -735,6 +735,7 @@ AS
                                   ,pi_condition          IN     nm3type.tab_varchar30
                                   ,pi_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
                                   ,pi_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,po_query_id              OUT hig_query_types.hqt_id%TYPE
                                   ,po_message_severity      OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor        OUT sys_refcursor);
   
