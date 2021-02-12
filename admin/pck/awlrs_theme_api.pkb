@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.13   Sep 24 2020 16:03:20   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Sep 24 2020 16:03:20  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_theme_api.pkb-arc   1.14   Feb 12 2021 11:46:08   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Feb 12 2021 11:46:08  $
   --       Module Name      : $Workfile:   awlrs_theme_api.pkb  $
-  --       Date fetched Out : $Modtime:   Sep 24 2020 11:41:52  $
-  --       Version          : $Revision:   1.13  $
+  --       Date fetched Out : $Modtime:   Feb 12 2021 11:35:04  $
+  --       Version          : $Revision:   1.14  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
-  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.13  $"';
+  g_body_sccsid     CONSTANT  VARCHAR2(2000) := '"$Revision:   1.14  $"';
   --
   g_package_name    CONSTANT VARCHAR2 (30) := 'awlrs_theme_api';
   --
@@ -2455,16 +2455,9 @@ AS
   IS
     --
     lr_theme_types  awlrs_map_api.theme_types_rec;
-    lv_where_clause nm3type.max_varchar2;
-    lv_base_feature_table  nm_themes_all.nth_feature_table%TYPE;
     lv_upd          varchar2(1) := 'N';
-    lv_rebuild_view BOOLEAN := FALSE;
-    lv_view_sql     varchar2(1000);
-    lv_where        varchar2(5000);
-    
     --
     lr_db_rec        nm_themes_all%ROWTYPE;    
-    lr_rec_nth_base   nm_themes_all%ROWTYPE;
     --
     PROCEDURE get_db_rec
       IS
@@ -2514,38 +2507,6 @@ AS
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Location Updatable'
                                ,pi_parameter_value =>  pi_new_is_updatable);
     -- 
-    IF pi_new_where_clause IS NOT NULL
-      THEN
-        --
-        -- generate where clause from xml passed in pi_new_where_clause --
-        SELECT nth_feature_table 
-          INTO lv_base_feature_table     
-          FROM nm_themes_all
-         WHERE nth_theme_id   = pi_old_theme_id;
-        -- 
-        lr_theme_types.feature_table := lv_base_feature_table;
-        --
-        lv_where_clause := awlrs_search_api.generate_where_clause(pi_theme_types       => lr_theme_types
-                                                                 ,pi_criteria          => pi_new_where_clause);
-        --
-        IF lv_where_clause IS NOT NULL
-           AND NOT nm3layer_tool.parse_where_clause(pi_base_theme   => pi_old_theme_id --pi_old_base_theme
-                                                   ,pi_where_clause => lv_where_clause)
-             THEN
-               hig.raise_ner(pi_appl => 'HIG'
-                            ,pi_id   => 83
-                            ,pi_supplementary_info => 'SQL is invalid');
-        END IF;
-        --
-        lv_rebuild_view := TRUE;
-        --
-    ELSE
-       -- if pi_new_where_clause is null, this means no changes are required to the original where clause, this is for all themes not just custom themes --
-        lv_where_clause := pi_old_where_clause;
-        lv_rebuild_view := FALSE;
-       --
-    END IF;
-    --
     get_db_rec;
     --
     /*
@@ -2626,13 +2587,6 @@ AS
          lv_upd := 'Y';
       END IF;
       --
-      IF pi_old_where_clause != lv_where_clause
-       OR (pi_old_where_clause IS NULL AND lv_where_clause IS NOT NULL)
-       OR (pi_old_where_clause IS NOT NULL AND lv_where_clause IS NULL)
-       THEN
-          lv_upd := 'Y';
-      END IF;
-      --
       IF pi_old_start_chainage != pi_new_start_chainage
        OR (pi_old_start_chainage IS NULL AND pi_new_start_chainage IS NOT NULL)
        OR (pi_old_start_chainage IS NOT NULL AND pi_new_start_chainage IS NULL)
@@ -2660,37 +2614,9 @@ AS
               ,nth_pk_column          =  pi_new_pk_col
               ,nth_label_column       =  pi_new_pk_label
               ,nth_location_updatable =  pi_new_is_updatable
-              ,nth_where              =  lv_where_clause 
               ,nth_st_chain_column    =  pi_new_start_chainage
               ,nth_end_chain_column   =  pi_new_end_chainage
          WHERE nth_theme_id =  pi_old_theme_id;
-        --
-        --
-        --If the where clause has been updated, we now need to rebuild the view
-        IF lv_rebuild_view
-          THEN
-            --
-            lv_where := LTRIM(lv_where_clause);
-            --
-            lr_rec_nth_base := nm3get.get_nth (pi_nth_theme_id => pi_new_base_theme);
-            --
-            lv_view_sql :=
-                        'CREATE OR REPLACE FORCE VIEW '
-                      || pi_new_theme_name
-                      || lf
-                      || ' AS '
-                      || lf
-                      || ' SELECT a.* '
-                      || lf
-                      || '   FROM '
-                      || lr_rec_nth_base.nth_feature_table
-                      || ' a '
-                      || lf
-                      || ' WHERE '||lv_where;
-            --
-            EXECUTE IMMEDIATE lv_view_sql;
-            --
-        END IF;
         --
         awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                              ,po_cursor           => po_message_cursor);
