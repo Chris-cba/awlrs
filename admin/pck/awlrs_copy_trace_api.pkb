@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_copy_trace_api.pkb-arc   1.3   Nov 11 2020 12:18:36   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_copy_trace_api.pkb-arc   1.4   Feb 12 2021 10:19:00   Barbara.Odriscoll  $
   --       Module Name      : $Workfile:   awlrs_copy_trace_api.pkb  $
-  --       Date into PVCS   : $Date:   Nov 11 2020 12:18:36  $
-  --       Date fetched Out : $Modtime:   Oct 23 2020 10:48:38  $
-  --       Version          : $Revision:   1.3  $
+  --       Date into PVCS   : $Date:   Feb 12 2021 10:19:00  $
+  --       Date fetched Out : $Modtime:   Feb 11 2021 14:27:50  $
+  --       Version          : $Revision:   1.4  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.3  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.4  $';
 
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_copy_trace_api';
   --
@@ -329,9 +329,9 @@ AS
          lv_upd := 'Y';
       END IF;
       --
-      IF pi_old_datum_nt != pi_new_datum_nt
-       OR (pi_old_datum_nt IS NULL AND pi_new_datum_nt IS NOT NULL)
-       OR (pi_old_datum_nt IS NOT NULL AND pi_new_datum_nt IS NULL)
+      IF UPPER(pi_old_datum_nt) != UPPER(pi_new_datum_nt)
+       OR (UPPER(pi_old_datum_nt) IS NULL AND UPPER(pi_new_datum_nt) IS NOT NULL)
+       OR (UPPER(pi_old_datum_nt) IS NOT NULL AND UPPER(pi_new_datum_nt) IS NULL)
        THEN
          lv_upd := 'Y';
       END IF;     
@@ -344,7 +344,7 @@ AS
       ELSE
         --
         UPDATE awlrs_file_feature_maps
-           SET  affm_file_descr = UPPER(pi_new_descr)
+           SET  affm_file_descr = pi_new_descr
                ,affm_datum_nt   = UPPER(pi_new_datum_nt)
          WHERE affm_id = lr_db_id_rec.affm_id;
         --           
@@ -395,7 +395,7 @@ AS
           ,affm_datum_nt) 
     VALUES(lv_id
           ,pi_file_descr
-          ,pi_datum_nt)
+          ,UPPER(pi_datum_nt))
          ;
     --
     po_file_feature_map_id := lv_id;
@@ -524,10 +524,10 @@ AS
           ,afgam_target_attrib) 
     VALUES(lv_id
           ,pi_file_feature_map_id
-          ,pi_target_nt
-          ,pi_target_gty
+          ,UPPER(pi_target_nt)
+          ,UPPER(pi_target_gty)
           ,pi_file_attrib
-          ,pi_target_attrib)
+          ,UPPER(pi_target_attrib))
          ;
     --
     po_file_grp_attrib_id := lv_id;
@@ -586,7 +586,7 @@ AS
     VALUES(lv_id
           ,pi_file_feature_map_id
           ,pi_file_attrib
-          ,pi_target_attrib)
+          ,UPPER(pi_target_attrib))
          ;
     --
     po_datum_attrib_map_id := lv_id;
@@ -717,16 +717,16 @@ AS
          lv_upd := 'Y';
       END IF;
       --
-      IF pi_old_target_nt != pi_new_target_nt
-       OR (pi_old_target_nt IS NULL AND pi_new_target_nt IS NOT NULL)
-       OR (pi_old_target_nt IS NOT NULL AND pi_new_target_nt IS NULL)
+      IF UPPER(pi_old_target_nt) != UPPER(pi_new_target_nt)
+       OR (UPPER(pi_old_target_nt) IS NULL AND UPPER(pi_new_target_nt) IS NOT NULL)
+       OR (UPPER(pi_old_target_nt) IS NOT NULL AND UPPER(pi_new_target_nt) IS NULL)
        THEN
          lv_upd := 'Y';
       END IF;     
       --
-      IF pi_old_target_gty != pi_new_target_gty
-       OR (pi_old_target_gty IS NULL AND pi_new_target_gty IS NOT NULL)
-       OR (pi_old_target_gty IS NOT NULL AND pi_new_target_gty IS NULL)
+      IF UPPER(pi_old_target_gty) != UPPER(pi_new_target_gty)
+       OR (UPPER(pi_old_target_gty) IS NULL AND UPPER(pi_new_target_gty) IS NOT NULL)
+       OR (UPPER(pi_old_target_gty) IS NOT NULL AND UPPER(pi_new_target_gty) IS NULL)
        THEN
          lv_upd := 'Y';
       END IF;
@@ -738,9 +738,9 @@ AS
          lv_upd := 'Y';
       END IF;     
       --
-      IF pi_old_target_attrib != pi_new_target_attrib
-       OR (pi_old_target_attrib IS NULL AND pi_new_target_attrib IS NOT NULL)
-       OR (pi_old_target_attrib IS NOT NULL AND pi_new_target_attrib IS NULL)
+      IF UPPER(pi_old_target_attrib) != UPPER(pi_new_target_attrib)
+       OR (UPPER(pi_old_target_attrib) IS NULL AND UPPER(pi_new_target_attrib) IS NOT NULL)
+       OR (UPPER(pi_old_target_attrib) IS NOT NULL AND UPPER(pi_new_target_attrib) IS NULL)
        THEN
          lv_upd := 'Y';
       END IF;     
@@ -753,10 +753,10 @@ AS
       ELSE
         --
         UPDATE awlrs_file_grp_attrib_map
-           SET  afgam_affm_id   = UPPER(pi_new_affm_id)
+           SET  afgam_affm_id   = pi_new_affm_id
                ,afgam_target_nt = UPPER(pi_new_target_nt)
                ,afgam_target_gty = UPPER(pi_new_target_gty)
-               ,afgam_file_attrib = UPPER(pi_new_file_attrib)
+               ,afgam_file_attrib = pi_new_file_attrib
                ,afgam_target_attrib = UPPER(pi_new_target_attrib)
          WHERE afgam_id = lr_db_id_rec.afgam_id;
         --           
@@ -882,9 +882,9 @@ AS
          lv_upd := 'Y';
       END IF;     
       --
-      IF pi_old_target_attrib != pi_new_target_attrib
-       OR (pi_old_target_attrib IS NULL AND pi_new_target_attrib IS NOT NULL)
-       OR (pi_old_target_attrib IS NOT NULL AND pi_new_target_attrib IS NULL)
+      IF UPPER(pi_old_target_attrib) != UPPER(pi_new_target_attrib)
+       OR (UPPER(pi_old_target_attrib) IS NULL AND UPPER(pi_new_target_attrib) IS NOT NULL)
+       OR (UPPER(pi_old_target_attrib) IS NOT NULL AND UPPER(pi_new_target_attrib) IS NULL)
        THEN
          lv_upd := 'Y';
       END IF;     
@@ -897,8 +897,8 @@ AS
       ELSE
         --
         UPDATE awlrs_file_datum_attrib_map
-           SET  afdam_affm_id   = UPPER(pi_new_affm_id)
-               ,afdam_file_attrib = UPPER(pi_new_file_attrib)
+           SET  afdam_affm_id   = pi_new_affm_id
+               ,afdam_file_attrib = pi_new_file_attrib
                ,afdam_target_attrib = UPPER(pi_new_target_attrib)
          WHERE afdam_id = lr_db_id_rec.afdam_id;
         --           
