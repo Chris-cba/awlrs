@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.12   Feb 01 2021 12:18:14   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.13   Feb 17 2021 09:23:42   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 01 2021 12:18:14  $
-  --       Date fetched Out : $Modtime:   Feb 01 2021 11:43:22  $
-  --       PVCS Version     : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   Feb 17 2021 09:23:42  $
+  --       Date fetched Out : $Modtime:   Feb 17 2021 07:59:54  $
+  --       PVCS Version     : $Revision:   1.13  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.12  $';
+  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.13  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -2006,6 +2006,49 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END edit_profile_source_header;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE csv_header_exists(pi_profile_id        IN  sdl_profiles.sp_id%TYPE
+                             ,po_header            OUT VARCHAR2
+                             ,po_message_severity  OUT hig_codes.hco_code%TYPE
+                             ,po_message_cursor    OUT sys_refcursor)
+  IS
+    --
+    lv_header VARCHAR2(1) := 'N';
+    --
+  BEGIN
+    --
+    BEGIN
+      --
+      SELECT spsh.spsh_attrib_value csv_header
+        INTO lv_header
+        FROM sdl_profile_source_header spsh
+            ,sdl_source_type_attribs ssta
+            ,sdl_profiles sp
+       WHERE spsh.spsh_sp_id = sp.sp_id
+         AND spsh.spsh_ssta_id = ssta.ssta_id
+         AND ssta.ssta_source_type = sp.sp_import_file_type
+         AND sp.sp_import_file_type = 'CSV'
+         AND ssta.ssta_attribute = 'HEADERS'
+         AND sp.sp_id = pi_profile_id;
+      --
+    EXCEPTION
+      WHEN OTHERS THEN
+        lv_header := 'N';
+    END;
+    --
+    po_header := lv_header;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END csv_header_exists;
   --
   -----------------------------------------------------------------------------
   --
