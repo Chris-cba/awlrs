@@ -3,22 +3,23 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.6   Feb 12 2021 10:53:18   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Feb 12 2021 10:53:18  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.7   Feb 18 2021 13:42:44   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Feb 18 2021 13:42:44  $
   --       Module Name      : $Workfile:   awlrs_alerts_api.pkb  $
-  --       Date fetched Out : $Modtime:   Feb 12 2021 10:30:42  $
-  --       Version          : $Revision:   1.6  $
+  --       Date fetched Out : $Modtime:   Feb 18 2021 13:40:04  $
+  --       Version          : $Revision:   1.7  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.6  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.7  $"';
   g_package_name  CONSTANT  VARCHAR2 (30)  := 'awlrs_alerts_api';
   --
   --Role constants--
-  cv_hig_admin    CONSTANT VARCHAR2(9)     := 'HIG_ADMIN';
+  cv_hig_admin    CONSTANT VARCHAR2(9)   := 'HIG_ADMIN';
+  cv_alert_admin  CONSTANT VARCHAR2(11)    := 'ALERT_ADMIN';
   --
   -----------------------------------------------------------------------------
   --
@@ -52,6 +53,24 @@ AS
       INTO lv_cnt
       FROM dba_role_privs
      WHERE granted_role = pi_role_name
+       AND grantee      = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME');
+     
+    RETURN (lv_cnt > 0);  
+    --
+  END privs_check;
+  
+  --
+  -----------------------------------------------------------------------------
+  --
+  FUNCTION privs_check RETURN BOOLEAN
+  IS
+     lv_cnt    number;
+  BEGIN
+    --
+    SELECT COUNT(*) 
+      INTO lv_cnt
+      FROM dba_role_privs
+     WHERE granted_role IN (cv_hig_admin ,cv_alert_admin)
        AND grantee      = SYS_CONTEXT('NM3_SECURITY_CTX','USERNAME');
      
     RETURN (lv_cnt > 0);  
@@ -1573,7 +1592,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -1690,7 +1709,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode;   
     --
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -1861,7 +1880,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -1878,14 +1897,14 @@ END get_screen_text;
     END IF;
     --
     /*
-    ||delete from hig_alert_type_mail.
+    ||delete from hig_alert_type_attributes.
     */
     DELETE 
       FROM hig_alert_type_attributes
      WHERE hata_halt_id = pi_alert_id;
     --
     /*
-    ||delete from hig_alert_type_recipients.
+    ||delete from hig_alert_type_conditions.
     */
     DELETE 
       FROM hig_alert_type_conditions
@@ -1905,6 +1924,15 @@ END get_screen_text;
       FROM hig_alert_type_recipients
      WHERE hatr_halt_id = pi_alert_id;
     --
+    /*
+    ||delete from hig_alert_recipients.
+    */
+    DELETE 
+      FROM hig_alert_recipients
+     WHERE har_hal_id in (SELECT hal_id
+                           FROM hig_alerts
+                          WHERE hal_halt_id = pi_alert_id);
+    
     /*
     ||delete from hig_alerts.
     */
@@ -1999,7 +2027,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -2108,7 +2136,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode;   
     --
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -2222,7 +2250,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -2293,7 +2321,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -2428,7 +2456,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode;   
     --
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -2647,7 +2675,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -2838,7 +2866,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -2944,7 +2972,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode;   
     --
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -3121,7 +3149,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -3263,7 +3291,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -3430,7 +3458,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -3712,7 +3740,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode;   
     --
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -4394,7 +4422,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -4754,7 +4782,7 @@ END get_screen_text;
 	    	          	      lv_value := pi_attribute_value;
     	    	          	  IF Upper(lv_value) NOT LIKE '%SYSDATE%'
 	        	          	  THEN
-	    	              	      lv_value := 	''''||pi_attribute_value||'''' ;
+	    	              	      lv_value := 	''||pi_attribute_value||'' ;
 	    	              	  END IF ;    
 	    	              	  lv_where := lv_where||Chr(10)||pi_operator||pi_pre_bracket||' Trunc('||pi_attribute_name||')  '||pi_condition||' '||lv_value||' '||pi_post_bracket;
     	    	          END IF ;	  
@@ -4765,29 +4793,23 @@ END get_screen_text;
     	    	          ELSE
                           IF lr_ita_rec.ita_format = 'VARCHAR2'
 	    	           	      THEN
-	    	           	          IF pi_attribute_value Like '%'||Chr(39)||'%'
-	    	       	              THEN
-	    	       	                  hig.raise_ner(pi_appl               => 'HIG'
-                                                   ,pi_id                 => 444
-                                                   ,pi_supplementary_info => ' For value '||pi_attribute_value);	
-    	    	       	          END IF;	  
-	        	       	          IF pi_ignore_case  = 'Y'
+	    	           	          IF pi_ignore_case  = 'Y'
 	    	           	          THEN
-	    	           	              lv_where := lv_where||Chr(10)||pi_operator||pi_pre_bracket||' Upper('||pi_attribute_name||')  '||pi_condition||' '''||Upper(pi_attribute_value)||''''||pi_post_bracket; 
+	    	           	              lv_where := lv_where||Chr(10)||pi_operator||pi_pre_bracket||' Upper('||pi_attribute_name||')  '||pi_condition||' '||Upper(pi_attribute_value)||''||pi_post_bracket; 
     	    	           	      ELSE
 	        	       	              IF lr_ita_rec.ita_case = 'UPPER'
 	    	           	       	      THEN	 
-    	    	           	              lv_value := ''''||Upper(pi_attribute_value)||'''' ;	
+    	    	           	              lv_value := ''||Upper(pi_attribute_value)||'' ;	
 	        	       	              ELSIF lr_ita_rec.ita_case = 'LOWER'
 	    	           	           	  THEN	     
-	    	           	       	          lv_value := ''''||Lower(pi_attribute_value)||'''' ;
+	    	           	       	          lv_value := ''||Lower(pi_attribute_value)||'' ;
 	    	       	                  ELSE
-	    	       	               	      lv_value := ''''||pi_attribute_value||'''' ;
+	    	       	               	      lv_value := ''||pi_attribute_value||'' ;
 	    	       	                  END IF ;	   
 	    	       	                  lv_where := lv_where||Chr(10)||pi_operator||pi_pre_bracket||' '||pi_attribute_name||'  '||pi_condition||' '||lv_value||' '||pi_post_bracket;
         	    	       	      END IF ;    
 	        	       	      ELSE
-	    	                      lv_where := lv_where||Chr(10)||pi_operator||pi_pre_bracket||' '||pi_attribute_name||'  '||pi_condition||' '''||pi_attribute_value||''''||pi_post_bracket;
+	    	                      lv_where := lv_where||Chr(10)||pi_operator||pi_pre_bracket||' '||pi_attribute_name||'  '||pi_condition||' '||pi_attribute_value||''||pi_post_bracket;
                           END IF ;	    	                  
     	    	          END IF ;    
     	    	      END IF ;    
@@ -4796,7 +4818,7 @@ END get_screen_text;
 	    	          THEN	
 	    	              lv_where := lv_where||Chr(10)||pi_operator||pi_pre_bracket||' '||pi_attribute_name||'  '||pi_condition||pi_post_bracket;
     	    	      ELSE      	
-	    	              lv_where := lv_where||Chr(10)||pi_operator||pi_pre_bracket||' '||pi_attribute_name||'  '||pi_condition||' '''||pi_attribute_value||''''||pi_post_bracket;	
+	    	              lv_where := lv_where||Chr(10)||pi_operator||pi_pre_bracket||' '||pi_attribute_name||'  '||pi_condition||' '||pi_attribute_value||''||pi_post_bracket;	
 	    	          END IF ;    
 	    	      END IF ;	  
 	    	  ELSE
@@ -4808,10 +4830,10 @@ END get_screen_text;
 	    	              THEN 	
     	    	              lv_where := Chr(10)||'WHERE '||pi_pre_bracket||' Trunc('||pi_attribute_name||')  '||pi_condition||pi_post_bracket;
 	        	          ELSE
-	    	              	  lv_value := pi_attribute_value;
+	        	          	  lv_value := pi_attribute_value;
 	    	              	  IF Upper(lv_value) NOT LIKE '%SYSDATE%'
 	    	              	  THEN
-	    	          	          lv_value := 	''''||pi_attribute_value||'''' ;
+	    	          	          lv_value := 	''||pi_attribute_value||'' ;
     	    	          	  END IF ;
 	        	          	  lv_where := Chr(10)||'WHERE '||pi_pre_bracket||' Trunc('||pi_attribute_name||')  '||pi_condition||' '||lv_value||' '||pi_post_bracket;
 	    	              END IF ; 	
@@ -4822,29 +4844,23 @@ END get_screen_text;
 	    	              ELSE	    	              	  
 	    	              	  IF lr_ita_rec.ita_format = 'VARCHAR2'
 	    	       	          THEN
-	    	       	              IF pi_attribute_value Like '%'||Chr(39)||'%'
-    	    	       	          THEN
-    	    	       	              hig.raise_ner(pi_appl               => 'HIG'
-                                                   ,pi_id                 => 444
-                                                   ,pi_supplementary_info => ' For value '||pi_attribute_value);	
-	    	           	          END IF;
 	    	       	              IF pi_ignore_case = 'Y'
 	    	       	              THEN
-	    	          	          lv_where := Chr(10)||'WHERE '||pi_pre_bracket||' Upper( '||pi_attribute_name||')  '||pi_condition||' '''||Upper(pi_attribute_value)||''''||pi_post_bracket;
-    	    	       	          ELSE
+	    	          	              lv_where := Chr(10)||'WHERE '||pi_pre_bracket||' Upper( '||pi_attribute_name||')  '||pi_condition||' '||Upper(pi_attribute_value)||''||pi_post_bracket;
+	    	          	          ELSE
     	        	       	          IF lr_ita_rec.ita_case = 'UPPER'
 	        	           	       	  THEN	 
-	    	               	              lv_value := ''''||Upper(pi_attribute_value)||'''' ;	
-	    	           	              ELSIF lr_ita_rec.ita_case = 'LOWER'
+	    	               	              lv_value := ''||Upper(pi_attribute_value)||'' ;
+	    	               	          ELSIF lr_ita_rec.ita_case = 'LOWER'
 	    	       	               	  THEN	     
-	    	       	           	          lv_value := ''''||Lower(pi_attribute_value)||'''' ;
-	    	       	                  ELSE
-    	    	       	           	      lv_value := ''''||pi_attribute_value||'''' ;
-	        	       	              END IF ;	   
+	    	       	           	          lv_value := ''||Lower(pi_attribute_value)||'' ;
+	    	       	           	      ELSE
+    	    	       	           	      lv_value := ''||pi_attribute_value||'' ;
+    	    	       	              END IF ;	   
 	    	           	              lv_where := Chr(10)||'WHERE '||pi_pre_bracket||pi_attribute_name||'  '||pi_condition||' '||lv_value||' '||pi_post_bracket;
-    	    	           	      END IF ;    
+	    	           	          END IF ;    
 	    	       	          ELSE
-	    	          	          lv_where := Chr(10)||'WHERE '||pi_pre_bracket||pi_attribute_name||'  '||pi_condition||' '''||pi_attribute_value||''''||pi_post_bracket;
+	    	          	          lv_where := Chr(10)||'WHERE '||pi_pre_bracket||pi_attribute_name||'  '||pi_condition||' '||pi_attribute_value||' '||pi_post_bracket;
     	    	          	  END IF ;    
 	        	          END IF ; 	  
 	    	          END IF ;	  
@@ -4853,7 +4869,7 @@ END get_screen_text;
     	    	      THEN	
 	        	          lv_where := Chr(10)||'WHERE '||pi_pre_bracket||pi_attribute_name||'  '||pi_condition||pi_post_bracket;
 	    	          ELSE     	
-	    	              lv_where := Chr(10)||'WHERE '||pi_pre_bracket||pi_attribute_name||'  '||pi_condition||' '''||pi_attribute_value||''''||pi_post_bracket;    	
+	    	              lv_where := Chr(10)||'WHERE '||pi_pre_bracket||pi_attribute_name||'  '||pi_condition||' '||pi_attribute_value||''||pi_post_bracket;    	
 	    	          END IF ;    
 	    	      END IF ;
 	    	  END IF ;  	
@@ -4887,6 +4903,7 @@ END get_screen_text;
                        ,po_message_tab        IN OUT NOCOPY awlrs_message_tab)
   IS
   --
+   lv_attrib_value      hig_query_type_attributes.hqta_data_value%TYPE; 
    lv_where             hig_query_types.hqt_where_clause%TYPE; 
    lv_query_parsed      boolean;
    lv_message_severity  hig_codes.hco_code%TYPE;
@@ -4911,12 +4928,22 @@ END get_screen_text;
     IF pi_operator.COUNT > 0 
       THEN
         FOR i IN 1..pi_operator.COUNT LOOP
+          --
+          BEGIN  
+             lv_attrib_value := dbms_assert.enquote_literal(pi_attribute_value(i));
+          EXCEPTION
+            when others then
+                hig.raise_ner(pi_appl               => 'HIG'
+                             ,pi_id                 => 444
+                             ,pi_supplementary_info => 'For value '||pi_attribute_value(i)); 
+          END;
+          --
           build_query(pi_inv_type           =>  pi_inv_type
                      ,pi_pre_bracket        =>  pi_pre_bracket(i)
                      ,pi_operator           =>  pi_operator(i)
                      ,pi_attribute_name     =>  pi_attribute_name(i)
                      ,pi_condition          =>  pi_condition(i)
-                     ,pi_attribute_value    =>  pi_attribute_value(i)
+                     ,pi_attribute_value    =>  lv_attrib_value
                      ,pi_post_bracket       =>  pi_post_bracket(i)
                      ,pi_ignore_case        =>  pi_ignore_case
                      ,po_where_clause       =>  lv_where
@@ -4924,19 +4951,17 @@ END get_screen_text;
                      ,po_message_cursor     =>  lv_message_cursor);  
         END LOOP;
         -- 
-        /*
         lv_query_parsed := validate_query(pi_inv_type     => pi_inv_type
                                          ,pi_where_clause => lv_where);
+                                         
 		IF NOT lv_query_parsed
 		   THEN
-		     nm_debug.debug('ERROR');
-	         hig.raise_ner(pi_appl => 'NET'
+		     hig.raise_ner(pi_appl => 'NET'
                           ,pi_id   => 121
                           ,pi_supplementary_info  => Null); 
 	    END IF;
-	    */
 	    --
-        po_where_clause     := lv_where;
+	    po_where_clause     := lv_where;
         --
         FETCH lv_message_cursor
          BULK COLLECT
@@ -4950,12 +4975,17 @@ END get_screen_text;
                                 ,po_message_tab => po_message_tab);
           --
         END LOOP;
+        --
+        
     --
     END IF;
     --
     
   END build_query;
   
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE create_qry_attributes(pi_query_id           IN     hig_query_type_attributes.hqta_hqt_id%TYPE
                                  ,pi_inv_type           IN     hig_query_type_attributes.hqta_inv_type%TYPE
                                  ,pi_pre_bracket        IN     hig_query_type_attributes.hqta_pre_bracket%TYPE
@@ -4977,7 +5007,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -5121,7 +5151,7 @@ END get_screen_text;
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -5443,13 +5473,6 @@ BEGIN
     --
     awlrs_util.check_historic_mode; 
     --  
-    --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
-      THEN
-         hig.raise_ner(pi_appl => 'HIG'
-                      ,pi_id   => 86);
-    END IF;
-    --                   
     build_query(pi_inv_type           =>  pi_inv_type
                ,pi_pre_bracket        =>  pi_pre_bracket
                ,pi_operator           =>  pi_operator
@@ -5469,7 +5492,7 @@ BEGIN
         --  
         run_query(pi_inv_type          =>  pi_inv_type
                  ,pi_where_clause      =>  lv_where
-                 ,pi_sizelimit          =>  pi_sizelimit
+                 ,pi_sizelimit         =>  pi_sizelimit
                  ,pi_result_set_only   =>  pi_result_set_only  
                  ,po_message_severity  =>  po_message_severity
                  ,po_message_cursor    =>  po_message_cursor
@@ -5511,7 +5534,7 @@ BEGIN
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -5761,7 +5784,7 @@ BEGIN
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -5805,9 +5828,9 @@ BEGIN
                                   ,pi_owner_filter       IN     hig_query_types.hqt_security%TYPE
                                   ,pi_ignore_case        IN     hig_query_types.hqt_ignore_case%TYPE
                                   ,pi_pre_bracket        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                  ,pi_operator           IN     nm3type.tab_varchar30
-                                  ,pi_attribute_name     IN     nm3type.tab_varchar30
-                                  ,pi_condition          IN     nm3type.tab_varchar30
+                                  ,pi_operator           IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_attribute_name     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_condition          IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                   ,pi_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
                                   ,pi_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                   ,po_query_id              OUT hig_query_types.hqt_id%TYPE
@@ -5829,7 +5852,7 @@ BEGIN
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -5960,7 +5983,7 @@ BEGIN
     awlrs_util.check_historic_mode;   
     --
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
         hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -6203,7 +6226,7 @@ BEGIN
     awlrs_util.check_historic_mode;   
     --
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                      ,pi_id   => 86);
@@ -6388,9 +6411,9 @@ BEGIN
                                     ,pi_old_where_clause       IN     hig_query_types.hqt_where_clause%TYPE
                                     ,pi_old_qry_attrib_id      IN     nm3type.tab_number
                                     ,pi_old_pre_bracket        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                    ,pi_old_operator           IN     nm3type.tab_varchar30
-                                    ,pi_old_attribute_name     IN     nm3type.tab_varchar30
-                                    ,pi_old_condition          IN     nm3type.tab_varchar30
+                                    ,pi_old_operator           IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_old_attribute_name     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30) 
+                                    ,pi_old_condition          IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                     ,pi_old_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
                                     ,pi_old_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                     ,pi_new_inv_type           IN     hig_query_type_attributes.hqta_inv_type%TYPE
@@ -6398,9 +6421,9 @@ BEGIN
                                     ,pi_new_owner_filter       IN     hig_query_types.hqt_security%TYPE
                                     ,pi_new_ignore_case        IN     hig_query_types.hqt_ignore_case%TYPE
                                     ,pi_new_pre_bracket        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                    ,pi_new_operator           IN     nm3type.tab_varchar30
-                                    ,pi_new_attribute_name     IN     nm3type.tab_varchar30
-                                    ,pi_new_condition          IN     nm3type.tab_varchar30
+                                    ,pi_new_operator           IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_new_attribute_name     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_new_condition          IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                     ,pi_new_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
                                     ,pi_new_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)        
                                     ,po_message_severity      OUT hig_codes.hco_code%TYPE
@@ -6422,7 +6445,7 @@ BEGIN
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -6529,7 +6552,7 @@ BEGIN
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -6628,7 +6651,7 @@ BEGIN
     awlrs_util.check_historic_mode;   
     --
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -6730,7 +6753,7 @@ BEGIN
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -6759,6 +6782,15 @@ BEGIN
       FROM hig_alert_type_recipients
      WHERE hatr_halt_id = pi_alert_id;
     --
+    /*
+    ||delete from hig_alert_recipients.
+    */
+    DELETE 
+      FROM hig_alert_recipients
+     WHERE har_hal_id in (SELECT hal_id
+                           FROM hig_alerts
+                          WHERE hal_halt_id = pi_alert_id);
+    
     /*
     ||delete from hig_alerts.
     */
@@ -6799,7 +6831,7 @@ BEGIN
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -6858,7 +6890,7 @@ BEGIN
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -6905,7 +6937,7 @@ BEGIN
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -6949,7 +6981,7 @@ BEGIN
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
@@ -7223,7 +7255,7 @@ BEGIN
     awlrs_util.check_historic_mode; 
     --  
     --Firstly we need to check the caller has the correct roles to continue--
-    IF NOT privs_check(pi_role_name  => cv_hig_admin)
+    IF NOT privs_check
       THEN
          hig.raise_ner(pi_appl => 'HIG'
                       ,pi_id   => 86);
