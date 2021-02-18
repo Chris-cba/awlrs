@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkh-arc   1.4   Feb 12 2021 10:46:10   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Feb 12 2021 10:46:10  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkh-arc   1.5   Feb 18 2021 13:42:46   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Feb 18 2021 13:42:46  $
   --       Module Name      : $Workfile:   awlrs_alerts_api.pkh  $
-  --       Date fetched Out : $Modtime:   Feb 09 2021 11:12:56  $
-  --       Version          : $Revision:   1.4  $
+  --       Date fetched Out : $Modtime:   Feb 18 2021 12:21:06  $
+  --       Version          : $Revision:   1.5  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,7 +15,7 @@ AS
   --
 
   --g_sccsid is the SCCS ID for the package
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.4  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
   --
   TYPE alert_log_id_tab   IS TABLE OF hig_alert_manager_logs_vw.haml_hal_id%TYPE INDEX BY BINARY_INTEGER;
   TYPE alert_recip_id_tab IS TABLE OF hig_alert_manager_logs_vw.haml_har_id%TYPE INDEX BY BINARY_INTEGER;
@@ -33,7 +33,7 @@ AS
   -- This function returns the current SCCS version of the package body
   FUNCTION get_body_version
   RETURN VARCHAR2;
-
+  
   --
   -----------------------------------------------------------------------------
   --
@@ -730,9 +730,9 @@ AS
                                   ,pi_owner_filter       IN     hig_query_types.hqt_security%TYPE
                                   ,pi_ignore_case        IN     hig_query_types.hqt_ignore_case%TYPE
                                   ,pi_pre_bracket        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                  ,pi_operator           IN     nm3type.tab_varchar30
-                                  ,pi_attribute_name     IN     nm3type.tab_varchar30
-                                  ,pi_condition          IN     nm3type.tab_varchar30
+                                  ,pi_operator           IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_attribute_name     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                  ,pi_condition          IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                   ,pi_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
                                   ,pi_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                   ,po_query_id              OUT hig_query_types.hqt_id%TYPE
@@ -752,9 +752,9 @@ AS
                                     ,pi_old_where_clause       IN     hig_query_types.hqt_where_clause%TYPE
                                     ,pi_old_qry_attrib_id      IN     nm3type.tab_number
                                     ,pi_old_pre_bracket        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                    ,pi_old_operator           IN     nm3type.tab_varchar30
-                                    ,pi_old_attribute_name     IN     nm3type.tab_varchar30
-                                    ,pi_old_condition          IN     nm3type.tab_varchar30
+                                    ,pi_old_operator           IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_old_attribute_name     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_old_condition          IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                     ,pi_old_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
                                     ,pi_old_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                     ,pi_new_inv_type           IN     hig_query_type_attributes.hqta_inv_type%TYPE
@@ -762,9 +762,9 @@ AS
                                     ,pi_new_owner_filter       IN     hig_query_types.hqt_security%TYPE
                                     ,pi_new_ignore_case        IN     hig_query_types.hqt_ignore_case%TYPE
                                     ,pi_new_pre_bracket        IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
-                                    ,pi_new_operator           IN     nm3type.tab_varchar30
-                                    ,pi_new_attribute_name     IN     nm3type.tab_varchar30
-                                    ,pi_new_condition          IN     nm3type.tab_varchar30
+                                    ,pi_new_operator           IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_new_attribute_name     IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
+                                    ,pi_new_condition          IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)
                                     ,pi_new_attribute_value    IN     nm3type.tab_varchar2000 DEFAULT CAST(NULL AS nm3type.tab_varchar2000)
                                     ,pi_new_post_bracket       IN     nm3type.tab_varchar30 DEFAULT CAST(NULL AS nm3type.tab_varchar30)        
                                     ,po_message_severity      OUT hig_codes.hco_code%TYPE
