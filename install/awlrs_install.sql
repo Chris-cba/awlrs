@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_install.sql-arc   1.44.1.5   Feb 01 2021 14:57:12   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_install.sql-arc   1.44.1.6   Feb 18 2021 14:02:00   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrs_install.sql  $
---       Date into PVCS   : $Date:   Feb 01 2021 14:57:12  $
---       Date fetched Out : $Modtime:   Feb 01 2021 14:56:24  $
---       Version          : $Revision:   1.44.1.5  $
+--       Date into PVCS   : $Date:   Feb 18 2021 14:02:00  $
+--       Date fetched Out : $Modtime:   Feb 18 2021 14:00:48  $
+--       Version          : $Revision:   1.44.1.6  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
@@ -114,6 +114,42 @@ Then
 End;
 /
 --
+WHENEVER SQLERROR CONTINUE
+--
+Declare
+  n  Varchar2(1);
+Begin
+  Select  Null
+  Into    n
+  From    Hig_Upgrades
+  Where   Hup_Product     =   'NET'
+  And     From_Version    =   '4.8.0.3'
+  And     Upgrade_Script  =   'log_nm_4800_fix7.sql' 
+  And     rownum       =   1;
+Exception 
+  When No_Data_Found
+Then
+  RAISE_APPLICATION_ERROR(-20000,'Please install NET 4800 Fix 7 before proceding.');  
+End;
+/
+--
+WHENEVER SQLERROR CONTINUE
+Declare
+  n  Varchar2(1);
+Begin
+  Select  Null
+  Into    n
+  From    Hig_Upgrades
+  Where   Hup_Product     =   'NET'
+  And     From_Version    =   '4.8.0.3'
+  And     Upgrade_Script  =   'log_nm_4800_fix8.sql'
+  And     rownum          =   1;
+Exception
+  When No_Data_Found
+Then
+  RAISE_APPLICATION_ERROR(-20000,'Please install NET 4800 Fix 8 before proceding.');
+End;
+/
 WHENEVER SQLERROR CONTINUE
 --
 ---------------------------------------------------------------------------------------------------
