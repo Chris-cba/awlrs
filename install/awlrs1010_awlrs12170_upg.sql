@@ -3,11 +3,11 @@
 --
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12170_upg.sql-arc   1.1   Feb 18 2021 14:02:46   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12170_upg.sql-arc   1.2   Feb 18 2021 14:34:02   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrs1010_awlrs12170_upg.sql  $
---       Date into PVCS   : $Date:   Feb 18 2021 14:02:46  $
---       Date fetched Out : $Modtime:   Feb 18 2021 14:00:22  $
---       Version          : $Revision:   1.1  $
+--       Date into PVCS   : $Date:   Feb 18 2021 14:34:02  $
+--       Date fetched Out : $Modtime:   Feb 18 2021 14:25:04  $
+--       Version          : $Revision:   1.2  $
 --
 --   Product upgrade script
 --
@@ -66,7 +66,7 @@ Then
 End;
 /
 --
-WHENEVER SQLERROR CONTINUE
+WHENEVER SQLERROR EXIT
 Declare
   n  Varchar2(1);
 Begin
@@ -84,7 +84,7 @@ Then
 End;
 /
 --
-WHENEVER SQLERROR CONTINUE
+WHENEVER SQLERROR EXIT
 Declare
   n  Varchar2(1);
 Begin
@@ -102,7 +102,7 @@ Then
 End;
 /
 --
-WHENEVER SQLERROR CONTINUE
+WHENEVER SQLERROR EXIT
 --
 ---------------------------------------------------------------------------------------------------
 --                        **************** TYPES   ****************
