@@ -1,11 +1,11 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_install.sql-arc   1.44.1.6   Feb 18 2021 14:02:00   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs_install.sql-arc   1.44.1.7   Feb 18 2021 14:32:58   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrs_install.sql  $
---       Date into PVCS   : $Date:   Feb 18 2021 14:02:00  $
---       Date fetched Out : $Modtime:   Feb 18 2021 14:00:48  $
---       Version          : $Revision:   1.44.1.6  $
+--       Date into PVCS   : $Date:   Feb 18 2021 14:32:58  $
+--       Date fetched Out : $Modtime:   Feb 18 2021 14:25:26  $
+--       Version          : $Revision:   1.44.1.7  $
 -------------------------------------------------------------------------
 --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
 -------------------------------------------------------------------------
@@ -114,7 +114,7 @@ Then
 End;
 /
 --
-WHENEVER SQLERROR CONTINUE
+WHENEVER SQLERROR EXIT
 --
 Declare
   n  Varchar2(1);
@@ -133,7 +133,7 @@ Then
 End;
 /
 --
-WHENEVER SQLERROR CONTINUE
+WHENEVER SQLERROR EXIT
 Declare
   n  Varchar2(1);
 Begin
@@ -150,7 +150,7 @@ Then
   RAISE_APPLICATION_ERROR(-20000,'Please install NET 4800 Fix 8 before proceding.');
 End;
 /
-WHENEVER SQLERROR CONTINUE
+WHENEVER SQLERROR EXIT
 --
 ---------------------------------------------------------------------------------------------------
 --                  ****************   TYPES  *******************
