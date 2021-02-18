@@ -3,11 +3,11 @@
 --
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12170_upg.sql-arc   1.0   Jan 25 2021 18:41:30   Mike.Huitson  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12170_upg.sql-arc   1.1   Feb 18 2021 14:02:46   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrs1010_awlrs12170_upg.sql  $
---       Date into PVCS   : $Date:   Jan 25 2021 18:41:30  $
---       Date fetched Out : $Modtime:   Jan 25 2021 18:37:06  $
---       Version          : $Revision:   1.0  $
+--       Date into PVCS   : $Date:   Feb 18 2021 14:02:46  $
+--       Date fetched Out : $Modtime:   Feb 18 2021 14:00:22  $
+--       Version          : $Revision:   1.1  $
 --
 --   Product upgrade script
 --
@@ -58,11 +58,47 @@ Begin
   Where   Hup_Product     =   'NET'
   And     From_Version    =   '4.8.0.3'
   And     Upgrade_Script  =   'log_nm_4800_fix6.sql'
-  And     rownum       =   1;
+  And     rownum          =   1;
 Exception
   When No_Data_Found
 Then
   RAISE_APPLICATION_ERROR(-20000,'Please install NET 4800 Fix 6 before proceding.');
+End;
+/
+--
+WHENEVER SQLERROR CONTINUE
+Declare
+  n  Varchar2(1);
+Begin
+  Select  Null
+  Into    n
+  From    Hig_Upgrades
+  Where   Hup_Product     =   'NET'
+  And     From_Version    =   '4.8.0.3'
+  And     Upgrade_Script  =   'log_nm_4800_fix7.sql'
+  And     rownum          =   1;
+Exception
+  When No_Data_Found
+Then
+  RAISE_APPLICATION_ERROR(-20000,'Please install NET 4800 Fix 7 before proceding.');
+End;
+/
+--
+WHENEVER SQLERROR CONTINUE
+Declare
+  n  Varchar2(1);
+Begin
+  Select  Null
+  Into    n
+  From    Hig_Upgrades
+  Where   Hup_Product     =   'NET'
+  And     From_Version    =   '4.8.0.3'
+  And     Upgrade_Script  =   'log_nm_4800_fix8.sql'
+  And     rownum          =   1;
+Exception
+  When No_Data_Found
+Then
+  RAISE_APPLICATION_ERROR(-20000,'Please install NET 4800 Fix 8 before proceding.');
 End;
 /
 --
