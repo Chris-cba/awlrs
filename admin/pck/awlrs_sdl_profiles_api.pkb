@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.13   Feb 17 2021 09:23:42   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.14   Mar 04 2021 13:28:42   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkb  $
-  --       Date into PVCS   : $Date:   Feb 17 2021 09:23:42  $
-  --       Date fetched Out : $Modtime:   Feb 17 2021 07:59:54  $
-  --       PVCS Version     : $Revision:   1.13  $
+  --       Date into PVCS   : $Date:   Mar 04 2021 13:28:42  $
+  --       Date fetched Out : $Modtime:   Mar 04 2021 13:24:40  $
+  --       PVCS Version     : $Revision:   1.14  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.13  $';
+  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.14  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -599,6 +599,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   IS
     --
     ln_count NUMBER;
+    lv_g_i_d VARCHAR2(1);
     --
   BEGIN
     --
@@ -619,7 +620,14 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
         DELETE sdl_datum_attribute_mapping s WHERE s.sdam_profile_id = pi_profile_id;
       END IF;
       --
-      default_datum_attribute_mapping(pi_profile_id);
+      SELECT nlt_g_i_d
+        INTO lv_g_i_d
+        FROM v_sdl_profile_nw_types
+       WHERE sp_id = pi_profile_id;
+       --
+      IF lv_g_i_d = 'G' THEN
+        default_datum_attribute_mapping(pi_profile_id);
+      END IF;
       --
     END IF;
     --
@@ -3496,6 +3504,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
            AND ((nlt.nlt_g_i_d = 'G' AND vc.group_type = nlt.nlt_gty_type)
                 OR nlt.nlt_g_i_d = 'D')
            AND nlt.nlt_id = r_dest.sdh_nlt_id
+           AND vc.column_name NOT IN ('NE_NO_START', 'NE_NO_END', 'NE_TYPE', 'NE_NT_TYPE')
            AND NOT EXISTS (SELECT 1
                              FROM sdl_attribute_mapping sam
                             WHERE sam.sam_ne_column_name = vc.column_name
@@ -4285,6 +4294,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                FROM v_nm_nw_columns vc,
                     nm_linear_types nlt
               WHERE vc.network_type = nlt.nlt_nt_type
+                AND vc.column_name NOT IN ('NE_NO_START', 'NE_NO_END', 'NE_TYPE', 'NE_NT_TYPE')
                 AND ((nlt.nlt_g_i_d = 'G' AND vc.group_type = nlt.nlt_gty_type)
                      OR nlt.nlt_g_i_d = 'D')
                 AND nlt.nlt_id = r_dest.sdh_nlt_id)
