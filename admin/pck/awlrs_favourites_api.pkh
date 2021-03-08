@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkh-arc   1.5   Jan 25 2021 18:55:20   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkh-arc   1.6   Mar 08 2021 15:40:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_favourites_api.pkh  $
-  --       Date into PVCS   : $Date:   Jan 25 2021 18:55:20  $
-  --       Date fetched Out : $Modtime:   Jan 12 2021 18:30:32  $
-  --       Version          : $Revision:   1.5  $
+  --       Date into PVCS   : $Date:   Mar 08 2021 15:40:38  $
+  --       Date fetched Out : $Modtime:   Mar 08 2021 15:11:52  $
+  --       Version          : $Revision:   1.6  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.5  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.6  $';
   --
   TYPE aff_tab IS TABLE OF awlrs_favourites_folders%ROWTYPE;
   TYPE afe_tab IS TABLE OF awlrs_favourites_entities%ROWTYPE;
@@ -83,6 +83,13 @@ AS
   PROCEDURE delete_item(pi_af_id            IN  awlrs_favourites_folders.aff_af_id%TYPE
                        ,po_message_severity OUT hig_codes.hco_code%TYPE
                        ,po_message_cursor   OUT sys_refcursor);
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_child_items(pi_af_id            IN  awlrs_favourites_folders.aff_af_id%TYPE
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor);
 
   --
   -----------------------------------------------------------------------------

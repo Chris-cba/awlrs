@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.11   Jan 25 2021 18:55:22   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_favourites_api.pkb-arc   1.12   Mar 08 2021 15:40:38   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_favourites_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 25 2021 18:55:22  $
-  --       Date fetched Out : $Modtime:   Jan 20 2021 12:29:34  $
-  --       Version          : $Revision:   1.11  $
+  --       Date into PVCS   : $Date:   Mar 08 2021 15:40:38  $
+  --       Date fetched Out : $Modtime:   Mar 08 2021 15:12:18  $
+  --       Version          : $Revision:   1.12  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.11  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_favourites_api';
   --
   c_root_folder  CONSTANT VARCHAR2(10) := '_ROOT';
@@ -707,6 +707,54 @@ AS
         awlrs_util.handle_exception(po_message_severity => po_message_severity
                                    ,po_cursor           => po_message_cursor);
   END delete_item;
+
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_child_items(pi_af_id            IN  awlrs_favourites_folders.aff_af_id%TYPE
+                              ,po_message_severity OUT hig_codes.hco_code%TYPE
+                              ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    lr_item  fav_item_rec;
+    --
+  BEGIN
+    /*
+    ||Get the details of the folder or entity.
+    */
+    lr_item := get_item(pi_af_id => pi_af_id);
+    /*
+    ||If the item is a folder delete its children otherwise
+    ||the items is an entity (cannot have children) so do nothing.
+    */
+    IF lr_item.folder_or_entity = 'FOLDER'
+     THEN
+        /*
+        ||Delete any child folders.
+        */
+        DELETE
+          FROM awlrs_favourites_folders
+         WHERE aff_parent_af_id = pi_af_id
+             ;
+        /*
+        ||Delete any child entities.
+        */
+        DELETE
+          FROM awlrs_favourites_entities
+         WHERE afe_parent_af_id = pi_af_id
+             ;
+        --
+    END IF;
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END delete_child_items;
 
   --
   -----------------------------------------------------------------------------
