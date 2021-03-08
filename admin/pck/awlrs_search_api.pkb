@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.51   Nov 09 2020 17:43:30   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_search_api.pkb-arc   1.52   Mar 08 2021 13:47:34   Mike.Huitson  $
   --       Module Name      : $Workfile:   awlrs_search_api.pkb  $
-  --       Date into PVCS   : $Date:   Nov 09 2020 17:43:30  $
-  --       Date fetched Out : $Modtime:   Nov 09 2020 17:41:18  $
-  --       Version          : $Revision:   1.51  $
+  --       Date into PVCS   : $Date:   Mar 08 2021 13:47:34  $
+  --       Date fetched Out : $Modtime:   Mar 08 2021 13:37:34  $
+  --       Version          : $Revision:   1.52  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.51  $';
+  g_body_sccsid  CONSTANT VARCHAR2 (2000) := '\$Revision:   1.52  $';
   --
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_search_api';
   --
@@ -3597,6 +3597,15 @@ AS
            ||CHR(10)||'                     ,iit_primary_key "primary_key"'
            ||CHR(10)||'                     ,iit_descr "description"'
            ||CHR(10)||'                     ,nau_name "admin_unit"'
+                    ||CASE
+                        WHEN pi_nit_rec.nit_x_sect_allow_flag = 'Y'
+                         THEN CHR(10)||'                     ,iit_x_sect "xsp"'
+                      END
+                    ||CHR(10)||'                     ,iit_start_date "start_date"'
+                    ||CASE
+                        WHEN pi_include_enddated = 'Y'
+                         THEN CHR(10)||'                     ,iit_end_date "end_date"'
+                      END
                     ||lv_select_list
            ||CHR(10)||'                     ,CASE'||lv_match_cases
            ||CHR(10)||'                      END "match_quality"'
@@ -3620,6 +3629,15 @@ AS
            ||CHR(10)||'      ,"primary_key"'
            ||CHR(10)||'      ,"description"'
            ||CHR(10)||'      ,"admin_unit"'
+                    ||CASE
+                        WHEN pi_nit_rec.nit_x_sect_allow_flag = 'Y'
+                         THEN CHR(10)||'      ,"xsp"'
+                      END
+                    ||CHR(10)||'      ,"start_date"'
+                    ||CASE
+                        WHEN pi_include_enddated = 'Y'
+                         THEN CHR(10)||'      ,"end_date"'
+                      END
                             ||lv_alias_list
            ||CHR(10)||'  FROM assets'
         ;
