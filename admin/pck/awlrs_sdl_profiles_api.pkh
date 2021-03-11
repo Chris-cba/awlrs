@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkh-arc   1.4   Feb 17 2021 09:23:28   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkh-arc   1.5   Mar 11 2021 20:35:12   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkh  $
-  --       Date into PVCS   : $Date:   Feb 17 2021 09:23:28  $
-  --       Date fetched Out : $Modtime:   Feb 17 2021 07:58:54  $
-  --       PVCS Version     : $Revision:   1.4  $
+  --       Date into PVCS   : $Date:   Mar 11 2021 20:35:12  $
+  --       Date fetched Out : $Modtime:   Mar 10 2021 07:46:42  $
+  --       PVCS Version     : $Revision:   1.5  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-    g_sccsid CONSTANT VARCHAR2(200) := '$Revision:   1.4  $';
+    g_sccsid CONSTANT VARCHAR2(200) := '$Revision:   1.5  $';
   --
   -- This function returns the current version of the package header
   FUNCTION get_version RETURN VARCHAR2;
@@ -373,6 +373,13 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE get_datum_network_type(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                  ,po_datum_nt_type    OUT VARCHAR2
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor);
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_edit_prof_attrib_mapping(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
                                         ,pi_dest_header_id   IN  sdl_destination_header.sdh_id%TYPE
                                         ,po_message_severity OUT hig_codes.hco_code%TYPE
@@ -410,6 +417,7 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_profiles_api IS
                                            ,pi_old_attr_map     IN  CLOB
                                            ,pi_new_attr_map     IN  CLOB
                                            ,pi_del_attr_map_ids IN  awlrs_sdl_util.sam_id_tab
+                                           ,pi_del_datum_col_names IN  awlrs_sdl_util.sdam_column_name_tab
                                            ,po_message_severity OUT hig_codes.hco_code%TYPE
                                            ,po_message_cursor   OUT sys_refcursor);
   --
