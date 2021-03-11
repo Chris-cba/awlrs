@@ -2,11 +2,11 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_util IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_util.pkh-arc   1.2   Jan 20 2021 12:00:32   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_util.pkh-arc   1.3   Mar 11 2021 20:27:24   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_util.pkh  $
-  --       Date into PVCS   : $Date:   Jan 20 2021 12:00:32  $
-  --       Date fetched Out : $Modtime:   Jan 18 2021 17:53:10  $
-  --       PVCS Version     : $Revision:   1.2  $
+  --       Date into PVCS   : $Date:   Mar 11 2021 20:27:24  $
+  --       Date fetched Out : $Modtime:   Mar 11 2021 20:06:44  $
+  --       PVCS Version     : $Revision:   1.3  $
   --
   --   Author : Vikas Mhetre
   --
@@ -14,7 +14,7 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_util IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_sccsid CONSTANT VARCHAR2(200) := '$Revision:   1.2  $';
+  g_sccsid CONSTANT VARCHAR2(200) := '$Revision:   1.3  $';
   --
   TYPE swd_id_tab IS TABLE OF sdl_wip_datums.swd_id%TYPE
                   INDEX BY BINARY_INTEGER;
@@ -35,6 +35,9 @@ CREATE OR REPLACE PACKAGE awlrs_sdl_util IS
                              INDEX BY BINARY_INTEGER;
   --
   TYPE spfc_col_name_tab IS TABLE OF sdl_profile_file_columns.spfc_col_name%TYPE
+                             INDEX BY BINARY_INTEGER;
+  --
+  TYPE sdam_column_name_tab IS TABLE OF sdl_datum_attribute_mapping.sdam_column_name%TYPE
                              INDEX BY BINARY_INTEGER;
   --
   TYPE file_attribute_tab IS TABLE OF VARCHAR2( 200 );
