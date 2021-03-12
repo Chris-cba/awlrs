@@ -3,11 +3,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.14   Mar 04 2021 13:28:42   Vikas.Mhetre  $
+  --       pvcsid           : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_sdl_profiles_api.pkb-arc   1.15   Mar 12 2021 15:48:32   Vikas.Mhetre  $
   --       Module Name      : $Workfile:   awlrs_sdl_profiles_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 04 2021 13:28:42  $
-  --       Date fetched Out : $Modtime:   Mar 04 2021 13:24:40  $
-  --       PVCS Version     : $Revision:   1.14  $
+  --       Date into PVCS   : $Date:   Mar 12 2021 15:48:32  $
+  --       Date fetched Out : $Modtime:   Mar 12 2021 11:31:50  $
+  --       PVCS Version     : $Revision:   1.15  $
   --
   --   Author : Vikas Mhetre
   --
@@ -15,7 +15,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   -- Copyright (c) 2020 Bentley Systems Incorporated. All rights reserved.
   ----------------------------------------------------------------------------
   --
-  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.14  $';
+  g_body_sccsid CONSTANT VARCHAR2(2000) := '$Revision:   1.15  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -364,185 +364,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE default_datum_attribute_mapping (pi_profile_id IN sdl_attribute_adjustment_rules.saar_sp_id%TYPE)
-  IS
-    --
-    CURSOR c_remaining_columns(p_profile_id NUMBER) IS
-    SELECT network_type, column_name, mandatory, field_type, format_mask, domain, lov_query,
-           CASE WHEN domain IS NOT NULL
-                THEN (SELECT hco_code FROM hig_codes WHERE hco_domain = domain AND ROWNUM = 1)
-                WHEN field_type = 'NUMBER'
-                THEN TO_CHAR(1)
-                WHEN field_type = 'VARCHAR2'
-                THEN 'Z'
-                WHEN field_type = 'DATE'
-                THEN TO_CHAR(SYSDATE, format_mask)
-                ELSE 'X'
-            END default_value
-      FROM v_nm_nw_columns
-     WHERE network_type = (SELECT datum_nt_type FROM v_sdl_profile_nw_types WHERE sp_id = p_profile_id)
-       AND column_name NOT IN ('NE_ADMIN_UNIT', 'NE_SUB_CLASS', 'NE_START_DATE', 'NE_OWNER', 'NE_NAME_1', 'NE_NAME_2',
-                               'NE_GROUP', 'NE_PREFIX', 'NE_NSG_REF', 'NE_VERSION_NO', 'NE_DESCR')
-       AND (mandatory = 'Y' OR domain IS NOT NULL)
-     ORDER BY column_name;
-    --
-    lv_datum_type    sdl_datum_attribute_mapping.sdam_nw_type%TYPE;
-    lv_column_name   sdl_datum_attribute_mapping.sdam_column_name%TYPE;
-    lv_default_value sdl_datum_attribute_mapping.sdam_default_value%TYPE;
-    lv_formula       sdl_datum_attribute_mapping.sdam_formula%TYPE;
-    ln_max_seq       sdl_datum_attribute_mapping.sdam_seq_no%TYPE;
-    lv_exists        VARCHAR2(1) := 'N';
-    --
-    FUNCTION get_domain_default_value (pi_datum_type    sdl_datum_attribute_mapping.sdam_nw_type%TYPE,
-                                       pi_column_name   sdl_datum_attribute_mapping.sdam_column_name%TYPE)
-    RETURN VARCHAR2
-    IS
-      lv_default_value sdl_datum_attribute_mapping.sdam_default_value%TYPE;
-    BEGIN
-      SELECT (SELECT hco_code
-                FROM hig_codes
-               WHERE hco_domain = domain
-                 AND ROWNUM = 1)
-        INTO lv_default_value
-        FROM v_nm_nw_columns
-       WHERE network_type = pi_datum_type
-         AND column_name = pi_column_name
-         AND domain IS NOT NULL;
 
-      RETURN lv_default_value;
-    EXCEPTION
-      WHEN NO_DATA_FOUND THEN
-        RETURN NULL;
-    END get_domain_default_value;
-    --
-  BEGIN
-    --
-    awlrs_sdl_util.validate_user_role;
-    --
-    SELECT datum_nt_type
-      INTO lv_datum_type
-      FROM v_sdl_profile_nw_types
-     WHERE sp_id = pi_profile_id;
-    -- NE_ADMIN_UNIT
-    lv_column_name := 'NE_ADMIN_UNIT';
-    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
-
-    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
-    VALUES (pi_profile_id, lv_datum_type, 1, lv_column_name, NVL(lv_default_value,1), NULL);
-    -- NE_SUB_CLASS
-    lv_column_name := 'NE_SUB_CLASS';
-    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
-
-    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
-    VALUES (pi_profile_id, lv_datum_type, 2, lv_column_name, NVL(lv_default_value,'S'), NULL);
-    -- NE_START_DATE
-    lv_column_name := 'NE_START_DATE';
-    lv_formula := '';
-    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
-    IF lv_default_value IS NULL THEN
-      lv_formula := 'l.ne_start_date';
-    END IF;
-
-    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
-    VALUES (pi_profile_id, lv_datum_type, 3, lv_column_name, lv_default_value, lv_formula);
-    -- NE_OWNER
-    lv_column_name := 'NE_OWNER';
-    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
-
-    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
-    VALUES (pi_profile_id, lv_datum_type, 4, lv_column_name, NVL(lv_default_value,'L'), NULL);
-    -- NE_NAME_1
-    lv_column_name := 'NE_NAME_1';
-    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
-
-    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
-    VALUES (pi_profile_id, lv_datum_type, 5, lv_column_name, NVL(lv_default_value,'AS-BUILT'), NULL);
-    -- NE_NAME_2
-    lv_column_name := 'NE_NAME_2';
-    lv_formula := '';
-    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
-    --
-    BEGIN
-      SELECT 'Y'
-        INTO lv_exists
-        FROM sdl_attribute_mapping
-       WHERE sam_sp_id = pi_profile_id
-         AND sam_ne_column_name = 'NE_OWNER';
-    EXCEPTION
-      WHEN OTHERS THEN
-        lv_exists := 'N';
-    END;
-    --
-    IF lv_default_value IS NULL AND lv_exists = 'Y' THEN
-      lv_formula := 'l.ne_owner';
-    ELSE
-      lv_formula := '';
-      IF lv_default_value IS NULL THEN
-        lv_default_value := '00';
-      END IF;
-    END IF;
-    --
-    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
-    VALUES (pi_profile_id, lv_datum_type, 6, lv_column_name, lv_default_value, lv_formula);
-    -- NE_GROUP
-    lv_column_name := 'NE_GROUP';
-    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
-
-    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
-    VALUES (pi_profile_id, lv_datum_type, 7, lv_column_name, NVL(lv_default_value,'O'), NULL);
-    -- NE_PREFIX
-    lv_column_name := 'NE_PREFIX';
-    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
-
-    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
-    VALUES (pi_profile_id, lv_datum_type, 8, lv_column_name, NVL(lv_default_value, 'NULL'), NULL);
-    -- NE_NSG_REF
-    lv_column_name := 'NE_NSG_REF';
-    lv_formula := '';
-    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
-    IF lv_default_value IS NULL THEN
-      lv_formula := 'sdo_lrs.geom_segment_start_measure(d.geom)';
-    END IF;
-
-    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
-    VALUES (pi_profile_id, lv_datum_type, 9, lv_column_name, lv_default_value, lv_formula);
-    -- NE_VERSION_NO
-    lv_column_name := 'NE_VERSION_NO';
-    lv_formula := '';
-    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
-    IF lv_default_value IS NULL THEN
-      lv_formula := 'sdo_lrs.geom_segment_end_measure(d.geom)';
-    END IF;
-
-    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
-    VALUES (pi_profile_id, lv_datum_type, 10, lv_column_name, lv_default_value, lv_formula);
-    -- NE_DESCR
-    lv_column_name := 'NE_DESCR';
-    lv_formula := '';
-    lv_default_value := get_domain_default_value(lv_datum_type, lv_column_name);
-    IF lv_default_value IS NULL THEN
-      lv_formula := '''RD - ''||l.ne_unique||'' - ''||to_char(round(sdo_lrs.geom_segment_start_measure(d.geom),2))||'' TO ''||to_char(round(sdo_lrs.geom_segment_end_measure(d.geom),2))';
-    END IF;
-
-    INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
-    VALUES (pi_profile_id, lv_datum_type, 11, lv_column_name, lv_default_value, lv_formula);
-    --
-    -- Other Mandatory Datum Columns
-    SELECT MAX(sdam_seq_no)
-      INTO ln_max_seq
-      FROM sdl_datum_attribute_mapping
-     WHERE sdam_profile_id = pi_profile_id;
-    -- See if there are any mandatory datum columns that are still missing
-    FOR cur IN c_remaining_columns(pi_profile_id)
-    LOOP
-      INSERT INTO sdl_datum_attribute_mapping (sdam_profile_id, sdam_nw_type, sdam_seq_no, sdam_column_name, sdam_default_value, sdam_formula)
-      VALUES (pi_profile_id ,cur.network_type , TO_NUMBER(ln_max_seq + 1), cur.column_name,cur.default_value, NULL);
-    END LOOP;
-    --
-  END default_datum_attribute_mapping;
-  --
-  -----------------------------------------------------------------------------
-  --
   PROCEDURE generate_profile_views(pi_profile_id IN sdl_profiles.sp_id%TYPE)
   IS
     --
@@ -597,40 +419,13 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                   ,po_message_severity OUT hig_codes.hco_code%TYPE
                                   ,po_message_cursor   OUT sys_refcursor)
   IS
-    --
-    ln_count NUMBER;
-    lv_g_i_d VARCHAR2(1);
+
     --
   BEGIN
     --
     awlrs_sdl_util.validate_user_role;
     --
-    IF get_profile_file_type(pi_profile_id) != 'CSV'  THEN -- shapefile, file geodatabase
-      --
-      -- default_datum_attribute_mapping to be replaced with a new UI to insert datum attribute mappings
-      -- in Manage Profiles screen in future release
-      -- Administrator should configure datum mappings along with profile attribute mappings through SDL application
-      -- This has been added as a temporary (kind of hardcoded) logic to insert default values for datum mappings
-      SELECT COUNT(1)
-        INTO ln_count
-        FROM sdl_datum_attribute_mapping s
-       WHERE s.sdam_profile_id = pi_profile_id;
-      --
-      IF ln_count > 0 THEN -- If datum mappings already exists re-create it
-        DELETE sdl_datum_attribute_mapping s WHERE s.sdam_profile_id = pi_profile_id;
-      END IF;
-      --
-      SELECT nlt_g_i_d
-        INTO lv_g_i_d
-        FROM v_sdl_profile_nw_types
-       WHERE sp_id = pi_profile_id;
-       --
-      IF lv_g_i_d = 'G' THEN
-        default_datum_attribute_mapping(pi_profile_id);
-      END IF;
-      --
-    END IF;
-    --
+
     generate_profile_views(pi_profile_id);
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -2857,7 +2652,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
           ,sdh.sdh_sp_id profile_id
           ,sdh.sdh_type sdh_type
           ,sdh.sdh_destination_type destination_type
-          ,dest.network_meaning destination_type_descr
+          ,UPPER(dest.network_meaning) destination_type_descr
           ,sdh.sdh_nlt_id nlt_id
           ,sdh.sdh_source_container source_container
           ,sdh.sdh_destination_location is_destination_location
@@ -2871,17 +2666,20 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                     'NETWORK'
                 ELSE 'OTHER'
            END network_or_asset
+          ,dest.nlt_g_i_d g_i_d
      FROM sdl_destination_header sdh
           ,nm_load_destinations nld
           ,(SELECT nlt_id
                   ,network_type
                   ,network_descr
                   ,network_meaning
+                  ,nlt_g_i_d
               FROM (
                   SELECT NULL nlt_id
                         ,nit.nit_inv_type network_type
                         ,nit.nit_descr network_descr
                         ,nit.nit_inv_type ||' - '|| nit.nit_descr network_meaning
+                        ,NULL nlt_g_i_d
                     FROM nm_inv_types nit
                         ,nm_load_destinations nld
                    WHERE nld.nld_table_name = NVL(nit.nit_view_name, nit.nit_table_name)
@@ -2890,6 +2688,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                           ,nlt.nlt_nt_type network_type
                           ,nlt.nlt_descr network_descr
                           ,nlt.nlt_nt_type ||' - '|| nlt.nlt_descr network_meaning
+                          ,nlt.nlt_g_i_d
                        FROM nm_linear_types nlt)
                      ) dest
      WHERE sdh.sdh_nld_id = nld.nld_id(+)
@@ -3398,6 +3197,54 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   --
   -----------------------------------------------------------------------------
   --
+  FUNCTION get_datum_network_type(pi_profile_id IN sdl_profiles.sp_id%TYPE)
+    RETURN sdl_profiles.sp_import_file_type%TYPE
+  IS
+  --
+    CURSOR c_datum_type
+        IS
+    SELECT UPPER(vnt.datum_nt_type ||' - ' || nlt.nlt_descr) network_desc
+      FROM v_sdl_profile_nw_types vnt
+          ,nm_linear_types nlt
+     WHERE vnt.datum_nt_type = nlt.nlt_nt_type
+       AND vnt.sp_id = pi_profile_id;
+    --
+    lv_datum_nt_type VARCHAR2(200);
+    --
+  BEGIN
+    --
+    OPEN  c_datum_type;
+    FETCH c_datum_type INTO lv_datum_nt_type;
+    CLOSE c_datum_type;
+    --
+    RETURN lv_datum_nt_type;
+    --
+  END get_datum_network_type;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE get_datum_network_type(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
+                                  ,po_datum_nt_type    OUT VARCHAR2
+                                  ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                  ,po_message_cursor   OUT sys_refcursor)
+    --
+  IS
+  BEGIN
+    --
+    po_datum_nt_type := get_datum_network_type(pi_profile_id);
+    --
+    awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                         ,po_cursor           => po_message_cursor);
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END get_datum_network_type;
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE get_edit_prof_attrib_mapping(pi_profile_id       IN  sdl_profiles.sp_id%TYPE
                                         ,pi_dest_header_id   IN  sdl_destination_header.sdh_id%TYPE
                                         ,po_message_severity OUT hig_codes.hco_code%TYPE
@@ -3445,13 +3292,29 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     IF ln_exists > 0 THEN
       --
       OPEN po_cursor FOR
+    SELECT sam_id
+          ,prof_id
+          ,col_id
+          ,src_col
+          ,dest_col
+          ,tab_col
+          ,dflt_val
+          ,attr_form
+          ,combined_attr_form
+          ,dest_id
+          ,dest_typ
+          ,dest_loc
+      FROM (
       SELECT sam.sam_id sam_id
             ,sam.sam_sp_id prof_id
             ,sam.sam_col_id col_id
             ,sam.sam_file_attribute_name src_col
             ,sam.sam_view_column_name dest_col
             ,sam.sam_ne_column_name tab_col
-            ,sam.sam_default_value dflt_val
+            ,CASE WHEN vc.domain IS NOT NULL
+                  THEN REGEXP_REPLACE (sam.sam_default_value, '(^''+)|(''+$)')
+                  ELSE sam.sam_default_value
+              END dflt_val
             ,sam.sam_attribute_formula attr_form
             ,CASE WHEN sam.sam_default_value IS NOT NULL
                   THEN 'NVL('||sam.sam_view_column_name||','||sam.sam_default_value||')'
@@ -3465,13 +3328,67 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
               END dest_loc
         FROM sdl_attribute_mapping sam
             ,sdl_destination_header sdh
+            ,v_nm_nw_columns vc
        WHERE sam.sam_sp_id = sdh.sdh_sp_id
          AND sam.sam_sdh_id = sdh.sdh_id
+         AND vc.network_type (+) = sdh.sdh_destination_type
+         AND vc.column_name (+) = sam.sam_ne_column_name
          AND sam.sam_sp_id = pi_profile_id
-         AND sdh.sdh_destination_type IN (SELECT sdh_destination_type
-                                            FROM sdl_destination_header
-                                           WHERE sdh_id = pi_dest_header_id)
-       ORDER BY sdh.sdh_destination_location, sam.sam_col_id;
+         AND ( sdh_id = pi_dest_header_id
+              OR sam.sam_sdh_id IN (SELECT sdh_id
+                                FROM sdl_destination_header
+                               WHERE sdh_sp_id = sam.sam_sp_id
+                                 AND sdh_id != pi_dest_header_id
+                                 AND sdh_destination_type IN (SELECT sdh_destination_type
+                                                                FROM sdl_destination_header
+                                                               WHERE sdh_id = pi_dest_header_id)))
+       UNION ALL
+      SELECT 0 sam_id
+            ,sdam_profile_id prof_id
+            ,sdam_seq_no col_id
+            ,NULL src_col
+            ,destination_column dest_col
+            ,sdam_column_name tab_col
+            ,CASE WHEN domain IS NOT NULL
+                  THEN REGEXP_REPLACE (sdam_default_value, '(^''+)|(''+$)')
+                  ELSE sdam_default_value
+              END dflt_val
+            ,sdam_formula attr_form
+            ,CASE WHEN sdam_default_value IS NOT NULL
+                  THEN 'NVL('||sdam_column_name||','||sdam_default_value||')'
+                  ELSE sdam_formula
+             END combined_attr_form
+             ,0 dest_id
+             ,sdam_nw_type dest_typ
+            ,'DATUM' dest_loc
+       FROM (SELECT sdam.sdam_profile_id
+                   ,sdam.sdam_nw_type
+                   ,sdam.sdam_seq_no
+                   ,CASE WHEN vc.column_prompt IS NULL
+                         THEN SUBSTR(vc.column_name, 4)
+                         ELSE SUBSTR(UPPER(REPLACE(vc.column_prompt,' ','_')),1,30)
+                    END destination_column
+                   ,sdam.sdam_column_name
+                   ,sdam.sdam_default_value
+                   ,sdam.sdam_formula
+                   ,vc.mandatory
+                   ,vc.domain
+               FROM sdl_datum_attribute_mapping sdam
+                   ,v_nm_nw_columns vc
+              WHERE sdam.sdam_nw_type = vc.network_type
+                AND sdam.sdam_column_name = vc.column_name
+                AND EXISTS (SELECT 1
+                              FROM sdl_destination_header
+                             WHERE sdh_sp_id = pi_profile_id
+                               AND sdh_id = pi_dest_header_id
+                               AND sdh_type = 'N'
+                               AND sdh_destination_type IN ( SELECT profile_nt_type
+                                                               FROM v_sdl_profile_nw_types
+                                                              WHERE sp_nlt_id = sdh_nlt_id
+                                                                AND nlt_g_i_d = 'G'
+                                                                AND sp_id = sdh_sp_id)))
+       WHERE sdam_profile_id = pi_profile_id)
+    ORDER BY DECODE(dest_loc, 'DESTINATION TYPE', 1, 'DATUM', 2, 3), sam_id, col_id;
       --
     ELSE
       --
@@ -3482,35 +3399,83 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
       IF r_dest.sdh_nlt_id IS NOT NULL THEN
         -- shapefile/file geodatabase file type - route OR datum based profile
         --
-          OPEN po_cursor FOR
-        SELECT NULL sam_id
-              ,pi_profile_id prof_id
-              ,ROWNUM col_id
-              ,NULL src_col
-              ,CASE WHEN vc.column_prompt IS NULL
-                    THEN SUBSTR(vc.column_name, 4)
-                    ELSE SUBSTR(UPPER(REPLACE(vc.column_prompt,' ','_')),1,30)
-               END dest_col
-              ,vc.column_name tab_col
-              ,NULL dflt_val
-              ,NULL attr_form
-              ,NULL combined_attr_form
-              ,pi_dest_header_id dest_id
-              ,r_dest.sdh_destination_type dest_typ
-              ,'DESTINATION TYPE' dest_loc
-          FROM v_nm_nw_columns vc,
-               nm_linear_types nlt
-         WHERE vc.network_type = nlt.nlt_nt_type
-           AND ((nlt.nlt_g_i_d = 'G' AND vc.group_type = nlt.nlt_gty_type)
-                OR nlt.nlt_g_i_d = 'D')
-           AND nlt.nlt_id = r_dest.sdh_nlt_id
-           AND vc.column_name NOT IN ('NE_NO_START', 'NE_NO_END', 'NE_TYPE', 'NE_NT_TYPE')
-           AND NOT EXISTS (SELECT 1
-                             FROM sdl_attribute_mapping sam
-                            WHERE sam.sam_ne_column_name = vc.column_name
-                              AND sam.sam_sp_id = pi_profile_id
-                              AND sam.sam_sdh_id = pi_dest_header_id)
-        ORDER BY vc.rn;
+        OPEN po_cursor FOR
+      SELECT sam_id
+            ,prof_id
+            ,col_id
+            ,src_col
+            ,dest_col
+            ,tab_col
+            ,dflt_val
+            ,attr_form
+            ,combined_attr_form
+            ,dest_id
+            ,dest_typ
+            ,dest_loc
+        FROM (
+          SELECT NULL sam_id
+                ,pi_profile_id prof_id
+                ,ROWNUM col_id
+                ,NULL src_col
+                ,CASE WHEN vc.column_prompt IS NULL
+                      THEN SUBSTR(vc.column_name, 4)
+                      ELSE SUBSTR(UPPER(REPLACE(vc.column_prompt,' ','_')),1,30)
+                  END dest_col
+                ,vc.column_name tab_col
+                ,NULL dflt_val
+                ,NULL attr_form
+                ,NULL combined_attr_form
+                ,pi_dest_header_id dest_id
+                ,r_dest.sdh_destination_type dest_typ
+                ,'DESTINATION TYPE' dest_loc
+            FROM v_nm_nw_columns vc
+                ,nm_linear_types nlt
+           WHERE vc.network_type = nlt.nlt_nt_type
+             AND ((nlt.nlt_g_i_d = 'G' AND vc.group_type = nlt.nlt_gty_type)
+                  OR nlt.nlt_g_i_d = 'D')
+             AND nlt.nlt_id = r_dest.sdh_nlt_id
+             AND vc.column_name NOT IN ('NE_NO_START', 'NE_NO_END', 'NE_TYPE', 'NE_NT_TYPE', 'NE_ID')
+             AND NOT EXISTS (SELECT 1
+                               FROM sdl_attribute_mapping sam
+                              WHERE sam.sam_ne_column_name = vc.column_name
+                                AND sam.sam_sp_id = pi_profile_id
+                                AND sam.sam_sdh_id = pi_dest_header_id)
+          UNION ALL
+          SELECT *
+            FROM (
+             SELECT NULL sam_id
+                   ,pi_profile_id prof_id
+                   ,ROWNUM col_id
+                   ,NULL src_col
+                   ,CASE WHEN column_prompt IS NULL
+                         THEN SUBSTR(column_name, 4)
+                         ELSE SUBSTR(UPPER(REPLACE(column_prompt,' ','_')),1,30)
+                     END dest_col
+                   ,column_name tab_col
+                   ,CASE WHEN domain IS NOT NULL
+                         THEN (SELECT hco_code FROM hig_codes WHERE hco_domain = domain AND ROWNUM = 1)
+                         WHEN mandatory = 'Y' AND field_type = 'NUMBER'
+                         THEN TO_CHAR(1)
+                         WHEN mandatory = 'Y' AND field_type = 'VARCHAR2'
+                         THEN '''REQ'''
+                         WHEN mandatory = 'Y' AND field_type = 'DATE'
+                         THEN TO_CHAR(SYSDATE, format_mask)
+                         ELSE NULL
+                     END dflt_val
+                   ,NULL attr_form
+                   ,NULL combined_attr_form
+                   ,NULL dest_id
+                   ,network_type dest_typ
+                   ,'DATUM' dest_loc
+               FROM v_nm_nw_columns
+              WHERE network_type = (SELECT datum_nt_type
+			                          FROM v_sdl_profile_nw_types
+									      WHERE nlt_g_i_d = 'G'
+									     AND sp_id = pi_profile_id)
+                AND column_name NOT IN ('NE_NO_START', 'NE_NO_END', 'NE_TYPE', 'NE_NT_TYPE', 'NE_ID')
+             ORDER BY seq_no)
+           )
+        ORDER BY dest_typ, col_id;
         --
       ELSE
         -- CSV file type - asset and/or destination location
@@ -3525,15 +3490,15 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
               ,ct.default_value dflt_val
               ,NULL attr_form
               ,CASE WHEN ct.default_value IS NOT NULL
-                  THEN 'NVL('||ct.destination_column||','||ct.default_value||')'
-                  ELSE NULL
-             END combined_attr_form
+                    THEN 'NVL('||ct.destination_column||','||ct.default_value||')'
+                    ELSE NULL
+                END combined_attr_form
               ,pi_dest_header_id dest_id
               ,r_dest.sdh_destination_type dest_typ
               ,CASE WHEN ct.column_of = 'LOCATION'
-                  THEN 'LOCATION'
-                  ELSE 'DESTINATION TYPE'
-              END dest_loc
+                    THEN 'LOCATION'
+                    ELSE 'DESTINATION TYPE'
+                END dest_loc
          FROM (SELECT column_name destination_column
                      ,column_name table_column
                      ,'ASSET' column_of
@@ -3585,42 +3550,90 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   BEGIN
     --
     OPEN po_cursor FOR
-    SELECT sam.sam_id sam_id
-          ,sam.sam_sp_id prof_id
-          ,sam.sam_col_id col_id
-          ,sam.sam_file_attribute_name src_col
-          ,sam.sam_view_column_name dest_col
-          ,sam.sam_ne_column_name tab_col
-          ,sam.sam_default_value dflt_val
-          ,sam.sam_attribute_formula attr_form
-          ,CASE WHEN sam.sam_default_value IS NOT NULL
-                THEN 'NVL('||sam.sam_view_column_name||','||sam.sam_default_value||')'
-                ELSE sam.sam_attribute_formula
-           END combined_attr_form
-          ,sam.sam_sdh_id dest_id
-          ,sdh.sdh_destination_type dest_typ
-          ,CASE WHEN sdh.sdh_destination_location = 'Y'
-                THEN 'LOCATION'
-                ELSE 'DESTINATION TYPE'
-            END dest_loc
-      FROM sdl_attribute_mapping sam
-          ,sdl_destination_header sdh
-     WHERE sam.sam_sp_id = sdh.sdh_sp_id
-       AND sam.sam_sdh_id = sdh.sdh_id
-       AND sam.sam_sp_id = pi_profile_id
-       AND (pi_dest_header_id IS NULL 
-           OR
-           (sam.sam_sdh_id IN (SELECT sdh_id
-                                FROM sdl_destination_header
-                               WHERE sdh_id = pi_dest_header_id)
-            OR sam.sam_sdh_id IN (SELECT sdh_id
+    SELECT sam_id
+          ,prof_id
+          ,col_id
+          ,src_col
+          ,dest_col
+          ,tab_col
+          ,dflt_val
+          ,attr_form
+          ,combined_attr_form
+          ,dest_id
+          ,dest_typ
+          ,dest_loc
+      FROM (
+       SELECT sam.sam_id sam_id
+             ,sam.sam_sp_id prof_id
+             ,sam.sam_col_id col_id
+             ,sam.sam_file_attribute_name src_col
+             ,sam.sam_view_column_name dest_col
+             ,sam.sam_ne_column_name tab_col
+             ,sam.sam_default_value dflt_val
+             ,sam.sam_attribute_formula attr_form
+             ,CASE WHEN sam.sam_default_value IS NOT NULL
+                  -- THEN 'NVL('||sam.sam_view_column_name||','''||REGEXP_REPLACE(sam.sam_default_value, '(^''+)|(''+$)')||''')'
+                   THEN 'NVL('||sam.sam_view_column_name||','||sam.sam_default_value||')'
+                   ELSE sam.sam_attribute_formula
+               END combined_attr_form
+             ,sam.sam_sdh_id dest_id
+             ,sdh.sdh_destination_type dest_typ
+             ,CASE WHEN sdh.sdh_destination_location = 'Y'
+                   THEN 'LOCATION'
+                   ELSE 'DESTINATION TYPE'
+               END dest_loc
+         FROM sdl_attribute_mapping sam
+             ,sdl_destination_header sdh
+        WHERE sam.sam_sp_id = sdh.sdh_sp_id
+          AND sam.sam_sdh_id = sdh.sdh_id
+          AND sam.sam_sp_id = pi_profile_id
+          AND (pi_dest_header_id IS NULL
+               OR
+              (sam.sam_sdh_id IN (SELECT sdh_id
                                     FROM sdl_destination_header
-                                   WHERE sdh_sp_id = sam.sam_sp_id
-                                     AND sdh_id != pi_dest_header_id
-                                     AND sdh_destination_type IN (SELECT sdh_destination_type
-                                                                    FROM sdl_destination_header
-                                                                   WHERE sdh_id = pi_dest_header_id))))
-     ORDER BY sdh.sdh_destination_location, sam.sam_col_id;
+                                   WHERE sdh_id = pi_dest_header_id)
+               OR sam.sam_sdh_id IN (SELECT sdh_id
+                                       FROM sdl_destination_header
+                                      WHERE sdh_sp_id = sam.sam_sp_id
+                                        AND sdh_id != pi_dest_header_id
+                                        AND sdh_destination_type IN (SELECT sdh_destination_type
+                                                                       FROM sdl_destination_header
+                                                                      WHERE sdh_id = pi_dest_header_id))))
+       UNION ALL
+       SELECT 0 sam_id
+             ,sdam.sdam_profile_id prof_id
+             ,sdam.sdam_seq_no col_id
+             ,NULL src_col
+             ,CASE WHEN vc.column_prompt IS NULL
+                   THEN SUBSTR(vc.column_name, 4)
+                   ELSE SUBSTR(UPPER(REPLACE(vc.column_prompt,' ','_')),1,30)
+               END dest_col
+             ,sdam.sdam_column_name tab_col
+             ,sdam.sdam_default_value dflt_val
+             ,sdam.sdam_formula attr_form
+             ,CASE WHEN sdam.sdam_default_value IS NOT NULL
+                   THEN 'NVL('||sdam.sdam_column_name||','||sdam.sdam_default_value||')'
+                   ELSE sdam.sdam_formula
+               END combined_attr_form
+             ,0 dest_id
+             ,sdam.sdam_nw_type dest_typ
+             ,'DATUM' dest_loc
+         FROM sdl_datum_attribute_mapping sdam
+             ,v_nm_nw_columns vc
+        WHERE sdam.sdam_nw_type = vc.network_type
+          AND sdam.sdam_column_name = vc.column_name
+          AND EXISTS (SELECT 1
+                        FROM sdl_destination_header
+                       WHERE sdh_sp_id = pi_profile_id
+                         AND sdh_id = pi_dest_header_id
+                         AND sdh_type = 'N'
+                         AND sdh_destination_type IN (SELECT profile_nt_type
+                                                        FROM v_sdl_profile_nw_types
+                                                       WHERE sp_nlt_id = sdh_nlt_id
+                                                         AND nlt_g_i_d = 'G'
+                                                         AND sp_id = sdh_sp_id))
+          AND sdam.sdam_profile_id = pi_profile_id)
+      ORDER BY DECODE(dest_loc, 'DESTINATION TYPE', 1, 'DATUM', 2, 3), sam_id, col_id;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -3652,53 +3665,89 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     lv_order_by         nm3type.max_varchar2;
     lv_filter           nm3type.max_varchar2;
     --
-    lv_driving_sql  nm3type.max_varchar2 := 'SELECT sam_id sam_id
-                                                   ,sam_sp_id prof_id
-                                                   ,sam_col_id col_id
-                                                   ,sam_file_attribute_name src_col
-                                                   ,sam_view_column_name dest_col
-                                                   ,sam_ne_column_name tab_col
-                                                   ,sam_default_value dflt_val
-                                                   ,sam_attribute_formula attr_form
-                                                   ,combined_attr_form
-                                                   ,sam_sdh_id dest_id
-                                                   ,sdh_destination_type dest_typ
-                                                   ,dest_loc dest_loc
+    lv_driving_sql  nm3type.max_varchar2 := 'SELECT sam_id
+                                                  ,prof_id
+                                                  ,col_id
+                                                  ,src_col
+                                                  ,dest_col
+                                                  ,tab_col
+                                                  ,dflt_val
+                                                  ,attr_form
+                                                  ,combined_attr_form
+                                                  ,dest_id
+                                                  ,dest_typ
+                                                  ,dest_loc
                                               FROM (
-                                             SELECT sam.sam_id
-                                                   ,sam.sam_sp_id
-                                                   ,sam.sam_col_id
-                                                   ,sam.sam_file_attribute_name
-                                                   ,sam.sam_view_column_name
-                                                   ,sam.sam_ne_column_name
-                                                   ,sam.sam_default_value
-                                                   ,sam.sam_attribute_formula
-                                                   ,CASE WHEN sam.sam_default_value IS NOT NULL
-                                                         THEN ''NVL(''||sam.sam_view_column_name||'',''||sam.sam_default_value||'')''
-                                                         ELSE sam.sam_attribute_formula
+                                            SELECT sam.sam_id sam_id
+                                                  ,sam.sam_sp_id prof_id
+                                                  ,sam.sam_col_id col_id
+                                                  ,sam.sam_file_attribute_name src_col
+                                                  ,sam.sam_view_column_name dest_col
+                                                  ,sam.sam_ne_column_name tab_col
+                                                  ,sam.sam_default_value dflt_val
+                                                  ,sam.sam_attribute_formula attr_form
+                                                  ,CASE WHEN sam.sam_default_value IS NOT NULL
+                                                        THEN ''NVL(''||sam.sam_view_column_name||'',''||sam.sam_default_value||'')''
+                                                        ELSE sam.sam_attribute_formula
                                                     END combined_attr_form
-                                                   ,sam.sam_sdh_id
-                                                   ,sdh.sdh_destination_type
-                                                   ,CASE WHEN sdh.sdh_destination_location = ''Y''
-                                                         THEN ''LOCATION''
-                                                         ELSE ''DESTINATION TYPE''
-                                                     END dest_loc
-                                               FROM sdl_attribute_mapping sam
-                                                   ,sdl_destination_header sdh
-                                              WHERE sam.sam_sp_id = sdh.sdh_sp_id
-                                                AND sam.sam_sdh_id = sdh.sdh_id
-                                                AND sam.sam_sp_id = :pi_profile_id
-                                                AND (sam.sam_sdh_id IN (SELECT sdh_id
-                                                                          FROM sdl_destination_header
-                                                                         WHERE sdh_id = :pi_dest_header_id)
-                                                     OR sam.sam_sdh_id IN (SELECT sdh_id
-                                                                             FROM sdl_destination_header
-                                                                            WHERE sdh_sp_id = sam.sam_sp_id
-                                                                              AND sdh_id != :pi_dest_header_id
-                                                                              AND sdh_destination_type IN (SELECT sdh_destination_type
-                                                                                                             FROM sdl_destination_header
-                                                                                                            WHERE sdh_id = :pi_dest_header_id))))
-                                             WHERE 1 = 1';
+                                                  ,sam.sam_sdh_id dest_id
+                                                  ,sdh.sdh_destination_type dest_typ
+                                                  ,CASE WHEN sdh.sdh_destination_location = ''Y''
+                                                        THEN ''LOCATION''
+                                                        ELSE ''DESTINATION TYPE''
+                                                    END dest_loc
+                                             FROM sdl_attribute_mapping sam
+                                                 ,sdl_destination_header sdh
+                                            WHERE sam.sam_sp_id = sdh.sdh_sp_id
+                                              AND sam.sam_sdh_id = sdh.sdh_id
+                                              AND sam.sam_sp_id = :pi_profile_id
+                                              AND (:pi_dest_header_id IS NULL
+                                                   OR
+                                                  (sam.sam_sdh_id IN (SELECT sdh_id
+                                                                        FROM sdl_destination_header
+                                                                       WHERE sdh_id = :pi_dest_header_id)
+                                                   OR sam.sam_sdh_id IN (SELECT sdh_id
+                                                                           FROM sdl_destination_header
+                                                                          WHERE sdh_sp_id = sam.sam_sp_id
+                                                                            AND sdh_id != :pi_dest_header_id
+                                                                            AND sdh_destination_type IN (SELECT sdh_destination_type
+                                                                                                           FROM sdl_destination_header
+                                                                                                          WHERE sdh_id = :pi_dest_header_id))))
+                                            UNION ALL
+                                            SELECT 0 sam_id
+                                                  ,sdam.sdam_profile_id prof_id
+                                                  ,sdam.sdam_seq_no col_id
+                                                  ,NULL src_col
+                                                  ,CASE WHEN vc.column_prompt IS NULL
+                                                        THEN SUBSTR(vc.column_name, 4)
+                                                        ELSE SUBSTR(UPPER(REPLACE(vc.column_prompt,'' '',''_'')),1,30)
+                                                    END dest_col
+                                                  ,sdam.sdam_column_name tab_col
+                                                  ,sdam.sdam_default_value dflt_val
+                                                  ,sdam.sdam_formula attr_form
+                                                  ,CASE WHEN sdam.sdam_default_value IS NOT NULL
+                                                        THEN ''NVL(''||sdam.sdam_column_name||'',''||sdam.sdam_default_value||'')''
+                                                        ELSE sdam.sdam_formula
+                                                    END combined_attr_form
+                                                  ,0 dest_id
+                                                  ,sdam.sdam_nw_type dest_typ
+                                                  ,''DATUM'' dest_loc
+                                              FROM sdl_datum_attribute_mapping sdam
+                                                  ,v_nm_nw_columns vc
+                                             WHERE sdam.sdam_nw_type = vc.network_type
+                                               AND sdam.sdam_column_name = vc.column_name
+                                               AND EXISTS (SELECT 1
+                                                             FROM sdl_destination_header
+                                                            WHERE sdh_sp_id = :pi_profile_id
+                                                              AND sdh_id = :pi_dest_header_id
+                                                              AND sdh_type = ''N''
+                                                              AND sdh_destination_type IN ( SELECT profile_nt_type
+                                                                                              FROM v_sdl_profile_nw_types
+                                                                                             WHERE sp_nlt_id = sdh_nlt_id
+                                                                                               AND nlt_g_i_d = ''G''
+                                                                                               AND sp_id = sdh_sp_id))
+                                                AND sdam.sdam_profile_id = :pi_profile_id)
+		                                             WHERE 1 = 1';
     --
     lv_cursor_sql  nm3type.max_varchar2 := 'SELECT sam_id'
                                               ||' ,prof_id'
@@ -3782,7 +3831,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
     lv_cursor_sql := lv_cursor_sql
                      ||CHR(10)||lv_filter
-                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,'dest_loc, col_id')||') a)';
+                     ||CHR(10)||' ORDER BY '||NVL(lv_order_by,' DECODE(dest_loc, ''DESTINATION TYPE'', 1, ''DATUM'', 2, 3), sam_id, col_id')||') a)';
+
     --
     lv_cursor_sql := lv_cursor_sql||CHR(10)||' OFFSET '||pi_skip_n_rows||' ROWS ';
     --
@@ -3795,7 +3845,11 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     USING pi_profile_id
          ,pi_dest_header_id
          ,pi_dest_header_id
-         ,pi_dest_header_id;
+         ,pi_dest_header_id
+         ,pi_dest_header_id
+         ,pi_profile_id
+         ,pi_dest_header_id
+         ,pi_profile_id;
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -3818,7 +3872,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                                     ,pi_attrib_formula     IN  sdl_attribute_mapping.sam_attribute_formula%TYPE)
   IS
     --
-    ln_max_col_id sdl_attribute_mapping.sam_col_id%TYPE;
+    ln_max_col_id    sdl_attribute_mapping.sam_col_id%TYPE;
+    ln_exists        NUMBER(1);
+    lv_default_value sdl_attribute_mapping.sam_default_value%TYPE;
     --
   BEGIN
     --
@@ -3831,6 +3887,27 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
       INTO ln_max_col_id
       FROM sdl_attribute_mapping
      WHERE sam_sp_id = pi_profile_id;
+    --
+    lv_default_value := pi_default_value;
+    --
+    BEGIN
+      SELECT 1
+        INTO ln_exists
+        FROM sdl_destination_header sdh
+            ,v_nm_nw_columns vc
+       WHERE vc.network_type = sdh.sdh_destination_type
+         AND vc.column_name = pi_table_column
+         AND sdh.sdh_sp_id = pi_profile_id
+         AND sdh_id = pi_dest_header_id
+         AND vc.domain IS NOT NULL;
+       --
+       IF pi_default_value IS NOT NULL THEN
+         lv_default_value := '''' || pi_default_value || '''';
+       END IF;
+    EXCEPTION
+      WHEN OTHERS THEN
+        NULL;
+    END;
     --
     INSERT
       INTO sdl_attribute_mapping
@@ -3848,7 +3925,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
            ,pi_source_column
            ,pi_destination_column
            ,pi_table_column
-           ,pi_default_value
+           ,lv_default_value
            ,pi_attrib_formula);
     --
     update_profile_views(pi_profile_id);
@@ -3874,6 +3951,8 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
     lr_db_rec   sdl_attribute_mapping%ROWTYPE;
     lv_upd      VARCHAR2(1) := 'N';
+    ln_exists        NUMBER(1);
+    lv_default_value sdl_attribute_mapping.sam_default_value%TYPE;
     --
     PROCEDURE get_db_rec(pi_profile_id     IN sdl_profiles.sp_id%TYPE
                         ,pi_dest_header_id IN sdl_destination_header.sdh_id%TYPE
@@ -3915,6 +3994,28 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
     --
     get_db_rec(pi_profile_id => pi_profile_id, pi_dest_header_id => pi_dest_header_id, pi_sam_id => pi_sam_id);
     --
+    BEGIN
+      SELECT 1
+        INTO ln_exists
+        FROM sdl_destination_header sdh
+            ,v_nm_nw_columns vc
+       WHERE vc.network_type = sdh.sdh_destination_type
+         AND vc.column_name = pi_new_table_column
+         AND sdh.sdh_sp_id = pi_profile_id
+         AND sdh_id = pi_dest_header_id
+         AND vc.domain IS NOT NULL;
+        --
+    EXCEPTION
+      WHEN OTHERS THEN
+        NULL;
+    END;
+    --
+    IF ln_exists = 1 AND pi_old_default_value IS NOT NULL THEN
+       lv_default_value := '''' || pi_old_default_value || '''';
+    ELSE
+       lv_default_value := pi_old_default_value;
+    END IF;
+    --
     /*
     ||Compare old with DB
     */
@@ -3930,9 +4031,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
       OR (lr_db_rec.sam_ne_column_name IS NULL AND pi_old_table_column IS NOT NULL)
       OR (lr_db_rec.sam_ne_column_name IS NOT NULL AND pi_old_table_column IS NULL)
       -- Default Value
-      OR (lr_db_rec.sam_default_value != pi_old_default_value)
-      OR (lr_db_rec.sam_default_value IS NULL AND pi_old_default_value IS NOT NULL)
-      OR (lr_db_rec.sam_default_value IS NOT NULL AND pi_old_default_value IS NULL)
+      OR (lr_db_rec.sam_default_value != lv_default_value)
+      OR (lr_db_rec.sam_default_value IS NULL AND lv_default_value IS NOT NULL)
+      OR (lr_db_rec.sam_default_value IS NOT NULL AND lv_default_value IS NULL)
       -- Attribute Formula
       OR (lr_db_rec.sam_attribute_formula != pi_old_attribute_formula)
       OR (lr_db_rec.sam_attribute_formula IS NULL AND pi_old_attribute_formula IS NOT NULL)
@@ -3966,9 +4067,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
         lv_upd := 'Y';
       END IF;
       --
-      IF pi_old_default_value != pi_new_default_value
-        OR (pi_old_default_value IS NULL AND pi_new_default_value IS NOT NULL)
-        OR (pi_old_default_value IS NOT NULL AND pi_new_default_value IS NULL)
+      IF lv_default_value != pi_new_default_value
+        OR (lv_default_value IS NULL AND pi_new_default_value IS NOT NULL)
+        OR (lv_default_value IS NOT NULL AND pi_new_default_value IS NULL)
       THEN
         lv_upd := 'Y';
       END IF;
@@ -3984,12 +4085,18 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
       THEN
         NULL; -- Only updated records should be sent from UI
       ELSE
-        --
+      --
+      IF ln_exists = 1 AND pi_new_default_value IS NOT NULL THEN
+        lv_default_value := '''' || pi_new_default_value || '''';
+      ELSE
+        lv_default_value := pi_new_default_value;
+      END IF;
+      --
         UPDATE sdl_attribute_mapping
            SET sam_file_attribute_name = pi_new_source_column
               ,sam_view_column_name = pi_new_destination_column
               ,sam_ne_column_name = pi_new_table_column
-              ,sam_default_value = pi_new_default_value
+              ,sam_default_value = lv_default_value
               ,sam_attribute_formula = pi_new_attribute_formula
          WHERE sam_sp_id = pi_profile_id
            AND sam_sdh_id = pi_dest_header_id
@@ -4044,11 +4151,250 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
   --
   -----------------------------------------------------------------------------
   --
+  PROCEDURE create_datum_attribute_mapping(pi_profile_id       IN  sdl_datum_attribute_mapping.sdam_profile_id%TYPE
+                                          ,pi_column_name      IN  sdl_datum_attribute_mapping.sdam_column_name%TYPE
+                                          ,pi_default_value    IN  sdl_datum_attribute_mapping.sdam_default_value%TYPE
+                                          ,pi_attrib_formula   IN  sdl_datum_attribute_mapping.sdam_formula%TYPE)
+  IS
+    --
+    ln_col_seq_no    sdl_datum_attribute_mapping.sdam_seq_no%TYPE;
+    lv_datum_nw_type VARCHAR2(200);
+    ln_exists        NUMBER(1);
+    lv_default_value sdl_datum_attribute_mapping.sdam_default_value%TYPE;
+    --
+  BEGIN
+    --
+    -- if pi_default_value and pi_attrib_formula are null raise error
+    --
+    IF active_batch_exists(pi_profile_id) THEN
+      RAISE_APPLICATION_ERROR (-20033,
+                               'Insert not allowed. Profile ' || get_profile_name(pi_profile_id) || ' already has an active submission exists.');
+    END IF;
+    --
+    IF pi_default_value IS NULL AND pi_attrib_formula IS NULL THEN
+      RAISE_APPLICATION_ERROR (-20034,
+                               'You must enter EITHER a Default Value OR a Formula for a datum column mapping.');
+    END IF;
+    --
+    SELECT NVL(MAX(sdam_seq_no), 0)
+      INTO ln_col_seq_no
+      FROM sdl_datum_attribute_mapping
+     WHERE sdam_profile_id = pi_profile_id;
+    --
+    lv_datum_nw_type := get_datum_network_type(pi_profile_id => pi_profile_id);
+    lv_datum_nw_type := SUBSTR(lv_datum_nw_type,1,INSTR(lv_datum_nw_type,' -')-1);
+    --
+    lv_default_value := pi_default_value;
+    --
+    BEGIN
+      SELECT 1
+        INTO ln_exists
+        FROM v_nm_nw_columns vc
+       WHERE vc.network_type = lv_datum_nw_type
+         AND vc.column_name = pi_column_name
+         AND vc.domain IS NOT NULL;
+       --
+       IF pi_default_value IS NOT NULL THEN
+         lv_default_value := '''' || pi_default_value || '''';
+       END IF;
+    EXCEPTION
+      WHEN OTHERS THEN
+        NULL;
+    END;
+    --
+    INSERT
+      INTO sdl_datum_attribute_mapping
+              (sdam_profile_id
+              ,sdam_nw_type
+              ,sdam_seq_no
+              ,sdam_column_name
+              ,sdam_default_value
+              ,sdam_formula)
+    VALUES (pi_profile_id
+           ,lv_datum_nw_type
+           ,ln_col_seq_no + 1
+           ,pi_column_name
+           ,lv_default_value
+           ,pi_attrib_formula);
+    --
+    update_profile_views(pi_profile_id);
+    --
+  END create_datum_attribute_mapping;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE update_datum_attribute_mapping(pi_profile_id         IN  sdl_profiles.sp_id%TYPE
+                                          ,pi_column_name        IN  sdl_datum_attribute_mapping.sdam_column_name%TYPE
+                                          ,pi_old_default_value  IN  sdl_datum_attribute_mapping.sdam_default_value%TYPE
+                                          ,pi_new_default_value  IN  sdl_datum_attribute_mapping.sdam_default_value%TYPE
+                                          ,pi_old_attrib_formula IN  sdl_datum_attribute_mapping.sdam_formula%TYPE
+                                          ,pi_new_attrib_formula IN  sdl_datum_attribute_mapping.sdam_formula%TYPE)
+  IS
+    --
+    lr_db_rec        sdl_datum_attribute_mapping%ROWTYPE;
+    lv_upd           VARCHAR2(1) := 'N';
+    lv_datum_nw_type VARCHAR2(200);
+    ln_exists        NUMBER(1);
+    lv_default_value sdl_datum_attribute_mapping.sdam_default_value%TYPE;
+    --
+    PROCEDURE get_db_rec(pi_profile_id   IN sdl_profiles.sp_id%TYPE
+                        ,pi_column_name  IN sdl_datum_attribute_mapping.sdam_column_name%TYPE)
+      IS
+    BEGIN
+      --
+      SELECT *
+        INTO lr_db_rec
+        FROM sdl_datum_attribute_mapping
+       WHERE sdam_profile_id = pi_profile_id
+         AND sdam_column_name = pi_column_name
+         FOR UPDATE NOWAIT;
+      --
+    EXCEPTION
+      WHEN no_data_found THEN
+        --
+        hig.raise_ner(pi_appl               => 'HIG'
+                     ,pi_id                 => 85
+                     ,pi_supplementary_info => 'Datum attribute mapping does not exist');
+      --
+    END get_db_rec;
+    --
+  BEGIN
+    --
+    IF active_batch_exists(pi_profile_id) THEN
+      RAISE_APPLICATION_ERROR (-20028,
+                               'Update not allowed. Datum attributes are already mapped to an active submission of the Profile '|| get_profile_name(pi_profile_id));
+    END IF;
+    --
+    IF pi_new_default_value IS NULL AND pi_new_attrib_formula IS NULL THEN
+      RAISE_APPLICATION_ERROR (-20034,
+                               'You must enter EITHER a Default Value OR a Formula for a datum column mapping.');
+    END IF;
+    --
+    get_db_rec(pi_profile_id => pi_profile_id, pi_column_name => pi_column_name);
+    --
+    lv_datum_nw_type := get_datum_network_type(pi_profile_id => pi_profile_id);
+    lv_datum_nw_type := SUBSTR(lv_datum_nw_type,1,INSTR(lv_datum_nw_type,' -')-1);
+    --
+    BEGIN
+      SELECT 1
+        INTO ln_exists
+        FROM v_nm_nw_columns vc
+       WHERE vc.network_type = lv_datum_nw_type
+         AND vc.column_name = pi_column_name
+         AND vc.domain IS NOT NULL;
+      --
+    EXCEPTION
+      WHEN OTHERS THEN
+        NULL;
+    END;
+    --
+    IF ln_exists = 1 AND pi_old_default_value IS NOT NULL THEN
+      lv_default_value := '''' || pi_old_default_value || '''';
+    ELSE
+      lv_default_value := pi_old_default_value;
+    END IF;
+    --
+    /*
+    ||Compare old with DB
+    */
+    --
+    IF lr_db_rec.sdam_default_value != lv_default_value
+      OR (lr_db_rec.sdam_default_value IS NULL AND lv_default_value IS NOT NULL)
+      OR (lr_db_rec.sdam_default_value IS NOT NULL AND lv_default_value IS NULL)
+      -- Attribute Formula
+      OR (lr_db_rec.sdam_formula != pi_old_attrib_formula)
+      OR (lr_db_rec.sdam_formula IS NULL AND pi_old_attrib_formula IS NOT NULL)
+      OR (lr_db_rec.sdam_formula IS NOT NULL AND pi_old_attrib_formula IS NULL)
+    THEN
+      --Updated by another user
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 24);
+    ELSE
+      /*
+      ||Compare old with New
+      */
+      IF lv_default_value != pi_new_default_value
+        OR (lv_default_value IS NULL AND pi_new_default_value IS NOT NULL)
+        OR (lv_default_value IS NOT NULL AND pi_new_default_value IS NULL)
+      THEN
+        lv_upd := 'Y';
+      END IF;
+      --
+      IF pi_old_attrib_formula != pi_new_attrib_formula
+        OR (pi_old_attrib_formula IS NULL AND pi_new_attrib_formula IS NOT NULL)
+        OR (pi_old_attrib_formula IS NOT NULL AND pi_new_attrib_formula IS NULL)
+      THEN
+        lv_upd := 'Y';
+      END IF;
+      --
+      IF lv_upd = 'N'
+      THEN
+        --There are no changes to be applied
+        hig.raise_ner(pi_appl => 'AWLRS'
+                     ,pi_id   => 25);
+      ELSE
+        --
+        IF ln_exists = 1 AND pi_new_default_value IS NOT NULL THEN
+          lv_default_value := '''' || pi_new_default_value || '''';
+        ELSE
+          lv_default_value := pi_new_default_value;
+        END IF;
+        --
+        UPDATE sdl_datum_attribute_mapping
+           SET sdam_default_value = lv_default_value
+              ,sdam_formula = pi_new_attrib_formula
+         WHERE sdam_profile_id = pi_profile_id
+           AND sdam_column_name = pi_column_name;
+        --
+      END IF;
+    END IF;
+    --
+    update_profile_views(pi_profile_id);
+    --
+  END update_datum_attribute_mapping;
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE delete_datum_attribute_mapping(pi_profile_id        IN  sdl_profiles.sp_id%TYPE
+                                          ,pi_column_name       IN  sdl_datum_attribute_mapping.sdam_column_name%TYPE)
+  IS
+    --
+    CURSOR c_dam IS
+    SELECT ROWNUM col_id, sdam_seq_no, sdam_column_name, sdam_nw_type
+      FROM sdl_datum_attribute_mapping
+     WHERE sdam_profile_id = pi_profile_id
+     ORDER BY sdam_seq_no;
+    --
+  BEGIN
+    --
+    IF active_batch_exists(pi_profile_id) THEN
+      RAISE_APPLICATION_ERROR (-20029,
+                               'Delete not allowed. Datum attributes are already mapped to an active submission of the Profile '|| get_profile_name(pi_profile_id));
+    END IF;
+    --
+    DELETE sdl_datum_attribute_mapping
+     WHERE sdam_profile_id = pi_profile_id
+     AND sdam_column_name = pi_column_name;
+    --
+    -- Re-sequence the col_ids for the profile datum attribute mapping
+    FOR r_dam IN c_dam
+    LOOP
+      UPDATE sdl_datum_attribute_mapping
+         SET sdam_seq_no  = r_dam.col_id
+       WHERE sdam_profile_id = pi_profile_id
+         AND sdam_column_name = r_dam.sdam_column_name;
+    END LOOP;
+    --
+  END delete_datum_attribute_mapping;
+  --
+  -----------------------------------------------------------------------------
+  --
   PROCEDURE edit_profile_attribute_mapping (pi_profile_id       IN  sdl_profiles.sp_id%TYPE
                                            ,pi_dest_header_id   IN  sdl_destination_header.sdh_id%TYPE
                                            ,pi_old_attr_map     IN  CLOB
                                            ,pi_new_attr_map     IN  CLOB
                                            ,pi_del_attr_map_ids IN  awlrs_sdl_util.sam_id_tab
+                                           ,pi_del_datum_col_names IN  awlrs_sdl_util.sdam_column_name_tab
                                            ,po_message_severity OUT hig_codes.hco_code%TYPE
                                            ,po_message_cursor   OUT sys_refcursor)
   IS
@@ -4115,13 +4461,14 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
              ,n.dest_loc_id new_dest_loc_id
          FROM old_rec o FULL OUTER JOIN
               new_rec n
-           ON NVL(o.sam_id, -1) = NVL(n.sam_id, -1)
+           ON ((NVL(o.sam_id, -1) = NVL(n.sam_id, -1)  AND o.dest_loc = n.dest_loc AND n.dest_loc != 'DATUM')
+           OR (o.table_column = n.table_column AND o.dest_loc = n.dest_loc AND n.dest_loc = 'DATUM'))
         ORDER BY t_action, TO_NUMBER(old_sam_id);
     --
     ln_dest_header_id sdl_destination_header.sdh_id%TYPE;
     --
   BEGIN
-    --
+    -- delete destination type/location attribute mappings
     FOR i IN 1..pi_del_attr_map_ids.COUNT
     LOOP
       --
@@ -4130,49 +4477,73 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                               ,pi_sam_id => pi_del_attr_map_ids(i));
       --
     END LOOP;
+    -- delete datum attribute mappings
+    FOR i IN 1..pi_del_datum_col_names.COUNT
+    LOOP
+      --
+      delete_datum_attribute_mapping(pi_profile_id => pi_profile_id
+                                    ,pi_column_name => pi_del_datum_col_names(i));
+      --
+    END LOOP;
     --
     FOR r_attr_map IN c_attr_map
     LOOP
       --
       IF r_attr_map.t_action = 'U' THEN
         --
-        update_attribute_mapping(pi_profile_id => pi_profile_id
-                                ,pi_dest_header_id => r_attr_map.new_dest_loc_id
-                                ,pi_sam_id => r_attr_map.new_sam_id
-                                ,pi_old_source_column => r_attr_map.old_source_column
-                                ,pi_new_source_column => r_attr_map.new_source_column
-                                ,pi_old_destination_column => r_attr_map.old_destination_column
-                                ,pi_new_destination_column => r_attr_map.new_destination_column
-                                ,pi_old_table_column => r_attr_map.old_table_column
-                                ,pi_new_table_column => r_attr_map.new_table_column
-                                ,pi_old_default_value => r_attr_map.old_default_value
-                                ,pi_new_default_value => r_attr_map.new_default_value
-                                ,pi_old_attribute_formula => r_attr_map.old_attribute_formula
-                                ,pi_new_attribute_formula => r_attr_map.new_attribute_formula);
+        IF r_attr_map.new_dest_loc = 'DATUM' THEN
+          update_datum_attribute_mapping(pi_profile_id => pi_profile_id
+                                        ,pi_column_name => r_attr_map.new_table_column
+                                        ,pi_old_default_value => r_attr_map.old_default_value
+                                        ,pi_new_default_value => r_attr_map.new_default_value
+                                        ,pi_old_attrib_formula => r_attr_map.old_attribute_formula
+                                        ,pi_new_attrib_formula => r_attr_map.new_attribute_formula);
+        ELSE
+          update_attribute_mapping(pi_profile_id => pi_profile_id
+                                  ,pi_dest_header_id => r_attr_map.new_dest_loc_id
+                                  ,pi_sam_id => r_attr_map.new_sam_id
+                                  ,pi_old_source_column => r_attr_map.old_source_column
+                                  ,pi_new_source_column => r_attr_map.new_source_column
+                                  ,pi_old_destination_column => r_attr_map.old_destination_column
+                                  ,pi_new_destination_column => r_attr_map.new_destination_column
+                                  ,pi_old_table_column => r_attr_map.old_table_column
+                                  ,pi_new_table_column => r_attr_map.new_table_column
+                                  ,pi_old_default_value => r_attr_map.old_default_value
+                                  ,pi_new_default_value => r_attr_map.new_default_value
+                                  ,pi_old_attribute_formula => r_attr_map.old_attribute_formula
+                                  ,pi_new_attribute_formula => r_attr_map.new_attribute_formula);
+         END IF;
         --
       END IF;
       --
       IF r_attr_map.t_action = 'I' THEN
         --
-        IF r_attr_map.new_dest_loc = 'LOCATION' THEN
-          SELECT sdh_id
-            INTO ln_dest_header_id
-            FROM sdl_destination_header
-           WHERE sdh_sp_id = pi_profile_id
-             AND sdh_destination_type IN (SELECT sdh_destination_type
-                                            FROM sdl_destination_header
-                                           WHERE sdh_id = pi_dest_header_id)
-             AND sdh_destination_location = 'Y';
+        IF r_attr_map.new_dest_loc = 'DATUM' THEN
+          create_datum_attribute_mapping(pi_profile_id => pi_profile_id
+                                        ,pi_column_name => r_attr_map.new_table_column
+                                        ,pi_default_value => r_attr_map.new_default_value
+                                        ,pi_attrib_formula => r_attr_map.new_attribute_formula);
         ELSE
-          ln_dest_header_id := pi_dest_header_id;
+          IF r_attr_map.new_dest_loc = 'LOCATION' THEN
+            SELECT sdh_id
+              INTO ln_dest_header_id
+              FROM sdl_destination_header
+             WHERE sdh_sp_id = pi_profile_id
+               AND sdh_destination_type IN (SELECT sdh_destination_type
+                                              FROM sdl_destination_header
+                                             WHERE sdh_id = pi_dest_header_id)
+               AND sdh_destination_location = 'Y';
+          ELSE
+            ln_dest_header_id := pi_dest_header_id;
+          END IF;
+          create_attribute_mapping(pi_profile_id => pi_profile_id
+                                  ,pi_dest_header_id => ln_dest_header_id
+                                  ,pi_source_column => r_attr_map.new_source_column
+                                  ,pi_destination_column => r_attr_map.new_destination_column
+                                  ,pi_table_column => r_attr_map.new_table_column
+                                  ,pi_default_value => r_attr_map.new_default_value
+                                  ,pi_attrib_formula => r_attr_map.new_attribute_formula);
         END IF;
-        create_attribute_mapping(pi_profile_id => pi_profile_id
-                                ,pi_dest_header_id => ln_dest_header_id
-                                ,pi_source_column => r_attr_map.new_source_column
-                                ,pi_destination_column => r_attr_map.new_destination_column
-                                ,pi_table_column => r_attr_map.new_table_column
-                                ,pi_default_value => r_attr_map.new_default_value
-                                ,pi_attrib_formula => r_attr_map.new_attribute_formula);
         --
       END IF;
       --
@@ -4202,6 +4573,9 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
       FROM dual
      UNION ALL
     SELECT 'LOCATION' column_of
+      FROM dual
+     UNION ALL
+    SELECT 'DATUM' column_of
       FROM dual
     ORDER BY column_of;
     --
@@ -4283,6 +4657,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
         SELECT destination_column
               ,network_column
               ,column_of
+              ,domain
           FROM
             (SELECT CASE WHEN vc.column_prompt IS NULL
                          THEN SUBSTR(vc.column_name, 4)
@@ -4291,14 +4666,41 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
                    ,vc.column_name network_column
                    ,'DESTINATION TYPE' column_of
                    ,vc.rn column_id
+                   ,vc.domain domain
                FROM v_nm_nw_columns vc,
                     nm_linear_types nlt
               WHERE vc.network_type = nlt.nlt_nt_type
-                AND vc.column_name NOT IN ('NE_NO_START', 'NE_NO_END', 'NE_TYPE', 'NE_NT_TYPE')
+                AND vc.column_name NOT IN ('NE_NO_START', 'NE_NO_END', 'NE_TYPE', 'NE_NT_TYPE', 'NE_ID')
                 AND ((nlt.nlt_g_i_d = 'G' AND vc.group_type = nlt.nlt_gty_type)
                      OR nlt.nlt_g_i_d = 'D')
                 AND nlt.nlt_id = r_dest.sdh_nlt_id)
-         ORDER BY column_id;
+        UNION ALL
+        SELECT destination_column
+              ,network_column
+              ,column_of
+              ,domain
+          FROM
+            (SELECT CASE WHEN vc.column_prompt IS NULL
+                         THEN SUBSTR(vc.column_name, 4)
+                         ELSE SUBSTR(UPPER(REPLACE(vc.column_prompt,' ','_')),1,30)
+                     END destination_column
+                   ,vc.column_name network_column
+                   ,'DATUM' column_of
+                   ,vc.rn column_id
+                   ,vc.domain domain
+               FROM v_nm_nw_columns vc,
+                    nm_linear_types nlt
+              WHERE vc.network_type = nlt.nlt_nt_type
+                AND vc.column_name NOT IN ('NE_NO_START', 'NE_NO_END', 'NE_TYPE', 'NE_NT_TYPE', 'NE_ID')
+                AND nlt.nlt_g_i_d = 'D'
+                AND nlt.nlt_id = (SELECT nlt_id
+                                    FROM nm_linear_types nlt
+                                   WHERE nlt.nlt_nt_type IN (SELECT datum_nt_type
+                                                               FROM v_sdl_profile_nw_types
+                                                              WHERE sp_nlt_id = r_dest.sdh_nlt_id
+                                                                AND nlt_g_i_d = 'G'
+                                                                AND sp_id = pi_profile_id))
+         ORDER BY column_id);
         --
       ELSE
         -- CSV file type - asset and/or destination location
@@ -4307,6 +4709,7 @@ CREATE OR REPLACE PACKAGE BODY awlrs_sdl_profiles_api IS
         SELECT destination_column
               ,network_column
               ,column_of
+              ,NULL domain
           FROM
             (SELECT column_name destination_column
                    ,column_name network_column
