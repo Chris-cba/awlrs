@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.35   Jan 25 2021 18:14:38   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.36   Mar 12 2021 13:44:30   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   Jan 25 2021 18:14:38  $
-  --       Date fetched Out : $Modtime:   Jan 25 2021 18:11:14  $
-  --       Version          : $Revision:   1.35  $
+  --       Date into PVCS   : $Date:   Mar 12 2021 13:44:30  $
+  --       Date fetched Out : $Modtime:   Mar 11 2021 16:22:28  $
+  --       Version          : $Revision:   1.36  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.35  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.36  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -95,7 +95,7 @@ AS
                   ,nm.nm_begin_mp member_start_mp
                   ,nm.nm_end_mp member_end_mp
                   ,CASE
-                     WHEN nm.nm_end_mp = (nm.nm_end_mp - nm.nm_begin_mp)
+                     WHEN nm3net.get_ne_length(ne.ne_id) = (nm.nm_end_mp - nm.nm_begin_mp)
                       AND nm.nm_begin_mp = 0
                       THEN
                          'N'
@@ -200,7 +200,7 @@ AS
     ||CHR(10)||'                                     ,nm.nm_begin_mp member_start_mp'
     ||CHR(10)||'                                     ,nm.nm_end_mp member_end_mp'
     ||CHR(10)||'                                     ,CASE'
-    ||CHR(10)||'                                        WHEN nm.nm_end_mp = (nm.nm_end_mp - nm.nm_begin_mp)'
+    ||CHR(10)||'                                        WHEN nm3net.get_ne_length(ne.ne_id)  = (nm.nm_end_mp - nm.nm_begin_mp)'
     ||CHR(10)||'                                         AND nm.nm_begin_mp = 0'
     ||CHR(10)||'                                         THEN'
     ||CHR(10)||'                                            ''N'''
