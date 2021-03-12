@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.7   Feb 18 2021 13:42:44   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Feb 18 2021 13:42:44  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.8   Mar 12 2021 15:40:44   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Mar 12 2021 15:40:44  $
   --       Module Name      : $Workfile:   awlrs_alerts_api.pkb  $
-  --       Date fetched Out : $Modtime:   Feb 18 2021 13:40:04  $
-  --       Version          : $Revision:   1.7  $
+  --       Date fetched Out : $Modtime:   Mar 12 2021 15:29:44  $
+  --       Version          : $Revision:   1.8  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.7  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.8  $"';
   g_package_name  CONSTANT  VARCHAR2 (30)  := 'awlrs_alerts_api';
   --
   --Role constants--
@@ -1453,6 +1453,7 @@ END get_screen_text;
                                    ,po_cursor           => po_message_cursor);
   END get_alert_ops_lov;
   
+  --
   -----------------------------------------------------------------------------
   --
   PROCEDURE get_alert_type_attribs_lov(pi_inv_type          IN     hig_alert_types.halt_nit_inv_type%TYPE
@@ -1461,14 +1462,22 @@ END get_screen_text;
                                       ,po_cursor              OUT  sys_refcursor)
   IS
   --
+  lv_query      nm3type.max_varchar2;
+  lv_dummy_qry  nm_inv_type_attribs.ita_query%TYPE  := 'SELECT NULL code, NULL descr, NULL value  FROM DUAL WHERE 1=2';
+  --
   BEGIN
     --
-    OPEN po_cursor FOR
-    SELECT ita_attrib_name      attrib_name
-          ,ita_scrn_text        attrib_name_descr 
-      FROM nm_inv_type_attribs
-     WHERE ita_inv_type = pi_inv_type
-    ORDER BY ita_disp_seq_no;  
+    lv_query := nm3gaz_qry.get_ngqa_lov_sql(pi_ngqt_item_type_type => 'I'
+                                           ,pi_ngqt_item_type      => pi_inv_type);
+    -- 
+    IF lv_query IS NOT NULL 
+      THEN   
+        OPEN po_cursor FOR lv_query;
+    ELSE
+        --return an empty cursor
+        OPEN po_cursor FOR lv_dummy_qry;
+    null;  
+    END IF;                                
     --
     awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
                                          ,po_cursor           => po_message_cursor);
@@ -1491,13 +1500,21 @@ END get_screen_text;
   IS
   --
   lv_ita_query  nm_inv_type_attribs.ita_query%TYPE;
-  lv_dummy_qry  nm_inv_type_attribs.ita_query%TYPE  := 'SELECT NULL code, NULL descr FROM DUAL WHERE 1=2';
+  lv_dummy_qry  nm_inv_type_attribs.ita_query%TYPE  := 'SELECT NULL code, NULL descr, NULL value  FROM DUAL WHERE 1=2';
   --
   BEGIN
     --
-    lv_ita_query := nm3get.get_ita(pi_ita_inv_type    =>  pi_inv_type
-                                  ,pi_ita_attrib_name =>  pi_attrib_name).ita_query;
+    lv_ita_query := nm3gaz_qry.get_ngqv_lov_sql(pi_ngqt_item_type_type => 'I'
+                                               ,pi_ngqt_item_type      => pi_inv_type
+                                               ,pi_ngqa_attrib_name    => pi_attrib_name);
     --
+    IF lv_ita_query IS NULL
+      THEN
+       lv_ita_query := nm3get.get_ita(pi_ita_inv_type    =>  pi_inv_type
+                                     ,pi_ita_attrib_name =>  pi_attrib_name
+                                     ,pi_raise_not_found =>  FALSE).ita_query;
+    END IF;                                         
+    --                                         
     IF lv_ita_query IS NOT NULL 
       THEN   
         OPEN po_cursor FOR lv_ita_query;
@@ -4822,7 +4839,7 @@ END get_screen_text;
 	    	          END IF ;    
 	    	      END IF ;	  
 	    	  ELSE
-	    	      IF NOT lv_iit_attrib
+	    	     IF NOT lv_iit_attrib
 	            THEN	
 	    	          IF lr_ita_rec.ita_format = 'DATE'
 	    	          THEN
@@ -4874,7 +4891,7 @@ END get_screen_text;
 	    	      END IF ;
 	    	  END IF ;  	
 	    END IF ;
-	    	    	 
+	  
 	  po_where_clause := lv_where;
       --  
       awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
@@ -4953,7 +4970,7 @@ END get_screen_text;
         -- 
         lv_query_parsed := validate_query(pi_inv_type     => pi_inv_type
                                          ,pi_where_clause => lv_where);
-                                         
+                                                  
 		IF NOT lv_query_parsed
 		   THEN
 		     hig.raise_ner(pi_appl => 'NET'
@@ -6347,13 +6364,31 @@ BEGIN
                                  ,po_message_tab            IN OUT NOCOPY awlrs_message_tab)
   IS
     --
+    lv_int             number;
+    lv_iud_flag        varchar2(1);
     lv_message_cursor  sys_refcursor;
     --
     lt_messages  awlrs_util.message_tab;
     --
   BEGIN
     --
-    FOR i IN 1..pi_old_operator.COUNT LOOP
+    IF pi_old_operator.COUNT = pi_new_operator.COUNT
+      THEN
+         lv_int := pi_old_operator.COUNT;
+         lv_iud_flag := 'U';
+    ELSIF
+       pi_old_operator.COUNT > pi_new_operator.COUNT
+       THEN
+         lv_int := pi_new_operator.COUNT;
+         lv_iud_flag := 'D';  --delete existing records
+    ELSIF 
+       pi_old_operator.COUNT < pi_new_operator.COUNT
+       THEN 
+         lv_int := pi_old_operator.COUNT;
+         lv_iud_flag := 'I';  --insert new records 
+    END IF;
+    --
+    FOR i IN 1..lv_int LOOP
            update_qry_attributes(pi_old_qry_attrib_id     =>  pi_old_qry_attrib_id(i)
                                 ,pi_old_query_id          =>  pi_old_query_id
                                 ,pi_old_inv_type          =>  pi_old_inv_type
@@ -6395,6 +6430,76 @@ BEGIN
         END IF;    
         -- 
     END LOOP;
+    --
+    IF lv_iud_flag = 'I'  -- now need to insert new attribute records
+      THEN
+        FOR i IN lv_int + 1..pi_new_operator.COUNT LOOP
+            create_qry_attributes(pi_query_id         =>  pi_old_query_id
+                                 ,pi_inv_type         =>  pi_new_inv_type
+                                 ,pi_pre_bracket      =>  pi_new_pre_bracket(i)
+                                 ,pi_operator         =>  pi_new_operator(i)
+                                 ,pi_attribute_name   =>  pi_new_attribute_name(i)
+                                 ,pi_condition        =>  pi_new_condition(i)
+                                 ,pi_attribute_value  =>  pi_new_attribute_value(i)
+                                 ,pi_post_bracket     =>  pi_new_post_bracket(i)
+                                 ,po_message_severity =>  po_message_severity
+                                 ,po_message_cursor   =>  lv_message_cursor);
+            --
+            FETCH lv_message_cursor
+             BULK COLLECT
+             INTO lt_messages;
+            CLOSE lv_message_cursor;
+            --
+            FOR i IN 1..lt_messages.COUNT LOOP
+              --
+              awlrs_util.add_message(pi_category    => lt_messages(i).category
+                                    ,pi_message     => lt_messages(i).message
+                                    ,po_message_tab => po_message_tab);
+              --
+            END LOOP;
+            --
+            IF po_message_severity != awlrs_util.c_msg_cat_success
+              THEN
+              --
+              lt_messages.DELETE;
+              EXIT;
+              --
+            END IF;    
+            -- 
+        END LOOP; 
+    ELSE
+      IF lv_iud_flag = 'D'
+      THEN
+         FOR i IN lv_int + 1..pi_old_operator.COUNT LOOP
+            delete_qry_attributes(pi_qry_attribs_id    => pi_old_qry_attrib_id(i)
+                                 ,po_message_severity =>  po_message_severity
+                                 ,po_message_cursor   =>  lv_message_cursor);
+         --
+            FETCH lv_message_cursor
+             BULK COLLECT
+             INTO lt_messages;
+            CLOSE lv_message_cursor;
+            --
+            FOR i IN 1..lt_messages.COUNT LOOP
+              --
+              awlrs_util.add_message(pi_category    => lt_messages(i).category
+                                    ,pi_message     => lt_messages(i).message
+                                    ,po_message_tab => po_message_tab);
+              --
+            END LOOP;
+            --
+            IF po_message_severity != awlrs_util.c_msg_cat_success
+              THEN
+              --
+              lt_messages.DELETE;
+              EXIT;
+              --
+            END IF;    
+            -- 
+        END LOOP;                        
+
+      END IF;    
+    END IF;
     
   END update_qry_attributes;
     
@@ -8742,4 +8847,5 @@ BEGIN
  
 END awlrs_alerts_api;
 /
+
 
