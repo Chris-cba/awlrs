@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.8   Mar 12 2021 15:40:44   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Mar 12 2021 15:40:44  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.9   Mar 15 2021 16:48:30   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Mar 15 2021 16:48:30  $
   --       Module Name      : $Workfile:   awlrs_alerts_api.pkb  $
-  --       Date fetched Out : $Modtime:   Mar 12 2021 15:29:44  $
-  --       Version          : $Revision:   1.8  $
+  --       Date fetched Out : $Modtime:   Mar 15 2021 16:46:30  $
+  --       Version          : $Revision:   1.9  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.8  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.9  $"';
   g_package_name  CONSTANT  VARCHAR2 (30)  := 'awlrs_alerts_api';
   --
   --Role constants--
@@ -2894,6 +2894,15 @@ END get_screen_text;
     --
     awlrs_util.validate_notnull(pi_parameter_desc  => 'Recipient Type'
                                ,pi_parameter_value => pi_recipient_type);
+    --
+    IF    pi_recipient IS NULL
+      AND pi_user_id   IS NULL
+      AND pi_group_id  IS NULL
+      THEN
+        hig.raise_ner(pi_appl               => 'HIG'
+                     ,pi_id                 => 22
+                     ,pi_supplementary_info => 'Please enter a value in at least one of the Recipient fields');
+    END IF;  
     --
     /*
     ||insert into hig_alert_type_recipients.
