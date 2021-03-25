@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.9   Mar 15 2021 16:48:30   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Mar 15 2021 16:48:30  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.10   Mar 25 2021 14:41:00   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Mar 25 2021 14:41:00  $
   --       Module Name      : $Workfile:   awlrs_alerts_api.pkb  $
-  --       Date fetched Out : $Modtime:   Mar 15 2021 16:46:30  $
-  --       Version          : $Revision:   1.9  $
+  --       Date fetched Out : $Modtime:   Mar 25 2021 14:36:42  $
+  --       Version          : $Revision:   1.10  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.9  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.10  $"';
   g_package_name  CONSTANT  VARCHAR2 (30)  := 'awlrs_alerts_api';
   --
   --Role constants--
@@ -7359,7 +7359,7 @@ BEGIN
   --
   -----------------------------------------------------------------------------
   --
-  PROCEDURE send_email(pi_recip_ids             IN     alert_recip_id_tab
+  PROCEDURE send_email(pi_recip_ids             IN     nm3type.tab_number
                       ,po_message_severity         OUT hig_codes.hco_code%TYPE
                       ,po_message_cursor           OUT sys_refcursor)
   IS

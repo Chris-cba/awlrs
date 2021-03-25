@@ -3,11 +3,11 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkh-arc   1.5   Feb 18 2021 13:42:46   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Feb 18 2021 13:42:46  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkh-arc   1.6   Mar 25 2021 14:41:00   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Mar 25 2021 14:41:00  $
   --       Module Name      : $Workfile:   awlrs_alerts_api.pkh  $
-  --       Date fetched Out : $Modtime:   Feb 18 2021 12:21:06  $
-  --       Version          : $Revision:   1.5  $
+  --       Date fetched Out : $Modtime:   Mar 25 2021 14:36:22  $
+  --       Version          : $Revision:   1.6  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
@@ -15,10 +15,9 @@ AS
   --
 
   --g_sccsid is the SCCS ID for the package
-  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.5  $"';
+  g_sccsid      CONSTANT  VARCHAR2(2000) := '"$Revision:   1.6  $"';
   --
   TYPE alert_log_id_tab   IS TABLE OF hig_alert_manager_logs_vw.haml_hal_id%TYPE INDEX BY BINARY_INTEGER;
-  TYPE alert_recip_id_tab IS TABLE OF hig_alert_manager_logs_vw.haml_har_id%TYPE INDEX BY BINARY_INTEGER;
   -- 
   --
   -----------------------------------------------------------------------------
@@ -866,7 +865,7 @@ AS
   -----------------------------------------------------------------------------
   --
   -- for individual/multiple recipients
-  PROCEDURE send_email(pi_recip_ids             IN     alert_recip_id_tab
+  PROCEDURE send_email(pi_recip_ids             IN     nm3type.tab_number
                       ,po_message_severity         OUT hig_codes.hco_code%TYPE
                       ,po_message_cursor           OUT sys_refcursor);                       
 
