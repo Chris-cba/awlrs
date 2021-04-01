@@ -3,18 +3,18 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.10   Mar 25 2021 14:41:00   Barbara.Odriscoll  $
-  --       Date into PVCS   : $Date:   Mar 25 2021 14:41:00  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_alerts_api.pkb-arc   1.11   Apr 01 2021 14:52:44   Barbara.Odriscoll  $
+  --       Date into PVCS   : $Date:   Apr 01 2021 14:52:44  $
   --       Module Name      : $Workfile:   awlrs_alerts_api.pkb  $
-  --       Date fetched Out : $Modtime:   Mar 25 2021 14:36:42  $
-  --       Version          : $Revision:   1.10  $
+  --       Date fetched Out : $Modtime:   Mar 26 2021 09:19:46  $
+  --       Version          : $Revision:   1.11  $
   --
   -----------------------------------------------------------------------------------
   -- Copyright (c) 2020 Bentley Systems Incorporated.  All rights reserved.
   -----------------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.10  $"';
+  g_body_sccsid   CONSTANT  VARCHAR2(2000) := '"$Revision:   1.11  $"';
   g_package_name  CONSTANT  VARCHAR2 (30)  := 'awlrs_alerts_api';
   --
   --Role constants--
@@ -1256,120 +1256,140 @@ END get_screen_text;
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_1)
            END                     param_1_descr
+          ,hatm_p1_derived         param_1_derived
           ,hatm_param_2            param_2
           ,CASE WHEN hatm_param_2 IS NOT NULL AND hatm_p2_derived = 'Y' THEN hatm_param_2
                 WHEN hatm_param_2 IS NOT NULL AND hatm_p2_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_2)
            END                     param_2_descr
+          ,hatm_p2_derived         param_2_derived
           ,hatm_param_3            param_3
           ,CASE WHEN hatm_param_3 IS NOT NULL AND hatm_p3_derived = 'Y' THEN hatm_param_3
                 WHEN hatm_param_3 IS NOT NULL AND hatm_p3_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_3)
            END                     param_3_descr
+          ,hatm_p3_derived         param_3_derived 
           ,hatm_param_4            param_4_code
           ,CASE WHEN hatm_param_4 IS NOT NULL AND hatm_p4_derived = 'Y' THEN hatm_param_4
                 WHEN hatm_param_4 IS NOT NULL AND hatm_p4_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_4)
            END                     param_4_descr
+          ,hatm_p4_derived         param_4_derived 
           ,hatm_param_5            param_5
           ,CASE WHEN hatm_param_5 IS NOT NULL AND hatm_p5_derived = 'Y' THEN hatm_param_5
                 WHEN hatm_param_5 IS NOT NULL AND hatm_p5_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_5)
            END                     param_5_descr
+          ,hatm_p5_derived         param_5_derived 
           ,hatm_param_6            param_6
           ,CASE WHEN hatm_param_6 IS NOT NULL AND hatm_p6_derived = 'Y' THEN hatm_param_6
                 WHEN hatm_param_6 IS NOT NULL AND hatm_p6_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_6)
            END                     param_6_descr
+          ,hatm_p6_derived         param_6_derived 
           ,hatm_param_7            param_7
           ,CASE WHEN hatm_param_7 IS NOT NULL AND hatm_p7_derived = 'Y' THEN hatm_param_7
                 WHEN hatm_param_7 IS NOT NULL AND hatm_p7_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_7)
            END                     param_7_descr
+          ,hatm_p7_derived         param_7_derived 
           ,hatm_param_8            param_8
           ,CASE WHEN hatm_param_8 IS NOT NULL AND hatm_p8_derived = 'Y' THEN hatm_param_8
                 WHEN hatm_param_8 IS NOT NULL AND hatm_p8_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_8)
            END                     param_8_descr
+          ,hatm_p8_derived         param_8_derived 
           ,hatm_param_9            param_9
           ,CASE WHEN hatm_param_9 IS NOT NULL AND hatm_p9_derived = 'Y' THEN hatm_param_9
                 WHEN hatm_param_9 IS NOT NULL AND hatm_p9_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_9)
            END                     param_9_descr  
+          ,hatm_p9_derived         param_9_derived 
           ,hatm_param_10           param_10
           ,CASE WHEN hatm_param_10 IS NOT NULL AND hatm_p10_derived = 'Y' THEN hatm_param_10
                 WHEN hatm_param_10 IS NOT NULL AND hatm_p10_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_10)
            END                     param_10_descr
+          ,hatm_p10_derived        param_10_derived 
           ,hatm_param_11           param_11
           ,CASE WHEN hatm_param_11 IS NOT NULL AND hatm_p11_derived = 'Y' THEN hatm_param_11
                 WHEN hatm_param_11 IS NOT NULL AND hatm_p11_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_11)
            END                     param_11_descr
+          ,hatm_p11_derived        param_11_derived 
           ,hatm_param_12           param_12
           ,CASE WHEN hatm_param_12 IS NOT NULL AND hatm_p12_derived = 'Y' THEN hatm_param_12
                 WHEN hatm_param_12 IS NOT NULL AND hatm_p12_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_12)
            END                     param_12_descr
+          ,hatm_p12_derived        param_12_derived 
           ,hatm_param_13           param_13
           ,CASE WHEN hatm_param_13 IS NOT NULL AND hatm_p13_derived = 'Y' THEN hatm_param_13
                 WHEN hatm_param_13 IS NOT NULL AND hatm_p13_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_13)
            END                     param_13_descr
+          ,hatm_p13_derived        param_13_derived 
           ,hatm_param_14           param_14
           ,CASE WHEN hatm_param_14 IS NOT NULL AND hatm_p14_derived = 'Y' THEN hatm_param_14
                 WHEN hatm_param_14 IS NOT NULL AND hatm_p14_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_14)
            END                     param_14_descr
+          ,hatm_p14_derived        param_14_derived 
           ,hatm_param_15           param_15
           ,CASE WHEN hatm_param_15 IS NOT NULL AND hatm_p15_derived = 'Y' THEN hatm_param_15
                 WHEN hatm_param_15 IS NOT NULL AND hatm_p15_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_15)
            END                     param_15_descr
+          ,hatm_p15_derived        param_15_derived 
           ,hatm_param_16           param_16
           ,CASE WHEN hatm_param_16 IS NOT NULL AND hatm_p16_derived = 'Y' THEN hatm_param_16
                 WHEN hatm_param_16 IS NOT NULL AND hatm_p16_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_16)
            END                     param_16_descr
+          ,hatm_p16_derived        param_16_derived 
           ,hatm_param_17           param_17
           ,CASE WHEN hatm_param_17 IS NOT NULL AND hatm_p17_derived = 'Y' THEN hatm_param_17
                 WHEN hatm_param_17 IS NOT NULL AND hatm_p17_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_17)
            END                     param_17_descr
+          ,hatm_p17_derived        param_17_derived 
           ,hatm_param_18           param_18
           ,CASE WHEN hatm_param_18 IS NOT NULL AND hatm_p18_derived = 'Y' THEN hatm_param_18
                 WHEN hatm_param_18 IS NOT NULL AND hatm_p18_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_18)
            END                     param_18_descr
+          ,hatm_p18_derived        param_18_derived 
           ,hatm_param_19           param_19
           ,CASE WHEN hatm_param_19 IS NOT NULL AND hatm_p19_derived = 'Y' THEN hatm_param_19
                 WHEN hatm_param_19 IS NOT NULL AND hatm_p19_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_19)
            END                     param_19_descr
+          ,hatm_p19_derived        param_19_derived 
           ,hatm_param_20           param_20   
           ,CASE WHEN hatm_param_20 IS NOT NULL AND hatm_p20_derived = 'Y' THEN hatm_param_20
                 WHEN hatm_param_20 IS NOT NULL AND hatm_p20_derived <> 'Y' 
                   THEN awlrs_alerts_api.get_screen_text(pi_ita_inv_type    => pi_inv_type
                                                        ,pi_ita_attrib_name => hatm_param_20)
            END                     param_20_descr
+          ,hatm_p20_derived        param_20_derived 
       FROM hig_alert_type_mail     
      WHERE hatm_halt_id        =  pi_alert_id;
   --
