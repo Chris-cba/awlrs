@@ -7,11 +7,11 @@
 --
 --  PVCS Identifiers :-
 --
---      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12170_metadata_upg.sql-arc   1.1   Feb 01 2021 15:15:28   Barbara.Odriscoll  $
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12170_metadata_upg.sql-arc   1.2   Apr 01 2021 15:10:22   Barbara.Odriscoll  $
 --      Module Name      : $Workfile:   awlrs1010_awlrs12170_metadata_upg.sql  $
---      Date into PVCS   : $Date:   Feb 01 2021 15:15:28  $
---      Date fetched Out : $Modtime:   Feb 01 2021 15:10:46  $
---      Version          : $Revision:   1.1  $
+--      Date into PVCS   : $Date:   Apr 01 2021 15:10:22  $
+--      Date fetched Out : $Modtime:   Apr 01 2021 13:50:28  $
+--      Version          : $Revision:   1.2  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2021 Bentley Systems Incorporated. All rights reserved.
@@ -1617,9 +1617,13 @@ PROMPT Update to Users Launchpad Metadata
 SET TERM OFF
 UPDATE hig_standard_favourites
    SET hstf_parent = 'AWLRS_SECURITY'
-         ,hstf_order = 20
+      ,hstf_order = 20
  WHERE hstf_parent = 'AWLRS_REFERENCE'
    AND hstf_child = 'HIG1832'
+   AND NOT EXISTS (SELECT 1
+                     FROM hig_standard_favourites
+                    WHERE hstf_parent = 'AWLRS_SECURITY'
+                      AND hstf_order  = 20)
 /
 
 ------------------------------------------------------------------
