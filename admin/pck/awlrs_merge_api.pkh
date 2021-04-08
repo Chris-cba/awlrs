@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkh-arc   1.7   Dec 19 2019 10:41:44   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkh-arc   1.8   Apr 08 2021 09:45:24   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_merge_api.pkh  $
-  --       Date into PVCS   : $Date:   Dec 19 2019 10:41:44  $
-  --       Date fetched Out : $Modtime:   Dec 18 2019 14:31:06  $
-  --       Version          : $Revision:   1.7  $
+  --       Date into PVCS   : $Date:   Apr 08 2021 09:45:24  $
+  --       Date fetched Out : $Modtime:   Mar 25 2021 15:36:32  $
+  --       Version          : $Revision:   1.8  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.7  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.8  $';
   --
   g_element      nm_elements_all%ROWTYPE;
   g_new_element  nm_elements_all%ROWTYPE;
@@ -69,6 +69,7 @@ AS
   PROCEDURE do_merge(pi_ne_id1                IN     nm_elements_all.ne_id%TYPE
                     ,pi_ne_id2                IN     nm_elements_all.ne_id%TYPE
                     ,pi_reason                IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
+                    ,pi_merge_at_node         IN     nm_elements.ne_no_start%TYPE DEFAULT NULL
                     ,pi_new_element_attribs   IN     awlrs_element_api.flex_attr_tab
                     ,pi_do_maintain_history   IN     VARCHAR2 DEFAULT 'N'
                     ,pi_circular_group_ids    IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
@@ -90,6 +91,7 @@ AS
   PROCEDURE do_merge(pi_ne_id1                   IN     nm_elements_all.ne_id%TYPE
                     ,pi_ne_id2                   IN     nm_elements_all.ne_id%TYPE
                     ,pi_reason                   IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
+                    ,pi_merge_at_node            IN     nm_elements.ne_no_start%TYPE DEFAULT NULL
                     ,pi_new_element_column_names IN     awlrs_element_api.attrib_column_name_tab
                     ,pi_new_element_prompts      IN     awlrs_element_api.attrib_prompt_tab
                     ,pi_new_element_char_values  IN     awlrs_element_api.attrib_char_value_tab
