@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.18   Apr 30 2020 15:46:04   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_merge_api.pkb-arc   1.19   Apr 08 2021 09:45:22   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_merge_api.pkb  $
-  --       Date into PVCS   : $Date:   Apr 30 2020 15:46:04  $
-  --       Date fetched Out : $Modtime:   Apr 29 2020 15:11:54  $
-  --       Version          : $Revision:   1.18  $
+  --       Date into PVCS   : $Date:   Apr 08 2021 09:45:22  $
+  --       Date fetched Out : $Modtime:   Apr 06 2021 15:50:24  $
+  --       Version          : $Revision:   1.19  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.18  $';
+  g_body_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.19  $';
   g_package_name  CONSTANT VARCHAR2 (30) := 'awlrs_merge_api';
   --
   g_disp_derived    BOOLEAN := FALSE;
@@ -361,6 +361,7 @@ AS
   PROCEDURE do_merge(pi_ne_id1                 IN     nm_elements_all.ne_id%TYPE
                     ,pi_ne_id2                 IN     nm_elements_all.ne_id%TYPE
                     ,pi_reason                 IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
+                    ,pi_merge_at_node          IN     nm_elements.ne_no_start%TYPE DEFAULT NULL
                     ,pi_new_element_attribs    IN     awlrs_element_api.flex_attr_tab
                     ,pi_do_maintain_history    IN     VARCHAR2 DEFAULT 'N'
                     ,pi_circular_group_ids     IN     awlrs_util.ne_id_tab DEFAULT CAST(NULL AS awlrs_util.ne_id_tab)
@@ -377,7 +378,7 @@ AS
     lv_new_node_id  nm_elements.ne_no_start%TYPE;
     lv_new_np_id    nm_nodes.no_np_id%TYPE;
     lv_create_node  BOOLEAN := TRUE;
-    lv_start_ne_id   nm_elements_all.ne_id%TYPE;    
+    lv_start_ne_id  nm_elements_all.ne_id%TYPE;    
     --
     lv_severity        hig_codes.hco_code%TYPE := awlrs_util.c_msg_cat_success;
     lv_message_cursor  sys_refcursor;
@@ -539,7 +540,7 @@ AS
              nm3merge.do_merge_datum_or_group(pi_ne_id_1           => pi_ne_id1
                                              ,pi_ne_id_2           => pi_ne_id2
                                              ,pi_effective_date    => pi_effective_date
-                                             ,pi_merge_at_node     => NULL /* TODO - Do we need to support this? */
+                                             ,pi_merge_at_node     => pi_merge_at_node--NULL /* TODO - Do we need to support this? */
                                              ,pi_ne_type           => NULL
                                              ,pi_ne_nt_type        => NULL
                                              ,pi_ne_descr          => NULL
@@ -690,6 +691,7 @@ AS
   PROCEDURE do_merge(pi_ne_id1                   IN     nm_elements_all.ne_id%TYPE
                     ,pi_ne_id2                   IN     nm_elements_all.ne_id%TYPE
                     ,pi_reason                   IN     nm_element_history.neh_descr%TYPE DEFAULT NULL
+                    ,pi_merge_at_node            IN     nm_elements.ne_no_start%TYPE DEFAULT NULL
                     ,pi_new_element_column_names IN     awlrs_element_api.attrib_column_name_tab
                     ,pi_new_element_prompts      IN     awlrs_element_api.attrib_prompt_tab
                     ,pi_new_element_char_values  IN     awlrs_element_api.attrib_char_value_tab
@@ -733,6 +735,7 @@ AS
     do_merge(pi_ne_id1                => pi_ne_id1
             ,pi_ne_id2                => pi_ne_id2
             ,pi_reason                => pi_reason
+            ,pi_merge_at_node         => pi_merge_at_node
             ,pi_new_element_attribs   => lt_new_element_attribs
             ,pi_do_maintain_history   => pi_do_maintain_history
             ,pi_effective_date        => pi_effective_date
