@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkh-arc   1.12   Sep 08 2020 15:42:08   Mike.Huitson  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkh-arc   1.13   Apr 08 2021 10:03:18   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkh  $
-  --       Date into PVCS   : $Date:   Sep 08 2020 15:42:08  $
-  --       Date fetched Out : $Modtime:   Sep 08 2020 15:29:20  $
-  --       Version          : $Revision:   1.12  $
+  --       Date into PVCS   : $Date:   Apr 08 2021 10:03:18  $
+  --       Date fetched Out : $Modtime:   Apr 07 2021 09:38:08  $
+  --       Version          : $Revision:   1.13  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_sccsid is the SCCS ID for the package
-  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.12  $';
+  g_sccsid   CONSTANT VARCHAR2 (2000) := '$Revision:   1.13  $';
   --
   -----------------------------------------------------------------------------
   --
@@ -250,6 +250,13 @@ AS
                         ,po_message_severity OUT hig_codes.hco_code%TYPE
                         ,po_message_cursor   OUT sys_refcursor);
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE bulk_reverse_cardinality(pi_ne_id            IN  nm_elements.ne_id%TYPE
+                                    ,pi_run_checks       IN  VARCHAR2 DEFAULT 'Y'
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor);
 --
 -----------------------------------------------------------------------------
 --

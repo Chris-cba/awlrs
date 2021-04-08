@@ -3,17 +3,17 @@ AS
   -------------------------------------------------------------------------
   --   PVCS Identifiers :-
   --
-  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.36   Mar 12 2021 13:44:30   Peter.Bibby  $
+  --       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/admin/pck/awlrs_group_api.pkb-arc   1.37   Apr 08 2021 10:03:18   Peter.Bibby  $
   --       Module Name      : $Workfile:   awlrs_group_api.pkb  $
-  --       Date into PVCS   : $Date:   Mar 12 2021 13:44:30  $
-  --       Date fetched Out : $Modtime:   Mar 11 2021 16:22:28  $
-  --       Version          : $Revision:   1.36  $
+  --       Date into PVCS   : $Date:   Apr 08 2021 10:03:18  $
+  --       Date fetched Out : $Modtime:   Apr 07 2021 12:34:40  $
+  --       Version          : $Revision:   1.37  $
   -------------------------------------------------------------------------
   --   Copyright (c) 2017 Bentley Systems Incorporated. All rights reserved.
   -------------------------------------------------------------------------
   --
   --g_body_sccsid is the SCCS ID for the package body
-  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.36  $';
+  g_body_sccsid    CONSTANT VARCHAR2 (2000) := '$Revision:   1.37  $';
   g_package_name   CONSTANT VARCHAR2 (30) := 'awlrs_group_api';
   --
   --
@@ -2141,6 +2141,107 @@ AS
                                    ,po_cursor           => po_message_cursor);
   END resize_route;
 
+  --
+  -----------------------------------------------------------------------------
+  --
+  PROCEDURE bulk_reverse_cardinality(pi_ne_id            IN  nm_elements.ne_id%TYPE
+                                    ,pi_run_checks       IN  VARCHAR2 DEFAULT 'Y'
+                                    ,po_message_severity OUT hig_codes.hco_code%TYPE
+                                    ,po_message_cursor   OUT sys_refcursor)
+    IS
+    --
+    CURSOR is_reverse_allowed(c_route_id nm_elements.ne_id%TYPE)
+    IS
+    SELECT ngt_reverse_allowed
+      FROM nm_Elements
+          ,nm_group_types_all
+     WHERE ne_gty_group_type = ngt_group_type
+       AND ne_id = c_route_id;
+    --
+    CURSOR do_assets_exist (c_route_id nm_elements.ne_id%TYPE)
+    IS
+     SELECT 1
+       FROM dual
+      WHERE EXISTS (SELECT im.nm_ne_id_in iit_ne_id
+                      FROM nm_members im
+                          ,nm_members rm
+                     WHERE rm.nm_ne_id_in = c_route_id
+                       AND rm.nm_ne_id_of = im.nm_ne_id_of
+                       AND im.nm_type = 'I'
+                       AND ((im.nm_begin_mp < rm.nm_end_mp 
+                             AND im.nm_end_mp > rm.nm_begin_mp)
+                            OR (im.nm_begin_mp = im.nm_end_mp
+                                AND im.nm_begin_mp BETWEEN rm.nm_begin_mp
+                                                       AND rm.nm_end_mp)));
+    --
+    lv_assets_exist NUMBER;
+    lv_reverse_allowed VARCHAR2(1);
+    lv_cardinality NUMBER(1);
+    lt_messages  awlrs_message_tab := awlrs_message_tab();
+    --
+  BEGIN
+    /*
+    ||Set a save point.
+    */
+    SAVEPOINT bulk_reverse_cardinality_sp;
+    --
+     OPEN is_reverse_allowed(pi_ne_id);
+    FETCH is_reverse_allowed
+     INTO lv_reverse_allowed;
+    CLOSE is_reverse_allowed;
+    
+    IF lv_reverse_allowed = 'N'
+     THEN
+       --prevent update of cardinality non-reversible groups
+       hig.raise_ner(pi_appl => 'AWLRS'
+                    ,pi_id   => 94);
+    END IF;
+    /*
+    ||check if assets exist on route, if they do, do ask continue.
+    */
+    IF pi_run_checks = 'Y'
+     THEN    
+        OPEN do_assets_exist(pi_ne_id);
+       FETCH do_assets_exist
+        INTO lv_assets_exist;
+       CLOSE do_assets_exist;
+       --
+       IF lv_assets_exist = 1   
+        THEN
+          --
+          awlrs_util.add_ner_to_message_tab(pi_ner_appl    => 'AWLRS'
+                                           ,pi_ner_id      => 95
+                                           ,pi_category    => awlrs_util.c_msg_cat_ask_continue
+                                           ,po_message_tab => lt_messages);
+          --
+       END IF;
+    END IF;
+    --
+    IF lt_messages.COUNT = 0
+     THEN
+        UPDATE NM_MEMBERS
+           SET nm_cardinality = decode(nm_cardinality,1,-1,1)
+         WHERE nm_ne_id_in = pi_ne_id;
+    END IF;
+    --
+    IF lt_messages.COUNT > 0
+     THEN
+        awlrs_util.get_message_cursor(pi_message_tab => lt_messages
+                                     ,po_cursor      => po_message_cursor);
+        awlrs_util.get_highest_severity(pi_message_tab      => lt_messages
+                                       ,po_message_severity => po_message_severity);
+    ELSE
+        awlrs_util.get_default_success_cursor(po_message_severity => po_message_severity
+                                             ,po_cursor           => po_message_cursor);
+    END IF;
+    --
+  EXCEPTION
+    WHEN others
+     THEN
+        ROLLBACK TO bulk_reverse_cardinality_sp;
+        awlrs_util.handle_exception(po_message_severity => po_message_severity
+                                   ,po_cursor           => po_message_cursor);
+  END bulk_reverse_cardinality;
 --
 -----------------------------------------------------------------------------
 --
