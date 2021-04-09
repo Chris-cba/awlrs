@@ -7,11 +7,11 @@
 --
 --  PVCS Identifiers :-
 --
---      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12170_metadata_upg.sql-arc   1.2   Apr 01 2021 15:10:22   Barbara.Odriscoll  $
+--      PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrs1010_awlrs12170_metadata_upg.sql-arc   1.3   Apr 09 2021 09:37:26   Barbara.Odriscoll  $
 --      Module Name      : $Workfile:   awlrs1010_awlrs12170_metadata_upg.sql  $
---      Date into PVCS   : $Date:   Apr 01 2021 15:10:22  $
---      Date fetched Out : $Modtime:   Apr 01 2021 13:50:28  $
---      Version          : $Revision:   1.2  $
+--      Date into PVCS   : $Date:   Apr 09 2021 09:37:26  $
+--      Date fetched Out : $Modtime:   Apr 08 2021 16:52:36  $
+--      Version          : $Revision:   1.3  $
 --
 ------------------------------------------------------------------
 --  Copyright (c) 2021 Bentley Systems Incorporated. All rights reserved.
@@ -1617,13 +1617,13 @@ PROMPT Update to Users Launchpad Metadata
 SET TERM OFF
 UPDATE hig_standard_favourites
    SET hstf_parent = 'AWLRS_SECURITY'
-      ,hstf_order = 20
+         ,hstf_order = 20
  WHERE hstf_parent = 'AWLRS_REFERENCE'
    AND hstf_child = 'HIG1832'
    AND NOT EXISTS (SELECT 1
                      FROM hig_standard_favourites
                     WHERE hstf_parent = 'AWLRS_SECURITY'
-                      AND hstf_order  = 20)
+                      AND hstf_order = 20)
 /
 
 ------------------------------------------------------------------
@@ -2081,6 +2081,47 @@ SELECT 'AWLRS_MAIL'
                     FROM HIG_STANDARD_FAVOURITES
                    WHERE HSTF_PARENT = 'AWLRS_MAIL'
                      AND HSTF_CHILD = 'HIG1525')
+/
+
+------------------------------------------------------------------
+SET TERM ON
+PROMPT New Error messages
+SET TERM OFF
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,94
+      ,null
+      ,'Group is set to non-reversible'
+      ,''
+  FROM DUAL
+WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 94)
+/
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,95
+      ,null
+      ,'Assets are located on this route. Are you sure you want to continue?'
+      ,''
+  FROM DUAL
+WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 95)
 /
 
 ------------------------------------------------------------------
