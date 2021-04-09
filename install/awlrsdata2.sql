@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------
 --   PVCS Identifiers :-
 --
---       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.36   Feb 01 2021 15:23:16   Barbara.Odriscoll  $
+--       PVCS id          : $Header:   //new_vm_latest/archives/awlrs/install/awlrsdata2.sql-arc   1.37   Apr 09 2021 09:37:28   Barbara.Odriscoll  $
 --       Module Name      : $Workfile:   awlrsdata2.sql  $
---       Date into PVCS   : $Date:   Feb 01 2021 15:23:16  $
---       Date fetched Out : $Modtime:   Feb 01 2021 15:20:34  $
---       Version          : $Revision:   1.36  $
+--       Date into PVCS   : $Date:   Apr 09 2021 09:37:28  $
+--       Date fetched Out : $Modtime:   Apr 08 2021 16:46:12  $
+--       Version          : $Revision:   1.37  $
 --       Table Owner      : AWLRS_METADATA
---       Generation Date  : 01-FEB-2021 15:20
+--       Generation Date  : 08-APR-2021 16:46
 --
 --   Product metadata script
 --   As at Release 4.7.1.0
@@ -1714,6 +1714,42 @@ SELECT 'AWLRS'
                     FROM NM_ERRORS
                    WHERE NER_APPL = 'AWLRS'
                      AND NER_ID = 93);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,94
+      ,null
+      ,'Group is set to non-reversible'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 94);
+--
+INSERT
+  INTO NM_ERRORS
+      (NER_APPL
+      ,NER_ID
+      ,NER_HER_NO
+      ,NER_DESCR
+      ,NER_CAUSE)
+SELECT 'AWLRS'
+      ,95
+      ,null
+      ,'Assets are located on this route. Are you sure you want to continue?'
+      ,''
+  FROM DUAL
+ WHERE NOT EXISTS(SELECT 1
+                    FROM NM_ERRORS
+                   WHERE NER_APPL = 'AWLRS'
+                     AND NER_ID = 95);
 --
 ----------------------------------------------------------------------------------------
 -- HIG_STANDARD_FAVOURITES
